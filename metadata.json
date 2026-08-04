@@ -1,0 +1,6 @@
+{
+  "name": "COPY",
+  "description": "مدير حافظة احترافي يحفظ العناصر محليًا مع ميزات المزامنة والمقتطفات الذكية والدفع",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
