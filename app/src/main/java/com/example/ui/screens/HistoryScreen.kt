@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -144,7 +145,7 @@ fun HistoryScreen(viewModel: MainViewModel) {
                     ClipboardType.CODE -> L10n.get("filterCode", selectedLanguage)
                 }
                 val typeIcon = when (type) {
-                    ClipboardType.TEXT -> Icons.Default.Notes
+                    ClipboardType.TEXT -> Icons.AutoMirrored.Filled.Notes
                     ClipboardType.LINK -> Icons.Default.Link
                     ClipboardType.IMAGE -> Icons.Default.Image
                     ClipboardType.CODE -> Icons.Default.Code
@@ -343,7 +344,7 @@ fun HistoryScreen(viewModel: MainViewModel) {
                             ClipboardType.LINK -> Icons.Default.Link
                             ClipboardType.CODE -> Icons.Default.Code
                             ClipboardType.IMAGE -> Icons.Default.Image
-                            else -> Icons.Default.Notes
+                            else -> Icons.AutoMirrored.Filled.Notes
                         },
                         contentDescription = "Type",
                         tint = Color(0xFFE53935),
@@ -558,7 +559,7 @@ fun ModernClipboardItemCard(
                                 ClipboardType.LINK -> Icons.Default.Link
                                 ClipboardType.CODE -> Icons.Default.Code
                                 ClipboardType.IMAGE -> Icons.Default.Image
-                                else -> Icons.Default.Notes
+                                else -> Icons.AutoMirrored.Filled.Notes
                             },
                             contentDescription = "Type",
                             tint = Color(0xFFE53935),

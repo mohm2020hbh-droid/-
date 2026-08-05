@@ -1,6 +1,7 @@
 package com.example
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -37,6 +38,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var viewModel: MainViewModel
 
     // Permission request contract for Android 13+ POST_NOTIFICATIONS
+    // This Activity uses ComponentActivity directly; no Fragment version participates in the contract.
+    @SuppressLint("InvalidFragmentVersionForActivityResult")
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->

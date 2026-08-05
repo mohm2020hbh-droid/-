@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.database.AppDatabase
@@ -220,19 +221,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setRetentionDays(days: Int) {
         _retentionDays.value = days
         val prefs = context.getSharedPreferences("clipflow_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("retention_days", days).apply()
+        prefs.edit { putInt("retention_days", days) }
     }
 
     fun toggleStartOnBoot(enable: Boolean) {
         _startOnBoot.value = enable
         val prefs = context.getSharedPreferences("clipflow_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("start_on_boot", enable).apply()
+        prefs.edit { putBoolean("start_on_boot", enable) }
     }
 
     fun setSelectedLanguage(lang: String) {
         _selectedLanguage.value = lang
         val prefs = context.getSharedPreferences("clipflow_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putString("selected_language", lang).apply()
+        prefs.edit { putString("selected_language", lang) }
     }
 
     fun toggleForegroundService(enable: Boolean) {
@@ -257,7 +258,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun purchasePremium(status: Int) {
         _premiumStatus.value = status
         val prefs = context.getSharedPreferences("clipflow_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("premium_status", status).apply()
+        prefs.edit { putInt("premium_status", status) }
     }
 
     fun restorePurchase() {

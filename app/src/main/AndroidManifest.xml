@@ -44,7 +44,7 @@
 
         <!-- Custom Input Method (Keyboard Extension) -->
         <service
-            android:name=".services.ClipFlowKeyboardService"
+            android:name=".services.COPYKeyboardService"
             android:label="COPY KB"
             android:permission="android.permission.BIND_INPUT_METHOD"
             android:exported="true">
