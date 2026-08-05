@@ -30,7 +30,8 @@ sealed class AppScreen {
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val context = application.applicationContext
+    private val context: Context
+        get() = getApplication()
     private val database = AppDatabase.getDatabase(context)
     val clipboardRepository = ClipboardRepository(database.clipboardDao())
     val snippetRepository = SnippetRepository(database.snippetDao())
