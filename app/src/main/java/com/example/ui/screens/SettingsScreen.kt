@@ -89,7 +89,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             .testTag("language_dropdown_button"),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE53935)),
                         shape = RoundedCornerShape(12.dp),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp)
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -251,7 +251,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             .testTag("retention_dropdown_button"),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE53935)),
                         shape = RoundedCornerShape(12.dp),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.dp)
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.SpaceBetween,
