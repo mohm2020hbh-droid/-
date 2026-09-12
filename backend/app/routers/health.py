@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Request
+from fastapi.responses import FileResponse
 
 from .. import __version__
 
 router = APIRouter(tags=["health"])
+
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
 @router.get("/")
@@ -25,3 +30,10 @@ async def health(request: Request) -> dict:
         "total_rounds": settings.total_rounds,
         "countdown_seconds": settings.countdown_seconds,
     }
+
+
+@router.get("/play", include_in_schema=False)
+async def play() -> FileResponse:
+    """The browser client — the same protocol the Android app speaks."""
+
+    return FileResponse(STATIC_DIR / "index.html", media_type="text/html")

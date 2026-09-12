@@ -17,6 +17,24 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 `--host 0.0.0.0` is what makes the server reachable from a phone. Check it from
 the phone's browser at `http://<your-ip>:8000/health`.
 
+## Browser client
+
+The same server also serves a browser version of the game at **`/play`**. It
+speaks the identical protocol (JSON envelopes plus the binary audio frames), so
+it is a real client, not a mock — useful for playing a full match without
+building the Android app.
+
+```
+http://127.0.0.1:8000/play
+```
+
+Open it in two tabs: create a room in one, join with the code in the other.
+
+> The browser only grants microphone access in a secure context, which means
+> `127.0.0.1`/`localhost` or `https`. On a plain `http://192.168.x.x` address
+> the mic is blocked by the browser; the page says so and sends a short
+> generated tone instead, so the match can still be played through.
+
 ## Tests
 
 ```bash

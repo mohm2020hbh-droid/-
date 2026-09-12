@@ -41,6 +41,23 @@ Player A                     Server                      Player B
    │ <─────────────────────────│───────────────────────────>│
 ```
 
+## Playing it in a browser right now
+
+The server serves a browser client at `/play` that speaks the same protocol as
+the Android app:
+
+```bash
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Then open `http://127.0.0.1:8000/play` in two tabs — create a room in one, join
+with the code in the other. Microphone capture needs `127.0.0.1`/`localhost` or
+`https`; on a plain LAN `http://` address the browser blocks the mic and the
+page falls back to a generated tone so the match still completes.
+
 ## Running it end to end
 
 **1. Start the server** on a machine both phones can reach:
