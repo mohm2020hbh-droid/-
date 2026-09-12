@@ -25,3 +25,6 @@ dependencyResolutionManagement {
 rootProject.name = "My Application"
 
 include(":app")
+
+// Voice Duel Online — the game client lives beside the existing app module.
+include(":android")

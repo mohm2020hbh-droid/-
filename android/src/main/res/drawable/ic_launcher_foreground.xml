@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A microphone, drawn inside the 72dp safe zone of the 108dp icon canvas. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30m-9,0a9,9 0,1 1,18 0l0,18a9,9 0,1 1,-18 0z" />
+    <path
+        android:fillColor="#FFB020"
+        android:pathData="M37,46L41,46A13,13 0,0 0,67 46L71,46A17,17 0,0 1,56 62.8L56,71L52,71L52,62.8A17,17 0,0 1,37 46Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,76L64,76A2,2 0,0 1,64 80L44,80A2,2 0,0 1,44 76Z" />
+</vector>
