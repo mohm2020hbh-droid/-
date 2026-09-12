@@ -1,0 +1,10 @@
+# Copy this file to `local.properties` and point sdk.dir at your Android SDK.
+# Android Studio normally writes this file for you the first time you open the
+# project, so you usually do not need to create it by hand.
+#
+# Windows (note the doubled backslashes):
+# sdk.dir=C:\\Users\\<you>\\AppData\\Local\\Android\\Sdk
+#
+# Optional: bake a default server address into the app instead of typing it on
+# the phone each time.
+# voiceduel.serverUrl=ws://192.168.1.10:8000/ws
