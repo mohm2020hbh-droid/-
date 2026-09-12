@@ -5,20 +5,32 @@
    rather than a stack of individually-styled pages.
    ===================================================================== */
 :root {
-  /* -- color -- */
-  --purple: #7c5cff;
-  --purple-dark: #4b34b8;
-  --purple-deep: #2e2170;
-  --amber: #ffb020;
-  --teal: #22d3c5;
-  --red: #f0555b;
-  --ink: #100e1c;
-  --surface: #1b1830;
-  --surface-2: #262143;
-  --surface-3: #322b57;
-  --text: #f3f1fb;
-  --muted: #a7a0c9;
-  --muted-dim: #7c7599;
+  /* -- color: black + red identity --
+     A closed palette on purpose — background, three reds, white, two
+     greys, nothing else. No purple, pink, blue, or cyan anywhere. */
+  --bg: #080808;
+  --red: #B00020;         /* primary — CTAs, active state, score, alerts */
+  --red-dark: #7A1020;    /* dark red — secondary surfaces, gradients */
+  --red-pressed: #95182C; /* pressed / compressed interactive state */
+  --white: #FFFFFF;
+  --grey: #B5B5B5;        /* secondary text */
+  --grey-dim: #8a8a8a;    /* tertiary text, further recessed */
+
+  /* -- legacy names --
+     Every rule below still reads these; repointing them here repaints
+     the whole app without touching each rule individually. */
+  --purple: var(--red);
+  --purple-dark: var(--red-dark);
+  --purple-deep: #300810;   /* deep red-black gradient stop */
+  --amber: var(--white);    /* former gold highlight now reads white */
+  --teal: var(--white);     /* former cyan-family "ok" state now white */
+  --ink: var(--bg);
+  --surface: #121212;
+  --surface-2: #161616;
+  --surface-3: #262626;
+  --text: var(--white);
+  --muted: var(--grey);
+  --muted-dim: var(--grey-dim);
 
   /* -- spacing scale -- */
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
@@ -28,10 +40,10 @@
   --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-pill: 999px;
 
   /* -- elevation -- */
-  --shadow-1: 0 2px 8px rgba(6, 4, 20, .35);
-  --shadow-2: 0 8px 24px rgba(6, 4, 20, .45);
-  --shadow-glow-purple: 0 8px 26px rgba(124, 92, 255, .35);
-  --shadow-glow-amber: 0 8px 26px rgba(255, 176, 32, .28);
+  --shadow-1: 0 2px 8px rgba(0, 0, 0, .45);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, .6);
+  --shadow-glow-purple: 0 8px 26px rgba(176, 0, 32, .38);   /* red glow */
+  --shadow-glow-amber: 0 8px 26px rgba(255, 255, 255, .16); /* white glow, unused today */
 
   /* -- motion -- */
   --ease-out: cubic-bezier(.16, 1, .3, 1);
@@ -48,7 +60,7 @@
 body {
   margin: 0;
   background:
-    radial-gradient(120% 90% at 50% -10%, rgba(124, 92, 255, .16), transparent 60%),
+    radial-gradient(120% 90% at 50% -10%, rgba(176, 0, 32, .18), transparent 60%),
     var(--ink);
   color: var(--text);
   font-family: -apple-system, "SF Pro Text", "Segoe UI", system-ui, Tahoma, sans-serif;
@@ -94,9 +106,12 @@ small { color: var(--muted-dim); }
 .wordmark {
   font-size: clamp(32px, 11vw, 44px); font-weight: 800; letter-spacing: 3px;
   margin: var(--sp-3) 0 var(--sp-1);
-  background: linear-gradient(90deg, var(--purple), var(--amber));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  color: var(--white);
 }
+/* A hard two-color split, not a gradient: a smooth white -> red blend
+   inevitably passes through pink midtones on short text, which the
+   palette forbids. This keeps VOICE white and DUEL solid red. */
+.wordmark .accent { color: var(--red); }
 .wordmark.small { font-size: clamp(24px, 8vw, 30px); letter-spacing: 2px; margin: var(--sp-2) 0 0; }
 .tagline { color: var(--muted); font-size: 14px; margin: 0; }
 
@@ -146,7 +161,7 @@ button {
 }
 button:active { transform: scale(.97); box-shadow: var(--shadow-1); }
 button.secondary {
-  background: var(--surface-2); border: 1px solid rgba(124, 92, 255, .45); color: var(--text);
+  background: var(--surface-2); border: 1px solid rgba(176, 0, 32, .45); color: var(--text);
   box-shadow: none;
 }
 button.secondary:active { background: var(--surface-3); }
@@ -174,8 +189,8 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
    Notices + status
    ===================================================================== */
 .notice {
-  background: rgba(240, 85, 91, .14); border: 1px solid rgba(240, 85, 91, .3);
-  color: #ffd7d9; border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4);
+  background: rgba(176, 0, 32, .16); border: 1px solid rgba(176, 0, 32, .4);
+  color: var(--white); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4);
   margin: var(--sp-3) 0; font-size: 14px; display: none; text-align: start;
   animation: shake-in var(--dur-med) var(--ease-out);
 }
@@ -234,11 +249,11 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
   display: flex; align-items: center; gap: var(--sp-4);
   width: 100%; min-height: 88px; padding: var(--sp-4) var(--sp-5); margin: var(--sp-3) 0;
   text-align: start; border-radius: var(--r-lg);
-  background: linear-gradient(135deg, var(--purple), #9b7bff);
+  background: linear-gradient(135deg, var(--red-dark), var(--red));
   box-shadow: var(--shadow-glow-purple);
 }
-.mode-card.online { background: var(--surface-2); border: 1px solid rgba(124, 92, 255, .4); box-shadow: var(--shadow-1); }
-.mode-card.battle { background: linear-gradient(135deg, #d0435a, #ff7a45); box-shadow: 0 8px 26px rgba(255, 90, 60, .3); }
+.mode-card.online { background: var(--surface-2); border: 1px solid rgba(176, 0, 32, .4); box-shadow: var(--shadow-1); }
+.mode-card.battle { background: linear-gradient(135deg, var(--red-dark), var(--red-pressed)); box-shadow: 0 8px 26px rgba(176, 0, 32, .35); }
 .mode-card:active { transform: scale(.98); }
 
 .mode-icon {
@@ -300,7 +315,7 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
 }
 .stage:active { transform: scale(.98); }
 .stage.locked { opacity: .4; box-shadow: none; }
-.stage.done { border-color: rgba(34, 211, 197, .35); }
+.stage.done { border-color: rgba(255, 255, 255, .3); }
 
 .stage-number {
   position: absolute; inset-inline-start: calc(-1 * var(--sp-6) - 4px);
@@ -309,7 +324,7 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
   border: 3px solid var(--ink);
 }
 .stage.locked .stage-number { background: var(--surface-3); }
-.stage.done .stage-number { background: var(--teal); color: #06251f; }
+.stage.done .stage-number { background: var(--teal); color: var(--ink); }
 
 .stage-main { flex: 1; min-width: 0; }
 .stage-title { display: block; font-size: 15px; font-weight: 700; }
@@ -354,7 +369,7 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
   box-shadow: var(--shadow-1);
 }
 .battle-avatar.me .avatar-emoji { border-color: var(--purple); box-shadow: var(--shadow-glow-purple); }
-.battle-avatar.opp .avatar-emoji { border-color: var(--red); }
+.battle-avatar.opp .avatar-emoji { border-color: var(--grey); }
 .avatar-label { font-size: 12px; font-weight: 700; color: var(--muted); }
 
 .battle-target {
@@ -372,7 +387,7 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
 }
 .vs-badge {
   position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-  background: var(--amber); color: #2a1900; font-size: 11px; font-weight: 800;
+  background: var(--red); color: var(--white); font-size: 11px; font-weight: 800;
   padding: 2px 10px; border-radius: var(--r-pill); letter-spacing: .05em;
 }
 
