@@ -29,9 +29,11 @@ async def _dispatch_text(game: GameService, player: Player, raw: str) -> None:
         return
 
     if message_type == msg.CREATE_ROOM:
-        await game.handle_create_room(player)
+        await game.handle_create_room(player, payload)
     elif message_type == msg.JOIN_ROOM:
         await game.handle_join_room(player, payload)
+    elif message_type == msg.BATTLE_ATTEMPT_SUBMITTED:
+        await game.handle_battle_attempt(player, payload)
     elif message_type == msg.RATING_SUBMITTED:
         await game.handle_rating(player, payload)
     elif message_type == msg.LEAVE_ROOM:

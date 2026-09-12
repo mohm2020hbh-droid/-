@@ -70,7 +70,7 @@
 
     <div id="sp-recording" style="display:none">
       <div class="big-number" id="sp-countdown">0</div>
-      <div class="rec">🔴 جارٍ التسجيل — قلّد الآن</div>
+      <div class="rec">جارٍ التسجيل — قلّد الآن</div>
       <button id="btn-stop-early" class="secondary">أنهيت، حلّل الآن</button>
     </div>
 
@@ -100,10 +100,37 @@
     <button id="btn-sp-list" class="ghost">كل المراحل</button>
   </section>
 
-  <!-- ===================== ONLINE ===================== -->
+  <!-- ===================== ONLINE: MODE SELECT ===================== -->
+  <section id="screen-online-select" class="screen">
+    <div class="hero small">
+      <div class="hero-mic">🌐</div>
+      <h1 class="wordmark small">أونلاين</h1>
+      <p class="tagline">اختر طريقة اللعب مع خصمك</p>
+    </div>
+
+    <button id="btn-select-normal" class="mode-card">
+      <span class="mode-icon">🎙️</span>
+      <span class="mode-text">
+        <span class="mode-title">غرفة عادية</span>
+        <span class="mode-sub">أداء بالتناوب وتقييم يدوي</span>
+      </span>
+      <span class="mode-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </button>
+
+    <button id="btn-select-battle" class="mode-card battle">
+      <span class="mode-icon">⚔️</span>
+      <span class="mode-text">
+        <span class="mode-title">معركة صوتية</span>
+        <span class="mode-sub">كلاكما يقلّد معًا، والأدق يفوز</span>
+      </span>
+      <span class="mode-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </button>
+  </section>
+
+  <!-- ===================== ONLINE: NORMAL ROOM ===================== -->
   <section id="screen-online-home" class="screen">
-    <div class="emoji-xl">🌐</div>
-    <h1>لعب جماعي</h1>
+    <div class="emoji-xl">🎙️</div>
+    <h1>غرفة عادية</h1>
     <p>قلّد الصوت المطلوب، ودع خصمك يحكم عليك</p>
     <div class="notice"></div>
     <button id="btn-create">إنشاء غرفة</button>
@@ -122,6 +149,111 @@
     <button class="ghost btn-leave">إلغاء والعودة</button>
   </section>
 
+  <!-- ===================== ONLINE: VOICE BATTLE ===================== -->
+  <section id="screen-battle-home" class="screen">
+    <div class="emoji-xl">⚔️</div>
+    <h1>معركة صوتية</h1>
+    <p>كلاكما يقلّد الصوت نفسه في آن واحد، ويفوز الأدق</p>
+    <div class="notice"></div>
+    <button id="btn-battle-create">إنشاء معركة</button>
+    <hr>
+    <input type="text" id="input-battle-code" inputmode="numeric" maxlength="4" placeholder="كود المعركة (٤ أرقام)">
+    <button id="btn-battle-join" class="secondary" disabled>الانضمام لمعركة</button>
+    <div id="battle-conn-status" class="status">غير متصل</div>
+    <div id="battle-mic-hint" class="status hint"></div>
+  </section>
+
+  <section id="screen-battle-waiting" class="screen">
+    <h2>شارك هذا الكود مع خصمك</h2>
+    <div class="card primary"><p class="code" id="battle-room-code">----</p></div>
+    <p>بانتظار انضمام اللاعب الثاني…</p>
+    <div class="notice"></div>
+    <button class="ghost btn-leave-battle">إلغاء والعودة</button>
+  </section>
+
+  <section id="screen-battle-round" class="screen">
+    <p id="battle-round-label" class="battle-round-label">الجولة ١ من ٥</p>
+
+    <div class="battle-arena">
+      <div class="battle-avatar me">
+        <span class="avatar-emoji">🙂</span>
+        <span class="avatar-label">أنت</span>
+      </div>
+      <div class="battle-target">
+        <div class="target-emoji" id="battle-target-emoji">🔊</div>
+        <div class="target-name" id="battle-target-name">—</div>
+        <div class="vs-badge">VS</div>
+      </div>
+      <div class="battle-avatar opp">
+        <span class="avatar-emoji">😼</span>
+        <span class="avatar-label">الخصم</span>
+      </div>
+    </div>
+
+    <div id="battle-listen-status" class="status ok"></div>
+    <button id="btn-battle-listen" class="secondary">🔊 استمع للهدف</button>
+
+    <div id="battle-phase-ready">
+      <button id="btn-battle-start">ابدأ ⚔️</button>
+    </div>
+
+    <div id="battle-phase-countdown" style="display:none">
+      <div class="big-number" id="battle-countdown-number">3</div>
+    </div>
+
+    <div id="battle-phase-recording" style="display:none">
+      <div class="rec">قلّد الصوت الآن</div>
+      <div class="big-number" id="battle-attempt-countdown">6</div>
+    </div>
+
+    <div id="battle-phase-waiting" style="display:none">
+      <div class="status ok">⏳ بانتظار الخصم…</div>
+    </div>
+
+    <div class="notice"></div>
+    <button class="ghost btn-leave-battle">الخروج من المعركة</button>
+  </section>
+
+  <section id="screen-battle-result" class="screen">
+    <h2 id="battle-result-round">نتيجة الجولة</h2>
+
+    <div class="battle-scoreboard">
+      <div class="side">
+        <span class="side-label">أنت</span>
+        <span class="side-value" id="battle-result-mine">0</span>
+      </div>
+      <div class="vs-mark">⚔️</div>
+      <div class="side">
+        <span class="side-label">الخصم</span>
+        <span class="side-value" id="battle-result-theirs">0</span>
+      </div>
+    </div>
+
+    <p id="battle-result-banner" class="result-banner">—</p>
+
+    <div class="card">
+      <div class="scores">
+        <div><div class="label">انتصاراتك</div><div class="value" id="battle-result-wins-mine">0</div></div>
+        <div><div class="label">انتصارات الخصم</div><div class="value" id="battle-result-wins-theirs">0</div></div>
+      </div>
+    </div>
+
+    <p class="dim">الجولة التالية بعد لحظات…</p>
+  </section>
+
+  <section id="screen-battle-over" class="screen">
+    <div class="emoji-xl" id="battle-over-emoji">🏆</div>
+    <h1 id="battle-over-title">—</h1>
+    <div class="card">
+      <div class="scores">
+        <div><div class="label">أنت</div><div class="value" id="battle-over-mine">0</div></div>
+        <div><div class="label">الخصم</div><div class="value" id="battle-over-theirs">0</div></div>
+      </div>
+    </div>
+    <button class="btn-leave-battle">معركة جديدة</button>
+    <button class="ghost btn-menu">القائمة الرئيسية</button>
+  </section>
+
   <section id="screen-online-play" class="screen">
     <h2 id="play-round">الجولة ١</h2>
     <div class="card">
@@ -131,7 +263,7 @@
     <div id="play-performer" style="display:none">
       <h1 style="color:var(--amber)">دورك! قلّد الصوت الآن</h1>
       <div class="big-number" id="play-countdown">0</div>
-      <div class="rec" id="play-rec">🔴 جارٍ التسجيل</div>
+      <div class="rec" id="play-rec">جارٍ التسجيل</div>
       <div class="bar"><i id="play-bar" style="width:100%"></i></div>
       <button id="btn-send-now">أرسل الآن</button>
     </div>

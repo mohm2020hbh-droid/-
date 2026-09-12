@@ -126,8 +126,25 @@ function renderBite(spec, seed) {
   return spec.filter ? biquad(out, rate, spec.filter) : out;
 }
 
-/** Render a full target: one or more bites laid out with gaps between them. */
+/**
+ * Render a full target.
+ *
+ * Most sounds are one bite repeated (a dog's two barks, a bird's chirps).
+ * Some calls have genuinely different phrases in sequence — a donkey's rising
+ * bray then its lower haw, a monkey's "ooh ooh ah ah" — and for those the
+ * sound declares `parts`: a list of distinct specs concatenated with gaps,
+ * each rendered as its own bite.
+ */
 export function renderSound(sound) {
+  const combined = sound.parts ? renderParts(sound) : renderRepeated(sound);
+
+  let peak = 0;
+  for (let i = 0; i < combined.length; i++) peak = Math.max(peak, Math.abs(combined[i]));
+  if (peak > 0) for (let i = 0; i < combined.length; i++) combined[i] = (combined[i] / peak) * 0.85;
+  return combined;
+}
+
+function renderRepeated(sound) {
   const spec = sound.spec;
   const repeats = spec.repeat ?? 1;
   const gap = spec.gap ?? 0;
@@ -142,10 +159,20 @@ export function renderSound(sound) {
     const gain = 1 - 0.12 * r;
     for (let i = 0; i < bite.length; i++) out[offset + i] = bite[i] * gain;
   }
+  return out;
+}
 
-  let peak = 0;
-  for (let i = 0; i < out.length; i++) peak = Math.max(peak, Math.abs(out[i]));
-  if (peak > 0) for (let i = 0; i < out.length; i++) out[i] = (out[i] / peak) * 0.85;
+function renderParts(sound) {
+  const bites = sound.parts.map((part, index) => renderBite(part, (sound.seed ?? 1) + index * 101));
+  const gapSamples = Math.round((sound.partGap ?? 0.08) * SOUND_RATE);
+  const total = bites.reduce((sum, bite) => sum + bite.length, 0) + gapSamples * (bites.length - 1);
+  const out = new Float32Array(total);
+
+  let offset = 0;
+  for (const bite of bites) {
+    out.set(bite, offset);
+    offset += bite.length + gapSamples;
+  }
   return out;
 }
 
@@ -175,8 +202,8 @@ export const SOUNDS = [
             freq: [[0, 780], [0.5, 1150], [1, 780]] } },
 
   { id: "car_horn", name: "منبه سيارة", emoji: "📢", seed: 13,
-    spec: { wave: "saw", duration: 0.55, harmonics: 4, attack: 0.01, release: 0.08,
-            repeat: 2, gap: 0.16, filter: { type: "lp", freq: 3000 }, freq: [[0, 420]] } },
+    spec: { wave: "saw", duration: 0.5, harmonics: 5, attack: 0.01, release: 0.06,
+            repeat: 2, gap: 0.22, filter: { type: "bp", freq: 1900, q: 1.2 }, freq: [[0, 620]] } },
 
   { id: "bee", name: "طنين نحلة", emoji: "🐝", seed: 14,
     spec: { wave: "saw", duration: 1.5, harmonics: 5, attack: 0.1, release: 0.25,
@@ -300,6 +327,79 @@ export const SOUNDS = [
   { id: "guitar", name: "عزف جيتار", emoji: "🎸", seed: 40,
     spec: { wave: "triangle", duration: 1.1, harmonics: 6, attack: 0.005, release: 0.9,
             filter: { type: "lp", freq: 2600 }, freq: [[0, 246]] } },
+
+  /* -------- expansion pack: clearer, more varied animals and objects -------- */
+
+  { id: "donkey", name: "نهيق حمار", emoji: "🫏", seed: 41, partGap: 0.05,
+    parts: [
+      { wave: "saw", duration: 0.5, harmonics: 6, attack: 0.02, release: 0.1, noiseMix: 0.35,
+        filter: { type: "bp", freq: 900, q: 0.8 }, freq: [[0, 200], [0.6, 560], [1, 480]] },
+      { wave: "saw", duration: 0.45, harmonics: 6, attack: 0.05, release: 0.25, noiseMix: 0.3,
+        filter: { type: "lp", freq: 700 }, freq: [[0, 260], [1, 140]] },
+    ] },
+
+  { id: "horse", name: "صهيل حصان", emoji: "🐴", seed: 42,
+    spec: { wave: "saw", duration: 1.2, harmonics: 6, attack: 0.02, release: 0.3, noiseMix: 0.3,
+            vibrato: { rate: 22, depth: 0.16 }, filter: { type: "bp", freq: 650, q: 0.7 },
+            freq: [[0, 200], [0.15, 380], [0.5, 420], [1, 220]] } },
+
+  { id: "chicken", name: "قَقَقَة دجاجة", emoji: "🐔", seed: 43,
+    spec: { wave: "saw", duration: 0.12, harmonics: 3, attack: 0.005, release: 0.05, noiseMix: 0.15,
+            repeat: 3, gap: 0.13, filter: { type: "bp", freq: 900, q: 1.0 },
+            freq: [[0, 480], [1, 300]] } },
+
+  { id: "duck", name: "بطة تصدر صوتًا", emoji: "🦆", seed: 44,
+    spec: { wave: "square", duration: 0.16, attack: 0.005, release: 0.05, noiseMix: 0.2,
+            repeat: 2, gap: 0.18, filter: { type: "bp", freq: 750, q: 1.0 },
+            freq: [[0, 260], [1, 180]] } },
+
+  { id: "monkey", name: "صوت قرد", emoji: "🐒", seed: 45, partGap: 0.09,
+    parts: [
+      { wave: "saw", duration: 0.12, harmonics: 4, attack: 0.005, release: 0.06, freq: [[0, 700]] },
+      { wave: "saw", duration: 0.12, harmonics: 4, attack: 0.005, release: 0.06, freq: [[0, 700]] },
+      { wave: "saw", duration: 0.14, harmonics: 4, attack: 0.01, release: 0.08, freq: [[0, 350]] },
+      { wave: "saw", duration: 0.14, harmonics: 4, attack: 0.01, release: 0.08, freq: [[0, 350]] },
+    ] },
+
+  { id: "airplane", name: "طائرة", emoji: "✈️", seed: 46,
+    spec: { wave: "saw", duration: 2.0, harmonics: 6, attack: 0.3, release: 0.5, noiseMix: 0.45,
+            tremolo: { rate: 30, depth: 0.15 }, filter: { type: "lp", freq: 1400 },
+            freq: [[0, 90], [0.6, 160], [1, 140]] } },
+
+  { id: "door", name: "صرير باب", emoji: "🚪", seed: 47,
+    spec: { wave: "saw", duration: 1.3, attack: 0.15, release: 0.3, noiseMix: 0.25,
+            filter: { type: "bp", freq: 1100, q: 1.3 },
+            freq: [[0, 300], [0.4, 900], [0.7, 850], [1, 400]] } },
+
+  { id: "bell", name: "رنين جرس", emoji: "🔔", seed: 48,
+    spec: { wave: "sine", duration: 1.6, harmonics: 5, attack: 0.005, release: 1.4,
+            filter: { type: "bp", freq: 740, q: 2.6 }, freq: [[0, 740]] } },
+
+  { id: "foghorn", name: "بوق ضباب", emoji: "📯", seed: 49,
+    spec: { wave: "saw", duration: 1.4, harmonics: 4, attack: 0.1, release: 0.4,
+            filter: { type: "lp", freq: 500 }, freq: [[0, 110]] } },
+
+  { id: "fire", name: "طقطقة نار", emoji: "🔥", seed: 50,
+    spec: { wave: "noise", duration: 1.7, attack: 0.15, release: 0.4,
+            tremolo: { rate: 14, depth: 0.55 }, filter: { type: "bp", freq: 2200, q: 0.5 } } },
+
+  { id: "monster", name: "زمجرة وحش", emoji: "👹", seed: 51,
+    spec: { wave: "saw", duration: 1.9, harmonics: 9, attack: 0.15, release: 0.6, noiseMix: 0.55,
+            tremolo: { rate: 7, depth: 0.45 }, filter: { type: "lp", freq: 450 },
+            freq: [[0, 70], [0.35, 100], [0.7, 60], [1, 50]] } },
+
+  { id: "robot", name: "صفير روبوت", emoji: "🤖", seed: 52,
+    spec: { wave: "square", duration: 0.14, attack: 0.003, release: 0.04,
+            vibrato: { rate: 9, depth: 0.35 }, repeat: 3, gap: 0.07,
+            filter: { type: "lp", freq: 3200 }, freq: [[0, 650]] } },
+
+  { id: "whistle", name: "صافرة حادة", emoji: "📣", seed: 53,
+    spec: { wave: "sine", duration: 0.9, harmonics: 2, attack: 0.005, release: 0.05,
+            filter: { type: "bp", freq: 2800, q: 2.0 }, freq: [[0, 2800]] } },
+
+  { id: "drum", name: "دقات طبل", emoji: "🥁", seed: 54,
+    spec: { wave: "noise", duration: 0.09, attack: 0.002, release: 0.07,
+            repeat: 3, gap: 0.22, filter: { type: "lp", freq: 160, q: 1.1 } } },
 ];
 
 export const SOUNDS_BY_ID = Object.fromEntries(SOUNDS.map((s) => [s.id, s]));

@@ -189,6 +189,9 @@ function onRoundResult(payload) {
   const mine = payload.performer_id === state.playerId;
   $("result-round").textContent = `نتيجة الجولة ${payload.round_number}`;
   $("result-score").textContent = payload.score;
+  $("result-score").classList.remove("pop");
+  void $("result-score").offsetWidth;
+  $("result-score").classList.add("pop");
   $("result-caption").textContent = payload.timed_out
     ? (mine ? "انتهى الوقت قبل إرسال تسجيلك" : "انتهى وقت الجولة")
     : (mine ? "هذه نقاطك عن أدائك" : "هذه النقاط التي منحتَها لخصمك");
@@ -201,7 +204,7 @@ function onRoundResult(payload) {
 /* ---------------------------- performing ---------------------------- */
 
 async function perform(round) {
-  $("play-rec").textContent = "🔴 جارٍ التسجيل";
+  $("play-rec").textContent = "جارٍ التسجيل";
 
   if (!microphoneSupported()) {
     notice("المتصفح لا يتيح الميكروفون هنا (يتطلب https أو 127.0.0.1). ستُرسل نغمة بديلة.");

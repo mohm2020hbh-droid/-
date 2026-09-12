@@ -7,6 +7,7 @@
  * room-code game, reached only through this menu.
  */
 
+import { initBattle, leaveBattle } from "./battle.js";
 import { initOnline, leaveOnline } from "./online.js";
 import { initSinglePlayer, renderStageList } from "./single.js";
 import { loadProgress } from "./storage.js";
@@ -28,12 +29,20 @@ const SCREENS = {
   "screen-sp-stage": { title: "تحدي التقليد", back: "screen-sp-stages" },
   "screen-sp-result": { title: "النتيجة", back: "screen-sp-stages" },
 
-  "screen-online-home": { title: "اللعب أونلاين", back: "screen-menu" },
-  "screen-online-waiting": { title: "غرفة جديدة", back: "screen-online-home", leaveRoom: true },
-  "screen-online-play": { title: "الجولة", back: "screen-online-home", leaveRoom: true },
-  "screen-online-rating": { title: "التقييم", back: "screen-online-home", leaveRoom: true },
-  "screen-online-result": { title: "نتيجة الجولة", back: "screen-online-home", leaveRoom: true },
-  "screen-online-over": { title: "انتهت المباراة", back: "screen-online-home", leaveRoom: true },
+  "screen-online-select": { title: "اللعب أونلاين", back: "screen-menu" },
+
+  "screen-online-home": { title: "غرفة عادية", back: "screen-online-select" },
+  "screen-online-waiting": { title: "غرفة جديدة", back: "screen-online-home", leave: "online" },
+  "screen-online-play": { title: "الجولة", back: "screen-online-home", leave: "online" },
+  "screen-online-rating": { title: "التقييم", back: "screen-online-home", leave: "online" },
+  "screen-online-result": { title: "نتيجة الجولة", back: "screen-online-home", leave: "online" },
+  "screen-online-over": { title: "انتهت المباراة", back: "screen-online-home", leave: "online" },
+
+  "screen-battle-home": { title: "معركة صوتية", back: "screen-online-select" },
+  "screen-battle-waiting": { title: "غرفة جديدة", back: "screen-battle-home", leave: "battle" },
+  "screen-battle-round": { title: "المعركة", back: "screen-battle-home", leave: "battle" },
+  "screen-battle-result": { title: "نتيجة الجولة", back: "screen-battle-home", leave: "battle" },
+  "screen-battle-over": { title: "انتهت المعركة", back: "screen-battle-home", leave: "battle" },
 };
 
 let currentScreen = "screen-menu";
@@ -53,11 +62,8 @@ function goBack() {
   const screen = SCREENS[currentScreen];
   if (!screen || !screen.back) return;
 
-  if (screen.leaveRoom) {
-    // leaveOnline() tells the server and lands on the online home screen.
-    leaveOnline();
-    return;
-  }
+  if (screen.leave === "online") { leaveOnline(); return; }
+  if (screen.leave === "battle") { leaveBattle(); return; }
   if (screen.back === "screen-sp-stages") renderStageList(show);
   show(screen.back);
 }
@@ -80,11 +86,17 @@ document.getElementById("btn-mode-single").onclick = () => {
   show("screen-sp-stages");
 };
 
-document.getElementById("btn-mode-online").onclick = () => show("screen-online-home");
+document.getElementById("btn-mode-online").onclick = () => show("screen-online-select");
+document.getElementById("btn-select-normal").onclick = () => show("screen-online-home");
+document.getElementById("btn-select-battle").onclick = () => show("screen-battle-home");
 
 document.querySelectorAll(".btn-menu").forEach((button) => {
   button.onclick = () => {
-    if (currentScreen.startsWith("screen-online")) leaveOnline();
+    if (currentScreen.startsWith("screen-online-") && currentScreen !== "screen-online-select") {
+      leaveOnline();
+    } else if (currentScreen.startsWith("screen-battle-")) {
+      leaveBattle();
+    }
     show("screen-menu");
     refreshMenuFooter();
   };
@@ -101,5 +113,6 @@ function refreshMenuFooter() {
 
 initSinglePlayer(show);
 initOnline(show);
+initBattle(show);
 refreshMenuFooter();
 show("screen-menu");

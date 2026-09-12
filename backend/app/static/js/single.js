@@ -181,6 +181,9 @@ function showResult(comparison, improved, show) {
   const earned = starsFor(stage, comparison.score);
 
   $("sp-result-score").textContent = comparison.score;
+  $("sp-result-score").classList.remove("pop");
+  void $("sp-result-score").offsetWidth;
+  $("sp-result-score").classList.add("pop");
   $("sp-result-stars").textContent = stars(earned);
   $("sp-result-title").textContent = passed ? "نجحت في المرحلة!" : "لم تبلغ حد النجاح";
   $("sp-result-title").className = passed ? "pass" : "fail";

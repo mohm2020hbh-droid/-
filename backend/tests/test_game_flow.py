@@ -20,22 +20,42 @@ from .helpers import expect, handshake, receive_audio, send, send_audio
 
 
 def open_room(client) -> tuple:
-    """Connect both players and play up to the first ``round_start``."""
+    """Connect both players and play up to the first ``round_start``.
+
+    Both sockets are entered defensively: if a later assertion in this
+    function fails, the already-opened one is still closed, so a broken
+    check here can never leak a live WebSocket test session into the
+    ``client`` fixture's teardown (an open session there hangs the whole
+    suite instead of failing one test).
+    """
 
     host_socket = client.websocket_connect("/ws")
     host_socket.__enter__()
-    host_id = handshake(host_socket)
-    send(host_socket, "create_room")
-    code = expect(host_socket, "room_created")["code"]
+    try:
+        host_id = handshake(host_socket)
+        send(host_socket, "create_room")
+        code = expect(host_socket, "room_created")["code"]
 
-    guest_socket = client.websocket_connect("/ws")
-    guest_socket.__enter__()
-    guest_id = handshake(guest_socket)
-    send(guest_socket, "join_room", {"code": code})
+        guest_socket = client.websocket_connect("/ws")
+        guest_socket.__enter__()
+    except BaseException:
+        host_socket.__exit__(None, None, None)
+        raise
 
-    ready_host = expect(host_socket, "players_ready")
-    ready_guest = expect(guest_socket, "players_ready")
-    assert ready_host == ready_guest == {"player_a_id": host_id, "player_b_id": guest_id}
+    try:
+        guest_id = handshake(guest_socket)
+        send(guest_socket, "join_room", {"code": code})
+
+        ready_host = expect(host_socket, "players_ready")
+        ready_guest = expect(guest_socket, "players_ready")
+        assert ready_host == ready_guest
+        assert ready_host["player_a_id"] == host_id
+        assert ready_host["player_b_id"] == guest_id
+        assert ready_host["mode"] == "duel"
+    except BaseException:
+        host_socket.__exit__(None, None, None)
+        guest_socket.__exit__(None, None, None)
+        raise
 
     return host_socket, host_id, guest_socket, guest_id, code
 

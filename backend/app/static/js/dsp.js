@@ -380,11 +380,32 @@ const calibrate = (raw, floor, ceiling) =>
  *   `score` is 0..100. `ok` is false when there was nothing usable to compare,
  *   in which case `reason` says why and `score` is 0.
  */
+// Feature extraction is a pure function of (samples, sampleRate), and the
+// same target buffer is compared against many times in a row — every replay
+// of "listen", every round that reuses a sound, and (heavily) the test
+// suite's cross-target discrimination check. Keying on the buffer's own
+// identity means a fresh recording is never wrongly served a stale
+// result, while a repeated target (or a repeated identical recording)
+// skips redoing the FFT/mel pipeline entirely.
+const featureCache = new WeakMap();
+
+function cachedExtractFeatures(samples, sampleRate) {
+  let bySampleRate = featureCache.get(samples);
+  if (!bySampleRate) {
+    bySampleRate = new Map();
+    featureCache.set(samples, bySampleRate);
+  }
+  if (bySampleRate.has(sampleRate)) return bySampleRate.get(sampleRate);
+  const features = extractFeatures(samples, sampleRate);
+  bySampleRate.set(sampleRate, features);
+  return features;
+}
+
 export function compareAudio(playerSamples, playerRate, targetSamples, targetRate) {
-  const player = extractFeatures(playerSamples, playerRate);
+  const player = cachedExtractFeatures(playerSamples, playerRate);
   if (!player) return { score: 0, ok: false, reason: "no_audio", parts: {} };
 
-  const target = extractFeatures(targetSamples, targetRate);
+  const target = cachedExtractFeatures(targetSamples, targetRate);
   if (!target) return { score: 0, ok: false, reason: "no_target", parts: {} };
 
   const { meanDistance, path } = dtw(player.mel, target.mel);

@@ -48,6 +48,18 @@ class Settings:
     # Hard cap on a single recording (relayed straight through, never stored).
     max_audio_bytes: int = 5 * 1024 * 1024
 
+    # --- Voice Battle (both players imitate at once, scored acoustically) ---
+
+    # Rounds in one Voice Battle match. Odd is fine: there is no role to swap.
+    battle_total_rounds: int = 5
+
+    # How long both players get to imitate, announced in `battle_round_start`.
+    battle_attempt_seconds: int = 6
+
+    # Extra time on top of the attempt window before a silent player is scored
+    # zero for the round, so one dead client can never stall the other.
+    battle_attempt_grace_seconds: int = 15
+
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
@@ -64,4 +76,11 @@ class Settings:
                 "VD_JANITOR_INTERVAL_SECONDS", cls.janitor_interval_seconds
             ),
             max_audio_bytes=_env_int("VD_MAX_AUDIO_BYTES", cls.max_audio_bytes),
+            battle_total_rounds=_env_int("VD_BATTLE_TOTAL_ROUNDS", cls.battle_total_rounds),
+            battle_attempt_seconds=_env_int(
+                "VD_BATTLE_ATTEMPT_SECONDS", cls.battle_attempt_seconds
+            ),
+            battle_attempt_grace_seconds=_env_int(
+                "VD_BATTLE_ATTEMPT_GRACE_SECONDS", cls.battle_attempt_grace_seconds
+            ),
         )

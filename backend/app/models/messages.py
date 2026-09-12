@@ -26,6 +26,10 @@ RATING_SUBMITTED: Final = "rating_submitted"
 LEAVE_ROOM: Final = "leave_room"
 PING: Final = "ping"
 
+# Voice Battle: both players imitate at once and each reports its own
+# acoustically-computed score for the target — there is no human rater.
+BATTLE_ATTEMPT_SUBMITTED: Final = "battle_attempt_submitted"
+
 # ---------------------------------------------------------------------------
 # Server -> Client
 # ---------------------------------------------------------------------------
@@ -40,6 +44,11 @@ OPPONENT_DISCONNECTED: Final = "opponent_disconnected"
 ERROR: Final = "error"
 PONG: Final = "pong"
 
+# Voice Battle
+BATTLE_ROUND_START: Final = "battle_round_start"
+BATTLE_ROUND_RESULT: Final = "battle_round_result"
+BATTLE_OVER: Final = "battle_over"
+
 # ---------------------------------------------------------------------------
 # Error reasons
 # ---------------------------------------------------------------------------
@@ -53,6 +62,7 @@ ERR_STALE_ROUND: Final = "stale_round"
 ERR_INVALID_SCORE: Final = "invalid_score"
 ERR_INVALID_MESSAGE: Final = "invalid_message"
 ERR_AUDIO_TOO_LARGE: Final = "audio_too_large"
+ERR_INVALID_MODE: Final = "invalid_mode"
 
 MAX_HEADER_BYTES: Final = 4096
 _LENGTH_PREFIX: Final = struct.Struct(">I")

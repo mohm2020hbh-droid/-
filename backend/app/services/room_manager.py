@@ -10,7 +10,7 @@ from typing import Iterator, Optional
 
 from ..config import Settings
 from ..models.messages import ERR_INVALID_CODE, ERR_ROOM_FULL
-from ..models.room import Player, RoomState
+from ..models.room import Player, RoomMode, RoomState
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +73,12 @@ class RoomManager:
                 return code
         raise RoomError(ERR_NO_CODES_AVAILABLE)
 
-    def create_room(self, player: Player) -> RoomState:
-        room = RoomState(code=self.generate_code())
+    def create_room(self, player: Player, mode: RoomMode = RoomMode.DUEL) -> RoomState:
+        room = RoomState(code=self.generate_code(), mode=mode)
         room.add_player(player)
         self._rooms[room.code] = room
         self._room_of_player[player.player_id] = room.code
-        logger.info("room %s created by player %s", room.code, player.player_id)
+        logger.info("room %s (%s) created by player %s", room.code, mode.value, player.player_id)
         return room
 
     def join_room(self, code: str, player: Player) -> RoomState:
