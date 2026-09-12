@@ -10,35 +10,45 @@
 <body>
 <div id="app">
 
+  <header id="topbar" hidden>
+    <button id="btn-back" type="button" aria-label="رجوع"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span id="topbar-title"></span>
+  </header>
+
+
   <!-- ===================== MAIN MENU ===================== -->
   <section id="screen-menu" class="screen active">
-    <div class="emoji-xl">🎙️</div>
-    <div class="wordmark">VOICE DUEL</div>
-    <p>مبارزة الأصوات</p>
+    <div class="hero">
+      <div class="hero-mic">🎙️</div>
+      <h1 class="wordmark">VOICE DUEL</h1>
+      <p class="tagline">مبارزة الأصوات</p>
+    </div>
 
-    <button id="btn-mode-single" class="menu-button">
-      <span class="icon">🎯</span>
-      <span>
-        <span class="label">لاعب واحد</span>
-        <span class="sub">٢٠ مرحلة · تقييم آلي للصوت · يعمل بدون إنترنت</span>
+    <button id="btn-mode-single" class="mode-card">
+      <span class="mode-icon">🎮</span>
+      <span class="mode-text">
+        <span class="mode-title">اللعب الفردي</span>
+        <span class="mode-sub">المراحل والتحديات</span>
       </span>
+      <span class="mode-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
     </button>
 
-    <button id="btn-mode-online" class="menu-button secondary">
-      <span class="icon">🌐</span>
-      <span>
-        <span class="label">لعب جماعي أونلاين</span>
-        <span class="sub">غرفة بكود · لاعبان يتبادلان الأدوار</span>
+    <button id="btn-mode-online" class="mode-card online">
+      <span class="mode-icon">🌐</span>
+      <span class="mode-text">
+        <span class="mode-title">اللعب أونلاين</span>
+        <span class="mode-sub">تحدَّ لاعبًا آخر</span>
       </span>
+      <span class="mode-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
     </button>
+
+    <p class="menu-foot" id="menu-foot">&nbsp;</p>
   </section>
 
   <!-- ===================== SINGLE PLAYER ===================== -->
   <section id="screen-sp-stages" class="screen">
-    <h1>🎯 المراحل</h1>
     <p id="stage-progress">—</p>
     <div id="stage-list" class="stage-list"></div>
-    <button class="ghost btn-menu">القائمة الرئيسية</button>
   </section>
 
   <section id="screen-sp-stage" class="screen">
@@ -102,7 +112,6 @@
     <button id="btn-join" class="secondary" disabled>الانضمام لغرفة</button>
     <div id="conn-status" class="status">غير متصل</div>
     <div id="mic-hint" class="status hint"></div>
-    <button class="ghost btn-menu">القائمة الرئيسية</button>
   </section>
 
   <section id="screen-online-waiting" class="screen">

@@ -40,11 +40,6 @@ button.secondary { background: transparent; border: 1px solid var(--purple); col
 button.ghost { background: transparent; border: none; color: var(--muted); font-weight: 400; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 
-.menu-button { text-align: start; display: flex; align-items: center; gap: 14px; padding: 18px; }
-.menu-button .icon { font-size: 30px; }
-.menu-button .label { font-size: 17px; font-weight: 700; display: block; }
-.menu-button .sub { font-size: 13px; font-weight: 400; opacity: .85; display: block; margin-top: 2px; }
-
 input[type=text] {
   width: 100%; padding: 14px; border-radius: 12px; font-size: 16px; font-family: inherit;
   background: var(--surface); border: 1px solid var(--surface-2); color: var(--text);
@@ -100,3 +95,58 @@ hr { border: none; border-top: 1px solid var(--surface-2); margin: 18px 0; }
 .pass { color: var(--teal); }
 .fail { color: var(--amber); }
 .stars { font-size: 26px; letter-spacing: 4px; }
+
+/* ---------------- top bar ---------------- */
+#topbar {
+  display: flex; align-items: center; gap: 10px;
+  margin: -8px 0 10px; min-height: 44px;
+}
+#topbar[hidden] { display: none; }
+#btn-back {
+  width: 40px; height: 40px; min-width: 40px; padding: 0; margin: 0;
+  border-radius: 50%; background: var(--surface-2); color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+}
+#btn-back:active { background: var(--purple-dark); }
+#topbar-title { font-size: 15px; font-weight: 700; color: var(--muted); }
+
+/* ---------------- start screen ---------------- */
+.hero { padding: 18px 0 26px; }
+.hero-mic { font-size: 58px; line-height: 1; }
+.wordmark {
+  font-size: clamp(34px, 12vw, 46px); font-weight: 800; letter-spacing: 4px;
+  margin: 10px 0 2px;
+  background: linear-gradient(90deg, var(--purple), var(--amber));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.tagline { color: var(--muted); font-size: 15px; margin: 0; }
+
+.mode-card {
+  display: flex; align-items: center; gap: 14px;
+  width: 100%; min-height: 88px; padding: 18px; margin: 12px 0;
+  text-align: start; border-radius: 18px;
+  background: linear-gradient(135deg, var(--purple), #8a6bff);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+.mode-card.online {
+  background: var(--surface-2);
+  border: 1px solid rgba(108, 75, 246, .55);
+}
+.mode-card:active { transform: translateY(1px); }
+.mode-icon {
+  flex: 0 0 52px; height: 52px; border-radius: 16px;
+  background: rgba(0, 0, 0, .22);
+  display: flex; align-items: center; justify-content: center; font-size: 27px;
+}
+.mode-text { flex: 1; min-width: 0; }
+.mode-title { display: block; font-size: 19px; font-weight: 800; }
+.mode-sub { display: block; font-size: 13px; font-weight: 400; opacity: .85; margin-top: 3px; }
+.mode-chevron { opacity: .55; display: flex; align-items: center; }
+
+.menu-foot { font-size: 13px; color: var(--muted); margin-top: 20px; }
+
+@media (max-height: 620px) {
+  .hero { padding: 6px 0 14px; }
+  .hero-mic { font-size: 42px; }
+  .mode-card { min-height: 76px; padding: 14px; margin: 9px 0; }
+}
