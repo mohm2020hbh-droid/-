@@ -1,8 +1,20 @@
 # Voice Duel Online
 
-A two-player voice-imitation duel across two phones. The server names a sound;
-one player imitates it out loud while a countdown runs; the recording is relayed
-to the other player, who listens and scores it 0–100. Roles swap every round.
+A voice-imitation game with two modes.
+
+**Single player** is offline: the game plays a target sound, you imitate it, and
+an acoustic similarity engine scores the recording 0–100 by comparing spectral
+shape, loudness contour, pitch contour and voicing against the target. Twenty
+stages ramp in difficulty across four challenge types — a plain imitation, a
+timed one, a sequence of sounds, and a deliberately distorted target. Progress
+is kept in the browser. Nothing is transcribed: there is no speech recognition
+in the scoring path at all.
+
+**Online multiplayer** is the original room-code duel across two devices. The
+server names a sound; one player imitates it while a countdown runs; the
+recording is relayed to the other player, who listens and scores it by hand.
+Roles swap every round. Here the judgement is deliberately human — it is a party
+game between two people.
 
 > This repository already contained an unrelated Android app (ClipFlow, the
 > `:app` module). That project is untouched. Voice Duel was added alongside it

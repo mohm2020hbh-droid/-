@@ -1,0 +1,102 @@
+:root {
+  --purple: #6c4bf6; --purple-dark: #3b2a8c; --amber: #ffb020;
+  --teal: #19c3b2; --red: #e5484d; --ink: #14121f; --surface: #1e1b2e;
+  --surface-2: #2a2640; --text: #edeaf7; --muted: #bfb8d9;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--ink); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+#app { width: 100%; max-width: 440px; }
+.screen { display: none; text-align: center; }
+.screen.active { display: block; }
+
+h1 { font-size: 26px; margin: 8px 0; }
+h2 { font-size: 19px; margin: 8px 0; color: var(--muted); font-weight: 600; }
+p { color: var(--muted); line-height: 1.6; margin: 8px 0; }
+small { color: var(--muted); }
+
+.wordmark {
+  font-size: 40px; font-weight: 800; letter-spacing: 3px; margin: 4px 0 2px;
+  background: linear-gradient(90deg, var(--purple), var(--amber));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.emoji-xl { font-size: 56px; line-height: 1.2; }
+
+.card { background: var(--surface-2); border-radius: 16px; padding: 22px; margin: 14px 0; }
+.card.primary { background: var(--purple-dark); }
+.code { font-size: 54px; font-weight: 700; letter-spacing: 10px; margin: 0; }
+.big-number { font-size: 68px; font-weight: 700; color: var(--purple); margin: 6px 0; line-height: 1; }
+
+button {
+  width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer;
+  background: var(--purple); color: #fff; font-size: 16px; font-weight: 600;
+  font-family: inherit; margin: 6px 0;
+}
+button.secondary { background: transparent; border: 1px solid var(--purple); color: var(--text); }
+button.ghost { background: transparent; border: none; color: var(--muted); font-weight: 400; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+
+.menu-button { text-align: start; display: flex; align-items: center; gap: 14px; padding: 18px; }
+.menu-button .icon { font-size: 30px; }
+.menu-button .label { font-size: 17px; font-weight: 700; display: block; }
+.menu-button .sub { font-size: 13px; font-weight: 400; opacity: .85; display: block; margin-top: 2px; }
+
+input[type=text] {
+  width: 100%; padding: 14px; border-radius: 12px; font-size: 16px; font-family: inherit;
+  background: var(--surface); border: 1px solid var(--surface-2); color: var(--text);
+  text-align: center;
+}
+input[type=range] { width: 100%; margin: 14px 0; accent-color: var(--purple); }
+
+.notice {
+  background: #4a1d20; color: #ffd7d9; border-radius: 12px; padding: 12px;
+  margin: 12px 0; font-size: 14px; display: none; text-align: start;
+}
+.notice.show { display: block; }
+
+.status { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.status.ok { color: var(--teal); }
+.status.bad { color: var(--red); }
+.hint { font-size: 12px; }
+
+.scores { display: flex; justify-content: space-evenly; }
+.scores .label { font-size: 13px; color: var(--muted); }
+.scores .value { font-size: 26px; font-weight: 700; }
+
+.rec { color: var(--red); font-weight: 600; }
+.bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin: 12px 0; }
+.bar > i { display: block; height: 100%; background: var(--purple); transition: width .3s linear; }
+hr { border: none; border-top: 1px solid var(--surface-2); margin: 18px 0; }
+
+/* --- stage list --- */
+.stage-list { max-height: 58vh; overflow-y: auto; margin: 12px 0; }
+.stage {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: start;
+  background: var(--surface-2); margin: 8px 0; padding: 12px 14px; border-radius: 14px;
+  color: var(--text); font-weight: 500;
+}
+.stage.locked { opacity: .45; }
+.stage-number {
+  flex: 0 0 32px; height: 32px; line-height: 32px; text-align: center;
+  background: var(--purple-dark); border-radius: 50%; font-weight: 700; font-size: 14px;
+}
+.stage-main { flex: 1; min-width: 0; }
+.stage-title { display: block; font-size: 15px; font-weight: 700; }
+.stage-meta { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stage-score { flex: 0 0 auto; text-align: center; font-size: 18px; font-weight: 700; color: var(--amber); }
+.stage-score small { font-size: 11px; }
+
+/* --- score breakdown --- */
+.bar-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.bar-label { flex: 0 0 108px; font-size: 13px; color: var(--muted); text-align: start; }
+.bar-track { flex: 1; height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+.bar-track > i { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--teal)); }
+.bar-value { flex: 0 0 30px; font-size: 13px; font-weight: 700; }
+
+.pass { color: var(--teal); }
+.fail { color: var(--amber); }
+.stars { font-size: 26px; letter-spacing: 4px; }

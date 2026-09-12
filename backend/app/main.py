@@ -7,6 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from . import __version__
 from .config import Settings
@@ -48,6 +49,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     application.include_router(health.router)
     application.include_router(ws.router)
+    application.mount(
+        "/static",
+        StaticFiles(directory=str(health.STATIC_DIR)),
+        name="static",
+    )
     return application
 
 

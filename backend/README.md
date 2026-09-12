@@ -28,7 +28,42 @@ building the Android app.
 http://127.0.0.1:8000/play
 ```
 
-Open it in two tabs: create a room in one, join with the code in the other.
+The page opens on a menu with two modes:
+
+* **لاعب واحد (single player)** — 20 stages, played entirely on the device. The
+  target sound is synthesised locally and the score comes from the acoustic
+  engine in `app/static/js/dsp.js`. No server round-trip, no network.
+* **لعب جماعي أونلاين (online)** — the original room-code game, unchanged: open
+  `/play` in two tabs, create a room in one and join with the code in the other.
+
+### The scoring engine
+
+`app/static/js/dsp.js` compares two recordings by what they sound like:
+
+| Term | What it measures |
+| --- | --- |
+| timbre | log-mel spectral shape per frame, aligned with dynamic time warping |
+| dynamics | how the loudness rises and falls, correlated along the DTW path |
+| pitch | autocorrelation f0 contour shape, plus how far off the register is |
+| voicing | whether periodic and noisy stretches line up |
+| brightness | mean spectral centroid over the frames that carry sound |
+
+There is **no speech recognition anywhere**: nothing is transcribed, and no word
+or phoneme model exists. The input is raw PCM and the output is a number.
+
+Targets are synthesised from recipes in `app/static/js/sounds.js` rather than
+shipped as audio files, so the bank needs no assets, works with no network, and
+renders bit-identical samples every time — which is what makes scoring
+repeatable.
+
+Run the engine's tests (needs Node, optional):
+
+```bash
+node tests/js/dsp.test.mjs
+```
+
+They measure discrimination over the whole 30-sound bank: an imitation has to
+rank its own target first, not merely score well against it.
 
 > The browser only grants microphone access in a secure context, which means
 > `127.0.0.1`/`localhost` or `https`. On a plain `http://192.168.x.x` address

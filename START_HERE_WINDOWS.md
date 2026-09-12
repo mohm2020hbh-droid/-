@@ -27,10 +27,16 @@ Then open this address in **two browser tabs**:
 http://127.0.0.1:8000/play
 ```
 
-* **Tab 1** → *إنشاء غرفة* → note the 4-digit code.
-* **Tab 2** → type the code → *الانضمام لغرفة*.
+The page opens on the main menu:
 
-The match starts by itself. Allow the microphone when the browser asks.
+* **لاعب واحد** — single player. 20 stages, scored automatically by comparing
+  your recording against the target sound. Works with no second player and no
+  internet. Progress is saved in the browser.
+* **لعب جماعي أونلاين** — the two-player room game. In tab 1 choose
+  *إنشاء غرفة* and note the 4-digit code; in tab 2 type the code and choose
+  *الانضمام لغرفة*. The match starts by itself.
+
+Allow the microphone when the browser asks.
 
 ### Prefer to type the commands yourself
 

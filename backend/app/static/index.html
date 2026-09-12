@@ -4,93 +4,116 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>مبارزة الأصوات</title>
-<style>
-  :root {
-    --purple: #6c4bf6; --purple-dark: #3b2a8c; --amber: #ffb020;
-    --teal: #19c3b2; --red: #e5484d; --ink: #14121f; --surface: #1e1b2e;
-    --surface-2: #2a2640; --text: #edeaf7; --muted: #bfb8d9;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--ink); color: var(--text);
-    font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    padding: 16px;
-  }
-  #app { width: 100%; max-width: 420px; }
-  .screen { display: none; text-align: center; }
-  .screen.active { display: block; }
-  h1 { font-size: 26px; margin: 8px 0; }
-  h2 { font-size: 20px; margin: 8px 0; color: var(--muted); font-weight: 600; }
-  p { color: var(--muted); line-height: 1.6; margin: 8px 0; }
-  .emoji-xl { font-size: 56px; line-height: 1.2; }
-  .card {
-    background: var(--surface-2); border-radius: 16px; padding: 24px; margin: 16px 0;
-  }
-  .card.primary { background: var(--purple-dark); }
-  .code { font-size: 56px; font-weight: 700; letter-spacing: 10px; margin: 0; }
-  .big-number { font-size: 72px; font-weight: 700; color: var(--purple); margin: 8px 0; line-height: 1; }
-  button {
-    width: 100%; padding: 14px; border-radius: 12px; border: none; cursor: pointer;
-    background: var(--purple); color: #fff; font-size: 16px; font-weight: 600;
-    font-family: inherit; margin: 6px 0;
-  }
-  button.secondary { background: transparent; border: 1px solid var(--purple); color: var(--text); }
-  button.ghost { background: transparent; border: none; color: var(--muted); font-weight: 400; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  input[type=text] {
-    width: 100%; padding: 14px; border-radius: 12px; font-size: 16px; font-family: inherit;
-    background: var(--surface); border: 1px solid var(--surface-2); color: var(--text);
-    text-align: center;
-  }
-  input[type=range] { width: 100%; margin: 16px 0; accent-color: var(--purple); }
-  .notice {
-    background: #4a1d20; color: #ffd7d9; border-radius: 12px; padding: 12px;
-    margin: 12px 0; font-size: 14px; display: none; text-align: start;
-  }
-  .notice.show { display: block; }
-  .status { font-size: 13px; color: var(--muted); margin-top: 12px; }
-  .status.ok { color: var(--teal); }
-  .status.bad { color: var(--red); }
-  .scores { display: flex; justify-content: space-evenly; }
-  .scores div { flex: 1; }
-  .scores .label { font-size: 13px; color: var(--muted); }
-  .scores .value { font-size: 26px; font-weight: 700; }
-  .rec { color: var(--red); font-weight: 600; }
-  .bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin: 12px 0; }
-  .bar > i { display: block; height: 100%; background: var(--purple); transition: width .3s linear; }
-  hr { border: none; border-top: 1px solid var(--surface-2); margin: 20px 0; }
-  .hint { font-size: 12px; }
-</style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%99%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
 <div id="app">
 
-  <!-- ===== HOME ===== -->
-  <section id="screen-home" class="screen active">
+  <!-- ===================== MAIN MENU ===================== -->
+  <section id="screen-menu" class="screen active">
     <div class="emoji-xl">🎙️</div>
-    <h1>مبارزة الأصوات</h1>
+    <div class="wordmark">VOICE DUEL</div>
+    <p>مبارزة الأصوات</p>
+
+    <button id="btn-mode-single" class="menu-button">
+      <span class="icon">🎯</span>
+      <span>
+        <span class="label">لاعب واحد</span>
+        <span class="sub">٢٠ مرحلة · تقييم آلي للصوت · يعمل بدون إنترنت</span>
+      </span>
+    </button>
+
+    <button id="btn-mode-online" class="menu-button secondary">
+      <span class="icon">🌐</span>
+      <span>
+        <span class="label">لعب جماعي أونلاين</span>
+        <span class="sub">غرفة بكود · لاعبان يتبادلان الأدوار</span>
+      </span>
+    </button>
+  </section>
+
+  <!-- ===================== SINGLE PLAYER ===================== -->
+  <section id="screen-sp-stages" class="screen">
+    <h1>🎯 المراحل</h1>
+    <p id="stage-progress">—</p>
+    <div id="stage-list" class="stage-list"></div>
+    <button class="ghost btn-menu">القائمة الرئيسية</button>
+  </section>
+
+  <section id="screen-sp-stage" class="screen">
+    <h2 id="sp-stage-number">المرحلة</h2>
+    <p id="sp-challenge">—</p>
+
+    <div class="card">
+      <div class="emoji-xl" id="sp-emoji">🔊</div>
+      <h1 id="sp-title">—</h1>
+      <p id="sp-passmark">—</p>
+    </div>
+
+    <div id="sp-ready">
+      <p id="sp-hint">—</p>
+      <button id="btn-hear" class="secondary">🔊 استمع مرة أخرى</button>
+      <button id="btn-attempt">🎤 ابدأ التسجيل</button>
+      <p id="sp-best"><small>—</small></p>
+    </div>
+
+    <div id="sp-recording" style="display:none">
+      <div class="big-number" id="sp-countdown">0</div>
+      <div class="rec">🔴 جارٍ التسجيل — قلّد الآن</div>
+      <button id="btn-stop-early" class="secondary">أنهيت، حلّل الآن</button>
+    </div>
+
+    <div id="sp-analysing" style="display:none">
+      <div class="big-number">…</div>
+      <p>جارٍ تحليل الصوت ومقارنته بالهدف</p>
+    </div>
+
+    <div id="sp-notice" class="notice"></div>
+    <button id="btn-sp-back" class="ghost">رجوع للمراحل</button>
+  </section>
+
+  <section id="screen-sp-result" class="screen">
+    <h1 id="sp-result-title">—</h1>
+    <div class="big-number" id="sp-result-score">0</div>
+    <div class="stars" id="sp-result-stars">☆☆☆</div>
+    <p id="sp-result-note">—</p>
+
+    <div class="card">
+      <h2>تفصيل المقارنة الصوتية</h2>
+      <div id="sp-breakdown"></div>
+    </div>
+
+    <button id="btn-sp-next">المرحلة التالية</button>
+    <button id="btn-sp-retry" class="secondary">إعادة المحاولة</button>
+    <button id="btn-sp-hear-again" class="ghost">🔊 استمع للهدف</button>
+    <button id="btn-sp-list" class="ghost">كل المراحل</button>
+  </section>
+
+  <!-- ===================== ONLINE ===================== -->
+  <section id="screen-online-home" class="screen">
+    <div class="emoji-xl">🌐</div>
+    <h1>لعب جماعي</h1>
     <p>قلّد الصوت المطلوب، ودع خصمك يحكم عليك</p>
-    <div id="notice-home" class="notice"></div>
+    <div class="notice"></div>
     <button id="btn-create">إنشاء غرفة</button>
     <hr>
     <input type="text" id="input-code" inputmode="numeric" maxlength="4" placeholder="كود الغرفة (٤ أرقام)">
     <button id="btn-join" class="secondary" disabled>الانضمام لغرفة</button>
     <div id="conn-status" class="status">غير متصل</div>
     <div id="mic-hint" class="status hint"></div>
+    <button class="ghost btn-menu">القائمة الرئيسية</button>
   </section>
 
-  <!-- ===== WAITING ===== -->
-  <section id="screen-waiting" class="screen">
+  <section id="screen-online-waiting" class="screen">
     <h2>شارك هذا الكود مع خصمك</h2>
     <div class="card primary"><p class="code" id="room-code">----</p></div>
     <p>بانتظار انضمام اللاعب الثاني…</p>
-    <div id="notice-waiting" class="notice"></div>
+    <div class="notice"></div>
     <button class="ghost btn-leave">إلغاء والعودة</button>
   </section>
 
-  <!-- ===== PLAY ===== -->
-  <section id="screen-play" class="screen">
+  <section id="screen-online-play" class="screen">
     <h2 id="play-round">الجولة ١</h2>
     <div class="card">
       <div class="emoji-xl" id="play-emoji">🔊</div>
@@ -107,12 +130,11 @@
       <h1>خصمك يسجّل الآن…</h1>
       <p>استعد للاستماع والتقييم</p>
     </div>
-    <div id="notice-play" class="notice"></div>
+    <div class="notice"></div>
     <button class="ghost btn-leave">الخروج من المباراة</button>
   </section>
 
-  <!-- ===== RATING ===== -->
-  <section id="screen-rating" class="screen">
+  <section id="screen-online-rating" class="screen">
     <h2>قيّم تقليد خصمك</h2>
     <div class="card">
       <div class="emoji-xl" id="rate-emoji">🔊</div>
@@ -125,11 +147,10 @@
     <input type="range" id="input-score" min="0" max="100" value="50">
     <p id="rate-label">قريب من الصوت 🙂</p>
     <button id="btn-submit">إرسال التقييم</button>
-    <div id="notice-rating" class="notice"></div>
+    <div class="notice"></div>
   </section>
 
-  <!-- ===== ROUND RESULT ===== -->
-  <section id="screen-round-result" class="screen">
+  <section id="screen-online-result" class="screen">
     <h2 id="result-round">نتيجة الجولة</h2>
     <div class="big-number" id="result-score">0</div>
     <p id="result-caption">—</p>
@@ -140,8 +161,7 @@
     <p>الجولة التالية بعد لحظات…</p>
   </section>
 
-  <!-- ===== GAME OVER ===== -->
-  <section id="screen-game-over" class="screen">
+  <section id="screen-online-over" class="screen">
     <div class="emoji-xl" id="over-emoji">🏆</div>
     <h1 id="over-title">—</h1>
     <div class="card"><div class="scores">
@@ -149,442 +169,10 @@
       <div><div class="label">الخصم</div><div class="value" id="over-theirs">0</div></div>
     </div></div>
     <button class="btn-leave">مباراة جديدة</button>
+    <button class="ghost btn-menu">القائمة الرئيسية</button>
   </section>
 
 </div>
-
-<script>
-/* =========================================================================
-   Voice Duel — web client.
-   Speaks exactly the protocol in backend/app/models/messages.py, the same one
-   the Android client uses: JSON envelopes {type, payload} over text frames,
-   and recordings over binary frames framed as
-       [4 bytes big-endian header length][UTF-8 JSON header][raw audio bytes]
-   ========================================================================= */
-
-const $ = (id) => document.getElementById(id);
-
-/* ---------- protocol codec (mirrors GameProtocol.kt byte for byte) ---------- */
-function encodeAudioFrame(roundNumber, audioBytes, mime) {
-  const header = new TextEncoder().encode(
-    JSON.stringify({ round_number: roundNumber, mime: mime })
-  );
-  const frame = new Uint8Array(4 + header.length + audioBytes.length);
-  new DataView(frame.buffer).setUint32(0, header.length); // big-endian
-  frame.set(header, 4);
-  frame.set(audioBytes, 4 + header.length);
-  return frame;
-}
-
-function decodeAudioFrame(buffer) {
-  const bytes = new Uint8Array(buffer);
-  if (bytes.length < 4) return null;
-  const headerLength = new DataView(bytes.buffer, bytes.byteOffset).getUint32(0);
-  if (headerLength <= 0 || headerLength > 4096 || bytes.length < 4 + headerLength) return null;
-  let header;
-  try {
-    header = JSON.parse(new TextDecoder().decode(bytes.subarray(4, 4 + headerLength)));
-  } catch (e) { return null; }
-  return { header: header, audio: bytes.subarray(4 + headerLength) };
-}
-
-/* ---------- state ---------- */
-const state = {
-  socket: null, playerId: null, opponentId: null, roomCode: null,
-  round: null, scores: {}, incoming: null, incomingMime: "audio/webm",
-  pendingRound: null, pendingGameOver: null,
-  recorder: null, chunks: [], stream: null,
-  countdownTimer: null, dwellTimer: null, sending: false, submitting: false,
-};
-
-const RESULT_DWELL_MS = 3000;
-
-/* ---------- screens ---------- */
-function show(screenId) {
-  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
-  $(screenId).classList.add("active");
-}
-
-function notice(text) {
-  const active = document.querySelector(".screen.active");
-  const box = active ? active.querySelector(".notice") : null;
-  if (box) { box.textContent = text; box.classList.add("show"); }
-  else { console.warn(text); }
-}
-
-function clearNotices() {
-  document.querySelectorAll(".notice").forEach((n) => n.classList.remove("show"));
-}
-
-function setConnection(text, cls) {
-  const el = $("conn-status");
-  el.textContent = text;
-  el.className = "status" + (cls ? " " + cls : "");
-}
-
-/* ---------- socket ---------- */
-function serverUrl() {
-  const scheme = location.protocol === "https:" ? "wss:" : "ws:";
-  return scheme + "//" + location.host + "/ws";
-}
-
-function connect() {
-  return new Promise((resolve, reject) => {
-    if (state.socket && state.socket.readyState === WebSocket.OPEN) return resolve();
-    setConnection("جارٍ الاتصال…");
-    const socket = new WebSocket(serverUrl());
-    socket.binaryType = "arraybuffer";
-    state.socket = socket;
-
-    socket.onmessage = (event) => {
-      if (typeof event.data === "string") {
-        const message = JSON.parse(event.data);
-        if (message.type === "connected") {
-          state.playerId = message.payload.player_id;
-          setConnection("متصل", "ok");
-          resolve();
-        }
-        onEvent(message.type, message.payload);
-      } else {
-        const frame = decodeAudioFrame(event.data);
-        if (frame) onAudio(frame);
-      }
-    };
-    socket.onerror = () => { setConnection("تعذّر الاتصال", "bad"); reject(new Error("socket error")); };
-    socket.onclose = () => {
-      setConnection("انقطع الاتصال", "bad");
-      state.socket = null;
-      if (!$("screen-home").classList.contains("active")) {
-        resetToHome("انقطع الاتصال بالخادم");
-      }
-    };
-  });
-}
-
-function send(type, payload) {
-  if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-    notice("لا يوجد اتصال بالخادم");
-    return false;
-  }
-  state.socket.send(JSON.stringify({ type: type, payload: payload || {} }));
-  return true;
-}
-
-/* ---------- events ---------- */
-function onEvent(type, payload) {
-  switch (type) {
-    case "connected": break;
-
-    case "room_created":
-      state.roomCode = payload.code;
-      $("room-code").textContent = payload.code;
-      clearNotices();
-      show("screen-waiting");
-      break;
-
-    case "players_ready":
-      state.opponentId = [payload.player_a_id, payload.player_b_id]
-        .find((id) => id !== state.playerId) || null;
-      state.scores = {};
-      state.scores[payload.player_a_id] = 0;
-      state.scores[payload.player_b_id] = 0;
-      break;
-
-    case "round_start":
-      state.pendingRound = payload;
-      if (!$("screen-round-result").classList.contains("active")) applyPending();
-      break;
-
-    case "audio_ready":
-      show("screen-rating");
-      break;
-
-    case "round_result":
-      onRoundResult(payload);
-      break;
-
-    case "game_over":
-      state.pendingGameOver = payload;
-      if (!$("screen-round-result").classList.contains("active")) applyPending();
-      break;
-
-    case "opponent_disconnected":
-      resetToHome("انسحب الخصم من المباراة");
-      break;
-
-    case "error":
-      onServerError(payload.reason);
-      break;
-  }
-}
-
-function onServerError(reason) {
-  const messages = {
-    invalid_code: "الكود غير صحيح، تأكد منه وحاول مجددًا",
-    room_full: "الغرفة ممتلئة",
-    audio_too_large: "التسجيل طويل جدًا",
-    not_your_turn: "ليس دورك في هذه الجولة",
-    stale_round: "انتهت هذه الجولة بالفعل",
-    wrong_phase: "انتهت هذه الجولة بالفعل",
-    invalid_score: "قيمة التقييم غير صالحة",
-  };
-  state.submitting = false;
-  $("btn-submit").disabled = false;
-  notice(messages[reason] || "تعذّر تنفيذ الطلب");
-}
-
-function applyPending() {
-  clearTimeout(state.dwellTimer);
-
-  if (state.pendingGameOver) {
-    const over = state.pendingGameOver;
-    state.pendingGameOver = null;
-    state.pendingRound = null;
-    state.scores = over.final_scores;
-    const isDraw = over.winner_id === null;
-    const didWin = over.winner_id === state.playerId;
-    $("over-emoji").textContent = isDraw ? "🤝" : (didWin ? "🏆" : "😮‍💨");
-    $("over-title").textContent = isDraw ? "تعادل!" : (didWin ? "فزت بالمبارزة!" : "فاز خصمك هذه المرة");
-    $("over-mine").textContent = state.scores[state.playerId] || 0;
-    $("over-theirs").textContent = state.scores[state.opponentId] || 0;
-    show("screen-game-over");
-    return;
-  }
-
-  if (state.pendingRound) {
-    const round = state.pendingRound;
-    state.pendingRound = null;
-    state.round = round;
-    clearNotices();
-
-    $("play-round").textContent = "الجولة " + round.round_number + " من " + round.total_rounds;
-    $("play-emoji").textContent = round.sound_emoji;
-    $("play-sound").textContent = round.sound_name;
-    $("rate-emoji").textContent = round.sound_emoji;
-    $("rate-sound").textContent = round.sound_name;
-
-    const iPerform = round.performer_id === state.playerId;
-    $("play-performer").style.display = iPerform ? "block" : "none";
-    $("play-rater").style.display = iPerform ? "none" : "block";
-    show("screen-play");
-
-    if (iPerform) startPerformance(round);
-  }
-}
-
-function onRoundResult(payload) {
-  stopEverything();
-  state.scores = payload.total_scores;
-  const mine = payload.performer_id === state.playerId;
-  $("result-round").textContent = "نتيجة الجولة " + payload.round_number;
-  $("result-score").textContent = payload.score;
-  $("result-caption").textContent = payload.timed_out
-    ? (mine ? "انتهى الوقت قبل إرسال تسجيلك" : "انتهى وقت الجولة")
-    : (mine ? "هذه نقاطك عن أدائك" : "هذه النقاط التي منحتَها لخصمك");
-  $("result-mine").textContent = state.scores[state.playerId] || 0;
-  $("result-theirs").textContent = state.scores[state.opponentId] || 0;
-  show("screen-round-result");
-
-  state.dwellTimer = setTimeout(applyPending, RESULT_DWELL_MS);
-}
-
-/* ---------- recording ---------- */
-function micAvailable() {
-  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-}
-
-async function startPerformance(round) {
-  if (!micAvailable()) {
-    notice("المتصفح لا يتيح الميكروفون هنا (يتطلب https أو 127.0.0.1). ستُرسل نغمة بديلة لإكمال التجربة.");
-    runCountdown(round, () => sendFallbackTone(round));
-    return;
-  }
-
-  let stream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (e) {
-    notice("لم يُمنح إذن الميكروفون: " + e.name + ". ستُرسل نغمة بديلة لإكمال التجربة.");
-    runCountdown(round, () => sendFallbackTone(round));
-    return;
-  }
-
-  state.stream = stream;
-  const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-    ? "audio/webm;codecs=opus" : "audio/webm";
-  const recorder = new MediaRecorder(stream, { mimeType: mime });
-  state.recorder = recorder;
-  state.chunks = [];
-
-  recorder.ondataavailable = (e) => { if (e.data.size > 0) state.chunks.push(e.data); };
-  recorder.onstop = async () => {
-    const blob = new Blob(state.chunks, { type: mime });
-    releaseMic();
-    if (blob.size === 0) { notice("لم يُسجَّل أي صوت"); return; }
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    sendRecording(round.round_number, bytes, mime);
-  };
-
-  recorder.start();
-  runCountdown(round, () => { if (state.recorder && state.recorder.state === "recording") state.recorder.stop(); });
-}
-
-/* A short generated tone, used only when the browser blocks the microphone,
-   so a full match can still be played end to end. */
-async function sendFallbackTone(round) {
-  const sampleRate = 44100, seconds = 1.5;
-  const ctx = new OfflineAudioContext(1, sampleRate * seconds, sampleRate);
-  const osc = ctx.createOscillator();
-  osc.frequency.value = 220 + Math.random() * 440;
-  osc.connect(ctx.destination);
-  osc.start(); osc.stop(seconds);
-  const rendered = await ctx.startRendering();
-  const samples = rendered.getChannelData(0);
-
-  // Minimal 16-bit PCM WAV, so the other side can play it with no codec.
-  const buffer = new ArrayBuffer(44 + samples.length * 2);
-  const view = new DataView(buffer);
-  const ascii = (offset, text) => { for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i)); };
-  ascii(0, "RIFF"); view.setUint32(4, 36 + samples.length * 2, true); ascii(8, "WAVE");
-  ascii(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
-  ascii(36, "data"); view.setUint32(40, samples.length * 2, true);
-  for (let i = 0; i < samples.length; i++) {
-    view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 0x7fff, true);
-  }
-  sendRecording(round.round_number, new Uint8Array(buffer), "audio/wav");
-}
-
-function runCountdown(round, onDone) {
-  let remaining = round.countdown_seconds;
-  $("play-countdown").textContent = remaining;
-  $("play-bar").style.width = "100%";
-  state.countdownTimer = setInterval(() => {
-    remaining -= 1;
-    $("play-countdown").textContent = Math.max(0, remaining);
-    $("play-bar").style.width = Math.max(0, (remaining / round.countdown_seconds) * 100) + "%";
-    if (remaining <= 0) { clearInterval(state.countdownTimer); state.countdownTimer = null; onDone(); }
-  }, 1000);
-}
-
-function sendRecording(roundNumber, bytes, mime) {
-  if (state.sending) return;
-  state.sending = true;
-  $("play-rec").textContent = "جارٍ إرسال التسجيل…";
-  if (state.socket && state.socket.readyState === WebSocket.OPEN) {
-    state.socket.send(encodeAudioFrame(roundNumber, bytes, mime));
-  } else {
-    notice("تعذّر إرسال التسجيل، انقطع الاتصال");
-  }
-  state.sending = false;
-}
-
-function releaseMic() {
-  if (state.stream) { state.stream.getTracks().forEach((t) => t.stop()); state.stream = null; }
-  state.recorder = null;
-}
-
-/* ---------- playback / rating ---------- */
-function onAudio(frame) {
-  if (state.round && frame.header.round_number !== state.round.round_number) return;
-  state.incoming = frame.audio.slice();
-  state.incomingMime = frame.header.mime || "audio/webm";
-  state.submitting = false;
-  $("btn-submit").disabled = false;
-  $("input-score").value = 50;
-  updateScoreLabel(50);
-  show("screen-rating");
-  playIncoming();
-}
-
-function playIncoming() {
-  if (!state.incoming) return;
-  const blob = new Blob([state.incoming], { type: state.incomingMime });
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  $("rate-playing").textContent = "🔊 جارٍ التشغيل…";
-  audio.onended = () => { $("rate-playing").textContent = "انتهى التشغيل"; URL.revokeObjectURL(url); };
-  audio.onerror = () => { $("rate-playing").textContent = "تعذّر تشغيل التسجيل"; URL.revokeObjectURL(url); };
-  audio.play().catch(() => { $("rate-playing").textContent = "اضغط «إعادة الاستماع» للتشغيل"; });
-}
-
-function updateScoreLabel(score) {
-  $("rate-score").textContent = score;
-  const labels = [[90, "مطابق تمامًا! 🤯"], [70, "تقليد ممتاز 👏"], [50, "قريب من الصوت 🙂"],
-                  [30, "محاولة متواضعة 😅"], [0, "بعيد عن المطلوب 😂"]];
-  $("rate-label").textContent = (labels.find((l) => score >= l[0]) || labels[4])[1];
-}
-
-/* ---------- lifecycle ---------- */
-function stopEverything() {
-  if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
-  if (state.recorder && state.recorder.state === "recording") {
-    try { state.recorder.stop(); } catch (e) { /* already stopped */ }
-  }
-  releaseMic();
-  $("play-rec").textContent = "🔴 جارٍ التسجيل";
-  state.sending = false;
-}
-
-function resetToHome(message) {
-  clearTimeout(state.dwellTimer);
-  stopEverything();
-  state.roomCode = null; state.round = null; state.incoming = null;
-  state.pendingRound = null; state.pendingGameOver = null;
-  clearNotices();
-  show("screen-home");
-  if (message) notice(message);
-}
-
-/* ---------- wiring ---------- */
-$("btn-create").onclick = async () => {
-  clearNotices();
-  try { await connect(); send("create_room"); }
-  catch (e) { notice("تعذّر الاتصال بالخادم"); }
-};
-
-$("btn-join").onclick = async () => {
-  clearNotices();
-  const code = $("input-code").value.trim();
-  if (code.length !== 4) { notice("أدخل كودًا مكوّنًا من ٤ أرقام"); return; }
-  try { await connect(); send("join_room", { code: code }); }
-  catch (e) { notice("تعذّر الاتصال بالخادم"); }
-};
-
-$("input-code").oninput = (e) => {
-  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
-  $("btn-join").disabled = e.target.value.length !== 4;
-};
-
-$("btn-send-now").onclick = () => {
-  if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
-  if (state.recorder && state.recorder.state === "recording") state.recorder.stop();
-  else if (state.round) sendFallbackTone(state.round);
-};
-
-$("input-score").oninput = (e) => updateScoreLabel(parseInt(e.target.value, 10));
-
-$("btn-replay").onclick = playIncoming;
-
-$("btn-submit").onclick = () => {
-  if (state.submitting || !state.round) return;
-  state.submitting = true;
-  $("btn-submit").disabled = true;
-  send("rating_submitted", {
-    round_number: state.round.round_number,
-    score: parseInt($("input-score").value, 10),
-  });
-};
-
-document.querySelectorAll(".btn-leave").forEach((btn) => {
-  btn.onclick = () => { if (state.roomCode) send("leave_room"); resetToHome(null); };
-});
-
-if (!micAvailable()) {
-  $("mic-hint").textContent =
-    "الميكروفون غير متاح على هذا العنوان — افتح الصفحة عبر http://127.0.0.1:8000/play أو https.";
-}
-</script>
+<script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
