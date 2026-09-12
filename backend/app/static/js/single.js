@@ -9,9 +9,11 @@
 import { compareAudio } from "./dsp.js";
 import { SOUND_RATE } from "./sounds.js";
 import { playSamples, recordClip, microphoneSupported } from "./audio.js";
+import { loadTargets } from "./targets.js";
+import { t } from "./i18n.js";
 import {
-  CHALLENGE, CHALLENGE_LABEL, STAGES, STAGES_BY_ID,
-  isUnlocked, stageTarget, starsFor, unlockedCount,
+  CHALLENGE, STAGES, STAGES_BY_ID, challengeLabel,
+  isUnlocked, stageTarget, stageTitle, starsFor, unlockedCount,
 } from "./stages.js";
 import { bestScore, loadProgress, recordScore } from "./storage.js";
 
@@ -41,8 +43,8 @@ export function renderStageList(show) {
     row.innerHTML = `
       <span class="stage-number">${stage.number}</span>
       <span class="stage-main">
-        <span class="stage-title">${unlocked ? stage.emoji + " " + stage.title : "🔒 مقفل"}</span>
-        <span class="stage-meta">${CHALLENGE_LABEL[stage.type]} · النجاح من ${stage.passMark}</span>
+        <span class="stage-title">${unlocked ? stage.emoji + " " + stageTitle(stage) : t("stages.locked")}</span>
+        <span class="stage-meta">${t("stages.meta", { challenge: challengeLabel(stage.type), pass: stage.passMark })}</span>
       </span>
       <span class="stage-score">${score === null ? "—" : score + "<br><small>" + stars(starsFor(stage, score)) + "</small>"}</span>
     `;
@@ -52,39 +54,50 @@ export function renderStageList(show) {
 
   const done = STAGES.filter((s) => (best[s.id] ?? -1) >= s.passMark).length;
   $("stage-progress").textContent =
-    `${done} من ${STAGES.length} مرحلة مكتملة · ${unlockedCount(best)} مفتوحة`;
+    t("stages.summary", { done, total: STAGES.length, unlocked: unlockedCount(best) });
 }
 
 /* ------------------------------------------------------------------ *
  * Playing one stage
  * ------------------------------------------------------------------ */
 
+/** Paint the stage screen's text. Split out so a language switch can redraw it. */
+function renderStageHeader() {
+  const stage = currentStage;
+  if (!stage) return;
+
+  $("sp-stage-number").textContent = t("sp.stage.number", { number: stage.number });
+  $("sp-challenge").textContent = challengeLabel(stage.type);
+  $("sp-emoji").textContent = stage.emoji;
+  $("sp-title").textContent = stageTitle(stage);
+  $("sp-passmark").textContent = t("sp.passmark", { pass: stage.passMark });
+
+  const best = bestScore(stage.id);
+  $("sp-best").textContent = best === null
+    ? t("sp.best.none")
+    : t("sp.best.some", { score: best });
+
+  $("sp-hint").textContent = {
+    [CHALLENGE.SEQUENCE]: t("sp.hint.sequence"),
+    [CHALLENGE.TIMED]: t("sp.hint.timed", { seconds: stage.recordSeconds }),
+    [CHALLENGE.DISTORTED]: t("sp.hint.distorted"),
+  }[stage.type] ?? t("sp.hint.single");
+}
+
 function openStage(stageId, show) {
   currentStage = STAGES_BY_ID[stageId];
   lastResult = null;
 
-  $("sp-stage-number").textContent = `المرحلة ${currentStage.number}`;
-  $("sp-challenge").textContent = CHALLENGE_LABEL[currentStage.type];
-  $("sp-emoji").textContent = currentStage.emoji;
-  $("sp-title").textContent = currentStage.title;
-  $("sp-passmark").textContent = `النجاح من ${currentStage.passMark} فأعلى`;
-  $("sp-best").textContent = bestScore(stageId) === null
-    ? "لم تحاول هذه المرحلة بعد"
-    : `أفضل نتيجة لك: ${bestScore(stageId)}`;
-
-  if (currentStage.type === CHALLENGE.SEQUENCE) {
-    $("sp-hint").textContent = "استمع للتسلسل كاملًا، ثم قلّد الأصوات بالترتيب نفسه.";
-  } else if (currentStage.type === CHALLENGE.TIMED) {
-    $("sp-hint").textContent = `لديك ${currentStage.recordSeconds} ثوانٍ فقط. استعد قبل الضغط.`;
-  } else if (currentStage.type === CHALLENGE.DISTORTED) {
-    $("sp-hint").textContent = "الصوت مشوّش عمدًا. ركّز على الشكل العام وليس التفاصيل.";
-  } else {
-    $("sp-hint").textContent = "استمع للصوت المطلوب ثم قلّده بصوتك.";
-  }
+  renderStageHeader();
 
   setPhase("ready");
   show("screen-sp-stage");
-  playTarget();
+  // Resolve this stage's audio before the first playback, so that if a real
+  // recording has been dropped in for one of these sounds, the player hears
+  // it and is scored against it rather than against the synthesised version.
+  loadTargets(currentStage.soundIds).then(() => {
+    if (currentStage && currentStage.id === stageId) playTarget();
+  });
 }
 
 function setPhase(phase) {
@@ -98,12 +111,12 @@ async function playTarget() {
   if (!currentStage) return;
   const button = $("btn-hear");
   button.disabled = true;
-  button.textContent = "🔊 يُشغَّل…";
+  button.textContent = t("sp.hear.playing");
   try {
     await playSamples(stageTarget(currentStage), SOUND_RATE);
   } finally {
     button.disabled = false;
-    button.textContent = "🔊 استمع مرة أخرى";
+    button.textContent = t("sp.hear.again");
   }
 }
 
@@ -111,7 +124,7 @@ async function attempt(show) {
   if (!currentStage) return;
 
   if (!microphoneSupported()) {
-    showStageNotice("المتصفح لا يتيح الميكروفون هنا. افتح الصفحة عبر 127.0.0.1 أو https.");
+    showStageNotice(t("error.mic.unsupported"));
     return;
   }
 
@@ -129,8 +142,8 @@ async function attempt(show) {
     setPhase("ready");
     showStageNotice(
       error.message === "empty"
-        ? "لم يُلتقط أي صوت. حاول مرة أخرى."
-        : "تعذّر فتح الميكروفون: " + (error.name || error.message),
+        ? t("error.record.empty")
+        : t("error.record.failed", { detail: error.name || error.message }),
     );
     return;
   }
@@ -139,7 +152,7 @@ async function attempt(show) {
 
   if (!clip.samples) {
     setPhase("ready");
-    showStageNotice("تعذّر تحليل التسجيل في هذا المتصفح.");
+    showStageNotice(t("error.analyse.unsupported"));
     return;
   }
 
@@ -154,13 +167,12 @@ async function attempt(show) {
     setPhase("ready");
     showStageNotice(
       comparison.reason === "no_audio"
-        ? "التسجيل صامت أو قصير جدًا. اقترب من الميكروفون وحاول مجددًا."
-        : "تعذّر تحليل الصوت.",
+        ? t("error.analyse.silent")
+        : t("error.analyse.failed"),
     );
     return;
   }
 
-  lastResult = comparison;
   const improved = recordScore(currentStage.id, comparison.score);
   showResult(comparison, improved, show);
 }
@@ -175,30 +187,38 @@ function showStageNotice(message) {
  * Result
  * ------------------------------------------------------------------ */
 
-function showResult(comparison, improved, show) {
+/**
+ * The comparison breakdown, by translation key rather than by wording, so the
+ * same five acoustic measures are named in whichever language is active.
+ */
+const BREAKDOWN_ROWS = [
+  ["score.timbre", "timbre"],
+  ["score.pitch", "pitch"],
+  ["score.dynamics", "dynamics"],
+  ["score.voicing", "voicing"],
+  ["score.brightness", "brightness"],
+];
+
+/** Paint the result screen from the last comparison. Redrawable. */
+function renderResult() {
   const stage = currentStage;
-  const passed = comparison.score >= stage.passMark;
-  const earned = starsFor(stage, comparison.score);
+  const result = lastResult;
+  if (!stage || !result) return;
 
-  $("sp-result-score").textContent = comparison.score;
-  $("sp-result-score").classList.remove("pop");
-  void $("sp-result-score").offsetWidth;
-  $("sp-result-score").classList.add("pop");
-  $("sp-result-stars").textContent = stars(earned);
-  $("sp-result-title").textContent = passed ? "نجحت في المرحلة!" : "لم تبلغ حد النجاح";
+  const passed = result.score >= stage.passMark;
+
+  $("sp-result-score").textContent = result.score;
+  $("sp-result-stars").textContent = stars(starsFor(stage, result.score));
+  $("sp-result-title").textContent = t(passed ? "sp.result.passed" : "sp.result.failed");
   $("sp-result-title").className = passed ? "pass" : "fail";
-  $("sp-result-note").textContent = improved ? "أفضل نتيجة جديدة! 🎉" : `النجاح من ${stage.passMark}`;
+  $("sp-result-note").textContent = result.improved
+    ? t("sp.result.improved")
+    : t("sp.result.passmark", { pass: stage.passMark });
 
-  const parts = comparison.parts;
-  const rows = [
-    ["نبرة الصوت (الطيف)", parts.timbre],
-    ["حدة الطبقة", parts.pitch],
-    ["تموّج الصوت", parts.dynamics],
-    ["نقاء/خشونة", parts.voicing],
-    ["سطوع الصوت", parts.brightness],
-  ].filter(([, value]) => value !== null && value !== undefined);
-
-  $("sp-breakdown").innerHTML = rows.map(([label, value]) => `
+  $("sp-breakdown").innerHTML = BREAKDOWN_ROWS
+    .map(([key, part]) => [t(key), result.parts[part]])
+    .filter(([, value]) => value !== null && value !== undefined)
+    .map(([label, value]) => `
     <div class="bar-row">
       <span class="bar-label">${label}</span>
       <span class="bar-track"><i style="width:${value}%"></i></span>
@@ -207,7 +227,23 @@ function showResult(comparison, improved, show) {
 
   const next = STAGES[stage.number]; // stage.number is 1-based
   $("btn-sp-next").style.display = passed && next ? "block" : "none";
+}
+
+function showResult(comparison, improved, show) {
+  lastResult = { ...comparison, improved };
+  renderResult();
+
+  $("sp-result-score").classList.remove("pop");
+  void $("sp-result-score").offsetWidth;
+  $("sp-result-score").classList.add("pop");
+
   show("screen-sp-result");
+}
+
+/** Re-paint whatever single-player text is on screen after a language change. */
+export function redrawSinglePlayer() {
+  renderStageHeader();
+  renderResult();
 }
 
 /* ------------------------------------------------------------------ *

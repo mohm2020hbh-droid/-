@@ -32,6 +32,34 @@ async def health(request: Request) -> dict:
     }
 
 
+AUDIO_DIR = STATIC_DIR / "audio"
+AUDIO_SUFFIXES = (".mp3", ".ogg", ".wav")
+
+
+@router.get("/api/target-audio")
+async def target_audio() -> dict:
+    """Which target sounds have a real recording dropped in.
+
+    Every target is synthesised on the device, so this list is normally empty
+    and the game is fully playable offline. Dropping ``donkey.mp3`` into
+    ``app/static/audio/`` makes it appear here, and the client then uses that
+    file for both playback and scoring instead of the synthesised version.
+
+    The client asks once, so a bank of 44 sounds costs one request rather than
+    a burst of speculative 404s, and a file added while the server is running
+    is picked up on the next page load with no restart.
+    """
+
+    files: dict[str, str] = {}
+    if AUDIO_DIR.is_dir():
+        for path in sorted(AUDIO_DIR.iterdir()):
+            if path.is_file() and path.suffix.lower() in AUDIO_SUFFIXES:
+                # First match wins, in the suffix order the client prefers.
+                files.setdefault(path.stem, path.name)
+
+    return {"available": files}
+
+
 @router.get("/play", include_in_schema=False)
 async def play() -> FileResponse:
     """The browser client — the same protocol the Android app speaks.

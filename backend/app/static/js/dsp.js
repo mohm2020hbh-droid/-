@@ -343,6 +343,17 @@ function correlation(xs, ys) {
   return num / Math.sqrt(dx * dy);
 }
 
+/** True when a contour carries essentially no movement to correlate. */
+function isFlat(values) {
+  if (values.length < 2) return true;
+  let mean = 0;
+  for (const v of values) mean += v;
+  mean /= values.length;
+  let variance = 0;
+  for (const v of values) variance += (v - mean) ** 2;
+  return Math.sqrt(variance / values.length) < 1e-4;
+}
+
 const median = (values) => {
   if (!values.length) return 0;
   const sorted = Float64Array.from(values).sort();
@@ -434,13 +445,28 @@ export function compareAudio(playerSamples, playerRate, targetSamples, targetRat
   let pitch = null;
   if (playerPitch.length >= MIN_VOICED_PAIRS) {
     const pm = median(playerPitch), tm = median(targetPitch);
-    const shape = correlation(
-      playerPitch.map((v) => v - pm),
-      targetPitch.map((v) => v - tm),
-    );
+    const playerShape = playerPitch.map((v) => v - pm);
+    const targetShape = targetPitch.map((v) => v - tm);
+    const shape = correlation(playerShape, targetShape);
+
     const octaves = Math.abs(pm - tm) / Math.LN2;
     const register = clamp01(1 - octaves / 2.5);
-    const contour = shape === null ? 0.5 : calibrate(shape, -0.3, 0.85);
+
+    // A correlation is undefined when a contour is flat. Flat against flat
+    // is not "unknown" — it is a *perfect* match of a steady pitch, which
+    // is exactly what an alarm, a phone or a cricket is. Scoring that as
+    // half-credit capped a flawless imitation of any monotone target at
+    // about 94. Only a flat contour against a moving one is a real miss.
+    let contour;
+    if (shape !== null) {
+      contour = calibrate(shape, -0.3, 0.85);
+    } else {
+      const playerFlat = isFlat(playerShape);
+      const targetFlat = isFlat(targetShape);
+      if (playerFlat && targetFlat) contour = 1;
+      else contour = 0.25;
+    }
+
     pitch = 0.65 * contour + 0.35 * register;
   }
 

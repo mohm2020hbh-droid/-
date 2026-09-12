@@ -10,6 +10,8 @@
 
 import { decodeAudioFrame, encodeAudioFrame, serverUrl } from "./protocol.js";
 import { encodeWav, microphoneSupported, playEncoded, recordClip } from "./audio.js";
+import { getLanguage, t } from "./i18n.js";
+import { soundName } from "./sounds.js";
 
 const $ = (id) => document.getElementById(id);
 const RESULT_DWELL_MS = 3000;
@@ -18,6 +20,7 @@ const state = {
   socket: null, playerId: null, opponentId: null, roomCode: null,
   round: null, scores: {}, incoming: null, incomingMime: "audio/webm",
   pendingRound: null, pendingGameOver: null,
+  lastResult: null, lastGameOver: null,
   dwellTimer: null, submitting: false, show: null,
 };
 const recordControl = {};
@@ -42,7 +45,7 @@ function setConnection(text, cls) {
 function connect() {
   return new Promise((resolve, reject) => {
     if (state.socket && state.socket.readyState === WebSocket.OPEN) { resolve(); return; }
-    setConnection("جارٍ الاتصال…");
+    setConnection(t("conn.connecting"));
     const socket = new WebSocket(serverUrl());
     socket.binaryType = "arraybuffer";
     state.socket = socket;
@@ -52,7 +55,7 @@ function connect() {
         const message = JSON.parse(event.data);
         if (message.type === "connected") {
           state.playerId = message.payload.player_id;
-          setConnection("متصل", "ok");
+          setConnection(t("conn.connected"), "ok");
           resolve();
         }
         onEvent(message.type, message.payload);
@@ -61,12 +64,12 @@ function connect() {
         if (frame) onAudio(frame);
       }
     };
-    socket.onerror = () => { setConnection("تعذّر الاتصال", "bad"); reject(new Error("socket")); };
+    socket.onerror = () => { setConnection(t("conn.failed"), "bad"); reject(new Error("socket")); };
     socket.onclose = () => {
-      setConnection("انقطع الاتصال", "bad");
+      setConnection(t("conn.lost"), "bad");
       state.socket = null;
       if (document.querySelector(".screen.active")?.id?.startsWith("screen-online")) {
-        leave("انقطع الاتصال بالخادم");
+        leave(t("conn.lost.server"));
       }
     };
   });
@@ -74,7 +77,7 @@ function connect() {
 
 function send(type, payload) {
   if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-    notice("لا يوجد اتصال بالخادم");
+    notice(t("conn.none"));
     return false;
   }
   state.socket.send(JSON.stringify({ type, payload: payload || {} }));
@@ -117,7 +120,7 @@ function onEvent(type, payload) {
       break;
 
     case "opponent_disconnected":
-      leave("انسحب الخصم من المباراة");
+      leave(t("error.opponent.left"));
       break;
 
     case "error":
@@ -131,17 +134,17 @@ function onEvent(type, payload) {
 
 function onServerError(reason) {
   const messages = {
-    invalid_code: "الكود غير صحيح، تأكد منه وحاول مجددًا",
-    room_full: "الغرفة ممتلئة",
-    audio_too_large: "التسجيل طويل جدًا",
-    not_your_turn: "ليس دورك في هذه الجولة",
-    stale_round: "انتهت هذه الجولة بالفعل",
-    wrong_phase: "انتهت هذه الجولة بالفعل",
-    invalid_score: "قيمة التقييم غير صالحة",
+    invalid_code: t("error.invalid_code"),
+    room_full: t("error.room_full"),
+    audio_too_large: t("error.audio_too_large"),
+    not_your_turn: t("error.not_your_turn"),
+    stale_round: t("error.stale_round"),
+    wrong_phase: t("error.stale_round"),
+    invalid_score: t("error.invalid_score"),
   };
   state.submitting = false;
   $("btn-submit").disabled = false;
-  notice(messages[reason] || "تعذّر تنفيذ الطلب");
+  notice(messages[reason] || t("error.generic"));
 }
 
 function applyPending() {
@@ -149,13 +152,14 @@ function applyPending() {
 
   if (state.pendingGameOver) {
     const over = state.pendingGameOver;
+    state.lastGameOver = over;
     state.pendingGameOver = null;
     state.pendingRound = null;
     state.scores = over.final_scores;
     const draw = over.winner_id === null;
     const won = over.winner_id === state.playerId;
     $("over-emoji").textContent = draw ? "🤝" : won ? "🏆" : "😮‍💨";
-    $("over-title").textContent = draw ? "تعادل!" : won ? "فزت بالمبارزة!" : "فاز خصمك هذه المرة";
+    $("over-title").textContent = draw ? t("over.draw") : won ? t("over.won") : t("over.lost");
     $("over-mine").textContent = state.scores[state.playerId] || 0;
     $("over-theirs").textContent = state.scores[state.opponentId] || 0;
     state.show("screen-online-over");
@@ -169,11 +173,10 @@ function applyPending() {
   state.round = round;
   clearNotices();
 
-  $("play-round").textContent = `الجولة ${round.round_number} من ${round.total_rounds}`;
+  $("play-round").textContent = t("play.round", { number: round.round_number, total: round.total_rounds });
   $("play-emoji").textContent = round.sound_emoji;
-  $("play-sound").textContent = round.sound_name;
   $("rate-emoji").textContent = round.sound_emoji;
-  $("rate-sound").textContent = round.sound_name;
+  renderRoundSoundName();
 
   const performing = round.performer_id === state.playerId;
   $("play-performer").style.display = performing ? "block" : "none";
@@ -186,15 +189,16 @@ function applyPending() {
 function onRoundResult(payload) {
   clearTimeout(state.dwellTimer);
   state.scores = payload.total_scores;
+  state.lastResult = payload;
   const mine = payload.performer_id === state.playerId;
-  $("result-round").textContent = `نتيجة الجولة ${payload.round_number}`;
+  $("result-round").textContent = t("result.round", { number: payload.round_number });
   $("result-score").textContent = payload.score;
   $("result-score").classList.remove("pop");
   void $("result-score").offsetWidth;
   $("result-score").classList.add("pop");
   $("result-caption").textContent = payload.timed_out
-    ? (mine ? "انتهى الوقت قبل إرسال تسجيلك" : "انتهى وقت الجولة")
-    : (mine ? "هذه نقاطك عن أدائك" : "هذه النقاط التي منحتَها لخصمك");
+    ? (mine ? t("result.timeout.mine") : t("result.timeout.theirs"))
+    : (mine ? t("result.yours") : t("result.given"));
   $("result-mine").textContent = state.scores[state.playerId] || 0;
   $("result-theirs").textContent = state.scores[state.opponentId] || 0;
   state.show("screen-online-result");
@@ -204,10 +208,10 @@ function onRoundResult(payload) {
 /* ---------------------------- performing ---------------------------- */
 
 async function perform(round) {
-  $("play-rec").textContent = "جارٍ التسجيل";
+  $("play-rec").textContent = t("play.recording");
 
   if (!microphoneSupported()) {
-    notice("المتصفح لا يتيح الميكروفون هنا (يتطلب https أو 127.0.0.1). ستُرسل نغمة بديلة.");
+    notice(t("play.mic.fallback"));
     setTimeout(() => sendFallbackTone(round), round.countdown_seconds * 1000);
     return;
   }
@@ -222,10 +226,10 @@ async function perform(round) {
       },
       recordControl,
     );
-    $("play-rec").textContent = "جارٍ إرسال التسجيل…";
+    $("play-rec").textContent = t("play.sending");
     state.socket?.send(encodeAudioFrame(round.round_number, clip.bytes, clip.mime));
   } catch (error) {
-    notice("تعذّر التسجيل: " + (error.name || error.message) + ". ستُرسل نغمة بديلة.");
+    notice(t("play.record.fallback", { detail: error.name || error.message }));
     sendFallbackTone(round);
   }
 }
@@ -259,16 +263,65 @@ function onAudio(frame) {
 
 async function playIncoming() {
   if (!state.incoming) return;
-  $("rate-playing").textContent = "🔊 جارٍ التشغيل…";
+  $("rate-playing").textContent = t("rate.playing");
   await playEncoded(state.incoming, state.incomingMime);
-  $("rate-playing").textContent = "انتهى التشغيل";
+  $("rate-playing").textContent = t("rate.played");
+}
+
+/**
+ * The target's name in the active language.
+ *
+ * Resolved from the stable `sound_id` against the local library first; the
+ * server's own names are the fallback, because its duel prompt list has a few
+ * entries this client does not synthesise.
+ */
+function renderRoundSoundName() {
+  const round = state.round;
+  if (!round) return;
+  const language = getLanguage();
+  const fromServer = language === "en"
+    ? (round.sound_name_en ?? round.sound_name)
+    : round.sound_name;
+  const name = soundName(round.sound_id, language, fromServer);
+  $("play-sound").textContent = name;
+  $("rate-sound").textContent = name;
 }
 
 function updateScoreLabel(score) {
   $("rate-score").textContent = score;
-  const labels = [[90, "مطابق تمامًا! 🤯"], [70, "تقليد ممتاز 👏"], [50, "قريب من الصوت 🙂"],
-                  [30, "محاولة متواضعة 😅"], [0, "بعيد عن المطلوب 😂"]];
-  $("rate-label").textContent = (labels.find(([floor]) => score >= floor) || labels[4])[1];
+  const labels = [[90, "rate.label.90"], [70, "rate.label.70"], [50, "rate.label.50"],
+                  [30, "rate.label.30"], [0, "rate.label.0"]];
+  $("rate-label").textContent = t((labels.find(([floor]) => score >= floor) || labels[4])[1]);
+}
+
+/**
+ * Re-paint the live online text after a language change.
+ *
+ * Only wording is rebuilt — the room, the round, the scores and the socket are
+ * all untouched, so switching language mid-match costs nothing.
+ */
+export function redrawOnline() {
+  const round = state.round;
+  if (round) {
+    $("play-round").textContent =
+      t("play.round", { number: round.round_number, total: round.total_rounds });
+    renderRoundSoundName();
+  }
+  if (state.lastResult) {
+    const { round_number: number, performer_id: performer, timed_out: timedOut } = state.lastResult;
+    const mine = performer === state.playerId;
+    $("result-round").textContent = t("result.round", { number });
+    $("result-caption").textContent = timedOut
+      ? (mine ? t("result.timeout.mine") : t("result.timeout.theirs"))
+      : (mine ? t("result.yours") : t("result.given"));
+  }
+  if (state.lastGameOver) {
+    const draw = state.lastGameOver.winner_id === null;
+    const won = state.lastGameOver.winner_id === state.playerId;
+    $("over-title").textContent = draw ? t("over.draw") : won ? t("over.won") : t("over.lost");
+  }
+  updateScoreLabel(Number($("input-score").value));
+  if (!state.socket) setConnection(t("conn.offline"));
 }
 
 /* ---------------------------- lifecycle ---------------------------- */
@@ -289,15 +342,15 @@ export function initOnline(show) {
   $("btn-create").onclick = async () => {
     clearNotices();
     try { await connect(); send("create_room"); }
-    catch (e) { notice("تعذّر الاتصال بالخادم"); }
+    catch (e) { notice(t("conn.unreachable")); }
   };
 
   $("btn-join").onclick = async () => {
     clearNotices();
     const code = $("input-code").value.trim();
-    if (code.length !== 4) { notice("أدخل كودًا مكوّنًا من ٤ أرقام"); return; }
+    if (code.length !== 4) { notice(t("error.code.length")); return; }
     try { await connect(); send("join_room", { code }); }
-    catch (e) { notice("تعذّر الاتصال بالخادم"); }
+    catch (e) { notice(t("conn.unreachable")); }
   };
 
   $("input-code").oninput = (event) => {
@@ -325,7 +378,7 @@ export function initOnline(show) {
 
   if (!microphoneSupported()) {
     $("mic-hint").textContent =
-      "الميكروفون غير متاح على هذا العنوان — افتح الصفحة عبر http://127.0.0.1:8000/play أو https.";
+      t("error.mic.address");
   }
 }
 

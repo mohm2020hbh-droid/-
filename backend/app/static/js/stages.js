@@ -6,7 +6,9 @@
  * target that is harder to pick apart.
  */
 
-import { SOUNDS_BY_ID, SOUND_RATE, targetSamples, distort } from "./sounds.js";
+import { SOUNDS_BY_ID, SOUND_RATE, distort, soundName } from "./sounds.js";
+import { targetFor } from "./targets.js";
+import { getLanguage, t } from "./i18n.js";
 
 export const CHALLENGE = {
   SINGLE: "single",
@@ -15,12 +17,15 @@ export const CHALLENGE = {
   DISTORTED: "distorted",
 };
 
-export const CHALLENGE_LABEL = {
-  [CHALLENGE.SINGLE]: "تقليد مباشر",
-  [CHALLENGE.TIMED]: "تحدي الوقت",
-  [CHALLENGE.SEQUENCE]: "تسلسل أصوات",
-  [CHALLENGE.DISTORTED]: "صوت مشوّش",
-};
+/**
+ * The name of a challenge type in the active language.
+ *
+ * Resolved on every call rather than frozen into a table at load time, so a
+ * language switch mid-game relabels the stages immediately.
+ */
+export function challengeLabel(type) {
+  return t(`challenge.${type}`);
+}
 
 const SEQUENCE_GAP_SECONDS = 0.35;
 
@@ -56,15 +61,28 @@ export const STAGES = PLAN.map(([type, soundIds, passMark, recordSeconds], index
   passMark,
   recordSeconds,
   sounds: soundIds.map((id) => SOUNDS_BY_ID[id]),
-  title: soundIds.map((id) => SOUNDS_BY_ID[id].name).join(" ثم "),
   emoji: soundIds.map((id) => SOUNDS_BY_ID[id].emoji).join(" "),
 }));
 
 export const STAGES_BY_ID = Object.fromEntries(STAGES.map((s) => [s.id, s]));
 
+/**
+ * A stage's display title: its sounds' names, in the active language.
+ *
+ * The stage is identified by its sound ids, never by their names, so the same
+ * stage keeps the same identity, target audio and saved score whichever
+ * language it is shown in.
+ */
+export function stageTitle(stage) {
+  const language = getLanguage();
+  return stage.soundIds
+    .map((id) => soundName(id, language))
+    .join(t("challenge.sequence.join"));
+}
+
 /** Concatenate the stage's sounds, applying the distorted treatment if needed. */
 export function stageTarget(stage) {
-  const parts = stage.soundIds.map((id) => targetSamples(id));
+  const parts = stage.soundIds.map((id) => targetFor(id));
 
   let combined;
   if (parts.length === 1) {

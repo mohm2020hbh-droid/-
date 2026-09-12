@@ -267,7 +267,10 @@ class GameService:
                 "round_number": round_number,
                 "total_rounds": self._settings.total_rounds,
                 "sound_id": sound.id,
+                # Both names travel with the round so either client can show
+                # the sound in its own language without another round trip.
                 "sound_name": sound.name,
+                "sound_name_en": sound.name_en,
                 "sound_emoji": sound.emoji,
                 "performer_id": room.performer_id,
                 "countdown_seconds": self._settings.countdown_seconds,
@@ -334,7 +337,10 @@ class GameService:
                 "round_number": round_number,
                 "total_rounds": self._settings.battle_total_rounds,
                 "sound_id": sound.id,
+                # Both names travel with the round so either client can show
+                # the sound in its own language without another round trip.
                 "sound_name": sound.name,
+                "sound_name_en": sound.name_en,
                 "sound_emoji": sound.emoji,
                 "attempt_seconds": self._settings.battle_attempt_seconds,
             },

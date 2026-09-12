@@ -16,9 +16,11 @@
  */
 
 import { compareAudio } from "./dsp.js";
-import { SOUND_RATE, targetSamples } from "./sounds.js";
+import { SOUND_RATE, soundName } from "./sounds.js";
+import { loadTarget, targetFor } from "./targets.js";
 import { microphoneSupported, playSamples, recordClip } from "./audio.js";
 import { serverUrl } from "./protocol.js";
+import { getLanguage, t } from "./i18n.js";
 
 const $ = (id) => document.getElementById(id);
 const RESULT_DWELL_MS = 2600;
@@ -26,6 +28,7 @@ const RESULT_DWELL_MS = 2600;
 const state = {
   socket: null, playerId: null, opponentId: null, roomCode: null,
   round: null, totalWins: {}, pendingRound: null, pendingOver: null,
+  lastResult: null, lastOver: null,
   dwellTimer: null, submitting: false, show: null,
 };
 const recordControl = {};
@@ -50,7 +53,7 @@ function setConnection(text, cls) {
 function connect() {
   return new Promise((resolve, reject) => {
     if (state.socket && state.socket.readyState === WebSocket.OPEN) { resolve(); return; }
-    setConnection("جارٍ الاتصال…");
+    setConnection(t("conn.connecting"));
     const socket = new WebSocket(serverUrl());
     state.socket = socket;
 
@@ -58,17 +61,17 @@ function connect() {
       const message = JSON.parse(event.data);
       if (message.type === "connected") {
         state.playerId = message.payload.player_id;
-        setConnection("متصل", "ok");
+        setConnection(t("conn.connected"), "ok");
         resolve();
       }
       onEvent(message.type, message.payload);
     };
-    socket.onerror = () => { setConnection("تعذّر الاتصال", "bad"); reject(new Error("socket")); };
+    socket.onerror = () => { setConnection(t("conn.failed"), "bad"); reject(new Error("socket")); };
     socket.onclose = () => {
-      setConnection("انقطع الاتصال", "bad");
+      setConnection(t("conn.lost"), "bad");
       state.socket = null;
       if (document.querySelector(".screen.active")?.id?.startsWith("screen-battle")) {
-        leave("انقطع الاتصال بالخادم");
+        leave(t("conn.lost.server"));
       }
     };
   });
@@ -76,7 +79,7 @@ function connect() {
 
 function send(type, payload) {
   if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-    notice("لا يوجد اتصال بالخادم");
+    notice(t("conn.none"));
     return false;
   }
   state.socket.send(JSON.stringify({ type, payload: payload || {} }));
@@ -115,7 +118,7 @@ function onEvent(type, payload) {
       break;
 
     case "opponent_disconnected":
-      leave("انسحب الخصم من المعركة");
+      leave(t("error.opponent.left.battle"));
       break;
 
     case "error":
@@ -129,14 +132,14 @@ function onEvent(type, payload) {
 
 function onServerError(reason) {
   const messages = {
-    invalid_code: "الكود غير صحيح، تأكد منه وحاول مجددًا",
-    room_full: "الغرفة ممتلئة",
-    invalid_score: "قيمة النتيجة غير صالحة",
-    stale_round: "انتهت هذه الجولة بالفعل",
-    wrong_phase: "انتهت هذه الجولة بالفعل",
+    invalid_code: t("error.invalid_code"),
+    room_full: t("error.room_full"),
+    invalid_score: t("error.invalid_score.battle"),
+    stale_round: t("error.stale_round"),
+    wrong_phase: t("error.stale_round"),
   };
   state.submitting = false;
-  notice(messages[reason] || "تعذّر تنفيذ الطلب");
+  notice(messages[reason] || t("error.generic"));
 }
 
 function applyPending() {
@@ -144,13 +147,14 @@ function applyPending() {
 
   if (state.pendingOver) {
     const over = state.pendingOver;
+    state.lastOver = over;
     state.pendingOver = null;
     state.pendingRound = null;
     state.totalWins = over.total_wins;
     const draw = over.winner_id === null;
     const won = over.winner_id === state.playerId;
     $("battle-over-emoji").textContent = draw ? "🤝" : won ? "🏆" : "😮‍💨";
-    $("battle-over-title").textContent = draw ? "تعادل في المعركة!" : won ? "فزت بالمعركة!" : "فاز خصمك بالمعركة";
+    $("battle-over-title").textContent = draw ? t("battle.over.draw") : won ? t("battle.over.won") : t("battle.over.lost");
     $("battle-over-mine").textContent = state.totalWins[state.playerId] || 0;
     $("battle-over-theirs").textContent = state.totalWins[state.opponentId] || 0;
     state.show("screen-battle-over");
@@ -164,9 +168,8 @@ function applyPending() {
   state.submitting = false;
   clearNotices();
 
-  $("battle-round-label").textContent = `الجولة ${round.round_number} من ${round.total_rounds}`;
   $("battle-target-emoji").textContent = round.sound_emoji;
-  $("battle-target-name").textContent = round.sound_name;
+  renderRoundText();
   $("battle-listen-status").textContent = "";
   $("battle-phase-ready").style.display = "block";
   $("battle-phase-countdown").style.display = "none";
@@ -181,13 +184,14 @@ function applyPending() {
 function onRoundResult(payload) {
   clearTimeout(state.dwellTimer);
   state.totalWins = payload.total_wins;
+  state.lastResult = payload;
 
   const myScore = payload.scores[state.playerId] ?? 0;
   const theirScore = payload.scores[state.opponentId] ?? 0;
   const won = payload.round_winner_id === state.playerId;
   const draw = payload.round_winner_id === null;
 
-  $("battle-result-round").textContent = `نتيجة الجولة ${payload.round_number}`;
+  $("battle-result-round").textContent = t("result.round", { number: payload.round_number });
   for (const [id, value] of [["battle-result-mine", myScore], ["battle-result-theirs", theirScore]]) {
     const el = $(id);
     el.textContent = value;
@@ -195,7 +199,7 @@ function onRoundResult(payload) {
     void el.offsetWidth;
     el.classList.add("pop");
   }
-  $("battle-result-banner").textContent = draw ? "تعادل 🤝" : won ? "فزت بالجولة! 🎉" : "خسرت الجولة";
+  $("battle-result-banner").textContent = draw ? t("battle.round.draw") : won ? t("battle.round.won") : t("battle.round.lost");
   $("battle-result-banner").className = draw ? "" : won ? "pass" : "fail";
   $("battle-result-wins-mine").textContent = state.totalWins[state.playerId] || 0;
   $("battle-result-wins-theirs").textContent = state.totalWins[state.opponentId] || 0;
@@ -204,15 +208,54 @@ function onRoundResult(payload) {
   state.dwellTimer = setTimeout(applyPending, RESULT_DWELL_MS);
 }
 
+/**
+ * The round's own text: the round counter and the target's name in the active
+ * language, resolved from the stable `sound_id` so both players are looking at
+ * the same sound whichever language each of them has chosen.
+ */
+function renderRoundText() {
+  const round = state.round;
+  if (!round) return;
+  const language = getLanguage();
+  const fromServer = language === "en"
+    ? (round.sound_name_en ?? round.sound_name)
+    : round.sound_name;
+  $("battle-round-label").textContent =
+    t("battle.round", { number: round.round_number, total: round.total_rounds });
+  $("battle-target-name").textContent = soundName(round.sound_id, language, fromServer);
+}
+
+/** Re-paint the live battle text after a language change. State is untouched. */
+export function redrawBattle() {
+  renderRoundText();
+  if (state.lastResult) {
+    const payload = state.lastResult;
+    const won = payload.round_winner_id === state.playerId;
+    const draw = payload.round_winner_id === null;
+    $("battle-result-round").textContent = t("result.round", { number: payload.round_number });
+    $("battle-result-banner").textContent =
+      draw ? t("battle.round.draw") : won ? t("battle.round.won") : t("battle.round.lost");
+  }
+  if (state.lastOver) {
+    const draw = state.lastOver.winner_id === null;
+    const won = state.lastOver.winner_id === state.playerId;
+    $("battle-over-title").textContent =
+      draw ? t("battle.over.draw") : won ? t("battle.over.won") : t("battle.over.lost");
+  }
+  if (!state.socket) setConnection(t("conn.offline"));
+}
+
 /* ---------------------------- the round itself ---------------------------- */
 
 function playTarget() {
   const round = state.round;
   if (!round) return;
-  $("battle-listen-status").textContent = "🔊 جارٍ التشغيل…";
-  playSamples(targetSamples(round.sound_id), SOUND_RATE).then(() => {
-    $("battle-listen-status").textContent = "";
-  });
+  $("battle-listen-status").textContent = t("rate.playing");
+  // Both players must hear the same audio the score is computed from, so the
+  // target is resolved (dropped-in recording, else synthesis) before playing.
+  loadTarget(round.sound_id)
+    .then((samples) => playSamples(samples, SOUND_RATE))
+    .then(() => { $("battle-listen-status").textContent = ""; });
 }
 
 async function startAttempt() {
@@ -243,7 +286,7 @@ async function startAttempt() {
     // No usable recording (denied mic, hardware failure): report 0 rather
     // than leaving the opponent to wait out the server's timeout.
     submitScore(round.round_number, 0);
-    notice("تعذّر التسجيل: " + (error.name || error.message));
+    notice(t("error.record.failed", { detail: error.name || error.message }));
     return;
   }
 
@@ -255,7 +298,7 @@ async function startAttempt() {
     return;
   }
 
-  const comparison = compareAudio(clip.samples, clip.sampleRate, targetSamples(round.sound_id), SOUND_RATE);
+  const comparison = compareAudio(clip.samples, clip.sampleRate, targetFor(round.sound_id), SOUND_RATE);
   submitScore(round.round_number, comparison.ok ? comparison.score : 0);
 }
 
@@ -286,15 +329,15 @@ export function initBattle(show) {
   $("btn-battle-create").onclick = async () => {
     clearNotices();
     try { await connect(); send("create_room", { mode: "battle" }); }
-    catch (e) { notice("تعذّر الاتصال بالخادم"); }
+    catch (e) { notice(t("conn.unreachable")); }
   };
 
   $("btn-battle-join").onclick = async () => {
     clearNotices();
     const code = $("input-battle-code").value.trim();
-    if (code.length !== 4) { notice("أدخل كودًا مكوّنًا من ٤ أرقام"); return; }
+    if (code.length !== 4) { notice(t("error.code.length")); return; }
     try { await connect(); send("join_room", { code }); }
-    catch (e) { notice("تعذّر الاتصال بالخادم"); }
+    catch (e) { notice(t("conn.unreachable")); }
   };
 
   $("input-battle-code").oninput = (event) => {
@@ -311,7 +354,7 @@ export function initBattle(show) {
 
   if (!microphoneSupported()) {
     $("battle-mic-hint").textContent =
-      "الميكروفون غير متاح على هذا العنوان — افتح الصفحة عبر 127.0.0.1 أو https.";
+      t("error.mic.address");
   }
 }
 

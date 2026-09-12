@@ -7,9 +7,10 @@
  * room-code game, reached only through this menu.
  */
 
-import { initBattle, leaveBattle } from "./battle.js";
-import { initOnline, leaveOnline } from "./online.js";
-import { initSinglePlayer, renderStageList } from "./single.js";
+import { initBattle, leaveBattle, redrawBattle } from "./battle.js";
+import { getLanguage, initLanguage, onLanguageChange, setLanguage, t } from "./i18n.js";
+import { initOnline, leaveOnline, redrawOnline } from "./online.js";
+import { initSinglePlayer, redrawSinglePlayer, renderStageList } from "./single.js";
 import { loadProgress } from "./storage.js";
 import { STAGES } from "./stages.js";
 
@@ -25,24 +26,24 @@ const topbarTitle = document.getElementById("topbar-title");
 const SCREENS = {
   "screen-menu": { title: null, back: null },
 
-  "screen-sp-stages": { title: "المراحل", back: "screen-menu" },
-  "screen-sp-stage": { title: "تحدي التقليد", back: "screen-sp-stages" },
-  "screen-sp-result": { title: "النتيجة", back: "screen-sp-stages" },
+  "screen-sp-stages": { title: "title.stages", back: "screen-menu" },
+  "screen-sp-stage": { title: "title.stage", back: "screen-sp-stages" },
+  "screen-sp-result": { title: "title.result", back: "screen-sp-stages" },
 
-  "screen-online-select": { title: "اللعب أونلاين", back: "screen-menu" },
+  "screen-online-select": { title: "title.online", back: "screen-menu" },
 
-  "screen-online-home": { title: "غرفة عادية", back: "screen-online-select" },
-  "screen-online-waiting": { title: "غرفة جديدة", back: "screen-online-home", leave: "online" },
-  "screen-online-play": { title: "الجولة", back: "screen-online-home", leave: "online" },
-  "screen-online-rating": { title: "التقييم", back: "screen-online-home", leave: "online" },
-  "screen-online-result": { title: "نتيجة الجولة", back: "screen-online-home", leave: "online" },
-  "screen-online-over": { title: "انتهت المباراة", back: "screen-online-home", leave: "online" },
+  "screen-online-home": { title: "title.room.normal", back: "screen-online-select" },
+  "screen-online-waiting": { title: "title.room.new", back: "screen-online-home", leave: "online" },
+  "screen-online-play": { title: "title.round", back: "screen-online-home", leave: "online" },
+  "screen-online-rating": { title: "title.rating", back: "screen-online-home", leave: "online" },
+  "screen-online-result": { title: "title.round.result", back: "screen-online-home", leave: "online" },
+  "screen-online-over": { title: "title.match.over", back: "screen-online-home", leave: "online" },
 
-  "screen-battle-home": { title: "معركة صوتية", back: "screen-online-select" },
-  "screen-battle-waiting": { title: "غرفة جديدة", back: "screen-battle-home", leave: "battle" },
-  "screen-battle-round": { title: "المعركة", back: "screen-battle-home", leave: "battle" },
-  "screen-battle-result": { title: "نتيجة الجولة", back: "screen-battle-home", leave: "battle" },
-  "screen-battle-over": { title: "انتهت المعركة", back: "screen-battle-home", leave: "battle" },
+  "screen-battle-home": { title: "title.battle", back: "screen-online-select" },
+  "screen-battle-waiting": { title: "title.room.new", back: "screen-battle-home", leave: "battle" },
+  "screen-battle-round": { title: "title.battle.arena", back: "screen-battle-home", leave: "battle" },
+  "screen-battle-result": { title: "title.round.result", back: "screen-battle-home", leave: "battle" },
+  "screen-battle-over": { title: "title.battle.over", back: "screen-battle-home", leave: "battle" },
 };
 
 let currentScreen = "screen-menu";
@@ -54,7 +55,7 @@ export function show(screenId) {
 
   const screen = SCREENS[screenId] || {};
   topbar.hidden = !screen.back;
-  topbarTitle.textContent = screen.title || "";
+  topbarTitle.textContent = screen.title ? t(screen.title) : "";
   window.scrollTo(0, 0);
 }
 
@@ -107,9 +108,43 @@ document.querySelectorAll(".btn-menu").forEach((button) => {
 function refreshMenuFooter() {
   const { best } = loadProgress();
   const done = STAGES.filter((stage) => (best[stage.id] ?? -1) >= stage.passMark).length;
-  document.getElementById("menu-foot").textContent =
-    done > 0 ? `تقدمك: ${done} من ${STAGES.length} مرحلة` : "ابدأ من المرحلة الأولى";
+  document.getElementById("menu-foot").textContent = done > 0
+    ? t("stages.progress.some", { done, total: STAGES.length })
+    : t("stages.progress.none");
 }
+
+/* ---------------------------- language ---------------------------- */
+
+function markActiveLanguage() {
+  for (const button of document.querySelectorAll(".lang")) {
+    const active = button.dataset.lang === getLanguage();
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  }
+}
+
+for (const button of document.querySelectorAll(".lang")) {
+  button.onclick = () => setLanguage(button.dataset.lang);
+}
+
+/**
+ * A language change has to redraw whatever is on screen right now, not just
+ * the static markup: the stage list, the bar title and the menu footer are all
+ * built in JavaScript. Progress is never touched — only text is rebuilt.
+ */
+onLanguageChange(() => {
+  markActiveLanguage();
+  const screen = SCREENS[currentScreen] || {};
+  topbarTitle.textContent = screen.title ? t(screen.title) : "";
+  refreshMenuFooter();
+  if (currentScreen === "screen-sp-stages") renderStageList(show);
+  redrawSinglePlayer();
+  redrawOnline();
+  redrawBattle();
+});
+
+initLanguage();
+markActiveLanguage();
 
 initSinglePlayer(show);
 initOnline(show);

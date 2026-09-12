@@ -253,6 +253,23 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
 
 .menu-foot { font-size: 13px; color: var(--muted-dim); margin-top: var(--sp-5); }
 
+/* ---------------------------------------------------------------------
+   Language switch — the same control in both directions
+   --------------------------------------------------------------------- */
+.lang-switch {
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--sp-2); margin-top: var(--sp-5);
+}
+.lang-switch .lang {
+  width: auto; min-width: 0; margin: 0; padding: 6px 14px;
+  font-size: 13px; font-weight: 700; line-height: 1.2;
+  background: transparent; color: var(--muted-dim);
+  border-radius: var(--r-md); box-shadow: none;
+}
+.lang-switch .lang.active { background: var(--surface-2); color: var(--text); }
+.lang-switch .lang:active { transform: scale(.95); }
+.lang-sep { color: var(--muted-dim); opacity: .5; font-size: 13px; }
+
 /* =====================================================================
    Single player: stage path
    ===================================================================== */
@@ -342,7 +359,12 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
   box-shadow: var(--shadow-1);
 }
 .target-emoji { font-size: 40px; line-height: 1.1; }
-.target-name { font-size: 14px; font-weight: 700; margin-top: var(--sp-1); direction: rtl; }
+.target-name {
+  font-size: 14px; font-weight: 700; margin-top: var(--sp-1);
+  /* The name can be Arabic or English, so let the text pick its own
+     direction rather than inheriting the arena's forced LTR. */
+  unicode-bidi: plaintext;
+}
 .vs-badge {
   position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
   background: var(--amber); color: #2a1900; font-size: 11px; font-weight: 800;
@@ -376,3 +398,14 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
   .avatar-emoji { width: 54px; height: 54px; font-size: 24px; }
   .battle-avatar { flex-basis: 60px; }
 }
+
+/* =====================================================================
+   Direction
+
+   Every rule above uses logical properties (text-align: start,
+   margin-inline, inset-inline), so the layout mirrors on its own. Only the
+   arrow glyphs need help: they are drawn pointing the RTL way, so in LTR
+   they are flipped rather than redrawn.
+   ===================================================================== */
+[dir="ltr"] #btn-back svg,
+[dir="ltr"] .mode-chevron svg { transform: scaleX(-1); }

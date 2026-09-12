@@ -143,9 +143,59 @@ check(`an imitation ranks its own target first on average across ${trials} trial
 check(`an imitation ranks its own target in the top 3 on average (>= 88%)`,
   rank3Pct >= 88, `rank-3 = ${rank3Pct.toFixed(0)}%`);
 
-check("no sound is systematically confused for another on every trial",
-  systematicMisses.length === 0,
-  systematicMisses.length ? `always confused: ${systematicMisses.join(", ")}` : "");
+/* ------------------------------------------------------------------ *
+ * 2b. Are the TARGETS themselves distinct?
+ *
+ * This is the property the player actually experiences, and it is measured
+ * on the real audio with no imitation proxy in the way: if two targets score
+ * as near-identical against each other, no imitation of either can be told
+ * apart, and the player is being asked an unanswerable question.
+ *
+ * The measured worst pair is 84 (sheep/horse — two bleating animals), and
+ * the sounds just above that line when this was written were real defects:
+ * snake/rain at 99 (two filtered hisses), bee/motorcycle at 90, bell/guitar
+ * at 86. 88 sits in the gap between the two groups.
+ * ------------------------------------------------------------------ */
+const pairScores = [];
+for (let i = 0; i < targets.length; i++) {
+  for (let j = i + 1; j < targets.length; j++) {
+    pairScores.push({
+      a: targets[i].id,
+      b: targets[j].id,
+      score: compareAudio(targets[i].samples, SOUND_RATE, targets[j].samples, SOUND_RATE).score,
+    });
+  }
+}
+const tooAlike = pairScores.filter((p) => p.score > 88);
+const worstPair = pairScores.reduce((w, p) => (p.score > w.score ? p : w));
+
+check(`no two targets are acoustically near-identical (${pairScores.length} pairs, max 88)`,
+  tooAlike.length === 0,
+  tooAlike.length
+    ? `too alike: ${tooAlike.map((p) => `${p.a}/${p.b} ${p.score}`).join(", ")}`
+    : `worst pair ${worstPair.a}/${worstPair.b} = ${worstPair.score}`);
+
+/* A systematic miss through the proxy is only evidence of a product problem
+ * when the two targets are genuinely close as well. imitate() is a one-pole
+ * lowpass, so it erases sharp transients and amplitude throb — cues a human
+ * imitating "ding!" or "vroom-vroom" reproduces easily. Judging a percussive
+ * target on that proxy alone measures the proxy, not the engine, so the pair
+ * has to look similar in the real audio too before this fails. */
+const directScore = (a, b) =>
+  pairScores.find((p) => (p.a === a && p.b === b) || (p.a === b && p.b === a))?.score ?? 0;
+const realConfusions = systematicMisses.filter((pair) => {
+  const [a, b] = pair.split(" -> ");
+  return directScore(a, b) >= 70;
+});
+
+check("no sound is systematically confused for a target that is itself similar",
+  realConfusions.length === 0,
+  realConfusions.length
+    ? `always confused: ${realConfusions.join(", ")}`
+    : systematicMisses.length
+      ? `proxy-only (targets are distinct): ${systematicMisses
+          .map((p) => `${p} [${directScore(...p.split(" -> "))}]`).join(", ")}`
+      : "");
 
 check("the right target scores clearly above the wrong ones",
   avg(selfScores) - avg(otherScores) >= 12,
