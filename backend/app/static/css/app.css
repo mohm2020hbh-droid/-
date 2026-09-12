@@ -277,6 +277,10 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
   max-height: 60vh; overflow-y: auto; margin: var(--sp-3) 0;
   padding-inline-start: var(--sp-2);
   position: relative;
+  /* The rows are stretched to fit rather than sized at 100%: they carry a
+     start margin for the timeline rail, and 100% (which every button gets by
+     default) overflows by exactly that margin and clips the score column. */
+  display: flex; flex-direction: column;
 }
 .stage-list::before {
   content: ""; position: absolute; top: 4px; bottom: 4px;
@@ -285,7 +289,8 @@ hr { border: none; border-top: 1px solid var(--surface-3); margin: var(--sp-5) 0
 }
 .stage {
   position: relative;
-  display: flex; align-items: center; gap: var(--sp-3); width: 100%; text-align: start;
+  display: flex; align-items: center; gap: var(--sp-3); text-align: start;
+  width: auto;   /* let the list stretch it; see .stage-list */
   background: var(--surface-2); border: 1px solid rgba(255, 255, 255, .04);
   margin-block: var(--sp-2); margin-inline-start: var(--sp-6); margin-inline-end: 0;
   padding: var(--sp-3) var(--sp-4);

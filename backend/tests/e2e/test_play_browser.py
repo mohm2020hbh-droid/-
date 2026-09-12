@@ -421,6 +421,31 @@ def run_checks(browser, base: str) -> None:
         )
         check(f"the stage list fits a {width}px screen", overflow <= 1, f"overflow {overflow}px")
 
+        # The rows sit inside the list rather than spilling past its edge.
+        # They carry a start margin for the timeline rail, so the default
+        # `button { width: 100% }` overflows by exactly that margin and clips
+        # the score column — in whichever direction the page is running.
+        row_fit = page.evaluate(
+            """() => {
+            const list = document.getElementById('stage-list');
+            const row = list.querySelector('.stage');
+            const score = row.querySelector('.stage-score');
+            const lb = list.getBoundingClientRect();
+            const rb = row.getBoundingClientRect();
+            const sb = score.getBoundingClientRect();
+            return {
+              listOverflow: list.scrollWidth - list.clientWidth,
+              rowSpill: Math.round(Math.max(lb.left - rb.left, rb.right - lb.right)),
+              scoreInside: sb.left >= rb.left - 1 && sb.right <= rb.right + 1,
+            };
+          }"""
+        )
+        check(f"stage rows stay inside the list at {width}px",
+              row_fit["listOverflow"] <= 1 and row_fit["rowSpill"] <= 1,
+              f"list overflow {row_fit['listOverflow']}px, row spill {row_fit['rowSpill']}px")
+        check(f"the stage score column is not clipped at {width}px",
+              row_fit["scoreInside"])
+
     check("no JavaScript error during the whole run", not errors, "; ".join(errors[:3]))
     context.close()
 
