@@ -34,6 +34,16 @@ async def health(request: Request) -> dict:
 
 @router.get("/play", include_in_schema=False)
 async def play() -> FileResponse:
-    """The browser client — the same protocol the Android app speaks."""
+    """The browser client — the same protocol the Android app speaks.
 
-    return FileResponse(STATIC_DIR / "index.html", media_type="text/html")
+    The page changes as the game is developed, so it must never be cached:
+    without this header a browser can keep showing an old menu or an old
+    screen flow indefinitely after an update, with nothing on the server
+    side to indicate anything is wrong.
+    """
+
+    return FileResponse(
+        STATIC_DIR / "index.html",
+        media_type="text/html",
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
