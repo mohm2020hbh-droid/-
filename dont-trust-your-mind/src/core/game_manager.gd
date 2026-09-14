@@ -26,6 +26,10 @@ var pending_daily: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Connected here, once, globally: an achievement can in principle be
+	# granted from any flow (campaign or daily), and this way the sound
+	# always plays regardless of which screen happens to be open.
+	achievement_granted.connect(func(_id: String) -> void: Audio.play(Audio.Sfx.UNLOCK))
 
 ## Deferred on purpose: the boot screen routes away during its own _ready, and
 ## swapping scenes while the tree is still parenting the current one makes Godot
@@ -65,18 +69,26 @@ func continue_stage() -> int:
 	var s := int(SaveManager.data.get("current_stage", 1))
 	return clampi(s, 1, Puzzles.total_stages())
 
-## Applies a finished campaign attempt to the profile and checks achievements.
+## Applies a finished campaign attempt to the profile and checks achievements,
+## then commits everything to disk in one synchronous write before returning.
+##
+## This is deliberately not debounced: a player who solves a stage and force
+## closes the app half a second later must still find that stage solved next
+## time they open it. save_now() is a few milliseconds for a save this small,
+## so there is no performance reason to delay it, and every reason not to.
 func submit_result(result: PuzzleResult) -> void:
 	SaveManager.record_result(result)
 	if result.solved():
 		SaveManager.touch_streak(Puzzles.today_key())
 	_check_achievements(result)
+	SaveManager.save_now()
 
 func submit_daily(day: String, result: PuzzleResult) -> void:
 	SaveManager.record_daily(day, result)
 	if result.solved():
 		SaveManager.touch_streak(day)
 	_check_achievements(result)
+	SaveManager.save_now()
 
 func _check_achievements(result: PuzzleResult) -> void:
 	var granted: Array[String] = []
@@ -140,4 +152,4 @@ func share_text_for_daily(day: String, seconds: float) -> String:
 
 func share(text: String) -> void:
 	DisplayServer.clipboard_set(text)
-	Audio.play(Audio.Sfx.REVEAL)
+	Audio.play(Audio.Sfx.BUTTON)

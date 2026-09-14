@@ -49,9 +49,10 @@ answer is 5 in Arabic and 7 in English.
 
 ## Contents
 
-- **50 stages** across five chapters, each chapter introducing a different kind
+- **150 stages** across ten chapters, each chapter introducing a different kind
   of deception: what you see, what you read, what you remember, what you touch,
-  what you believe.
+  what you believe, what you assume, what repeats, what you rush, what the
+  screen hides, what you trust.
 - **10 daily puzzles**, selected deterministically from the date, so every
   device agrees without a server.
 - Stars, streaks, best times, eight achievements, shareable results that never

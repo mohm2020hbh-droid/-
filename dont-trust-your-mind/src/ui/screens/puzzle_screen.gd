@@ -4,7 +4,6 @@ extends ScreenBase
 ## the one place where chrome can itself become part of a puzzle.
 
 const REVEAL_DELAY := 0.85
-const HINT_KEYS := ["ui:hint", "ui:skip", "ui:stage", "ui:timer", "ui:instruction", "ui:back"]
 
 var puzzle: PuzzleDefinition
 var session: PuzzleSession
@@ -20,9 +19,11 @@ var _hint_label: Label
 var _hint_button: Button
 var _skip_button: Button
 var _back_button: Button
-var _progress_label: Label
+var _progress_row: HBoxContainer
+var _progress_started := false
 var _overlay: ResultOverlay
 var _armed: Dictionary = {}   ## "ui:x" -> true when this puzzle claims that chrome.
+var _last_tick_second: int = -1
 
 func on_back() -> void:
 	_leave()
@@ -64,7 +65,7 @@ func _top_bar() -> Control:
 
 	_back_button = Button.new()
 	_back_button.text = "‹"
-	_back_button.custom_minimum_size = Vector2(56, 56)
+	_back_button.custom_minimum_size = Vector2(GameTheme.TOUCH_COMPACT, GameTheme.TOUCH_COMPACT)
 	_back_button.add_theme_font_size_override("font_size", 30)
 	_back_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	_back_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
@@ -98,7 +99,7 @@ func _instruction_block() -> Control:
 	box.add_theme_constant_override("separation", 8)
 
 	_instruction = make_title(puzzle.instruction, GameTheme.SIZE_INSTRUCTION)
-	_instruction.custom_minimum_size = Vector2(0, 64)
+	_instruction.custom_minimum_size = Vector2(0, 72)
 	if _armed.has("ui:instruction"):
 		_instruction.mouse_filter = Control.MOUSE_FILTER_STOP
 		_instruction.gui_input.connect(_chrome_input.bind("ui:instruction", Callable()))
@@ -126,7 +127,7 @@ func _board_area() -> Control:
 
 func _hint_area() -> Control:
 	_hint_label = make_body("", Palette.YELLOW, GameTheme.SIZE_SMALL)
-	_hint_label.custom_minimum_size = Vector2(0, 52)
+	_hint_label.custom_minimum_size = Vector2(0, 58)
 	_hint_label.visible = false
 	return _hint_label
 
@@ -134,9 +135,13 @@ func _bottom_bar() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 
-	_progress_label = make_body("", Palette.TEXT_FAINT, 19)
-	_progress_label.visible = false
-	box.add_child(_progress_label)
+	_progress_row = HBoxContainer.new()
+	_progress_row.layout_direction = Loc.layout_direction()
+	_progress_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_progress_row.add_theme_constant_override("separation", 6)
+	_progress_row.custom_minimum_size = Vector2(0, 24)
+	_progress_row.visible = false
+	box.add_child(_progress_row)
 
 	var row := HBoxContainer.new()
 	row.layout_direction = Loc.layout_direction()
@@ -144,7 +149,7 @@ func _bottom_bar() -> Control:
 
 	_hint_button = Button.new()
 	_hint_button.text = Loc.t("hud.hint")
-	_hint_button.custom_minimum_size = Vector2(0, 66)
+	_hint_button.custom_minimum_size = Vector2(0, GameTheme.TOUCH_STANDARD)
 	_hint_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_hint_button.layout_direction = Loc.layout_direction()
 	_hint_button.pressed.connect(func() -> void: _chrome_pressed("ui:hint", _use_hint))
@@ -152,7 +157,7 @@ func _bottom_bar() -> Control:
 
 	_skip_button = Button.new()
 	_skip_button.text = Loc.t("hud.skip")
-	_skip_button.custom_minimum_size = Vector2(0, 66)
+	_skip_button.custom_minimum_size = Vector2(0, GameTheme.TOUCH_STANDARD)
 	_skip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_skip_button.layout_direction = Loc.layout_direction()
 	_skip_button.disabled = not puzzle.allow_skip
@@ -168,7 +173,7 @@ func _bottom_bar() -> Control:
 ## and routes the tap into the solution rule instead. Un-armed chrome never feeds
 ## the session, so a player can always use Hint or Back without risking a strike.
 func _chrome_pressed(target: String, normal_action: Callable) -> void:
-	Audio.play(Audio.Sfx.TAP)
+	Audio.play(Audio.Sfx.BUTTON)
 	if _armed.has(target) and session != null and not session.finished:
 		session.tap(target)
 		return
@@ -221,16 +226,30 @@ func _on_countdown(seconds_left: float) -> void:
 
 func _on_sequence(progress: int, total: int) -> void:
 	Audio.play(Audio.Sfx.CORRECT, 0.85 + 0.1 * progress)
-	_progress_label.visible = true
-	_progress_label.text = Loc.t("fmt.of", {"a": progress, "b": total})
+	_progress_started = true
+	_set_progress(progress, total)
 
 func _on_sequence_reset() -> void:
-	_progress_label.visible = _progress_label.text != ""
-	_progress_label.text = Loc.t("fmt.of", {"a": 0, "b": puzzle.solution.targets.size()})
+	_set_progress(0, puzzle.solution.targets.size())
+
+## Rebuilds the "X of Y" progress row from separate Label nodes rather than
+## one templated string — see make_ratio_line()'s docstring in
+## screen_base.gd for why: two numbers in one Arabic string can render in
+## the wrong visual order, which a plain Label.text assignment cannot avoid.
+func _set_progress(current: int, total: int) -> void:
+	_progress_row.visible = _progress_started
+	for child in _progress_row.get_children():
+		child.queue_free()
+	for text in [str(current), Loc.t("fmt.of_separator"), str(total)]:
+		var label := Label.new()
+		label.text = text
+		label.add_theme_font_size_override("font_size", 19)
+		label.add_theme_color_override("font_color", Palette.TEXT_FAINT)
+		_progress_row.add_child(label)
 
 func _on_solved(result: PuzzleResult) -> void:
 	set_process(false)
-	Audio.play(Audio.Sfx.SUCCESS)
+	Audio.play(Audio.Sfx.STAGE_COMPLETE)
 	Audio.buzz(35)
 	board.reveal_solution()
 	_lock_chrome()
@@ -269,19 +288,38 @@ func _open_overlay(result: PuzzleResult, delay: float) -> void:
 
 # --- HUD state ----------------------------------------------------------------
 
+const TICK_WARNING_SECONDS := 3
+
 func _refresh_counter(seconds_left: float = -1.0) -> void:
 	var parts: PackedStringArray = PackedStringArray()
+	var tickable_left := -1.0
 	if session.puzzle.solution.kind == SolutionRule.Kind.NO_TAP:
-		parts.append(Loc.format_seconds(maxf(session.no_tap_left(), 0.0)))
+		tickable_left = maxf(session.no_tap_left(), 0.0)
+		parts.append(Loc.format_seconds(tickable_left))
 	elif puzzle.show_timer and puzzle.time_limit > 0.0:
 		var left := seconds_left if seconds_left >= 0.0 else session.seconds_left()
+		tickable_left = left
 		parts.append(Loc.format_seconds(left))
-		if left <= 3.0:
+		if left <= float(TICK_WARNING_SECONDS):
 			_counter_label.add_theme_color_override("font_color", Palette.RED)
 	if puzzle.show_attempts and puzzle.max_attempts > 0:
 		parts.append("%s %d/%d" % [Loc.t("hud.attempts"),
 				session.wrong_attempts, puzzle.max_attempts])
 	_counter_label.text = "   ".join(parts)
+	_maybe_tick(tickable_left)
+
+## A short, dry tick once per whole second while a countdown is inside its
+## last few seconds — real audible pressure for a timed puzzle, without
+## firing every frame (countdown_changed fires every tick(), i.e. every
+## frame, so this gates on the integer second actually changing).
+func _maybe_tick(seconds_left: float) -> void:
+	if seconds_left < 0.0 or seconds_left > float(TICK_WARNING_SECONDS):
+		_last_tick_second = -1
+		return
+	var whole := int(ceil(seconds_left - 0.001))
+	if whole != _last_tick_second and whole >= 0:
+		_last_tick_second = whole
+		Audio.play(Audio.Sfx.TICK)
 
 func _show_note(text: String, color: Color) -> void:
 	_hint_label.visible = true
@@ -311,6 +349,7 @@ func _next() -> void:
 	if is_daily or next_stage < 0:
 		_leave()
 		return
+	Audio.play(Audio.Sfx.TRANSITION)
 	Game.start_stage(next_stage)
 
 func _retry() -> void:

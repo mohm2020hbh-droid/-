@@ -8,11 +8,19 @@ const FONT_REGULAR := "res://assets/fonts/Cairo-Regular.ttf"
 const FONT_SEMIBOLD := "res://assets/fonts/Cairo-SemiBold.ttf"
 const FONT_BOLD := "res://assets/fonts/Cairo-Bold.ttf"
 
-const SIZE_TITLE := 44
-const SIZE_INSTRUCTION := 34
-const SIZE_BODY := 26
-const SIZE_SMALL := 21
-const SIZE_BUTTON := 26
+const SIZE_TITLE := 48
+const SIZE_INSTRUCTION := 38
+const SIZE_BODY := 28
+const SIZE_SMALL := 22
+const SIZE_BUTTON := 28
+
+## Shared touch-target heights, so every screen enlarges together instead of
+## drifting into inconsistent sizes. All comfortably clear Android's 48dp
+## minimum even accounting for the design viewport's own scaling.
+const TOUCH_PRIMARY := 100   ## The one dominant action on a screen.
+const TOUCH_STANDARD := 84   ## Ordinary buttons: Hint, Skip, Retry, toggles.
+const TOUCH_COMPACT := 68    ## Icon-only controls, e.g. the top-bar back arrow.
+const TOUCH_LINK := 56       ## De-emphasized text-link controls.
 
 static func regular() -> Font:
 	return load(FONT_REGULAR)
@@ -53,10 +61,10 @@ static func flat_box(bg: Color, radius: int = 16, border: int = 0,
 		sb.border_width_top = border
 		sb.border_width_bottom = border
 		sb.border_color = border_color
-	sb.content_margin_left = 22
-	sb.content_margin_right = 22
-	sb.content_margin_top = 14
-	sb.content_margin_bottom = 14
+	sb.content_margin_left = 24
+	sb.content_margin_right = 24
+	sb.content_margin_top = 16
+	sb.content_margin_bottom = 16
 	sb.anti_aliasing = true
 	return sb
 

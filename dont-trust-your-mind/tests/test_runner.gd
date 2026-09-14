@@ -12,6 +12,7 @@ const SUITES := [
 	preload("res://tests/suites/rendering.gd"),
 	preload("res://tests/suites/playthrough.gd"),
 	preload("res://tests/suites/responsive.gd"),
+	preload("res://tests/suites/persistence.gd"),
 ]
 
 func _ready() -> void:

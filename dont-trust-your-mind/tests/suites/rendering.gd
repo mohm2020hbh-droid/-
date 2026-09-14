@@ -119,9 +119,16 @@ func _test_daily_selection() -> void:
 	check(Puzzles.get_daily("2026-09-14", "ar") != null, "the daily resolves in Arabic")
 	check(Puzzles.get_daily("2026-09-14", "en") != null, "the daily resolves in English")
 
-## Touch targets must stay finger-sized on the smallest screen the game supports.
+## Touch targets must stay finger-sized on the smallest screen the game
+## supports, and this guards the enlarged minimums specifically — a future
+## edit that quietly shrinks them back toward the old, player-reported-as-too-
+## small values should fail here, not just clear a generic lower bound.
 func _test_widget_sizes() -> void:
-	check(PuzzleBoard.MIN_TOUCH >= 80.0,
-			"the minimum touch target is at least 80 units on a 720-wide viewport")
-	check(CharStrip.MIN_TAP_WIDTH >= 48.0,
-			"character tap snapping covers at least 48 units")
+	check(PuzzleBoard.MIN_TOUCH >= 100.0,
+			"the minimum touch target is at least 100 units on a 720-wide viewport")
+	check(CharStrip.MIN_TAP_WIDTH >= 60.0,
+			"character tap snapping covers at least 60 units")
+	check(GameTheme.TOUCH_STANDARD >= 80.0,
+			"standard chrome buttons (Hint, Skip, Retry, toggles) are at least 80 units tall")
+	check(GameTheme.TOUCH_PRIMARY >= 96.0,
+			"the primary action on a screen is at least 96 units tall")

@@ -20,11 +20,11 @@ func build_content() -> void:
 func _option(label: String, code: String) -> Button:
 	var button := Button.new()
 	button.text = label
-	button.custom_minimum_size = Vector2(0, 92)
+	button.custom_minimum_size = Vector2(0, GameTheme.TOUCH_PRIMARY)
 	button.add_theme_font_size_override("font_size", 32)
 	button.add_theme_font_override("font", GameTheme.semibold())
 	button.pressed.connect(func() -> void:
-		Audio.play(Audio.Sfx.CORRECT)
+		Audio.play(Audio.Sfx.BUTTON)
 		SaveManager.set_language(code)
 		SaveManager.save_now()
 		Loc.set_locale(code)

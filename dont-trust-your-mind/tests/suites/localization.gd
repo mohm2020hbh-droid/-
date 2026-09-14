@@ -15,7 +15,11 @@ func run() -> void:
 	_test_direction()
 	_test_bidi_positions()
 	_test_font_coverage()
+	_test_multi_number_bidi_order()
 	Loc.set_locale(original)
+
+static func _strip_isolates(text: String) -> String:
+	return text.replace(char(0x2068), "").replace(char(0x2069), "")
 
 func _test_strings() -> void:
 	for loc in Loc.SUPPORTED:
@@ -25,10 +29,17 @@ func _test_strings() -> void:
 			check(not value.is_empty(), "[%s] string is not empty: %s" % [loc, key])
 			check(value != key or key.begins_with("lang."),
 					"[%s] string is translated: %s" % [loc, key])
+	# Substituted values are wrapped in bidi isolates (U+2068/U+2069) so a
+	# template with more than one number can't have them visually reorder in
+	# Arabic (see Loc.t()'s docstring for the concrete bug this prevents).
+	# The isolates are invisible but present in the string, so compare with
+	# them stripped rather than asserting exact equality against plain text.
 	Loc.set_locale("ar")
-	equal(Loc.t("fmt.stage", {"n": 7}), "مرحلة 7", "argument substitution works in Arabic")
+	equal(_strip_isolates(Loc.t("fmt.stage", {"n": 7})), "مرحلة 7",
+			"argument substitution works in Arabic")
 	Loc.set_locale("en")
-	equal(Loc.t("fmt.stage", {"n": 7}), "Stage 7", "argument substitution works in English")
+	equal(_strip_isolates(Loc.t("fmt.stage", {"n": 7})), "Stage 7",
+			"argument substitution works in English")
 
 func _test_direction() -> void:
 	Loc.set_locale("ar")
@@ -78,6 +89,43 @@ func _test_font_coverage() -> void:
 			if int(glyph.get("index", 1)) == 0:
 				missing += 1
 		equal(missing, 0, "no missing glyphs in sample: %s" % sample)
+
+## Proves the actual bug found on the stage-select screen is fixed: a
+## template with two numbers ("6 / 150 stars") rendered in Arabic with the
+## numbers visually swapped — a pure string-equality test cannot catch this,
+## since the character order in the string was already correct; only the
+## on-screen pixel order was wrong. This shapes the real templated string
+## through TextServer and checks where "6" and "150" actually land.
+func _test_multi_number_bidi_order() -> void:
+	Loc.set_locale("ar")
+	var font := GameTheme.regular()
+	var text := Loc.t("stages.stars", {"a": 6, "b": 150})
+	check(text.contains(char(0x2068)), "substituted numbers are wrapped in bidi isolates")
+
+	var line := _shape(text, "ar", font)
+	var rid := line.get_rid()
+
+	var pos_a := text.find("6")
+	var pos_b := text.find("150")
+	check(pos_a >= 0 and pos_b >= 0 and pos_a < pos_b,
+			"sanity: '6' still precedes '150' in logical (character) order")
+
+	var box_a := _ts.shaped_text_get_selection(rid, pos_a, pos_a + 1)
+	var box_b := _ts.shaped_text_get_selection(rid, pos_b, pos_b + 3)
+	check(not box_a.is_empty() and not box_b.is_empty(),
+			"both numbers resolve to a visual position in the shaped line")
+	if box_a.is_empty() or box_b.is_empty():
+		return
+
+	# RTL reading order: the value that comes first in the template ("a" = 6,
+	# the earned star count) must sit to the right of the one that comes
+	# second ("b" = 150, the total) — the same "first = rightmost" rule the
+	# rest of this suite already proves for word-initial characters.
+	var x_a: float = box_a[0].x
+	var x_b: float = box_b[0].x
+	check(x_a > x_b,
+			"the first number (6) sits to the right of the second (150) in Arabic (x=%.0f vs x=%.0f)"
+					% [x_a, x_b])
 
 func _shape(text: String, loc: String, font: Font) -> TextLine:
 	var line := TextLine.new()

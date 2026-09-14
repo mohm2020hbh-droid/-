@@ -9,9 +9,14 @@ const CHAPTER_FILES := [
 	"res://content/puzzles/chapter_03.json",
 	"res://content/puzzles/chapter_04.json",
 	"res://content/puzzles/chapter_05.json",
+	"res://content/puzzles/chapter_06.json",
+	"res://content/puzzles/chapter_07.json",
+	"res://content/puzzles/chapter_08.json",
+	"res://content/puzzles/chapter_09.json",
+	"res://content/puzzles/chapter_10.json",
 ]
 const DAILY_FILE := "res://content/puzzles/daily.json"
-const CHAPTER_COUNT := 5
+const CHAPTER_COUNT := 10
 
 var _raw: Array[Dictionary] = []          ## Campaign puzzles in stage order.
 var _daily_raw: Array[Dictionary] = []

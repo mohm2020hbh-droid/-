@@ -10,7 +10,7 @@ signal press_started(target: String)
 signal press_ended(target: String)
 
 const SHAPE_BASE := 118.0
-const MIN_TOUCH := 88.0        ## No interactive element is ever smaller than this.
+const MIN_TOUCH := 104.0       ## No interactive element is ever smaller than this.
 const LABEL_PADDING := 18.0
 const MIN_BOARD_WIDTH := 240.0
 const SIDE_PADDING := 26.0     ## Matches ScreenBase.EDGE_PADDING.
@@ -249,7 +249,7 @@ func _make_label(element: PuzzleElement) -> Control:
 	label.add_theme_color_override("font_color", Palette.resolve(element.color, Palette.TEXT))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.text_direction = Control.TEXT_DIRECTION_AUTO
+	label.text_direction = Loc.text_direction()
 	label.layout_direction = Loc.layout_direction()
 
 	# A label inside a flow row has no natural width to defend itself with, so it
@@ -276,8 +276,8 @@ func _make_button(element: PuzzleElement) -> Control:
 	var button := Button.new()
 	button.text = element.text
 	button.custom_minimum_size = Vector2(
-			minf(maxf(180.0 * element.scale, MIN_TOUCH), _usable_width),
-			maxf(88.0 * element.scale, MIN_TOUCH))
+			minf(maxf(200.0 * element.scale, MIN_TOUCH), _usable_width),
+			maxf(MIN_TOUCH * element.scale, MIN_TOUCH))
 	button.layout_direction = Loc.layout_direction()
 	button.add_theme_font_size_override("font_size",
 			element.font_size if element.font_size > 0 else GameTheme.SIZE_BUTTON)

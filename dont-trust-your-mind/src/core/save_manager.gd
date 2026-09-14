@@ -103,7 +103,13 @@ func save_now() -> bool:
 	_dirty = false
 	return true
 
-## Coalesces bursts of writes (a solve touches several fields) into one flush.
+## Coalesces bursts of *non-critical* writes (dragging a volume slider fires
+## many value_changed signals a frame apart) into one flush shortly after they
+## stop. Never used for progress: a debounced write is a race against the app
+## being killed before the timer fires, which is exactly the bug that made
+## solved stages vanish on Android when the player closed the app right after
+## a solve. Progress is committed synchronously instead — see save_now()
+## callers in GameManager.submit_result()/submit_daily().
 func mark_dirty() -> void:
 	_dirty = true
 	if _flush_timer != null and _flush_timer.time_left > 0.0:
@@ -196,7 +202,9 @@ func record_result(result: PuzzleResult) -> void:
 
 	if result.solved() and result.stage_index >= int(data.get("current_stage", 1)):
 		data["current_stage"] = result.stage_index + 1
-	mark_dirty()
+	# Not mark_dirty(): this write is progress, and progress is flushed
+	# synchronously by the caller (GameManager.submit_result), not on a timer.
+	_dirty = true
 	progress_changed.emit()
 
 func reset_progress() -> void:
@@ -222,7 +230,7 @@ func touch_streak(today: String) -> void:
 		data["streak"] = 1
 	data["best_streak"] = maxi(int(data.get("best_streak", 0)), int(data["streak"]))
 	data["last_played_day"] = today
-	mark_dirty()
+	_dirty = true  # Flushed synchronously by the caller; see mark_dirty()'s docstring.
 
 static func _is_previous_day(last: String, today: String) -> bool:
 	var a := _to_unix_day(last)
@@ -254,7 +262,7 @@ func record_daily(day: String, result: PuzzleResult) -> void:
 	}
 	if result.solved():
 		data["total_points"] = int(data.get("total_points", 0)) + result.points
-	mark_dirty()
+	_dirty = true  # Flushed synchronously by the caller; see mark_dirty()'s docstring.
 	progress_changed.emit()
 
 # --- Achievements -------------------------------------------------------------
@@ -266,5 +274,5 @@ func grant_achievement(id: String) -> bool:
 	if has_achievement(id):
 		return false
 	data["achievements"].append(id)
-	mark_dirty()
+	_dirty = true  # Flushed synchronously by the caller; see mark_dirty()'s docstring.
 	return true

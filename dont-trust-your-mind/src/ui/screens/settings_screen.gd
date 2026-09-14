@@ -38,7 +38,7 @@ func _language_row() -> Control:
 	for code in Loc.SUPPORTED:
 		var button := Button.new()
 		button.text = "العربية" if code == "ar" else "English"
-		button.custom_minimum_size = Vector2(0, 70)
+		button.custom_minimum_size = Vector2(0, GameTheme.TOUCH_STANDARD)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if code == Loc.locale:
 			button.add_theme_stylebox_override("normal",
@@ -50,7 +50,7 @@ func _language_row() -> Control:
 func _switch_language(code: String) -> void:
 	if code == Loc.locale:
 		return
-	Audio.play(Audio.Sfx.CORRECT)
+	Audio.play(Audio.Sfx.BUTTON)
 	SaveManager.set_language(code)
 	SaveManager.save_now()
 	Loc.set_locale(code)
@@ -62,37 +62,37 @@ func _volume_row() -> Control:
 	slider.max_value = 1.0
 	slider.step = 0.05
 	slider.value = float(SaveManager.get_setting("volume", 0.8))
-	slider.custom_minimum_size = Vector2(0, 46)
+	slider.custom_minimum_size = Vector2(0, 56)
 	slider.layout_direction = Loc.layout_direction()
 	slider.value_changed.connect(func(value: float) -> void:
 		SaveManager.set_setting("volume", value))
 	slider.drag_ended.connect(func(changed: bool) -> void:
 		if changed:
-			Audio.play(Audio.Sfx.TAP))
+			Audio.play(Audio.Sfx.BUTTON))
 	return slider
 
 func _toggle(label: String, key: String) -> Control:
 	var button := CheckButton.new()
 	button.text = label
 	button.button_pressed = bool(SaveManager.get_setting(key, true))
-	button.custom_minimum_size = Vector2(0, 62)
+	button.custom_minimum_size = Vector2(0, 76)
 	button.layout_direction = Loc.layout_direction()
 	button.toggled.connect(func(on: bool) -> void:
 		SaveManager.set_setting(key, on)
-		Audio.play(Audio.Sfx.TAP))
+		Audio.play(Audio.Sfx.BUTTON))
 	return button
 
 func _reset_button() -> Control:
 	var button := Button.new()
 	button.text = Loc.t("settings.reset")
-	button.custom_minimum_size = Vector2(0, 66)
+	button.custom_minimum_size = Vector2(0, GameTheme.TOUCH_STANDARD)
 	button.layout_direction = Loc.layout_direction()
 	button.add_theme_color_override("font_color", Palette.RED)
 	button.pressed.connect(_confirm_reset)
 	return button
 
 func _confirm_reset() -> void:
-	Audio.play(Audio.Sfx.TAP)
+	Audio.play(Audio.Sfx.BUTTON)
 	var dialog := ConfirmationDialog.new()
 	dialog.dialog_text = Loc.t("settings.reset_confirm")
 	dialog.ok_button_text = Loc.t("settings.yes")
@@ -101,6 +101,6 @@ func _confirm_reset() -> void:
 	add_child(dialog)
 	dialog.confirmed.connect(func() -> void:
 		SaveManager.reset_progress()
-		Audio.play(Audio.Sfx.REVEAL)
+		Audio.play(Audio.Sfx.TRANSITION)
 		Game.goto("menu"))
 	dialog.popup_centered()

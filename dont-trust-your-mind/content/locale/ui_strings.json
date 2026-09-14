@@ -20,10 +20,12 @@
   "hud.retry":            {"ar": "أعد",                      "en": "Retry"},
   "hud.back":             {"ar": "رجوع",                     "en": "Back"},
   "hud.next":             {"ar": "التالي",                   "en": "Next"},
+  "hud.next_stage":       {"ar": "المرحلة التالية",          "en": "NEXT STAGE"},
   "hud.attempts":         {"ar": "محاولات",                  "en": "Attempts"},
   "hud.close":            {"ar": "إغلاق",                    "en": "Close"},
 
   "result.solved":        {"ar": "صحيح",                     "en": "Correct"},
+  "result.stage_complete":{"ar": "أحسنت!",                   "en": "STAGE COMPLETE"},
   "result.failed_time":   {"ar": "انتهى الوقت",              "en": "Out of time"},
   "result.failed_tries":  {"ar": "انتهت المحاولات",          "en": "Out of attempts"},
   "result.skipped":       {"ar": "تم التخطي",                "en": "Skipped"},
@@ -44,17 +46,28 @@
   "stages.locked":        {"ar": "مقفلة",                    "en": "Locked"},
   "stages.chapter":       {"ar": "الفصل {n}",                "en": "Chapter {n}"},
   "stages.stars":         {"ar": "{a} / {b} نجمة",           "en": "{a} / {b} stars"},
+  "stages.stars_unit":    {"ar": "نجمة",                     "en": "stars"},
 
   "chapter.1":            {"ar": "ما تراه",                  "en": "What You See"},
   "chapter.2":            {"ar": "ما تقرأه",                 "en": "What You Read"},
   "chapter.3":            {"ar": "ما تتذكره",                "en": "What You Remember"},
   "chapter.4":            {"ar": "ما تلمسه",                 "en": "What You Touch"},
   "chapter.5":            {"ar": "ما تصدّقه",                "en": "What You Believe"},
+  "chapter.6":            {"ar": "ما تفترضه",                "en": "What You Assume"},
+  "chapter.7":            {"ar": "ما يتكرر",                 "en": "What Repeats"},
+  "chapter.8":            {"ar": "ما تتسرّع فيه",            "en": "What You Rush"},
+  "chapter.9":            {"ar": "ما تخفيه الشاشة",          "en": "What the Screen Hides"},
+  "chapter.10":           {"ar": "ما تثق به",                "en": "What You Trust"},
   "chapter.1.sub":        {"ar": "خداع بصري ومعنى",          "en": "Sight and meaning"},
   "chapter.2.sub":        {"ar": "الحروف والاتجاه",          "en": "Letters and direction"},
   "chapter.3.sub":        {"ar": "الذاكرة والمنطق المقلوب",  "en": "Memory and reversal"},
   "chapter.4.sub":        {"ar": "الواجهة والتوقيت",         "en": "Interface and timing"},
   "chapter.5.sub":        {"ar": "قواعد اللعبة نفسها",       "en": "The rules themselves"},
+  "chapter.6.sub":        {"ar": "أول انطباع فخّ",           "en": "First instinct is a trap"},
+  "chapter.7.sub":        {"ar": "الأنماط تخدع أيضًا",       "en": "Patterns lie too"},
+  "chapter.8.sub":        {"ar": "الصبر لغز أيضًا",          "en": "Patience is a puzzle too"},
+  "chapter.9.sub":        {"ar": "الواجهة ليست محايدة",      "en": "The interface is not neutral"},
+  "chapter.10.sub":       {"ar": "كل ما تعلّمته، دفعة واحدة", "en": "Everything you've learned, at once"},
 
   "daily.title":          {"ar": "لغز اليوم",                "en": "Daily Puzzle"},
   "daily.done":           {"ar": "حللت لغز اليوم",           "en": "Today's puzzle is solved"},
@@ -91,7 +104,7 @@
   "ach.half":             {"ar": "منتصف الطريق",             "en": "Halfway"},
   "ach.half.d":           {"ar": "حل 25 مرحلة.",             "en": "Solve 25 stages."},
   "ach.all":              {"ar": "لا تثق بعقلك",             "en": "Don't Trust Your Mind"},
-  "ach.all.d":            {"ar": "حل الخمسين مرحلة.",        "en": "Solve all 50 stages."},
+  "ach.all.d":            {"ar": "حل كل مراحل اللعبة.",      "en": "Solve every stage in the game."},
   "ach.locked":           {"ar": "مقفل",                     "en": "Locked"},
 
   "share.stage":          {"ar": "حللت المرحلة {n} في لعبة «لا تثق بعقلك» خلال {t}. تقدر؟", "en": "I solved Stage {n} of DON'T TRUST YOUR MIND in {t}. Can you?"},
@@ -99,12 +112,12 @@
 
   "fmt.seconds":          {"ar": "{v} ث",                    "en": "{v}s"},
   "fmt.stage":            {"ar": "مرحلة {n}",                "en": "Stage {n}"},
-  "fmt.of":               {"ar": "{a} من {b}",               "en": "{a} of {b}"},
+  "fmt.of_separator":     {"ar": "من",                       "en": "of"},
 
   "intro.line1":          {"ar": "كل لغز له حل منطقي.",      "en": "Every puzzle has a logical answer."},
   "intro.line2":          {"ar": "لكنه ليس الحل الأول الذي يخطر ببالك.", "en": "It is not the first one you think of."},
   "intro.begin":          {"ar": "ابدأ",                     "en": "Begin"},
 
   "end.title":            {"ar": "انتهى كل شيء",             "en": "That's everything"},
-  "end.body":             {"ar": "حللت الخمسين. عد إلى أي مرحلة لتحسين نجومك، أو جرّب لغز اليوم.", "en": "All fifty solved. Replay any stage for stars, or try the daily puzzle."}
+  "end.body":             {"ar": "حللت كل المراحل. عد إلى أي مرحلة لتحسين نجومك، أو جرّب لغز اليوم.", "en": "Every stage solved. Replay any stage for stars, or try the daily puzzle."}
 }

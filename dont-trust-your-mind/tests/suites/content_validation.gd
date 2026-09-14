@@ -9,7 +9,7 @@ extends TestSuite
 ## the wrong letter.
 
 const VALID_UI := ["ui:hint", "ui:skip", "ui:stage", "ui:timer", "ui:back", "ui:instruction"]
-const EXPECTED_STAGES := 50
+const EXPECTED_STAGES := 150
 
 var _ts: TextServer = TextServerManager.get_primary_interface()
 var _font: Font

@@ -70,9 +70,15 @@ func _daily_label() -> String:
 	return Loc.t("menu.daily")
 
 func _stats_line() -> Control:
-	var total := Puzzles.total_stages() * 3
-	var text := "%s   ·   %s" % [
-		Loc.t("stages.stars", {"a": SaveManager.total_stars(), "b": total}),
-		Loc.t("daily.streak", {"n": int(SaveManager.data.get("streak", 0))}),
-	]
-	return make_body(text, Palette.TEXT_FAINT, GameTheme.SIZE_SMALL)
+	var row := HBoxContainer.new()
+	row.layout_direction = Loc.layout_direction()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	row.add_child(make_ratio_line(SaveManager.total_stars(), Puzzles.total_stages() * 3,
+			"stages.stars_unit"))
+	if int(SaveManager.data.get("streak", 0)) > 0:
+		row.add_child(make_inline_label("·", Palette.TEXT_FAINT, GameTheme.SIZE_SMALL))
+		row.add_child(make_inline_label(
+				Loc.t("daily.streak", {"n": int(SaveManager.data.get("streak", 0))}),
+				Palette.TEXT_FAINT, GameTheme.SIZE_SMALL))
+	return row

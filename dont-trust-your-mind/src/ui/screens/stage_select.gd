@@ -27,9 +27,8 @@ func build_content() -> void:
 		column.add_child(_chapter_grid(stages))
 
 func _summary() -> Control:
-	return make_body(Loc.t("stages.stars", {
-		"a": SaveManager.total_stars(), "b": Puzzles.total_stages() * 3,
-	}), Palette.TEXT_FAINT, GameTheme.SIZE_SMALL)
+	return make_ratio_line(SaveManager.total_stars(), Puzzles.total_stages() * 3,
+			"stages.stars_unit")
 
 func _chapter_header(chapter: int) -> Control:
 	var box := VBoxContainer.new()
@@ -71,13 +70,13 @@ func _stage_tile(stage: int) -> Control:
 	var stars := SaveManager.stars_for(stage)
 
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(0, 84)
+	button.custom_minimum_size = Vector2(0, 92)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	button.disabled = not unlocked
 	button.layout_direction = Loc.layout_direction()
 	button.text = str(stage)
-	button.add_theme_font_size_override("font_size", 26)
+	button.add_theme_font_size_override("font_size", 28)
 	if not unlocked:
 		button.add_theme_color_override("font_disabled_color", Palette.TEXT_FAINT)
 		button.add_theme_stylebox_override("disabled",
@@ -87,13 +86,13 @@ func _stage_tile(stage: int) -> Control:
 		button.add_theme_stylebox_override("normal",
 				GameTheme.flat_box(Palette.SURFACE, 14, 2, tint))
 	button.pressed.connect(func() -> void:
-		Audio.play(Audio.Sfx.TAP)
+		Audio.play(Audio.Sfx.BUTTON)
 		Game.start_stage(stage))
 
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 4)
 	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stack.custom_minimum_size = Vector2(0, 108)
+	stack.custom_minimum_size = Vector2(0, 116)
 	stack.add_child(button)
 
 	var row := StarRow.new()

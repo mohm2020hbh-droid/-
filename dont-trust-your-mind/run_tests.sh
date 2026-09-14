@@ -17,8 +17,12 @@ if command -v xvfb-run >/dev/null 2>&1; then
   echo "==> end-to-end smoke test"
   xvfb-run -a "$GODOT" --resolution 720x1280 --rendering-driver opengl3 \
       res://tests/smoke.tscn
+
+  echo "==> next-stage navigation test (real scene change, real button press)"
+  xvfb-run -a "$GODOT" --resolution 720x1280 --rendering-driver opengl3 \
+      res://tests/next_stage_nav.tscn
 else
-  echo "==> skipping smoke test (no xvfb-run; run it on a machine with a display)"
+  echo "==> skipping display-dependent tests (no xvfb-run; run these on a machine with a display)"
 fi
 
 echo "==> all checks passed"

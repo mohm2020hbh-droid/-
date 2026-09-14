@@ -65,6 +65,22 @@ func end_alignment() -> int:
 	return HORIZONTAL_ALIGNMENT_LEFT if is_rtl() else HORIZONTAL_ALIGNMENT_RIGHT
 
 ## Look up a UI string. Missing keys surface loudly rather than silently blank.
+## First Strong Isolate / Pop Directional Isolate (U+2066 / U+2069). Wrapping
+## each interpolated value in one prevents it from bidi-reordering with its
+## neighbours — without this, a template with two numbers in one Arabic
+## sentence (e.g. "{a} / {b} نجمة") can render with the numbers visually
+## swapped, because bare digit runs are direction-"weak" and the bidi
+## algorithm is free to reorder weak runs relative to each other inside an
+## RTL paragraph. An isolate seals each value into its own opaque unit, so
+## it keeps its place in the template's logical order regardless of locale.
+## Built via char() rather than a literal escape in the source: GDScript's
+## parser refuses to compile a string literal containing a raw, invisible
+## bidi control character (it insists such bytes be written as an escape,
+## which round-trips awkwardly through plain-text file edits), so this is
+## the reliable way to get these two exact code points into a String.
+static var _FSI: String = char(0x2068)
+static var _PDI: String = char(0x2069)
+
 func t(key: String, args: Dictionary = {}) -> String:
 	var entry = _strings.get(key, null)
 	if entry == null:
@@ -72,7 +88,7 @@ func t(key: String, args: Dictionary = {}) -> String:
 		return key
 	var text := str(entry.get(locale, entry.get("en", key)))
 	for k in args:
-		text = text.replace("{%s}" % k, str(args[k]))
+		text = text.replace("{%s}" % k, _FSI + str(args[k]) + _PDI)
 	return text
 
 func has_key(key: String) -> bool:

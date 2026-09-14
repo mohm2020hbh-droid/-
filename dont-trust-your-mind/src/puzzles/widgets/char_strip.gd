@@ -22,7 +22,7 @@ extends Control
 signal character_tapped(grapheme_index: int)
 signal strip_tapped()
 
-const MIN_TAP_WIDTH := 56.0   ## Auto-fit aims to keep every target this wide.
+const MIN_TAP_WIDTH := 64.0   ## Auto-fit aims to keep every target this wide.
 const SLOT_HEIGHT := 3.0
 const SLOT_GAP := 6.0
 

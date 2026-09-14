@@ -833,13 +833,13 @@
       "par_time": 10,
       "reward": 30,
       "tags": [
-        "finale",
+        "chapter-finale",
         "callback-p003",
         "trust"
       ],
       "locales": {
         "ar": {
-          "instruction": "هذه آخر مرحلة. لا يوجد حل.",
+          "instruction": "لا يوجد حل هنا أيضًا.",
           "layout": "flow",
           "elements": [
             {
@@ -878,10 +878,10 @@
             "duration": 6.0
           },
           "hints": [
-            "بعد خمسين مرحلة، متى قالت اللعبة الحقيقة؟",
+            "حتى الآن، متى قالت اللعبة الحقيقة؟",
             "إن لم يكن هناك حل تضغطه، فلا تضغط شيئًا."
           ],
-          "explanation": "قالت اللعبة الحقيقة: لا يوجد شيء تضغطه. علّمتك خمسون مرحلة ألا تثق بأول فكرة — وهذه المرة كانت الثقة هي الحل.",
+          "explanation": "قالت اللعبة الحقيقة: لا يوجد شيء تضغطه. كل مرحلة حتى الآن علّمتك ألا تثق بأول فكرة — وهذه المرة كانت الثقة هي الحل.",
           "wrong": {
             "b1": "العدّاد بدأ من جديد.",
             "b2": "العدّاد بدأ من جديد.",
@@ -890,7 +890,7 @@
           }
         },
         "en": {
-          "instruction": "This is the last stage. There is no solution.",
+          "instruction": "There is no solution here either.",
           "layout": "flow",
           "elements": [
             {
@@ -929,10 +929,10 @@
             "duration": 6.0
           },
           "hints": [
-            "After fifty stages, when did the game tell the truth?",
+            "So far, when has the game ever told the truth?",
             "If there is no solution to tap, tap nothing."
           ],
-          "explanation": "The game told the truth: there is nothing to tap. Fifty stages taught you not to trust your first idea — and this time trust was the answer.",
+          "explanation": "The game told the truth: there is nothing to tap. Every stage so far taught you not to trust your first idea — and this time trust was the answer.",
           "wrong": {
             "b1": "The counter started over.",
             "b2": "The counter started over.",

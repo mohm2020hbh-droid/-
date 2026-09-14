@@ -1,10 +1,18 @@
 extends Node
 
 ## Small pool of one-shot players fed by procedurally generated sounds.
+##
+## Each type maps to one distinct moment so the player's ear can tell them
+## apart without looking: TAP is the board itself responding to a touch;
+## BUTTON is UI chrome (menus, Hint, Skip, Retry, Back) — a different, drier
+## click so board and chrome never sound identical; CORRECT is one right
+## step; STAGE_COMPLETE is winning the whole puzzle; WRONG is soft, never a
+## buzzer; HINT and UNLOCK and TRANSITION and REVEAL and TICK each mark
+## exactly the moment their name says.
 
-enum Sfx { TAP, WRONG, CORRECT, REVEAL, HINT, SUCCESS, TICK }
+enum Sfx { TAP, BUTTON, WRONG, CORRECT, STAGE_COMPLETE, HINT, UNLOCK, TRANSITION, REVEAL, TICK }
 
-const POOL_SIZE := 6
+const POOL_SIZE := 8
 const BUS := "Master"
 
 var _streams: Dictionary = {}
@@ -15,11 +23,14 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_streams = {
 		Sfx.TAP: SfxSynth.tap(),
+		Sfx.BUTTON: SfxSynth.button(),
 		Sfx.WRONG: SfxSynth.wrong(),
 		Sfx.CORRECT: SfxSynth.correct(),
-		Sfx.REVEAL: SfxSynth.reveal(),
+		Sfx.STAGE_COMPLETE: SfxSynth.stage_complete(),
 		Sfx.HINT: SfxSynth.hint(),
-		Sfx.SUCCESS: SfxSynth.success(),
+		Sfx.UNLOCK: SfxSynth.unlock(),
+		Sfx.TRANSITION: SfxSynth.transition(),
+		Sfx.REVEAL: SfxSynth.reveal(),
 		Sfx.TICK: SfxSynth.tick(),
 	}
 	for i in POOL_SIZE:
