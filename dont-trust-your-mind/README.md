@@ -68,16 +68,26 @@ godot --path dont-trust-your-mind            # play
 
 ### Android
 
-`export_presets.cfg` is committed: arm64-v8a + armeabi-v7a, min SDK 24, target
-SDK 34, immersive, portrait-locked, `VIBRATE` only — **no INTERNET permission**,
-because nothing in the game needs one.
+`export_presets.cfg` is committed: arm64-v8a + armeabi-v7a, target SDK 34,
+immersive, portrait-locked, `VIBRATE` only — **no INTERNET permission**,
+because nothing in the game needs one. minSdkVersion is 21 (Godot's
+precompiled template; see [docs/ANDROID_BUILD.md](docs/ANDROID_BUILD.md)).
 
 ```bash
-godot --headless --export-release "Android" build/dont-trust-your-mind.apk
+godot --headless --export-debug   "Android" build/dtym-debug.apk
+godot --headless --export-release "Android" build/dtym-release.apk   # needs a
+                                             # release keystore — see below
 ```
 
-That step needs Godot's Android export templates installed; it was not run here.
-`--export-pack` was, and produces a 441 KB resource pack.
+Both builds have been produced and verified in this environment: signed
+(v1/v2/v3), zipaligned, correct manifest and permissions, all puzzle content
+and fonts present, `tests/`/`docs/` correctly excluded. Full verification
+output, the exact toolchain used (Ubuntu's `android-sdk-build-tools` package,
+since `dl.google.com` is not reachable here), a real bug found and fixed in
+the export preset, and what still needs a physical device are all in
+[docs/ANDROID_BUILD.md](docs/ANDROID_BUILD.md). No emulator or device install
+pass was possible in this container (no `/dev/kvm`, no hardware
+virtualization).
 
 ## Architecture
 

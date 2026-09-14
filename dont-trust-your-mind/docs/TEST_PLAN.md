@@ -92,10 +92,17 @@ and the app is orientation-locked to portrait.
 
 ## Known limits
 
-- The APK itself was not built here: Godot's Android export templates and an SDK
-  are not present in this environment. The export preset is committed and
-  `--export-pack` succeeds, producing a 441 KB resource pack, so the resource
-  pipeline is verified; the final `--export-release` step needs a machine with
-  the templates installed.
-- No physical-device pass. Everything above ran on Linux under Godot 4.3 with a
-  virtual display.
+- Debug and release APKs are now built and verified (signed, zipaligned,
+  correct manifest) — see [ANDROID_BUILD.md](ANDROID_BUILD.md) for the exact
+  commands, tool provenance and verification output. Both were built with the
+  Godot 4.3 non-Gradle export path (`use_gradle_build=false`), which uses
+  Godot's precompiled APK templates rather than a full Android Gradle project.
+- No install/run pass on a physical device or emulator: this container has no
+  `/dev/kvm` and no hardware virtualization flags, so the Android emulator
+  cannot run here, and no physical device is attached. Runtime behavior is
+  therefore verified by the 4417-check automated suite plus the 21-assertion
+  smoke test running the actual game scenes under a virtual framebuffer on
+  Linux/Godot, not by installing the APK itself. See ANDROID_BUILD.md for what
+  was and was not possible to verify from the APK artifact directly (manifest,
+  signing, asset completeness, zip integrity) versus what still wants a real
+  device pass (touch latency, on-device font rendering, battery/GPU behavior).
