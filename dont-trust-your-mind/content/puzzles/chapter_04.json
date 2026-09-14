@@ -1,0 +1,414 @@
+{
+  "schema": 1,
+  "chapter": 4,
+  "puzzles": [
+    {
+      "id": "p031_stage_number", "type": "ui", "par_time": 18, "reward": 16,
+      "tags": ["chrome"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على رقم هذه المرحلة",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "31", "color": "surface"},
+            {"id": "d2", "kind": "button", "text": "31", "color": "surface"},
+            {"id": "d3", "kind": "button", "text": "31", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:stage"],
+          "solution": {"kind": "tap", "target": "ui:stage"},
+          "hints": [
+            "أين يكتب رقم المرحلة عادة؟",
+            "في الأعلى، حيث كان طوال الوقت."
+          ],
+          "explanation": "رقم المرحلة الحقيقي مكتوب في شريط الأعلى. الأزرار مجرد نسخ منه.",
+          "wrong": {
+            "d1": "هذا زر يحمل الرقم، لا رقم المرحلة.",
+            "d2": "هذا زر يحمل الرقم، لا رقم المرحلة.",
+            "d3": "هذا زر يحمل الرقم، لا رقم المرحلة."
+          }
+        },
+        "en": {
+          "instruction": "Tap this stage's number",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "31", "color": "surface"},
+            {"id": "d2", "kind": "button", "text": "31", "color": "surface"},
+            {"id": "d3", "kind": "button", "text": "31", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:stage"],
+          "solution": {"kind": "tap", "target": "ui:stage"},
+          "hints": [
+            "Where is a stage number normally written?",
+            "At the top, where it has been the whole time."
+          ],
+          "explanation": "The real stage number is in the top bar. The buttons are only copies of it.",
+          "wrong": {
+            "d1": "That is a button with the number on it.",
+            "d2": "That is a button with the number on it.",
+            "d3": "That is a button with the number on it."
+          }
+        }
+      }
+    },
+    {
+      "id": "p032_hold", "type": "timing", "par_time": 10, "reward": 14,
+      "tags": ["hold"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط مع الاستمرار",
+          "layout": "column",
+          "elements": [
+            {"id": "pad", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.8}
+          ],
+          "solution": {"kind": "hold", "target": "pad", "duration": 2.0},
+          "hints": [
+            "لا ترفع إصبعك.",
+            "ثانيتان دون أن تفلت الدائرة."
+          ],
+          "explanation": "«مع الاستمرار» تعني ألا ترفع إصبعك. الضغط السريع ليس استمرارًا.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Press and hold",
+          "layout": "column",
+          "elements": [
+            {"id": "pad", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.8}
+          ],
+          "solution": {"kind": "hold", "target": "pad", "duration": 2.0},
+          "hints": [
+            "Do not lift your finger.",
+            "Two seconds without letting go."
+          ],
+          "explanation": "\"Hold\" means keep your finger down. A quick tap is not a hold.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p033_wait_three", "type": "timing", "par_time": 12, "reward": 14,
+      "tags": ["not-before"], "show_timer": true, "time_limit": 12,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الزر بعد ثلاث ثوانٍ",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "اضغط", "color": "blue", "scale": 1.2}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 3.0},
+          "hints": [
+            "العدّاد في الأعلى يعدّ تنازليًا من ١٢.",
+            "انتظر حتى تمرّ ثلاث ثوانٍ، ثم اضغط."
+          ],
+          "explanation": "الضغط قبل الثانية الثالثة سابق لأوانه. المطلوب كان الانتظار أولًا.",
+          "wrong": {
+            "b": "ما زال الوقت مبكرًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap the button after three seconds",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "TAP", "color": "blue", "scale": 1.2}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 3.0},
+          "hints": [
+            "The counter at the top runs down from 12.",
+            "Let three seconds pass, then tap."
+          ],
+          "explanation": "Tapping before the third second is too early. The task was to wait first.",
+          "wrong": {
+            "b": "Still too early."
+          }
+        }
+      }
+    },
+    {
+      "id": "p034_before_it_goes", "type": "timing", "par_time": 6, "reward": 16,
+      "tags": ["not-after"], "show_timer": true, "time_limit": 8,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط عليه قبل أن يختفي",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "الآن", "color": "orange", "scale": 1.3, "hide_after": 1.8}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_after": 1.8},
+          "hints": [
+            "لن يبقى أكثر من لحظتين.",
+            "لا تقرأ، اضغط فورًا."
+          ],
+          "explanation": "الزر يختفي بعد أقل من ثانيتين. هذه المرحلة تقيس سرعتك لا ذكاءك.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap it before it disappears",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "NOW", "color": "orange", "scale": 1.3, "hide_after": 1.8}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_after": 1.8},
+          "hints": [
+            "It will not last two seconds.",
+            "Do not read. Tap immediately."
+          ],
+          "explanation": "The button vanishes after less than two seconds. This stage measures speed, not cleverness.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p035_hint_button", "type": "ui", "par_time": 22, "reward": 18,
+      "tags": ["chrome", "hint-as-answer"],
+      "locales": {
+        "ar": {
+          "instruction": "الحل ليس داخل اللغز",
+          "sub_instruction": "اضغط على الشيء الذي يساعدك عادة",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "d3", "kind": "shape", "shape": "triangle", "color": "purple"}
+          ],
+          "ui_targets": ["ui:hint"],
+          "solution": {"kind": "tap", "target": "ui:hint"},
+          "hints": [],
+          "explanation": "زر التلميح جزء من الشاشة، والشاشة كلها جزء من اللغز. هذه المرة كان هو الجواب، لا الطريق إليه.",
+          "wrong": {
+            "d1": "الأشكال هنا ديكور.",
+            "d2": "الأشكال هنا ديكور.",
+            "d3": "الأشكال هنا ديكور."
+          }
+        },
+        "en": {
+          "instruction": "The answer is not inside the puzzle",
+          "sub_instruction": "Tap the thing that usually helps you",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "d3", "kind": "shape", "shape": "triangle", "color": "purple"}
+          ],
+          "ui_targets": ["ui:hint"],
+          "solution": {"kind": "tap", "target": "ui:hint"},
+          "hints": [],
+          "explanation": "The hint button is part of the screen, and the whole screen is part of the puzzle. This time it was the answer, not the route to it.",
+          "wrong": {
+            "d1": "The shapes here are scenery.",
+            "d2": "The shapes here are scenery.",
+            "d3": "The shapes here are scenery."
+          }
+        }
+      }
+    },
+    {
+      "id": "p036_background", "type": "ui", "par_time": 20, "reward": 16,
+      "tags": ["negative-space"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على ما بين الأشكال",
+          "layout": "flow",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "s2", "kind": "shape", "shape": "circle", "color": "green", "scale": 0.7},
+            {"id": "s3", "kind": "shape", "shape": "circle", "color": "orange", "scale": 0.7},
+            {"id": "s4", "kind": "shape", "shape": "circle", "color": "purple", "scale": 0.7, "row": 1},
+            {"id": "s5", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 0.7, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "board"},
+          "hints": [
+            "ما الذي يفصل شكلًا عن شكل؟",
+            "الفراغ نفسه هدف صالح في هذه اللعبة."
+          ],
+          "explanation": "ما بين الأشكال هو الخلفية. الفراغ ليس عدمًا — إنه جزء من الشاشة يمكن الضغط عليه.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap what is between the shapes",
+          "layout": "flow",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "s2", "kind": "shape", "shape": "circle", "color": "green", "scale": 0.7},
+            {"id": "s3", "kind": "shape", "shape": "circle", "color": "orange", "scale": 0.7},
+            {"id": "s4", "kind": "shape", "shape": "circle", "color": "purple", "scale": 0.7, "row": 1},
+            {"id": "s5", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 0.7, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "board"},
+          "hints": [
+            "What separates one shape from the next?",
+            "Empty space is a legitimate target in this game."
+          ],
+          "explanation": "What is between the shapes is the background. Empty space is not nothing — it is a part of the screen you can tap.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p037_odd_one_fast", "type": "visual", "par_time": 6, "reward": 18,
+      "tags": ["pressure"], "show_timer": true, "time_limit": 7,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل المختلف قبل انتهاء الوقت",
+          "layout": "grid2",
+          "elements": [
+            {"id": "a", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9},
+            {"id": "b", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9},
+            {"id": "c", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9},
+            {"id": "d", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9, "rotation_deg": 45}
+          ],
+          "solution": {"kind": "tap", "target": "d"},
+          "hints": [
+            "كلها بنفس اللون والحجم.",
+            "واحد منها مائل."
+          ],
+          "explanation": "الأشكال الأربعة متطابقة تمامًا إلا واحدًا، وهو مُدار بزاوية.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the odd one out before time runs out",
+          "layout": "grid2",
+          "elements": [
+            {"id": "a", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9},
+            {"id": "b", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9},
+            {"id": "c", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9},
+            {"id": "d", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.9, "rotation_deg": 45}
+          ],
+          "solution": {"kind": "tap", "target": "d"},
+          "hints": [
+            "They share a colour and a size.",
+            "One of them is tilted."
+          ],
+          "explanation": "All four are identical except one, which is rotated.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p038_skip_is_the_answer", "type": "ui", "par_time": 20, "reward": 20,
+      "tags": ["chrome", "surrender"],
+      "locales": {
+        "ar": {
+          "instruction": "لا يمكنك حل هذه المرحلة",
+          "sub_instruction": "صدّقني",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "حاول", "color": "surface", "pulse": true},
+            {"id": "d2", "kind": "button", "text": "حاول أكثر", "color": "surface", "pulse": true, "row": 1}
+          ],
+          "ui_targets": ["ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:skip"},
+          "hints": [
+            "إن كانت المرحلة بلا حل، فما الذي تفعله عادة؟",
+            "الزر الذي تتجنّبه دائمًا هو الجواب."
+          ],
+          "explanation": "التعليمة كانت صادقة: لا يوجد حل داخل اللوح. الاستسلام كان الإجابة الصحيحة الوحيدة.",
+          "wrong": {
+            "d1": "المحاولة لن تنفع هنا.",
+            "d2": "المحاولة لن تنفع هنا."
+          }
+        },
+        "en": {
+          "instruction": "You cannot solve this stage",
+          "sub_instruction": "Trust me",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "TRY", "color": "surface", "pulse": true},
+            {"id": "d2", "kind": "button", "text": "TRY HARDER", "color": "surface", "pulse": true, "row": 1}
+          ],
+          "ui_targets": ["ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:skip"},
+          "hints": [
+            "If a stage has no solution, what do you normally do?",
+            "The button you always avoid is the answer."
+          ],
+          "explanation": "The instruction was honest: there is no answer on the board. Giving up was the only correct move.",
+          "wrong": {
+            "d1": "Trying will not help here.",
+            "d2": "Trying will not help here."
+          }
+        }
+      }
+    },
+    {
+      "id": "p039_window", "type": "timing", "par_time": 12, "reward": 18,
+      "tags": ["window"], "show_timer": true, "time_limit": 10,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط والعدّاد بين ٧ و ٥",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "الآن", "color": "green", "scale": 1.3}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 3.0, "not_after": 5.0},
+          "hints": [
+            "العدّاد يبدأ من ١٠ وينزل.",
+            "انتظر حتى يصل إلى ٧، واضغط قبل أن يصل إلى ٥."
+          ],
+          "explanation": "هناك نافذة من ثانيتين فقط. مبكرًا جدًا خطأ، ومتأخرًا جدًا خطأ.",
+          "wrong": {
+            "b": "خارج النافذة."
+          }
+        },
+        "en": {
+          "instruction": "Tap while the counter reads between 7 and 5",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "NOW", "color": "green", "scale": 1.3}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 3.0, "not_after": 5.0},
+          "hints": [
+            "The counter starts at 10 and falls.",
+            "Wait until it reaches 7, and tap before it reaches 5."
+          ],
+          "explanation": "There is a two-second window. Too early is wrong and too late is wrong.",
+          "wrong": {
+            "b": "Outside the window."
+          }
+        }
+      }
+    },
+    {
+      "id": "p040_leaving", "type": "ui", "par_time": 22, "reward": 22,
+      "tags": ["chrome", "exit"],
+      "locales": {
+        "ar": {
+          "instruction": "الخروج هو الحل",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "ابقَ", "color": "surface"},
+            {"id": "d2", "kind": "button", "text": "لا تخرج", "color": "surface"},
+            {"id": "d3", "kind": "button", "text": "خروج", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:back"],
+          "solution": {"kind": "tap", "target": "ui:back"},
+          "hints": [
+            "أي زر يُخرجك فعلًا من هذه الشاشة؟",
+            "السهم في أعلى الزاوية، لا الزر المكتوب عليه «خروج»."
+          ],
+          "explanation": "زر الرجوع الحقيقي في أعلى الشاشة. الزر المكتوب عليه «خروج» لا يخرجك من شيء.",
+          "wrong": {
+            "d3": "كلمة «خروج» على زر لا تجعله زر خروج."
+          }
+        },
+        "en": {
+          "instruction": "Leaving is the answer",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "STAY", "color": "surface"},
+            {"id": "d2", "kind": "button", "text": "DON'T LEAVE", "color": "surface"},
+            {"id": "d3", "kind": "button", "text": "EXIT", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:back"],
+          "solution": {"kind": "tap", "target": "ui:back"},
+          "hints": [
+            "Which button actually takes you off this screen?",
+            "The arrow in the top corner, not the one labelled EXIT."
+          ],
+          "explanation": "The real back control is at the top of the screen. A button with EXIT written on it does not exit anything.",
+          "wrong": {
+            "d3": "The word EXIT on a button does not make it an exit."
+          }
+        }
+      }
+    }
+  ]
+}

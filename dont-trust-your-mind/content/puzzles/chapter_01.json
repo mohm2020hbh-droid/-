@@ -1,0 +1,971 @@
+{
+  "schema": 1,
+  "chapter": 1,
+  "puzzles": [
+    {
+      "id": "p001_red",
+      "type": "visual",
+      "par_time": 18,
+      "reward": 10,
+      "tags": [
+        "colour",
+        "word-vs-thing"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الأحمر",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow"
+            },
+            {
+              "id": "w_red",
+              "kind": "label",
+              "text": "الأحمر",
+              "color": "red",
+              "font_size": 52,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_red"
+          },
+          "hints": [
+            "هل تبحث عن لون، أم عن شيء لونه أحمر؟",
+            "لا يوجد أي شكل أحمر على هذه الشاشة. انظر مرة أخرى."
+          ],
+          "explanation": "لم يكن أي شكل أحمر. الشيء الأحمر الوحيد كان الكلمة نفسها.",
+          "wrong": {
+            "c_blue": "هذا أزرق.",
+            "c_green": "هذا أخضر.",
+            "c_yellow": "هذا أصفر."
+          }
+        },
+        "en": {
+          "instruction": "Tap the red one",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow"
+            },
+            {
+              "id": "w_red",
+              "kind": "label",
+              "text": "RED",
+              "color": "red",
+              "font_size": 52,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_red"
+          },
+          "hints": [
+            "Are you looking for a colour, or for a thing that is red?",
+            "Not one shape on this screen is red. Look again."
+          ],
+          "explanation": "No shape was red. The only red thing was the word itself.",
+          "wrong": {
+            "c_blue": "That one is blue.",
+            "c_green": "That one is green.",
+            "c_yellow": "That one is yellow."
+          }
+        }
+      }
+    },
+    {
+      "id": "p002_bigger",
+      "type": "visual",
+      "par_time": 15,
+      "reward": 10,
+      "tags": [
+        "size-vs-value"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على أكبر رقم",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "n9",
+              "kind": "label",
+              "text": "9",
+              "font_size": 140
+            },
+            {
+              "id": "n10",
+              "kind": "label",
+              "text": "10",
+              "font_size": 44
+            },
+            {
+              "id": "n11",
+              "kind": "label",
+              "text": "11",
+              "font_size": 28
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n11"
+          },
+          "hints": [
+            "«أكبر» بأي معنى؟",
+            "قارن القيم، لا المساحة التي يشغلها كل رقم."
+          ],
+          "explanation": "أكبر رقم هو ١١. الحجم على الشاشة ليس قيمة العدد.",
+          "wrong": {
+            "n9": "هذا أكبر شكلًا، لا قيمة.",
+            "n10": "هناك ما هو أكبر منه."
+          }
+        },
+        "en": {
+          "instruction": "Tap the biggest number",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "n9",
+              "kind": "label",
+              "text": "9",
+              "font_size": 140
+            },
+            {
+              "id": "n10",
+              "kind": "label",
+              "text": "10",
+              "font_size": 44
+            },
+            {
+              "id": "n11",
+              "kind": "label",
+              "text": "11",
+              "font_size": 28
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n11"
+          },
+          "hints": [
+            "Biggest in what sense?",
+            "Compare the values, not the space each one takes up."
+          ],
+          "explanation": "The biggest number is 11. Size on screen is not value.",
+          "wrong": {
+            "n9": "That one is bigger to look at, not bigger in value.",
+            "n10": "Something here is larger."
+          }
+        }
+      }
+    },
+    {
+      "id": "p003_dont_tap",
+      "type": "reverse",
+      "par_time": 8,
+      "reward": 12,
+      "tags": [
+        "obedience"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "لا تضغط أي شيء",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "اضغط هنا",
+              "color": "blue",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "لا، هنا",
+              "color": "green",
+              "pulse": true
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "هذا هو الحل",
+              "color": "orange",
+              "pulse": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 5.0
+          },
+          "hints": [
+            "العدّاد في الأعلى يخبرك بشيء.",
+            "التعليمة تعني ما تقوله حرفيًا. افعل لا شيء."
+          ],
+          "explanation": "التعليمة كانت صادقة تمامًا. أحيانًا أصعب شيء هو ألا تفعل شيئًا.",
+          "wrong": {
+            "b1": "العداد بدأ من جديد.",
+            "b2": "العداد بدأ من جديد.",
+            "b3": "العداد بدأ من جديد."
+          }
+        },
+        "en": {
+          "instruction": "Don't tap anything",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "TAP HERE",
+              "color": "blue",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "NO, HERE",
+              "color": "green",
+              "pulse": true
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "THIS IS IT",
+              "color": "orange",
+              "pulse": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 5.0
+          },
+          "hints": [
+            "The counter at the top is telling you something.",
+            "The instruction means exactly what it says. Do nothing."
+          ],
+          "explanation": "The instruction was completely honest. Sometimes the hardest move is no move.",
+          "wrong": {
+            "b1": "The counter started over.",
+            "b2": "The counter started over.",
+            "b3": "The counter started over."
+          }
+        }
+      }
+    },
+    {
+      "id": "p004_first_letter",
+      "type": "language",
+      "par_time": 14,
+      "reward": 12,
+      "tags": [
+        "rtl",
+        "reading-direction"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على أول حرف",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "بداية",
+              "font_size": 96
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:0",
+            "expect": [
+              "ب"
+            ]
+          },
+          "hints": [
+            "من أي جهة تبدأ قراءة هذه الكلمة؟",
+            "العربية تُقرأ من اليمين إلى اليسار."
+          ],
+          "explanation": "أول حرف في «بداية» هو الباء، وهو أقصى اليمين لأن العربية تُقرأ من اليمين.",
+          "wrong": {
+            "char:word:4": "هذا آخر حرف، لا أوله.",
+            "char:word:3": "ما زلت قريبًا من نهاية الكلمة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the first letter",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "START",
+              "font_size": 96
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:0",
+            "expect": [
+              "S"
+            ]
+          },
+          "hints": [
+            "Which side does this word start on?",
+            "English is read from left to right."
+          ],
+          "explanation": "The first letter of START is S, at the far left, because English reads left to right.",
+          "wrong": {
+            "char:word:4": "That is the last letter, not the first.",
+            "char:word:3": "Still near the end of the word."
+          }
+        }
+      }
+    },
+    {
+      "id": "p005_third_square",
+      "type": "position",
+      "par_time": 20,
+      "reward": 12,
+      "tags": [
+        "counting",
+        "rtl"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على المربع الثالث",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "sq1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "scale": 0.8
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "orange",
+              "scale": 0.8
+            },
+            {
+              "id": "sq2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "scale": 0.8
+            },
+            {
+              "id": "sq3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "purple",
+              "scale": 0.8
+            },
+            {
+              "id": "sq4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 0.8
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "sq3"
+          },
+          "hints": [
+            "هل عددت كل الأشكال، أم المربعات فقط؟",
+            "الدائرة ليست مربعًا. والعد يبدأ من جهة القراءة: اليمين."
+          ],
+          "explanation": "الدائرة لا تُحسب لأنها ليست مربعًا. والعد يبدأ من اليمين لأن هذه عربية.",
+          "wrong": {
+            "circle": "هذه دائرة، لا مربع.",
+            "sq2": "هذا المربع الثاني.",
+            "sq4": "عددت الدائرة ضمن المربعات."
+          }
+        },
+        "en": {
+          "instruction": "Tap the third square",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "sq1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "scale": 0.8
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "orange",
+              "scale": 0.8
+            },
+            {
+              "id": "sq2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "scale": 0.8
+            },
+            {
+              "id": "sq3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "purple",
+              "scale": 0.8
+            },
+            {
+              "id": "sq4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 0.8
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "sq3"
+          },
+          "hints": [
+            "Did you count every shape, or only the squares?",
+            "A circle is not a square. Counting starts from the left here."
+          ],
+          "explanation": "The circle does not count, because it is not a square. Counting starts from the left, because this is English.",
+          "wrong": {
+            "circle": "That is a circle, not a square.",
+            "sq2": "That is the second square.",
+            "sq4": "You counted the circle as a square."
+          }
+        }
+      }
+    },
+    {
+      "id": "p006_this_sentence",
+      "type": "ui",
+      "par_time": 20,
+      "reward": 14,
+      "tags": [
+        "chrome",
+        "self-reference"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على هذه الجملة",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "button",
+              "text": "هذه الجملة",
+              "color": "surface"
+            },
+            {
+              "id": "d2",
+              "kind": "button",
+              "text": "هذه الجملة",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "d3",
+              "kind": "button",
+              "text": "هذه الجملة",
+              "color": "surface",
+              "row": 2
+            }
+          ],
+          "ui_targets": [
+            "ui:instruction"
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "ui:instruction"
+          },
+          "hints": [
+            "أي جملة تقصد التعليمة بكلمة «هذه»؟",
+            "انظر إلى الأعلى. التعليمة نفسها جزء من الشاشة."
+          ],
+          "explanation": "«هذه الجملة» تعني التعليمة نفسها في الأعلى، لا الأزرار التي تقلّدها.",
+          "wrong": {
+            "d1": "هذا زر يحمل نص الجملة، وليس الجملة.",
+            "d2": "هذا زر يحمل نص الجملة، وليس الجملة.",
+            "d3": "هذا زر يحمل نص الجملة، وليس الجملة."
+          }
+        },
+        "en": {
+          "instruction": "Tap this sentence",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "button",
+              "text": "THIS SENTENCE",
+              "color": "surface"
+            },
+            {
+              "id": "d2",
+              "kind": "button",
+              "text": "THIS SENTENCE",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "d3",
+              "kind": "button",
+              "text": "THIS SENTENCE",
+              "color": "surface",
+              "row": 2
+            }
+          ],
+          "ui_targets": [
+            "ui:instruction"
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "ui:instruction"
+          },
+          "hints": [
+            "Which sentence does the word \"this\" point at?",
+            "Look up. The instruction is part of the screen too."
+          ],
+          "explanation": "\"This sentence\" means the instruction itself, not the buttons imitating it.",
+          "wrong": {
+            "d1": "That is a button with the words on it, not the sentence.",
+            "d2": "That is a button with the words on it, not the sentence.",
+            "d3": "That is a button with the words on it, not the sentence."
+          }
+        }
+      }
+    },
+    {
+      "id": "p007_stroop",
+      "type": "visual",
+      "par_time": 16,
+      "reward": 12,
+      "tags": [
+        "stroop",
+        "ink-vs-meaning"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة المكتوبة باللون الأخضر",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "أخضر",
+              "color": "red",
+              "font_size": 46
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "أحمر",
+              "color": "blue",
+              "font_size": 46
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "أزرق",
+              "color": "green",
+              "font_size": 46
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "أصفر",
+              "color": "purple",
+              "font_size": 46
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w3"
+          },
+          "hints": [
+            "لم يُطلب منك كلمة «أخضر».",
+            "المطلوب لون الحبر الذي كُتبت به الكلمة."
+          ],
+          "explanation": "كلمة «أزرق» هي الوحيدة المكتوبة بحبر أخضر. المطلوب كان اللون، لا المعنى.",
+          "wrong": {
+            "w1": "هذه تقرأ «أخضر» لكنها مكتوبة بالأحمر."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word written in green",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "GREEN",
+              "color": "red",
+              "font_size": 46
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "RED",
+              "color": "blue",
+              "font_size": 46
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "BLUE",
+              "color": "green",
+              "font_size": 46
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "YELLOW",
+              "color": "purple",
+              "font_size": 46
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w3"
+          },
+          "hints": [
+            "Nobody asked for the word \"green\".",
+            "You were asked about the ink the word is written in."
+          ],
+          "explanation": "BLUE is the only word written in green ink. The question was about colour, not meaning.",
+          "wrong": {
+            "w1": "That one reads GREEN but it is written in red."
+          }
+        }
+      }
+    },
+    {
+      "id": "p008_unseen",
+      "type": "visual",
+      "par_time": 22,
+      "reward": 14,
+      "tags": [
+        "absence"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشيء الذي لا تراه",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "empty",
+              "kind": "zone",
+              "text": "",
+              "color": "#12161B"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "empty"
+          },
+          "hints": [
+            "كم خانة على الشاشة، وكم شكلًا؟",
+            "هناك خانة رابعة. إطارها موجود، لكن محتواها غير موجود."
+          ],
+          "explanation": "الخانة الرابعة فارغة. رأيت مكانها، ولم ترَ شيئًا فيها — وهذا بالضبط ما طُلب منك.",
+          "wrong": {
+            "s1": "هذا تراه بوضوح.",
+            "s2": "هذا تراه بوضوح.",
+            "s3": "هذا تراه بوضوح."
+          }
+        },
+        "en": {
+          "instruction": "Tap the thing you cannot see",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "empty",
+              "kind": "zone",
+              "text": "",
+              "color": "#12161B"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "empty"
+          },
+          "hints": [
+            "How many slots are on screen, and how many shapes?",
+            "There is a fourth slot. Its frame is there; its contents are not."
+          ],
+          "explanation": "The fourth slot is empty. You could see where it was and see nothing in it — which is exactly what was asked for.",
+          "wrong": {
+            "s1": "You can see that one perfectly well.",
+            "s2": "You can see that one perfectly well.",
+            "s3": "You can see that one perfectly well."
+          }
+        }
+      }
+    },
+    {
+      "id": "p009_two_steps",
+      "type": "multi_step",
+      "par_time": 20,
+      "reward": 14,
+      "tags": [
+        "sequence",
+        "reveal"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط الأزرق، ثم الأصفر",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "on_tap": {
+                "reveal": [
+                  "c_yellow"
+                ]
+              }
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "starts_hidden": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "c_blue",
+              "c_yellow"
+            ]
+          },
+          "hints": [
+            "لا يوجد أصفر بعد. نفّذ الخطوة الأولى أولًا.",
+            "الترتيب مهم: الأزرق يغيّر ما هو موجود على الشاشة."
+          ],
+          "explanation": "الأصفر لم يكن موجودًا حتى ضغطت الأزرق. الخطوة الأولى صنعت الخطوة الثانية.",
+          "wrong": {
+            "c_green": "ليس هذا لونًا مطلوبًا.",
+            "c_red": "ليس هذا لونًا مطلوبًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap blue, then yellow",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "on_tap": {
+                "reveal": [
+                  "c_yellow"
+                ]
+              }
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "starts_hidden": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "c_blue",
+              "c_yellow"
+            ]
+          },
+          "hints": [
+            "There is no yellow yet. Do the first step first.",
+            "Order matters: tapping blue changes what is on the screen."
+          ],
+          "explanation": "Yellow did not exist until you tapped blue. The first step created the second one.",
+          "wrong": {
+            "c_green": "That colour was not asked for.",
+            "c_red": "That colour was not asked for."
+          }
+        }
+      }
+    },
+    {
+      "id": "p010_liar",
+      "type": "meta",
+      "par_time": 20,
+      "reward": 16,
+      "tags": [
+        "truth-value",
+        "seeds-ch5"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "كل تعليمة في هذه المرحلة كاذبة. اضغط على الدائرة.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "square"
+          },
+          "hints": [
+            "إن كانت الجملة الثانية كاذبة، فما هو الصحيح؟",
+            "هناك شكلان فقط. إن لم تكن الدائرة، فلم يبقَ إلا واحد."
+          ],
+          "explanation": "التعليمة أعلنت أنها كاذبة، فـ«اضغط على الدائرة» تعني عكسها. ولأن هناك شكلين فقط، العكس واضح: المربع.",
+          "wrong": {
+            "circle": "صدّقت تعليمة قالت لك بنفسها إنها تكذب."
+          }
+        },
+        "en": {
+          "instruction": "Every instruction in this stage is false. Tap the circle.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "square"
+          },
+          "hints": [
+            "If the second sentence is false, what is true instead?",
+            "There are only two shapes. If it is not the circle, only one is left."
+          ],
+          "explanation": "The instruction declared itself false, so \"tap the circle\" means its opposite. With only two shapes, the opposite is unambiguous: the square.",
+          "wrong": {
+            "circle": "You believed an instruction that told you it was lying."
+          }
+        }
+      }
+    }
+  ]
+}

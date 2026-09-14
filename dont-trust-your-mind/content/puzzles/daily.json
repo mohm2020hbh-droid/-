@@ -1,0 +1,1118 @@
+{
+  "schema": 1,
+  "chapter": 0,
+  "puzzles": [
+    {
+      "id": "d01_no_middle",
+      "type": "position",
+      "par_time": 20,
+      "reward": 20,
+      "tags": [
+        "daily",
+        "absence"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الأوسط",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.8
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "scale": 0.8
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "orange",
+              "scale": 0.8
+            },
+            {
+              "id": "s4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 0.8
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "board"
+          },
+          "hints": [
+            "عُدّ الأشكال. هل لعددها وسط؟",
+            "أربعة أشكال لا وسط لها — الوسط هو الفراغ بين الثاني والثالث."
+          ],
+          "explanation": "الأشكال أربعة، والعدد الزوجي لا وسط له. الوسط الحقيقي هو الفراغ بينها.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the middle shape",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.8
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "scale": 0.8
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "orange",
+              "scale": 0.8
+            },
+            {
+              "id": "s4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 0.8
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "board"
+          },
+          "hints": [
+            "Count them. Does an even number have a middle?",
+            "Four shapes have no middle one — the middle is the gap between the second and third."
+          ],
+          "explanation": "There are four shapes, and an even count has no middle item. The real middle is the space between them.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "d02_still_one",
+      "type": "visual",
+      "par_time": 14,
+      "reward": 18,
+      "tags": [
+        "daily",
+        "motion"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الساكن",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "a",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "pulse": true
+            },
+            {
+              "id": "b",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "pulse": true
+            },
+            {
+              "id": "c",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan"
+            },
+            {
+              "id": "d",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "pulse": true
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c"
+          },
+          "hints": [
+            "ثلاثة منها تتنفّس، وواحد لا.",
+            "راقب الحجم، لا اللون."
+          ],
+          "explanation": "ثلاثة مربعات تكبر وتصغر باستمرار. واحد فقط ثابت الحجم.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the shape that is not moving",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "a",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "pulse": true
+            },
+            {
+              "id": "b",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "pulse": true
+            },
+            {
+              "id": "c",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan"
+            },
+            {
+              "id": "d",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "pulse": true
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c"
+          },
+          "hints": [
+            "Three of them breathe, one does not.",
+            "Watch the size, not the colour."
+          ],
+          "explanation": "Three squares grow and shrink continuously. Only one holds still.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "d03_shared_letter",
+      "type": "language",
+      "par_time": 26,
+      "reward": 22,
+      "tags": [
+        "daily",
+        "chars",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الحرف الموجود في الكلمتين",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "other",
+              "kind": "label",
+              "text": "نجم",
+              "color": "dim",
+              "font_size": 44,
+              "interactive": false
+            },
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "قمر",
+              "font_size": 88
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:1",
+            "expect": [
+              "م"
+            ]
+          },
+          "hints": [
+            "قارن حروف «قمر» بحروف «نجم».",
+            "حرف واحد مشترك بينهما."
+          ],
+          "explanation": "الميم هو الحرف الوحيد الموجود في «قمر» و«نجم» معًا.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the letter that is in both words",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "other",
+              "kind": "label",
+              "text": "SUN",
+              "color": "dim",
+              "font_size": 44,
+              "interactive": false
+            },
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "CLOUD",
+              "font_size": 88
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:3",
+            "expect": [
+              "U"
+            ]
+          },
+          "hints": [
+            "Compare the letters of CLOUD with those of SUN.",
+            "Only one letter appears in both words."
+          ],
+          "explanation": "U is the only letter shared by CLOUD and SUN.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "d04_hold_smallest",
+      "type": "timing",
+      "par_time": 12,
+      "reward": 20,
+      "tags": [
+        "daily",
+        "hold"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط مع الاستمرار على أصغر دائرة",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "big",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 1.6
+            },
+            {
+              "id": "mid",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 1.1
+            },
+            {
+              "id": "small",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 0.75
+            }
+          ],
+          "solution": {
+            "kind": "hold",
+            "target": "small",
+            "duration": 1.8
+          },
+          "hints": [
+            "الضغط السريع لا يكفي.",
+            "أصغر دائرة، ولا ترفع إصبعك."
+          ],
+          "explanation": "شرطان معًا: الدائرة الصغرى، والاستمرار دون رفع الإصبع.",
+          "wrong": {
+            "big": "هذه الأكبر.",
+            "mid": "هذه في المنتصف."
+          }
+        },
+        "en": {
+          "instruction": "Press and hold the smallest circle",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "big",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 1.6
+            },
+            {
+              "id": "mid",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 1.1
+            },
+            {
+              "id": "small",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "scale": 0.75
+            }
+          ],
+          "solution": {
+            "kind": "hold",
+            "target": "small",
+            "duration": 1.8
+          },
+          "hints": [
+            "A quick tap is not enough.",
+            "The smallest circle, and do not lift your finger."
+          ],
+          "explanation": "Two conditions at once: the smallest circle, and keeping your finger down.",
+          "wrong": {
+            "big": "That is the largest.",
+            "mid": "That is the middle one."
+          }
+        }
+      }
+    },
+    {
+      "id": "d05_sides_match",
+      "type": "semantic",
+      "par_time": 28,
+      "reward": 22,
+      "tags": [
+        "daily",
+        "counting",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي عدد أضلاعه مثل عدد حروف كلمة «شمس»",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "tri",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "sq",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "di",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "green"
+            },
+            {
+              "id": "ci",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "tri"
+          },
+          "hints": [
+            "عُدّ حروف «شمس» أولًا.",
+            "ثلاثة حروف، فابحث عن ثلاثة أضلاع."
+          ],
+          "explanation": "«شمس» ثلاثة حروف، والمثلث ثلاثة أضلاع.",
+          "wrong": {
+            "sq": "المربع أربعة أضلاع.",
+            "di": "المعيّن أربعة أضلاع.",
+            "ci": "الدائرة بلا أضلاع."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape with as many sides as the word FOUR has letters",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "tri",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "sq",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "di",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "green"
+            },
+            {
+              "id": "ci",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "sq",
+            "alternatives": [
+              "di"
+            ]
+          },
+          "hints": [
+            "Count the letters in FOUR first.",
+            "Four letters, so look for four sides — and there are two of those."
+          ],
+          "explanation": "FOUR has four letters. Both the square and the diamond have four sides, so either one counted.",
+          "wrong": {
+            "tri": "A triangle has three sides.",
+            "ci": "A circle has no sides."
+          }
+        }
+      }
+    },
+    {
+      "id": "d06_second_largest",
+      "type": "visual",
+      "par_time": 18,
+      "reward": 18,
+      "tags": [
+        "daily",
+        "ordering"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على ثاني أكبر مربع",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 0.7
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 1.5
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 1.2
+            },
+            {
+              "id": "s4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 0.9
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "s3"
+          },
+          "hints": [
+            "رتّبها بالحجم في ذهنك.",
+            "ليس الأكبر، بل الذي يليه."
+          ],
+          "explanation": "الترتيب من الأكبر: الثاني في الصف هو الأكبر، والثالث يليه.",
+          "wrong": {
+            "s2": "هذا الأكبر، لا ثاني الأكبر."
+          }
+        },
+        "en": {
+          "instruction": "Tap the second largest square",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 0.7
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 1.5
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 1.2
+            },
+            {
+              "id": "s4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "cyan",
+              "scale": 0.9
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "s3"
+          },
+          "hints": [
+            "Rank them by size in your head.",
+            "Not the biggest — the one just below it."
+          ],
+          "explanation": "Ranked by size, the largest is the second in the row and the next one down follows it.",
+          "wrong": {
+            "s2": "That is the largest, not the second largest."
+          }
+        }
+      }
+    },
+    {
+      "id": "d07_vanished",
+      "type": "memory",
+      "par_time": 18,
+      "reward": 22,
+      "tags": [
+        "daily",
+        "recall"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على مكان الشكل الذي اختفى",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "a",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.25,
+                0.3
+              ],
+              "interactive": false
+            },
+            {
+              "id": "b",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.75,
+                0.3
+              ],
+              "hide_after": 2.5,
+              "interactive": false
+            },
+            {
+              "id": "c",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.25,
+                0.7
+              ],
+              "interactive": false
+            },
+            {
+              "id": "d",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.75,
+                0.7
+              ],
+              "interactive": false
+            },
+            {
+              "id": "z_a",
+              "kind": "zone",
+              "pos": [
+                0.25,
+                0.3
+              ],
+              "color": "#00000000",
+              "reveal_after": 2.6
+            },
+            {
+              "id": "z_b",
+              "kind": "zone",
+              "pos": [
+                0.75,
+                0.3
+              ],
+              "color": "#12161B",
+              "reveal_after": 2.6
+            },
+            {
+              "id": "z_c",
+              "kind": "zone",
+              "pos": [
+                0.25,
+                0.7
+              ],
+              "color": "#00000000",
+              "reveal_after": 2.6
+            },
+            {
+              "id": "z_d",
+              "kind": "zone",
+              "pos": [
+                0.75,
+                0.7
+              ],
+              "color": "#00000000",
+              "reveal_after": 2.6
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "z_b"
+          },
+          "hints": [
+            "كانت أربعة مثلثات. كم بقي؟",
+            "الخانة الفارغة هي الجواب."
+          ],
+          "explanation": "المثلث العلوي على اليمين اختفى بعد لحظتين، وبقي مكانه فارغًا.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap where the shape that vanished used to be",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "a",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.25,
+                0.3
+              ],
+              "interactive": false
+            },
+            {
+              "id": "b",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.75,
+                0.3
+              ],
+              "hide_after": 2.5,
+              "interactive": false
+            },
+            {
+              "id": "c",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.25,
+                0.7
+              ],
+              "interactive": false
+            },
+            {
+              "id": "d",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "pos": [
+                0.75,
+                0.7
+              ],
+              "interactive": false
+            },
+            {
+              "id": "z_a",
+              "kind": "zone",
+              "pos": [
+                0.25,
+                0.3
+              ],
+              "color": "#00000000",
+              "reveal_after": 2.6
+            },
+            {
+              "id": "z_b",
+              "kind": "zone",
+              "pos": [
+                0.75,
+                0.3
+              ],
+              "color": "#12161B",
+              "reveal_after": 2.6
+            },
+            {
+              "id": "z_c",
+              "kind": "zone",
+              "pos": [
+                0.25,
+                0.7
+              ],
+              "color": "#00000000",
+              "reveal_after": 2.6
+            },
+            {
+              "id": "z_d",
+              "kind": "zone",
+              "pos": [
+                0.75,
+                0.7
+              ],
+              "color": "#00000000",
+              "reveal_after": 2.6
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "z_b"
+          },
+          "hints": [
+            "There were four triangles. How many are left?",
+            "The empty slot is the answer."
+          ],
+          "explanation": "The top-right triangle disappeared after a couple of seconds, leaving its slot empty.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "d08_last_word",
+      "type": "semantic",
+      "par_time": 22,
+      "reward": 20,
+      "tags": [
+        "daily",
+        "self-reference"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على اللون الذي تنتهي به هذه الجملة: الأخضر",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c_green"
+          },
+          "hints": [
+            "اقرأ التعليمة حتى آخر كلمة فيها.",
+            "الجواب مكتوب في نهاية السؤال."
+          ],
+          "explanation": "آخر كلمة في التعليمة هي «الأخضر»، وهي الجواب. أحيانًا اللعبة تعطيك الحل صراحة وتظنه فخًا.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the colour this sentence ends with: green",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c_green"
+          },
+          "hints": [
+            "Read the instruction all the way to its last word.",
+            "The answer is printed at the end of the question."
+          ],
+          "explanation": "The last word of the instruction is \"green\", and that is the answer. Sometimes the game hands you the solution and you assume it is bait.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "d09_more_than_shown",
+      "type": "visual",
+      "par_time": 24,
+      "reward": 22,
+      "tags": [
+        "daily",
+        "counting"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "كم دائرة على هذه الشاشة؟",
+          "sub_instruction": "اضغط على الإجابة",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "c2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "c3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "n3",
+              "kind": "button",
+              "text": "3",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "n4",
+              "kind": "button",
+              "text": "4",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "n5",
+              "kind": "button",
+              "text": "5",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6,
+              "row": 2
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n4"
+          },
+          "hints": [
+            "عُدّ الشاشة كلها، لا الصف الأول فقط.",
+            "هناك دائرة تحت أزرار الأرقام."
+          ],
+          "explanation": "ثلاث دوائر فوق الأزرار وواحدة تحتها: أربع في المجموع. أزرار الإجابة نفسها قسمت المشهد وأخفت الرابعة.",
+          "wrong": {
+            "n3": "عددت الصف الأول فقط."
+          }
+        },
+        "en": {
+          "instruction": "How many circles are on this screen?",
+          "sub_instruction": "Tap the answer",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "c2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "c3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "n3",
+              "kind": "button",
+              "text": "3",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "n4",
+              "kind": "button",
+              "text": "4",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "n5",
+              "kind": "button",
+              "text": "5",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6,
+              "row": 2
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n4"
+          },
+          "hints": [
+            "Count the whole screen, not just the first row.",
+            "There is a circle below the number buttons."
+          ],
+          "explanation": "Three circles above the buttons and one below: four in total. The answer buttons split the scene and hid the fourth.",
+          "wrong": {
+            "n3": "You counted only the first row."
+          }
+        }
+      }
+    },
+    {
+      "id": "d10_patience",
+      "type": "reverse",
+      "par_time": 10,
+      "reward": 24,
+      "tags": [
+        "daily",
+        "no-tap"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "الزر الصحيح سيظهر بعد قليل",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "decoy",
+              "kind": "button",
+              "text": "هذا ليس هو",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "real",
+              "kind": "button",
+              "text": "الآن",
+              "color": "green",
+              "scale": 1.3,
+              "reveal_after": 3.5
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "real"
+          },
+          "hints": [
+            "التعليمة قالت «سيظهر»، أي أنه ليس موجودًا بعد.",
+            "انتظر أربع ثوانٍ تقريبًا."
+          ],
+          "explanation": "التعليمة كانت صادقة ومباشرة: الزر الصحيح لم يكن موجودًا في البداية، وكان عليك الانتظار فقط.",
+          "wrong": {
+            "decoy": "الزر يقول لك بنفسه إنه ليس هو."
+          }
+        },
+        "en": {
+          "instruction": "The right button will appear shortly",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "decoy",
+              "kind": "button",
+              "text": "THIS IS NOT IT",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "real",
+              "kind": "button",
+              "text": "NOW",
+              "color": "green",
+              "scale": 1.3,
+              "reveal_after": 3.5
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "real"
+          },
+          "hints": [
+            "The instruction said \"will appear\", so it is not here yet.",
+            "Wait about four seconds."
+          ],
+          "explanation": "The instruction was honest and literal: the right button did not exist yet, and all you had to do was wait.",
+          "wrong": {
+            "decoy": "The button tells you itself that it is not the one."
+          }
+        }
+      }
+    }
+  ]
+}

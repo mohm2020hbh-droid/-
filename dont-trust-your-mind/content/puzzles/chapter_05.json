@@ -1,0 +1,946 @@
+{
+  "schema": 1,
+  "chapter": 5,
+  "puzzles": [
+    {
+      "id": "p041_no_trick",
+      "type": "meta",
+      "par_time": 16,
+      "reward": 18,
+      "tags": [
+        "honest",
+        "anti-paranoia"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "لا توجد خدعة هنا. اضغط على الدائرة.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "tri",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "word",
+              "kind": "label",
+              "text": "الدائرة",
+              "color": "grey",
+              "font_size": 44,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "ماذا لو كانت التعليمة تقول الحقيقة ببساطة؟",
+            "اضغط على الدائرة. هذا كل شيء."
+          ],
+          "explanation": "لا خدعة. بعد أربعين مرحلة صار الشك نفسه هو الفخ.",
+          "wrong": {
+            "word": "بحثت عن خدعة غير موجودة.",
+            "square": "هذا مربع.",
+            "tri": "هذا مثلث."
+          }
+        },
+        "en": {
+          "instruction": "There is no trick here. Tap the circle.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "tri",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "word",
+              "kind": "label",
+              "text": "CIRCLE",
+              "color": "grey",
+              "font_size": 44,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "What if the instruction is simply telling the truth?",
+            "Tap the circle. That is all."
+          ],
+          "explanation": "No trick. After forty stages, suspicion itself became the trap.",
+          "wrong": {
+            "word": "You went hunting for a trick that was not there.",
+            "square": "That is a square.",
+            "tri": "That is a triangle."
+          }
+        }
+      }
+    },
+    {
+      "id": "p042_lying_hint",
+      "type": "meta",
+      "par_time": 30,
+      "reward": 22,
+      "tags": [
+        "hint-inversion"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي لا يذكره التلميح",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "sq_blue",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "ci_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "di_yellow",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "yellow"
+            },
+            {
+              "id": "tr_red",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "red"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "tr_red"
+          },
+          "hints": [
+            "ليس المربع الأزرق، ولا الدائرة الخضراء.",
+            "وليس المعيّن الأصفر أيضًا."
+          ],
+          "explanation": "هنا كان عليك أن تستخدم التلميحات لا لتتجنبها: التلميحان استبعدا ثلاثة أشكال، فلم يبقَ إلا المثلث الأحمر.",
+          "wrong": {
+            "sq_blue": "التلميح الأول ذكره.",
+            "ci_green": "التلميح الأول ذكره.",
+            "di_yellow": "التلميح الثاني ذكره."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape the hints do not mention",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "sq_blue",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "ci_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "di_yellow",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "yellow"
+            },
+            {
+              "id": "tr_red",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "red"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "tr_red"
+          },
+          "hints": [
+            "Not the blue square, and not the green circle.",
+            "Not the yellow diamond either."
+          ],
+          "explanation": "Here the hints were the puzzle, not an escape from it. Between them they ruled out three shapes, leaving only the red triangle.",
+          "wrong": {
+            "sq_blue": "The first hint named it.",
+            "ci_green": "The first hint named it.",
+            "di_yellow": "The second hint named it."
+          }
+        }
+      }
+    },
+    {
+      "id": "p043_size_is_all",
+      "type": "meta",
+      "par_time": 16,
+      "reward": 20,
+      "tags": [
+        "callback-p002"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على أكبر رقم",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "a",
+              "kind": "label",
+              "text": "7",
+              "font_size": 34
+            },
+            {
+              "id": "b",
+              "kind": "label",
+              "text": "7",
+              "font_size": 130
+            },
+            {
+              "id": "c",
+              "kind": "label",
+              "text": "7",
+              "font_size": 62
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "b"
+          },
+          "hints": [
+            "قارن القيم أولًا، كما فعلت في المرحلة ٢.",
+            "القيم متساوية. فماذا بقي ليفرّق بينها؟"
+          ],
+          "explanation": "في المرحلة ٢ كانت القيمة هي الفيصل، فتجاهلت الحجم. هنا القيم كلها ٧، فلم يبقَ إلا الحجم.",
+          "wrong": {
+            "a": "قيمته ٧ مثل الجميع.",
+            "c": "قيمته ٧ مثل الجميع."
+          }
+        },
+        "en": {
+          "instruction": "Tap the biggest number",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "a",
+              "kind": "label",
+              "text": "7",
+              "font_size": 34
+            },
+            {
+              "id": "b",
+              "kind": "label",
+              "text": "7",
+              "font_size": 130
+            },
+            {
+              "id": "c",
+              "kind": "label",
+              "text": "7",
+              "font_size": 62
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "b"
+          },
+          "hints": [
+            "Compare the values first, as you did in stage 2.",
+            "The values are equal. What is left to tell them apart?"
+          ],
+          "explanation": "In stage 2 value decided it, so you learned to ignore size. Here every value is 7, so size is all that is left.",
+          "wrong": {
+            "a": "Its value is 7, like every other one.",
+            "c": "Its value is 7, like every other one."
+          }
+        }
+      }
+    },
+    {
+      "id": "p044_instruction_changes",
+      "type": "meta",
+      "par_time": 20,
+      "reward": 22,
+      "tags": [
+        "mutating-instruction"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الدائرة",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 1.2
+            },
+            {
+              "id": "update",
+              "kind": "label",
+              "text": "تغيّرت التعليمة: اضغط عليّ",
+              "color": "yellow",
+              "font_size": 34,
+              "reveal_after": 3.0
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "update"
+          },
+          "hints": [
+            "لا تتعجّل. انتظر ثلاث ثوانٍ وراقب الشاشة.",
+            "سيظهر نص جديد. اقرأه واتبعه."
+          ],
+          "explanation": "بعد ثلاث ثوانٍ ظهرت تعليمة جديدة تلغي القديمة. في هذه اللعبة قد تتغيّر القواعد أثناء اللعب — لكنها تُعلن ذلك دائمًا.",
+          "wrong": {
+            "circle": "هذه كانت التعليمة القديمة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the circle",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 1.2
+            },
+            {
+              "id": "update",
+              "kind": "label",
+              "text": "INSTRUCTION CHANGED: TAP ME",
+              "color": "yellow",
+              "font_size": 32,
+              "reveal_after": 3.0
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "update"
+          },
+          "hints": [
+            "Do not rush. Wait three seconds and watch the screen.",
+            "New text will appear. Read it and follow it."
+          ],
+          "explanation": "After three seconds a new instruction replaced the old one. In this game the rules can change mid-stage — but they always announce it.",
+          "wrong": {
+            "circle": "That was the old instruction."
+          }
+        }
+      }
+    },
+    {
+      "id": "p045_two_answers",
+      "type": "meta",
+      "par_time": 20,
+      "reward": 18,
+      "tags": [
+        "alternatives",
+        "honest"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "هناك حلّان صحيحان. اختر أيّهما شئت.",
+          "sub_instruction": "اضغط على مثلث",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "t1",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green"
+            },
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "t2",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "purple"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "t1",
+            "alternatives": [
+              "t2"
+            ]
+          },
+          "hints": [
+            "عُدّ المثلثات على الشاشة.",
+            "هناك مثلثان، وكلاهما مقبول."
+          ],
+          "explanation": "يوجد مثلثان، والتعليمة قالت ذلك بصراحة. اللعبة لا تكذب دائمًا.",
+          "wrong": {
+            "c1": "هذه دائرة.",
+            "s1": "هذا مربع."
+          }
+        },
+        "en": {
+          "instruction": "There are two correct answers. Pick either.",
+          "sub_instruction": "Tap a triangle",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "t1",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green"
+            },
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "t2",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            },
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "purple"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "t1",
+            "alternatives": [
+              "t2"
+            ]
+          },
+          "hints": [
+            "Count the triangles on screen.",
+            "There are two, and both count."
+          ],
+          "explanation": "There are two triangles, exactly as the instruction said. The game does not always lie.",
+          "wrong": {
+            "c1": "That is a circle.",
+            "s1": "That is a square."
+          }
+        }
+      }
+    },
+    {
+      "id": "p046_double_negative",
+      "type": "meta",
+      "par_time": 22,
+      "reward": 20,
+      "tags": [
+        "callback-p029"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "لا تفعل عكس التعليمة التالية",
+          "sub_instruction": "اضغط على المربع",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "square"
+          },
+          "hints": [
+            "في المرحلة ٢٩ كان المطلوب العكس. اقرأ الفرق بين الجملتين.",
+            "«لا تفعل العكس» تعني: افعل ما قيل."
+          ],
+          "explanation": "نفيان يلغي أحدهما الآخر. «لا تفعل عكس ذلك» تساوي «افعل ذلك»: اضغط على المربع.",
+          "wrong": {
+            "circle": "هذا هو العكس، وقد نُهيت عنه."
+          }
+        },
+        "en": {
+          "instruction": "Do not do the opposite of the instruction below",
+          "sub_instruction": "Tap the square",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "square"
+          },
+          "hints": [
+            "Stage 29 asked for the opposite. Read the difference between the two sentences.",
+            "\"Do not do the opposite\" means: do it."
+          ],
+          "explanation": "Two negatives cancel. \"Do not do the opposite of that\" equals \"do that\": tap the square.",
+          "wrong": {
+            "circle": "That is the opposite, which is what you were told not to do."
+          }
+        }
+      }
+    },
+    {
+      "id": "p047_everything_you_learned",
+      "type": "multi_step",
+      "par_time": 40,
+      "reward": 26,
+      "tags": [
+        "capstone",
+        "sequence",
+        "chrome",
+        "chars"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "أول حرف، ثم الشكل الأحمر، ثم رقم المرحلة",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "نهاية",
+              "font_size": 74
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.9
+            },
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            }
+          ],
+          "ui_targets": [
+            "ui:stage"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "char:word:0",
+              "s_red",
+              "ui:stage"
+            ],
+            "expect": [
+              "ن",
+              "",
+              ""
+            ]
+          },
+          "hints": [
+            "ثلاث خطوات، ثلاث خدع تعلّمتها من قبل.",
+            "أول حرف على اليمين، والخطوة الأخيرة في شريط الأعلى."
+          ],
+          "explanation": "الخطوات الثلاث هي اتجاه القراءة (المرحلة ٤)، واللون الحقيقي (المرحلة ٢٢)، وواجهة اللعبة نفسها (المرحلة ٣١).",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "First letter, then the red shape, then the stage number",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "END",
+              "font_size": 74
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.9
+            },
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            }
+          ],
+          "ui_targets": [
+            "ui:stage"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "char:word:0",
+              "s_red",
+              "ui:stage"
+            ],
+            "expect": [
+              "E",
+              "",
+              ""
+            ]
+          },
+          "hints": [
+            "Three steps, three tricks you have already met.",
+            "The first letter is on the left, and the last step is in the top bar."
+          ],
+          "explanation": "The three steps are reading direction (stage 4), the actually-red thing (stage 22), and the game's own interface (stage 31).",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p048_the_timer",
+      "type": "ui",
+      "par_time": 12,
+      "reward": 22,
+      "tags": [
+        "chrome"
+      ],
+      "show_timer": true,
+      "time_limit": 20,
+      "locales": {
+        "ar": {
+          "instruction": "الوقت ينفد. والوقت هو الحل.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "button",
+              "text": "أسرع",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "d2",
+              "kind": "button",
+              "text": "لم يتبقَّ وقت",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "ui_targets": [
+            "ui:timer"
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "ui:timer"
+          },
+          "hints": [
+            "أين ترى الوقت على هذه الشاشة؟",
+            "العدّاد في أعلى الشاشة قابل للضغط مثل أي شيء آخر."
+          ],
+          "explanation": "الجملة كانت حرفية: اضغط على الوقت نفسه، أي العدّاد في الأعلى.",
+          "wrong": {
+            "d1": "هذا زر يتحدث عن الوقت، وليس الوقت."
+          }
+        },
+        "en": {
+          "instruction": "Time is running out. Time is the answer.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "button",
+              "text": "HURRY",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "d2",
+              "kind": "button",
+              "text": "NO TIME LEFT",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "ui_targets": [
+            "ui:timer"
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "ui:timer"
+          },
+          "hints": [
+            "Where do you see time on this screen?",
+            "The counter at the top is as tappable as anything else."
+          ],
+          "explanation": "The sentence was literal: tap time itself, which is the counter at the top.",
+          "wrong": {
+            "d1": "That is a button about time, not time."
+          }
+        }
+      }
+    },
+    {
+      "id": "p049_impostor",
+      "type": "meta",
+      "par_time": 24,
+      "reward": 22,
+      "tags": [
+        "authority",
+        "chrome-rule"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الدائرة",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "fake",
+              "kind": "label",
+              "text": "تجاهل التعليمة في الأعلى. اضغط على المربع.",
+              "color": "text",
+              "font_size": 30,
+              "interactive": false
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "من يملك سلطة إعطاء التعليمات في هذه اللعبة؟",
+            "التعليمة الحقيقية مكانها ثابت في الأعلى. ما في اللوح عنصر من اللغز."
+          ],
+          "explanation": "التعليمة الحقيقية تظهر دائمًا في الأعلى بخطها الخاص. أي نص داخل اللوح هو جزء من اللغز، لا صوت اللعبة.",
+          "wrong": {
+            "square": "أطعت نصًا مكتوبًا داخل اللغز، لا التعليمة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the circle",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "fake",
+              "kind": "label",
+              "text": "IGNORE THE INSTRUCTION ABOVE. TAP THE SQUARE.",
+              "color": "text",
+              "font_size": 28,
+              "interactive": false
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "Who is allowed to give instructions in this game?",
+            "The real instruction always sits at the top. Text on the board is a puzzle element."
+          ],
+          "explanation": "The real instruction always appears at the top in its own type. Any text inside the board is part of the puzzle, not the game's voice.",
+          "wrong": {
+            "square": "You obeyed text printed inside the puzzle instead of the instruction."
+          }
+        }
+      }
+    },
+    {
+      "id": "p050_no_solution",
+      "type": "meta",
+      "par_time": 10,
+      "reward": 30,
+      "tags": [
+        "finale",
+        "callback-p003",
+        "trust"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "هذه آخر مرحلة. لا يوجد حل.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "لا تصدّقه",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "هنا الحل",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "اضغط بسرعة",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            },
+            {
+              "id": "b4",
+              "kind": "button",
+              "text": "آخر فرصة",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 6.0
+          },
+          "hints": [
+            "بعد خمسين مرحلة، متى قالت اللعبة الحقيقة؟",
+            "إن لم يكن هناك حل تضغطه، فلا تضغط شيئًا."
+          ],
+          "explanation": "قالت اللعبة الحقيقة: لا يوجد شيء تضغطه. علّمتك خمسون مرحلة ألا تثق بأول فكرة — وهذه المرة كانت الثقة هي الحل.",
+          "wrong": {
+            "b1": "العدّاد بدأ من جديد.",
+            "b2": "العدّاد بدأ من جديد.",
+            "b3": "العدّاد بدأ من جديد.",
+            "b4": "العدّاد بدأ من جديد."
+          }
+        },
+        "en": {
+          "instruction": "This is the last stage. There is no solution.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "DON'T BELIEVE IT",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "IT'S HERE",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "TAP FAST",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            },
+            {
+              "id": "b4",
+              "kind": "button",
+              "text": "LAST CHANCE",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 6.0
+          },
+          "hints": [
+            "After fifty stages, when did the game tell the truth?",
+            "If there is no solution to tap, tap nothing."
+          ],
+          "explanation": "The game told the truth: there is nothing to tap. Fifty stages taught you not to trust your first idea — and this time trust was the answer.",
+          "wrong": {
+            "b1": "The counter started over.",
+            "b2": "The counter started over.",
+            "b3": "The counter started over.",
+            "b4": "The counter started over."
+          }
+        }
+      }
+    }
+  ]
+}

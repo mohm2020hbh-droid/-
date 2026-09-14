@@ -1,0 +1,58 @@
+; Engine configuration file.
+; "DON'T TRUST YOUR MIND" / "لا تثق بعقلك"
+
+config_version=5
+
+[application]
+
+config/name="Don't Trust Your Mind"
+config/description="A short-form deception puzzle game. Arabic & English, RTL-aware."
+config/version="1.0.0"
+run/main_scene="res://src/ui/screens/boot.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+boot_splash/bg_color=Color(0.043, 0.051, 0.063, 1)
+boot_splash/show_image=false
+config/icon="res://assets/icon.svg"
+
+[autoload]
+
+SaveManager="*res://src/core/save_manager.gd"
+Loc="*res://src/core/localization_manager.gd"
+Audio="*res://src/core/audio_manager.gd"
+Puzzles="*res://src/core/puzzle_manager.gd"
+Game="*res://src/core/game_manager.gd"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=405
+window/size/window_height_override=720
+window/handheld/orientation=1
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/vsync/vsync_mode=1
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[internationalization]
+
+locale/translation_remaps={}
+locale/test=""
+rendering/root_node_layout_direction=0
+
+[physics]
+
+common/physics_ticks_per_second=30
+2d/run_on_separate_thread=false
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_2d=1
+environment/defaults/default_clear_color=Color(0.043, 0.051, 0.063, 1)
+2d/snap/snap_2d_transforms_to_pixel=true

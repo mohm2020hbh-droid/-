@@ -1,0 +1,438 @@
+{
+  "schema": 1,
+  "chapter": 3,
+  "puzzles": [
+    {
+      "id": "p021_where_was_red", "type": "memory", "par_time": 14, "reward": 16,
+      "tags": ["recall-position"],
+      "locales": {
+        "ar": {
+          "instruction": "احفظ الألوان، ثم اضغط مكان الأحمر",
+          "layout": "free",
+          "elements": [
+            {"id": "s_blue", "kind": "shape", "shape": "circle", "color": "blue", "pos": [0.28, 0.3], "hide_after": 3.0, "interactive": false},
+            {"id": "s_red", "kind": "shape", "shape": "circle", "color": "red", "pos": [0.72, 0.3], "hide_after": 3.0, "interactive": false},
+            {"id": "s_green", "kind": "shape", "shape": "circle", "color": "green", "pos": [0.28, 0.68], "hide_after": 3.0, "interactive": false},
+            {"id": "s_yellow", "kind": "shape", "shape": "circle", "color": "yellow", "pos": [0.72, 0.68], "hide_after": 3.0, "interactive": false},
+            {"id": "z_tl", "kind": "zone", "pos": [0.28, 0.3], "color": "#12161B", "reveal_after": 3.1},
+            {"id": "z_tr", "kind": "zone", "pos": [0.72, 0.3], "color": "#12161B", "reveal_after": 3.1},
+            {"id": "z_bl", "kind": "zone", "pos": [0.28, 0.68], "color": "#12161B", "reveal_after": 3.1},
+            {"id": "z_br", "kind": "zone", "pos": [0.72, 0.68], "color": "#12161B", "reveal_after": 3.1}
+          ],
+          "solution": {"kind": "tap", "target": "z_tr"},
+          "hints": [
+            "أعد المحاولة وركّز على الأحمر وحده.",
+            "كان الأحمر في الصف العلوي."
+          ],
+          "explanation": "كان الأحمر في الخانة العلوية على اليمين.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Memorise the colours, then tap where red was",
+          "layout": "free",
+          "elements": [
+            {"id": "s_blue", "kind": "shape", "shape": "circle", "color": "blue", "pos": [0.28, 0.3], "hide_after": 3.0, "interactive": false},
+            {"id": "s_red", "kind": "shape", "shape": "circle", "color": "red", "pos": [0.72, 0.3], "hide_after": 3.0, "interactive": false},
+            {"id": "s_green", "kind": "shape", "shape": "circle", "color": "green", "pos": [0.28, 0.68], "hide_after": 3.0, "interactive": false},
+            {"id": "s_yellow", "kind": "shape", "shape": "circle", "color": "yellow", "pos": [0.72, 0.68], "hide_after": 3.0, "interactive": false},
+            {"id": "z_tl", "kind": "zone", "pos": [0.28, 0.3], "color": "#12161B", "reveal_after": 3.1},
+            {"id": "z_tr", "kind": "zone", "pos": [0.72, 0.3], "color": "#12161B", "reveal_after": 3.1},
+            {"id": "z_bl", "kind": "zone", "pos": [0.28, 0.68], "color": "#12161B", "reveal_after": 3.1},
+            {"id": "z_br", "kind": "zone", "pos": [0.72, 0.68], "color": "#12161B", "reveal_after": 3.1}
+          ],
+          "solution": {"kind": "tap", "target": "z_tr"},
+          "hints": [
+            "Try again and watch only the red one.",
+            "Red was in the top row."
+          ],
+          "explanation": "Red was in the top-right slot.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p022_red_again", "type": "meta", "par_time": 14, "reward": 18,
+      "tags": ["callback-p001", "rule-not-pattern"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الأحمر",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red"},
+            {"id": "c_blue", "kind": "shape", "shape": "square", "color": "blue"},
+            {"id": "c_green", "kind": "shape", "shape": "triangle", "color": "green"},
+            {"id": "w_red", "kind": "label", "text": "الأحمر", "color": "grey", "font_size": 52, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "c_red"},
+          "hints": [
+            "اقرأ التعليمة كما هي، وانظر ماذا تغيّر عن المرحلة الأولى.",
+            "هذه المرة يوجد شكل أحمر فعلًا."
+          ],
+          "explanation": "القاعدة لم تتغيّر أبدًا: اضغط على الشيء الأحمر. في المرحلة ١ لم يكن هناك شكل أحمر فكانت الكلمة هي الأحمر الوحيد. هنا الشكل أحمر والكلمة رمادية.",
+          "wrong": {
+            "w_red": "هذه الكلمة مكتوبة بالرمادي. حفظت نمطًا بدل أن تقرأ القاعدة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the red one",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red"},
+            {"id": "c_blue", "kind": "shape", "shape": "square", "color": "blue"},
+            {"id": "c_green", "kind": "shape", "shape": "triangle", "color": "green"},
+            {"id": "w_red", "kind": "label", "text": "RED", "color": "grey", "font_size": 52, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "c_red"},
+          "hints": [
+            "Read the instruction as written, and notice what changed since stage 1.",
+            "This time a shape really is red."
+          ],
+          "explanation": "The rule never changed: tap the red thing. In stage 1 no shape was red, so the word was the only red thing. Here the shape is red and the word is grey.",
+          "wrong": {
+            "w_red": "That word is printed grey. You memorised a pattern instead of reading the rule."
+          }
+        }
+      }
+    },
+    {
+      "id": "p023_order_from_memory", "type": "memory", "par_time": 18, "reward": 18,
+      "tags": ["sequence", "recall"],
+      "locales": {
+        "ar": {
+          "instruction": "احفظ الأرقام، ثم اضغط الأشكال بترتيبها",
+          "layout": "free",
+          "elements": [
+            {"id": "n_a", "kind": "label", "text": "2", "font_size": 48, "pos": [0.22, 0.25], "hide_after": 3.0, "interactive": false},
+            {"id": "n_b", "kind": "label", "text": "3", "font_size": 48, "pos": [0.5, 0.25], "hide_after": 3.0, "interactive": false},
+            {"id": "n_c", "kind": "label", "text": "1", "font_size": 48, "pos": [0.78, 0.25], "hide_after": 3.0, "interactive": false},
+            {"id": "s_a", "kind": "shape", "shape": "square", "color": "blue", "pos": [0.22, 0.55]},
+            {"id": "s_b", "kind": "shape", "shape": "square", "color": "green", "pos": [0.5, 0.55]},
+            {"id": "s_c", "kind": "shape", "shape": "square", "color": "orange", "pos": [0.78, 0.55]}
+          ],
+          "solution": {"kind": "sequence", "targets": ["s_c", "s_a", "s_b"]},
+          "hints": [
+            "الأرقام كانت فوق الأشكال مباشرة.",
+            "الترتيب الصحيح يبدأ بالشكل الذي كان فوقه الرقم ١."
+          ],
+          "explanation": "الأرقام كانت ١ فوق البرتقالي، ٢ فوق الأزرق، ٣ فوق الأخضر.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Memorise the numbers, then tap the shapes in that order",
+          "layout": "free",
+          "elements": [
+            {"id": "n_a", "kind": "label", "text": "2", "font_size": 48, "pos": [0.22, 0.25], "hide_after": 3.0, "interactive": false},
+            {"id": "n_b", "kind": "label", "text": "3", "font_size": 48, "pos": [0.5, 0.25], "hide_after": 3.0, "interactive": false},
+            {"id": "n_c", "kind": "label", "text": "1", "font_size": 48, "pos": [0.78, 0.25], "hide_after": 3.0, "interactive": false},
+            {"id": "s_a", "kind": "shape", "shape": "square", "color": "blue", "pos": [0.22, 0.55]},
+            {"id": "s_b", "kind": "shape", "shape": "square", "color": "green", "pos": [0.5, 0.55]},
+            {"id": "s_c", "kind": "shape", "shape": "square", "color": "orange", "pos": [0.78, 0.55]}
+          ],
+          "solution": {"kind": "sequence", "targets": ["s_c", "s_a", "s_b"]},
+          "hints": [
+            "The numbers sat directly above the shapes.",
+            "The order starts with the shape that had a 1 above it."
+          ],
+          "explanation": "The numbers were 1 above orange, 2 above blue, 3 above green.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p024_not_the_red", "type": "reverse", "par_time": 16, "reward": 16,
+      "tags": ["callback-p003", "negation"],
+      "locales": {
+        "ar": {
+          "instruction": "لا تضغط على الأحمر",
+          "layout": "column",
+          "elements": [
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red", "scale": 1.5, "pulse": true}
+          ],
+          "solution": {"kind": "tap", "target": "board"},
+          "hints": [
+            "التعليمة منعت شيئًا واحدًا فقط.",
+            "الخلفية الفارغة حولها ليست ممنوعة."
+          ],
+          "explanation": "لم يُطلب منك ألا تضغط شيئًا — بل ألا تضغط الأحمر. أي مكان آخر على الشاشة كان مقبولًا.",
+          "wrong": {
+            "c_red": "هذا هو الشيء الوحيد الممنوع."
+          }
+        },
+        "en": {
+          "instruction": "Do not tap the red one",
+          "layout": "column",
+          "elements": [
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red", "scale": 1.5, "pulse": true}
+          ],
+          "solution": {"kind": "tap", "target": "board"},
+          "hints": [
+            "The instruction forbade exactly one thing.",
+            "The empty background around it is not forbidden."
+          ],
+          "explanation": "You were not told to tap nothing — only not to tap the red one. Anywhere else was fine.",
+          "wrong": {
+            "c_red": "That is the one thing you were told not to tap."
+          }
+        }
+      }
+    },
+    {
+      "id": "p025_missing_colour", "type": "memory", "par_time": 18, "reward": 18,
+      "tags": ["recall-absence"],
+      "locales": {
+        "ar": {
+          "instruction": "احفظ الألوان، ثم اضغط على اللون الذي لم يظهر",
+          "layout": "free",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "pos": [0.25, 0.22], "hide_after": 3.0, "interactive": false},
+            {"id": "s2", "kind": "shape", "shape": "circle", "color": "green", "pos": [0.75, 0.22], "hide_after": 3.0, "interactive": false},
+            {"id": "s3", "kind": "shape", "shape": "circle", "color": "yellow", "pos": [0.25, 0.45], "hide_after": 3.0, "interactive": false},
+            {"id": "s4", "kind": "shape", "shape": "circle", "color": "purple", "pos": [0.75, 0.45], "hide_after": 3.0, "interactive": false},
+            {"id": "b_red", "kind": "button", "text": "أحمر", "color": "red", "pos": [0.28, 0.72], "reveal_after": 3.1},
+            {"id": "b_blue", "kind": "button", "text": "أزرق", "color": "blue", "pos": [0.72, 0.72], "reveal_after": 3.1},
+            {"id": "b_green", "kind": "button", "text": "أخضر", "color": "green", "pos": [0.28, 0.88], "reveal_after": 3.1},
+            {"id": "b_purple", "kind": "button", "text": "بنفسجي", "color": "purple", "pos": [0.72, 0.88], "reveal_after": 3.1}
+          ],
+          "solution": {"kind": "tap", "target": "b_red"},
+          "hints": [
+            "لا تحاول تذكّر المواضع، بل الألوان نفسها.",
+            "ظهرت أربعة ألوان، وهذه أربعة أزرار — ثلاثة منها فقط ظهرت."
+          ],
+          "explanation": "الألوان التي ظهرت كانت الأزرق والأخضر والأصفر والبنفسجي. الأحمر لم يظهر إطلاقًا.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Memorise the colours, then tap the one that did not appear",
+          "layout": "free",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "pos": [0.25, 0.22], "hide_after": 3.0, "interactive": false},
+            {"id": "s2", "kind": "shape", "shape": "circle", "color": "green", "pos": [0.75, 0.22], "hide_after": 3.0, "interactive": false},
+            {"id": "s3", "kind": "shape", "shape": "circle", "color": "yellow", "pos": [0.25, 0.45], "hide_after": 3.0, "interactive": false},
+            {"id": "s4", "kind": "shape", "shape": "circle", "color": "purple", "pos": [0.75, 0.45], "hide_after": 3.0, "interactive": false},
+            {"id": "b_red", "kind": "button", "text": "RED", "color": "red", "pos": [0.28, 0.72], "reveal_after": 3.1},
+            {"id": "b_blue", "kind": "button", "text": "BLUE", "color": "blue", "pos": [0.72, 0.72], "reveal_after": 3.1},
+            {"id": "b_green", "kind": "button", "text": "GREEN", "color": "green", "pos": [0.28, 0.88], "reveal_after": 3.1},
+            {"id": "b_purple", "kind": "button", "text": "PURPLE", "color": "purple", "pos": [0.72, 0.88], "reveal_after": 3.1}
+          ],
+          "solution": {"kind": "tap", "target": "b_red"},
+          "hints": [
+            "Do not try to recall positions, only colours.",
+            "Four colours appeared and there are four buttons — only three of them match."
+          ],
+          "explanation": "The colours shown were blue, green, yellow and purple. Red never appeared.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p026_count_flashes", "type": "memory", "par_time": 16, "reward": 18,
+      "tags": ["counting", "timing"],
+      "locales": {
+        "ar": {
+          "instruction": "كم مرة ومض المربع؟",
+          "layout": "free",
+          "elements": [
+            {"id": "f1", "kind": "shape", "shape": "square", "color": "cyan", "scale": 1.3, "pos": [0.5, 0.35], "reveal_after": 0.6, "hide_after": 1.0, "interactive": false},
+            {"id": "f2", "kind": "shape", "shape": "square", "color": "cyan", "scale": 1.3, "pos": [0.5, 0.35], "reveal_after": 1.5, "hide_after": 1.9, "interactive": false},
+            {"id": "f3", "kind": "shape", "shape": "square", "color": "cyan", "scale": 1.3, "pos": [0.5, 0.35], "reveal_after": 2.4, "hide_after": 2.8, "interactive": false},
+            {"id": "n2", "kind": "button", "text": "2", "color": "surface", "pos": [0.2, 0.75], "reveal_after": 3.3},
+            {"id": "n3", "kind": "button", "text": "3", "color": "surface", "pos": [0.4, 0.75], "reveal_after": 3.3},
+            {"id": "n4", "kind": "button", "text": "4", "color": "surface", "pos": [0.6, 0.75], "reveal_after": 3.3},
+            {"id": "n5", "kind": "button", "text": "5", "color": "surface", "pos": [0.8, 0.75], "reveal_after": 3.3}
+          ],
+          "solution": {"kind": "tap", "target": "n3"},
+          "hints": [
+            "أعد المحاولة وعُدّ من اللحظة الأولى.",
+            "كانت أقل من أربع مرات."
+          ],
+          "explanation": "ومض المربع ثلاث مرات.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "How many times did the square flash?",
+          "layout": "free",
+          "elements": [
+            {"id": "f1", "kind": "shape", "shape": "square", "color": "cyan", "scale": 1.3, "pos": [0.5, 0.35], "reveal_after": 0.6, "hide_after": 1.0, "interactive": false},
+            {"id": "f2", "kind": "shape", "shape": "square", "color": "cyan", "scale": 1.3, "pos": [0.5, 0.35], "reveal_after": 1.5, "hide_after": 1.9, "interactive": false},
+            {"id": "f3", "kind": "shape", "shape": "square", "color": "cyan", "scale": 1.3, "pos": [0.5, 0.35], "reveal_after": 2.4, "hide_after": 2.8, "interactive": false},
+            {"id": "n2", "kind": "button", "text": "2", "color": "surface", "pos": [0.2, 0.75], "reveal_after": 3.3},
+            {"id": "n3", "kind": "button", "text": "3", "color": "surface", "pos": [0.4, 0.75], "reveal_after": 3.3},
+            {"id": "n4", "kind": "button", "text": "4", "color": "surface", "pos": [0.6, 0.75], "reveal_after": 3.3},
+            {"id": "n5", "kind": "button", "text": "5", "color": "surface", "pos": [0.8, 0.75], "reveal_after": 3.3}
+          ],
+          "solution": {"kind": "tap", "target": "n3"},
+          "hints": [
+            "Retry and count from the very first moment.",
+            "It was fewer than four."
+          ],
+          "explanation": "The square flashed three times.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p027_descending", "type": "reverse", "par_time": 20, "reward": 16,
+      "tags": ["sorting", "sequence"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط الأرقام بترتيب تنازلي",
+          "layout": "flow",
+          "elements": [
+            {"id": "n3", "kind": "button", "text": "3", "color": "surface"},
+            {"id": "n1", "kind": "button", "text": "1", "color": "surface"},
+            {"id": "n4", "kind": "button", "text": "4", "color": "surface"},
+            {"id": "n2", "kind": "button", "text": "2", "color": "surface"}
+          ],
+          "solution": {"kind": "sequence", "targets": ["n4", "n3", "n2", "n1"]},
+          "hints": [
+            "تنازلي يعني من الأكبر إلى الأصغر.",
+            "ترتيب الأزرار على الشاشة ليس ترتيب قيمها."
+          ],
+          "explanation": "الترتيب التنازلي هو ٤ ثم ٣ ثم ٢ ثم ١، بغضّ النظر عن مواضعها.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the numbers in descending order",
+          "layout": "flow",
+          "elements": [
+            {"id": "n3", "kind": "button", "text": "3", "color": "surface"},
+            {"id": "n1", "kind": "button", "text": "1", "color": "surface"},
+            {"id": "n4", "kind": "button", "text": "4", "color": "surface"},
+            {"id": "n2", "kind": "button", "text": "2", "color": "surface"}
+          ],
+          "solution": {"kind": "sequence", "targets": ["n4", "n3", "n2", "n1"]},
+          "hints": [
+            "Descending means largest first.",
+            "Where the buttons sit is not the order of their values."
+          ],
+          "explanation": "Descending order is 4, 3, 2, 1, wherever they happen to sit.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p028_truth_this_time", "type": "meta", "par_time": 18, "reward": 20,
+      "tags": ["callback-p010", "honest"],
+      "locales": {
+        "ar": {
+          "instruction": "كل تعليمة في هذه المرحلة صادقة. اضغط على المربع.",
+          "layout": "row",
+          "elements": [
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "square", "kind": "shape", "shape": "square", "color": "orange"}
+          ],
+          "solution": {"kind": "tap", "target": "square"},
+          "hints": [
+            "اقرأ الجملة الأولى بعناية. هل تقول «كاذبة» أم «صادقة»؟",
+            "هذه المرة لا يوجد عكس. افعل ما قيل لك."
+          ],
+          "explanation": "المرحلة ١٠ أعلنت أنها كاذبة، وهذه أعلنت أنها صادقة. اللعبة قالت الحقيقة، وأنت توقّعت الكذب.",
+          "wrong": {
+            "circle": "عكستَ تعليمة لم تطلب أن تُعكس."
+          }
+        },
+        "en": {
+          "instruction": "Every instruction in this stage is true. Tap the square.",
+          "layout": "row",
+          "elements": [
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "square", "kind": "shape", "shape": "square", "color": "orange"}
+          ],
+          "solution": {"kind": "tap", "target": "square"},
+          "hints": [
+            "Read the first sentence carefully. Does it say false, or true?",
+            "There is no opposite this time. Do as you were told."
+          ],
+          "explanation": "Stage 10 declared itself false; this one declared itself true. The game told the truth and you expected a lie.",
+          "wrong": {
+            "circle": "You inverted an instruction that never asked to be inverted."
+          }
+        }
+      }
+    },
+    {
+      "id": "p029_do_the_opposite", "type": "reverse", "par_time": 16, "reward": 16,
+      "tags": ["nested-instruction"],
+      "locales": {
+        "ar": {
+          "instruction": "افعل عكس التعليمة التالية",
+          "sub_instruction": "اضغط على الدائرة الكبيرة",
+          "layout": "row",
+          "elements": [
+            {"id": "big", "kind": "shape", "shape": "circle", "color": "purple", "scale": 1.7},
+            {"id": "small", "kind": "shape", "shape": "circle", "color": "purple", "scale": 0.8}
+          ],
+          "solution": {"kind": "tap", "target": "small"},
+          "hints": [
+            "هناك تعليمتان: واحدة تحكم الأخرى.",
+            "عكس «الكبيرة» هو «الصغيرة»."
+          ],
+          "explanation": "التعليمة الأولى تحكم الثانية. عكس «اضغط على الكبيرة» هو أن تضغط الصغيرة.",
+          "wrong": {
+            "big": "هذا ما طلبته التعليمة الثانية حرفيًا، لا عكسها."
+          }
+        },
+        "en": {
+          "instruction": "Do the opposite of the instruction below",
+          "sub_instruction": "Tap the big circle",
+          "layout": "row",
+          "elements": [
+            {"id": "big", "kind": "shape", "shape": "circle", "color": "purple", "scale": 1.7},
+            {"id": "small", "kind": "shape", "shape": "circle", "color": "purple", "scale": 0.8}
+          ],
+          "solution": {"kind": "tap", "target": "small"},
+          "hints": [
+            "There are two instructions and one governs the other.",
+            "The opposite of big is small."
+          ],
+          "explanation": "The first instruction governs the second. The opposite of \"tap the big circle\" is to tap the small one.",
+          "wrong": {
+            "big": "That is what the second instruction literally said, not its opposite."
+          }
+        }
+      }
+    },
+    {
+      "id": "p030_who_came_first", "type": "memory", "par_time": 18, "reward": 20,
+      "tags": ["arrival-order"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي ظهر أولًا",
+          "layout": "free",
+          "elements": [
+            {"id": "s_mid", "kind": "shape", "shape": "diamond", "color": "green", "pos": [0.5, 0.5], "reveal_after": 1.6},
+            {"id": "s_left", "kind": "shape", "shape": "diamond", "color": "blue", "pos": [0.22, 0.5], "reveal_after": 2.4},
+            {"id": "s_right", "kind": "shape", "shape": "diamond", "color": "orange", "pos": [0.78, 0.5], "reveal_after": 3.2}
+          ],
+          "solution": {"kind": "tap", "target": "s_mid"},
+          "hints": [
+            "أعد المحاولة وراقب الشاشة من اللحظة الأولى.",
+            "الأول لم يكن على أي من الطرفين."
+          ],
+          "explanation": "الأخضر في المنتصف ظهر أولًا، ثم الأزرق، ثم البرتقالي. ترتيب الظهور لا علاقة له بترتيب المواضع.",
+          "wrong": {
+            "s_right": "هذا آخر من ظهر."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape that appeared first",
+          "layout": "free",
+          "elements": [
+            {"id": "s_mid", "kind": "shape", "shape": "diamond", "color": "green", "pos": [0.5, 0.5], "reveal_after": 1.6},
+            {"id": "s_left", "kind": "shape", "shape": "diamond", "color": "blue", "pos": [0.22, 0.5], "reveal_after": 2.4},
+            {"id": "s_right", "kind": "shape", "shape": "diamond", "color": "orange", "pos": [0.78, 0.5], "reveal_after": 3.2}
+          ],
+          "solution": {"kind": "tap", "target": "s_mid"},
+          "hints": [
+            "Retry and watch the screen from the first moment.",
+            "The first one was not at either edge."
+          ],
+          "explanation": "The green diamond in the middle arrived first, then blue, then orange. Arrival order has nothing to do with position.",
+          "wrong": {
+            "s_right": "That one arrived last."
+          }
+        }
+      }
+    }
+  ]
+}

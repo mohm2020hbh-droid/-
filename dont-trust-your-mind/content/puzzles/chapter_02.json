@@ -1,0 +1,877 @@
+{
+  "schema": 1,
+  "chapter": 2,
+  "puzzles": [
+    {
+      "id": "p011_last_letter",
+      "type": "language",
+      "par_time": 14,
+      "reward": 12,
+      "tags": [
+        "rtl",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على آخر حرف",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "نهاية",
+              "font_size": 96
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:4",
+            "expect": [
+              "ة"
+            ]
+          },
+          "hints": [
+            "أين تنتهي الكلمة العربية؟",
+            "النهاية على اليسار، لأن القراءة تبدأ من اليمين."
+          ],
+          "explanation": "آخر حرف في «نهاية» هو التاء المربوطة، وموقعها أقصى اليسار.",
+          "wrong": {
+            "char:word:0": "هذا أول حرف، لا آخره."
+          }
+        },
+        "en": {
+          "instruction": "Tap the last letter",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "END",
+              "font_size": 96
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:2",
+            "expect": [
+              "D"
+            ]
+          },
+          "hints": [
+            "Where does an English word end?",
+            "The end is on the right, because reading starts on the left."
+          ],
+          "explanation": "The last letter of END is D, at the far right.",
+          "wrong": {
+            "char:word:0": "That is the first letter, not the last."
+          }
+        }
+      }
+    },
+    {
+      "id": "p012_four_letters",
+      "type": "language",
+      "par_time": 20,
+      "reward": 12,
+      "tags": [
+        "counting",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة التي فيها أربعة حروف",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "w_sun",
+              "kind": "label",
+              "text": "شمس",
+              "font_size": 76
+            },
+            {
+              "id": "w_moon",
+              "kind": "label",
+              "text": "قمر",
+              "font_size": 60
+            },
+            {
+              "id": "w_book",
+              "kind": "label",
+              "text": "كتاب",
+              "font_size": 30,
+              "row": 1
+            },
+            {
+              "id": "w_house",
+              "kind": "label",
+              "text": "بيت",
+              "font_size": 54,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_book"
+          },
+          "hints": [
+            "حجم الخط لا علاقة له بعدد الحروف.",
+            "عُدّ حروف كل كلمة: شمس ٣، قمر ٣، بيت ٣."
+          ],
+          "explanation": "«كتاب» وحدها فيها أربعة حروف، رغم أنها مكتوبة بأصغر خط.",
+          "wrong": {
+            "w_sun": "ثلاثة حروف، مكتوبة بخط كبير فقط."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word with four letters",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "w_sun",
+              "kind": "label",
+              "text": "SUN",
+              "font_size": 76
+            },
+            {
+              "id": "w_star",
+              "kind": "label",
+              "text": "STAR",
+              "font_size": 30
+            },
+            {
+              "id": "w_sky",
+              "kind": "label",
+              "text": "SKY",
+              "font_size": 60,
+              "row": 1
+            },
+            {
+              "id": "w_cloud",
+              "kind": "label",
+              "text": "CLOUD",
+              "font_size": 54,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_star"
+          },
+          "hints": [
+            "Font size has nothing to do with letter count.",
+            "Count them: SUN is 3, SKY is 3, CLOUD is 5."
+          ],
+          "explanation": "STAR is the only four-letter word, even though it is set in the smallest type.",
+          "wrong": {
+            "w_sun": "Three letters, just printed large."
+          }
+        }
+      }
+    },
+    {
+      "id": "p013_right",
+      "type": "language",
+      "par_time": 22,
+      "reward": 14,
+      "tags": [
+        "word-vs-direction",
+        "rtl"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على يمين",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "w_left",
+              "kind": "button",
+              "text": "يسار",
+              "color": "surface"
+            },
+            {
+              "id": "w_right",
+              "kind": "button",
+              "text": "يمين",
+              "color": "surface"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_right"
+          },
+          "hints": [
+            "هل «يمين» هنا جهة، أم كلمة مكتوبة؟",
+            "التعليمة لم تقل «على اليمين»، بل «على يمين»."
+          ],
+          "explanation": "المطلوب كان الكلمة «يمين» نفسها، وهي تقع على يسار الشاشة لأن الترتيب عربي من اليمين.",
+          "wrong": {
+            "w_left": "هذا الزر الموجود على اليمين، لكنه يقول «يسار»."
+          }
+        },
+        "en": {
+          "instruction": "Tap right",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "w_right",
+              "kind": "button",
+              "text": "RIGHT",
+              "color": "surface"
+            },
+            {
+              "id": "w_left",
+              "kind": "button",
+              "text": "LEFT",
+              "color": "surface"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_right"
+          },
+          "hints": [
+            "Is \"right\" a direction here, or a word on a button?",
+            "The instruction did not say \"on the right\"."
+          ],
+          "explanation": "You were asked for the word RIGHT, which happens to sit on the left of the screen.",
+          "wrong": {
+            "w_left": "That is the button on the right, but it says LEFT."
+          }
+        }
+      }
+    },
+    {
+      "id": "p014_foreign_word",
+      "type": "language",
+      "par_time": 18,
+      "reward": 12,
+      "tags": [
+        "script",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة التي ليست عربية",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "شمس",
+              "font_size": 46
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "تلفزيون",
+              "font_size": 46
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "SUN",
+              "font_size": 46,
+              "row": 1
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "نجم",
+              "font_size": 46,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w3"
+          },
+          "hints": [
+            "انظر إلى الحروف نفسها، لا إلى أصل الكلمة.",
+            "كلمة واحدة فقط مكتوبة بحروف غير عربية."
+          ],
+          "explanation": "«تلفزيون» كلمة دخيلة، لكنها مكتوبة بحروف عربية. الكلمة غير العربية هي SUN.",
+          "wrong": {
+            "w2": "أصلها أجنبي، لكنها مكتوبة بالعربية."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word that is not English",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "SUN",
+              "font_size": 46
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "SAFARI",
+              "font_size": 46
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "شمس",
+              "font_size": 46,
+              "row": 1
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "STAR",
+              "font_size": 46,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w3"
+          },
+          "hints": [
+            "Look at the letters themselves, not at where a word came from.",
+            "Only one word here is not written in the Latin alphabet."
+          ],
+          "explanation": "SAFARI is a loanword, but it is written in English letters. The one that is not English is شمس.",
+          "wrong": {
+            "w2": "Borrowed from Swahili, but written in English."
+          }
+        }
+      }
+    },
+    {
+      "id": "p015_spell_it",
+      "type": "multi_step",
+      "par_time": 28,
+      "reward": 18,
+      "tags": [
+        "sequence",
+        "chars",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط حروف كلمة «باب» بالترتيب",
+          "sub_instruction": "الحروف مبعثرة",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "pool",
+              "kind": "chars",
+              "text": "ابب",
+              "font_size": 96
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "char:pool:1",
+              "char:pool:0",
+              "char:pool:2"
+            ],
+            "expect": [
+              "ب",
+              "ا",
+              "ب"
+            ]
+          },
+          "hints": [
+            "الحروف الثلاثة كلها موجودة، لكن ترتيبها مختلف.",
+            "ابدأ بالباء، ثم الألف، ثم الباء الأخرى."
+          ],
+          "explanation": "الحروف المعروضة هي «ا ب ب» من اليمين. لتكتب «باب» تحتاج الباء ثم الألف ثم الباء.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the letters that spell DOG, in order",
+          "sub_instruction": "The letters are scrambled",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "pool",
+              "kind": "chars",
+              "text": "ODG",
+              "font_size": 96
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "char:pool:1",
+              "char:pool:0",
+              "char:pool:2"
+            ],
+            "expect": [
+              "D",
+              "O",
+              "G"
+            ]
+          },
+          "hints": [
+            "All three letters are there, just in the wrong order.",
+            "Start with D, then O, then G."
+          ],
+          "explanation": "The letters shown are O, D, G. To spell DOG you need the second, then the first, then the third.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p016_palindrome",
+      "type": "language",
+      "par_time": 25,
+      "reward": 14,
+      "tags": [
+        "palindrome",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة التي تُقرأ نفسها من الجهتين",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "قلم",
+              "font_size": 44
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "باب",
+              "font_size": 44
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "شمس",
+              "font_size": 44
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "كتاب",
+              "font_size": 44
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w2"
+          },
+          "hints": [
+            "اقلب كل كلمة حرفًا حرفًا في رأسك.",
+            "كلمة من ثلاثة حروف، أولها وآخرها نفس الحرف."
+          ],
+          "explanation": "«باب» تُقرأ ب-ا-ب من اليمين ومن اليسار معًا.",
+          "wrong": {
+            "w1": "معكوسها «ملق»."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word that reads the same both ways",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "TABLE",
+              "font_size": 44
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "LEVEL",
+              "font_size": 44
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "HOUSE",
+              "font_size": 44
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "WATER",
+              "font_size": 44
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w2"
+          },
+          "hints": [
+            "Reverse each word letter by letter in your head.",
+            "Its first and last letters are the same."
+          ],
+          "explanation": "LEVEL reads L-E-V-E-L in both directions.",
+          "wrong": {
+            "w1": "Backwards that is ELBAT."
+          }
+        }
+      }
+    },
+    {
+      "id": "p017_repeated_letter",
+      "type": "language",
+      "par_time": 22,
+      "reward": 14,
+      "tags": [
+        "chars",
+        "alternatives",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الحرف الذي يتكرر",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "كتابك",
+              "font_size": 88
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:0",
+            "alternatives": [
+              "char:word:4"
+            ],
+            "expect": [
+              "ك",
+              "ك"
+            ]
+          },
+          "hints": [
+            "حرف واحد يظهر مرتين في هذه الكلمة.",
+            "انظر إلى طرفي الكلمة."
+          ],
+          "explanation": "الكاف تظهر مرتين في «كتابك»: في أولها وفي آخرها. أيّهما ضغطت كان صحيحًا.",
+          "wrong": {
+            "char:word:1": "التاء تظهر مرة واحدة.",
+            "char:word:2": "الألف تظهر مرة واحدة.",
+            "char:word:3": "الباء تظهر مرة واحدة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the letter that repeats",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "APPLE",
+              "font_size": 88
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:1",
+            "alternatives": [
+              "char:word:2"
+            ],
+            "expect": [
+              "P",
+              "P"
+            ]
+          },
+          "hints": [
+            "One letter appears twice in this word.",
+            "Look at the middle of the word."
+          ],
+          "explanation": "P appears twice in APPLE, side by side. Either one counted.",
+          "wrong": {
+            "char:word:0": "A appears once.",
+            "char:word:3": "L appears once.",
+            "char:word:4": "E appears once."
+          }
+        }
+      }
+    },
+    {
+      "id": "p018_word_in_word",
+      "type": "language",
+      "par_time": 26,
+      "reward": 16,
+      "tags": [
+        "hidden-word",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة التي تخبّئ كلمة أخرى بداخلها",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "نهر",
+              "font_size": 42
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "مكتبة",
+              "font_size": 42
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "جبل",
+              "font_size": 42
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "سحاب",
+              "font_size": 42
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w2"
+          },
+          "hints": [
+            "احذف حرفًا من البداية وحرفًا من النهاية واقرأ ما تبقّى.",
+            "ابحث عن كلمة لها علاقة بالقراءة."
+          ],
+          "explanation": "داخل «مكتبة» تجد «كتب». الكلمات الأخرى لا تحوي كلمة كاملة.",
+          "wrong": {
+            "w4": "«سحاب» لا تحوي كلمة أخرى كاملة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word hiding another word inside it",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w1",
+              "kind": "label",
+              "text": "TABLE",
+              "font_size": 42
+            },
+            {
+              "id": "w2",
+              "kind": "label",
+              "text": "CARPET",
+              "font_size": 42
+            },
+            {
+              "id": "w3",
+              "kind": "label",
+              "text": "GREEN",
+              "font_size": 42
+            },
+            {
+              "id": "w4",
+              "kind": "label",
+              "text": "WATER",
+              "font_size": 42
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w2"
+          },
+          "hints": [
+            "Cover the last letters and read what is left.",
+            "Look for something you could drive."
+          ],
+          "explanation": "CARPET begins with CAR. The other words hide no complete word.",
+          "wrong": {
+            "w1": "No complete word hides inside TABLE.",
+            "w3": "No complete word hides inside GREEN.",
+            "w4": "No complete word hides inside WATER."
+          }
+        }
+      }
+    },
+    {
+      "id": "p019_second_from_left",
+      "type": "language",
+      "par_time": 24,
+      "reward": 16,
+      "tags": [
+        "rtl",
+        "visual-vs-logical",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الحرف الثاني من اليسار",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "بداية",
+              "font_size": 88
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:3",
+            "expect": [
+              "ي"
+            ]
+          },
+          "hints": [
+            "التعليمة تتحدث عن جهة على الشاشة، لا عن ترتيب في الكلمة.",
+            "في العربية، اليسار هو نهاية الكلمة. عُدّ حرفين من هناك."
+          ],
+          "explanation": "أقصى اليسار هو آخر حرف (ة)، والثاني من اليسار هو الذي قبله (ي).",
+          "wrong": {
+            "char:word:1": "عددت من اليمين، أي من بداية الكلمة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the second letter from the left",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "START",
+              "font_size": 88
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "char:word:1",
+            "expect": [
+              "T"
+            ]
+          },
+          "hints": [
+            "The instruction names a side of the screen, not a position in the word.",
+            "In English the left is where the word begins."
+          ],
+          "explanation": "The far left is S, so the second from the left is T.",
+          "wrong": {
+            "char:word:3": "You counted from the right."
+          }
+        }
+      }
+    },
+    {
+      "id": "p020_count_the_instruction",
+      "type": "meta",
+      "par_time": 30,
+      "reward": 20,
+      "tags": [
+        "self-reference",
+        "divergent-answer"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "كم كلمة في هذه الجملة؟",
+          "sub_instruction": "اضغط على الإجابة",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "n4",
+              "kind": "button",
+              "text": "4",
+              "color": "surface"
+            },
+            {
+              "id": "n5",
+              "kind": "button",
+              "text": "5",
+              "color": "surface"
+            },
+            {
+              "id": "n6",
+              "kind": "button",
+              "text": "6",
+              "color": "surface"
+            },
+            {
+              "id": "n7",
+              "kind": "button",
+              "text": "7",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "n8",
+              "kind": "button",
+              "text": "8",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n5"
+          },
+          "hints": [
+            "«هذه الجملة» تعني السؤال المكتوب في الأعلى.",
+            "عُدّ: كم / كلمة / في / هذه / الجملة."
+          ],
+          "explanation": "السؤال نفسه يتكوّن من خمس كلمات. عدد الكلمات يختلف بين اللغتين، ولذلك يختلف الجواب.",
+          "wrong": {
+            "n4": "أعد العدّ ببطء.",
+            "n6": "علامة الاستفهام ليست كلمة."
+          }
+        },
+        "en": {
+          "instruction": "How many words are in this sentence?",
+          "sub_instruction": "Tap the answer",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "n4",
+              "kind": "button",
+              "text": "4",
+              "color": "surface"
+            },
+            {
+              "id": "n5",
+              "kind": "button",
+              "text": "5",
+              "color": "surface"
+            },
+            {
+              "id": "n6",
+              "kind": "button",
+              "text": "6",
+              "color": "surface"
+            },
+            {
+              "id": "n7",
+              "kind": "button",
+              "text": "7",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "n8",
+              "kind": "button",
+              "text": "8",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n7"
+          },
+          "hints": [
+            "\"This sentence\" means the question written above.",
+            "Count them: How / many / words / are / in / this / sentence."
+          ],
+          "explanation": "The question itself is seven words long. The count differs between languages, so the answer does too.",
+          "wrong": {
+            "n5": "Count again, slowly.",
+            "n8": "The question mark is not a word."
+          }
+        }
+      }
+    }
+  ]
+}

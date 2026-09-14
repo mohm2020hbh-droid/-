@@ -1,0 +1,12 @@
+.godot/
+.import/
+export.cfg
+export_credentials.cfg
+android/
+*.translation
+build/
+*.apk
+*.aab
+*.keystore
+tests/shots/
+tests/shots_small/
