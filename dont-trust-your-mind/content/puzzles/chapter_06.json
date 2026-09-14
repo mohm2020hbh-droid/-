@@ -1,0 +1,930 @@
+{
+  "schema": 1,
+  "chapter": 6,
+  "puzzles": [
+    {
+      "id": "p051_real_circle", "type": "visual", "par_time": 16, "reward": 10,
+      "tags": ["mislabeled", "shape-vs-caption"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الدائرة",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "sq_mislabel", "kind": "shape", "shape": "square", "color": "green", "text": "دائرة"},
+            {"id": "tri_mislabel", "kind": "shape", "shape": "triangle", "color": "orange", "text": "مربع"}
+          ],
+          "solution": {"kind": "tap", "target": "c_circle"},
+          "hints": [
+            "لا تثق بالكلمة المكتوبة على الشكل — انظر إلى الشكل نفسه.",
+            "الشكل المستدير الذي لا يحمل أي كتابة هو الدائرة الحقيقية."
+          ],
+          "explanation": "الشكل المكتوب عليه «دائرة» كان في الحقيقة مربعًا. الدائرة الحقيقية لم تحمل أي تسمية على الإطلاق.",
+          "wrong": {
+            "sq_mislabel": "هذا مربع، مهما كتبتَ عليه.",
+            "tri_mislabel": "هذا مثلث يحمل تسمية خاطئة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the circle.",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "sq_mislabel", "kind": "shape", "shape": "square", "color": "green", "text": "circle"},
+            {"id": "tri_mislabel", "kind": "shape", "shape": "triangle", "color": "orange", "text": "square"}
+          ],
+          "solution": {"kind": "tap", "target": "c_circle"},
+          "hints": [
+            "Don't trust the word written on a shape — look at the shape itself.",
+            "The round one with no caption at all is the real circle."
+          ],
+          "explanation": "The shape captioned \"circle\" was actually a square. The real circle carried no label at all.",
+          "wrong": {
+            "sq_mislabel": "That's a square, no matter what it says.",
+            "tri_mislabel": "That's a triangle wearing the wrong caption."
+          }
+        }
+      }
+    },
+    {
+      "id": "p052_only_even", "type": "pattern", "par_time": 14, "reward": 10,
+      "tags": ["parity", "numbers"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الرقم الزوجي الوحيد",
+          "layout": "row",
+          "elements": [
+            {"id": "n1", "kind": "label", "text": "1", "font_size": 60},
+            {"id": "n3", "kind": "label", "text": "3", "font_size": 60},
+            {"id": "n5", "kind": "label", "text": "5", "font_size": 60},
+            {"id": "n8", "kind": "label", "text": "8", "font_size": 60},
+            {"id": "n7", "kind": "label", "text": "7", "font_size": 60}
+          ],
+          "solution": {"kind": "tap", "target": "n8"},
+          "hints": [
+            "الأمر لا علاقة له بحجم الأرقام، فكلها متساوية.",
+            "ابحث عن الرقم الذي يقبل القسمة على ٢."
+          ],
+          "explanation": "٨ هو الرقم الزوجي الوحيد بين هذه الأرقام. كل ما عداه فردي.",
+          "wrong": {
+            "n1": "١ فردي.",
+            "n3": "٣ فردي.",
+            "n5": "٥ فردي.",
+            "n7": "٧ فردي."
+          }
+        },
+        "en": {
+          "instruction": "Tap the only even number.",
+          "layout": "row",
+          "elements": [
+            {"id": "n1", "kind": "label", "text": "1", "font_size": 60},
+            {"id": "n3", "kind": "label", "text": "3", "font_size": 60},
+            {"id": "n5", "kind": "label", "text": "5", "font_size": 60},
+            {"id": "n8", "kind": "label", "text": "8", "font_size": 60},
+            {"id": "n7", "kind": "label", "text": "7", "font_size": 60}
+          ],
+          "solution": {"kind": "tap", "target": "n8"},
+          "hints": [
+            "Size has nothing to do with it — they're all the same.",
+            "Find the one that divides evenly by 2."
+          ],
+          "explanation": "8 is the only even number here. Everything else is odd.",
+          "wrong": {
+            "n1": "1 is odd.",
+            "n3": "3 is odd.",
+            "n5": "5 is odd.",
+            "n7": "7 is odd."
+          }
+        }
+      }
+    },
+    {
+      "id": "p053_heaviest_word", "type": "language", "par_time": 16, "reward": 10,
+      "tags": ["semantics", "real-world-weight"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الأثقل",
+          "layout": "flow",
+          "elements": [
+            {"id": "w_feather", "kind": "label", "text": "ريشة", "color": "text", "font_size": 44},
+            {"id": "w_cloud", "kind": "label", "text": "سحابة", "color": "text", "font_size": 44},
+            {"id": "w_rock", "kind": "label", "text": "صخرة", "color": "text", "font_size": 44},
+            {"id": "w_anvil", "kind": "label", "text": "سندان", "color": "text", "font_size": 44}
+          ],
+          "solution": {"kind": "tap", "target": "w_anvil"},
+          "hints": [
+            "لا علاقة لطول الكلمة أو شكلها بالإجابة.",
+            "فكّر في وزن الشيء نفسه في الواقع، لا في الكلمة."
+          ],
+          "explanation": "السندان أثقل شيء بين هذه الكلمات الأربع. المطلوب كان وزن المعنى، لا شكل الكلمة.",
+          "wrong": {
+            "w_feather": "الريشة من أخف الأشياء الموجودة.",
+            "w_cloud": "السحابة تبدو خفيفة أيضًا.",
+            "w_rock": "الصخرة ثقيلة، لكنها ليست الأثقل."
+          }
+        },
+        "en": {
+          "instruction": "Tap the heaviest one.",
+          "layout": "flow",
+          "elements": [
+            {"id": "w_feather", "kind": "label", "text": "FEATHER", "color": "text", "font_size": 44},
+            {"id": "w_cloud", "kind": "label", "text": "CLOUD", "color": "text", "font_size": 44},
+            {"id": "w_rock", "kind": "label", "text": "ROCK", "color": "text", "font_size": 44},
+            {"id": "w_anvil", "kind": "label", "text": "ANVIL", "color": "text", "font_size": 44}
+          ],
+          "solution": {"kind": "tap", "target": "w_anvil"},
+          "hints": [
+            "Word length has nothing to do with the answer.",
+            "Think about how much the actual object would weigh."
+          ],
+          "explanation": "An anvil is the heaviest thing here by far. This was about meaning, not the words themselves.",
+          "wrong": {
+            "w_feather": "A feather is about as light as it gets.",
+            "w_cloud": "A cloud reads as light too.",
+            "w_rock": "A rock is heavy, but not the heaviest."
+          }
+        }
+      }
+    },
+    {
+      "id": "p054_most_sides", "type": "pattern", "par_time": 15, "reward": 10,
+      "tags": ["shape-sides", "tie"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل صاحب أكبر عدد من الأضلاع",
+          "layout": "flow",
+          "elements": [
+            {"id": "s_circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "s_square", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "s_triangle", "kind": "shape", "shape": "triangle", "color": "orange"},
+            {"id": "s_diamond", "kind": "shape", "shape": "diamond", "color": "purple"}
+          ],
+          "solution": {"kind": "tap", "target": "s_square", "alternatives": ["s_diamond"]},
+          "hints": [
+            "الدائرة لا تملك أضلاعًا مستقيمة على الإطلاق.",
+            "شكلان هنا متعادلان في عدد الأضلاع — كلاهما صحيح."
+          ],
+          "explanation": "المربع والمعين كلاهما له أربعة أضلاع، أكثر من المثلث والدائرة. كلا الإجابتين صحيحتان.",
+          "wrong": {
+            "s_circle": "الدائرة بلا أضلاع.",
+            "s_triangle": "المثلث له ثلاثة أضلاع فقط، وليست الأكثر."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape with the most sides.",
+          "layout": "flow",
+          "elements": [
+            {"id": "s_circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "s_square", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "s_triangle", "kind": "shape", "shape": "triangle", "color": "orange"},
+            {"id": "s_diamond", "kind": "shape", "shape": "diamond", "color": "purple"}
+          ],
+          "solution": {"kind": "tap", "target": "s_square", "alternatives": ["s_diamond"]},
+          "hints": [
+            "A circle has no straight sides at all.",
+            "Two shapes here are tied for the most sides — either one counts."
+          ],
+          "explanation": "A square and a diamond both have four sides, more than the triangle or the circle. Both answers are correct.",
+          "wrong": {
+            "s_circle": "A circle has no sides.",
+            "s_triangle": "A triangle has only three sides, not the most."
+          }
+        }
+      }
+    },
+    {
+      "id": "p055_true_colour", "type": "visual", "par_time": 19, "reward": 10,
+      "tags": ["colour-vs-caption"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الأحمر",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_orange", "kind": "shape", "shape": "circle", "color": "orange", "text": "أحمر"},
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red", "text": "برتقالي"},
+            {"id": "c_green", "kind": "shape", "shape": "circle", "color": "green", "text": "أخضر"}
+          ],
+          "solution": {"kind": "tap", "target": "c_red"},
+          "hints": [
+            "التسمية المكتوبة على الشكل قد تكون خاطئة.",
+            "انظر إلى لون الشكل نفسه، لا إلى الكلمة التي عليه."
+          ],
+          "explanation": "الدائرة الحمراء فعلاً كانت مكتوبًا عليها خطأً «برتقالي». اللون الحقيقي أهم من التسمية.",
+          "wrong": {
+            "c_orange": "هذه دائرة برتقالية فعلاً، مهما قالت كتابتها.",
+            "c_green": "تسميتها صحيحة، لكنها ليست المطلوبة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the red one.",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_orange", "kind": "shape", "shape": "circle", "color": "orange", "text": "RED"},
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red", "text": "ORANGE"},
+            {"id": "c_green", "kind": "shape", "shape": "circle", "color": "green", "text": "GREEN"}
+          ],
+          "solution": {"kind": "tap", "target": "c_red"},
+          "hints": [
+            "The caption printed on a shape can be wrong.",
+            "Look at the shape's actual colour, not the word on it."
+          ],
+          "explanation": "The circle that is truly red was mislabeled ORANGE. The real colour mattered more than the caption.",
+          "wrong": {
+            "c_orange": "That circle is genuinely orange, whatever its caption says.",
+            "c_green": "Correctly labeled, but not the one asked for."
+          }
+        }
+      }
+    },
+    {
+      "id": "p056_real_diamond", "type": "visual", "par_time": 17, "reward": 10,
+      "tags": ["shape-identity", "rotation-illusion"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على المعين",
+          "layout": "flow",
+          "elements": [
+            {"id": "sq_rot", "kind": "shape", "shape": "square", "color": "blue", "rotation_deg": 45},
+            {"id": "dia_real", "kind": "shape", "shape": "diamond", "color": "green"},
+            {"id": "c1", "kind": "shape", "shape": "circle", "color": "orange"},
+            {"id": "tri1", "kind": "shape", "shape": "triangle", "color": "purple"}
+          ],
+          "solution": {"kind": "tap", "target": "dia_real"},
+          "hints": [
+            "تدوير شكل ما لا يغيّر نوعه الحقيقي.",
+            "واحد فقط من هذه الأشكال معين بالفعل، لا بمجرد الزاوية."
+          ],
+          "explanation": "المربع الذي دار ٤٥ درجة يبدو كمعين، لكنه يبقى مربعًا. المعين الحقيقي شكل مختلف تمامًا.",
+          "wrong": {
+            "sq_rot": "هذا مربع يرتدي زاوية معين.",
+            "c1": "هذه دائرة.",
+            "tri1": "هذا مثلث."
+          }
+        },
+        "en": {
+          "instruction": "Tap the diamond.",
+          "layout": "flow",
+          "elements": [
+            {"id": "sq_rot", "kind": "shape", "shape": "square", "color": "blue", "rotation_deg": 45},
+            {"id": "dia_real", "kind": "shape", "shape": "diamond", "color": "green"},
+            {"id": "c1", "kind": "shape", "shape": "circle", "color": "orange"},
+            {"id": "tri1", "kind": "shape", "shape": "triangle", "color": "purple"}
+          ],
+          "solution": {"kind": "tap", "target": "dia_real"},
+          "hints": [
+            "Rotating a shape doesn't change what it actually is.",
+            "Only one of these is a diamond by its own construction, not by angle."
+          ],
+          "explanation": "The square rotated 45 degrees only looks like a diamond. The real diamond is a genuinely different shape.",
+          "wrong": {
+            "sq_rot": "That's a square wearing a diamond's angle.",
+            "c1": "That's a circle.",
+            "tri1": "That's a triangle."
+          }
+        }
+      }
+    },
+    {
+      "id": "p057_means_nothing", "type": "language", "par_time": 15, "reward": 10,
+      "tags": ["word-meaning", "quantifiers"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة التي تعني «لا شيء»",
+          "layout": "grid2",
+          "elements": [
+            {"id": "w_something", "kind": "label", "text": "شيء", "font_size": 46},
+            {"id": "w_everything", "kind": "label", "text": "كل شيء", "font_size": 46},
+            {"id": "w_zero", "kind": "label", "text": "صفر", "font_size": 46},
+            {"id": "w_always", "kind": "label", "text": "دائمًا", "font_size": 46}
+          ],
+          "solution": {"kind": "tap", "target": "w_zero"},
+          "hints": [
+            "لا تبحث عن رقم مكتوب بالأرقام، بل عن معنى.",
+            "واحدة فقط من هذه الكلمات تعني العدم تمامًا."
+          ],
+          "explanation": "«صفر» هي الكلمة الوحيدة التي تعني اللاشيء فعلاً. البقية تعني كمية ما أو زمنًا دائمًا.",
+          "wrong": {
+            "w_something": "«شيء» تعني وجود أمر ما، لا عدمه.",
+            "w_everything": "هذه تعني الكل، عكس المطلوب.",
+            "w_always": "هذه عن الزمن، لا عن الكمية."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word that means \"nothing\".",
+          "layout": "grid2",
+          "elements": [
+            {"id": "w_something", "kind": "label", "text": "SOMETHING", "font_size": 46},
+            {"id": "w_everything", "kind": "label", "text": "EVERYTHING", "font_size": 46},
+            {"id": "w_zero", "kind": "label", "text": "ZERO", "font_size": 46},
+            {"id": "w_always", "kind": "label", "text": "ALWAYS", "font_size": 46}
+          ],
+          "solution": {"kind": "tap", "target": "w_zero"},
+          "hints": [
+            "You're not looking for a digit, you're looking for a meaning.",
+            "Only one of these words means a complete absence of anything."
+          ],
+          "explanation": "ZERO is the only word that actually means nothing. The others all mean some amount, or all the time.",
+          "wrong": {
+            "w_something": "SOMETHING means there is a thing, not the absence of one.",
+            "w_everything": "That means the opposite — the total amount.",
+            "w_always": "That's about time, not quantity."
+          }
+        }
+      }
+    },
+    {
+      "id": "p058_closest_to_100", "type": "pattern", "par_time": 16, "reward": 10,
+      "tags": ["numeric-distance", "estimation"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الرقم الأقرب إلى ١٠٠",
+          "layout": "row",
+          "elements": [
+            {"id": "n87", "kind": "label", "text": "87", "font_size": 56},
+            {"id": "n150", "kind": "label", "text": "150", "font_size": 56},
+            {"id": "n42", "kind": "label", "text": "42", "font_size": 56},
+            {"id": "n101", "kind": "label", "text": "101", "font_size": 56}
+          ],
+          "solution": {"kind": "tap", "target": "n101"},
+          "hints": [
+            "احسب المسافة بين كل رقم و١٠٠.",
+            "أحد هذه الأرقام يبعد وحدة واحدة فقط عن المئة."
+          ],
+          "explanation": "١٠١ يبعد وحدة واحدة فقط عن ١٠٠ — أقرب من أي رقم آخر هنا.",
+          "wrong": {
+            "n87": "يبعد ١٣ عن المئة.",
+            "n150": "يبعد ٥٠ عن المئة.",
+            "n42": "بعيد جدًا عن المئة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the number closest to 100.",
+          "layout": "row",
+          "elements": [
+            {"id": "n87", "kind": "label", "text": "87", "font_size": 56},
+            {"id": "n150", "kind": "label", "text": "150", "font_size": 56},
+            {"id": "n42", "kind": "label", "text": "42", "font_size": 56},
+            {"id": "n101", "kind": "label", "text": "101", "font_size": 56}
+          ],
+          "solution": {"kind": "tap", "target": "n101"},
+          "hints": [
+            "Work out each number's distance from 100.",
+            "One of these is only 1 away from 100."
+          ],
+          "explanation": "101 is only 1 away from 100 — closer than any other number here.",
+          "wrong": {
+            "n87": "That's 13 away from 100.",
+            "n150": "That's 50 away from 100.",
+            "n42": "That's much too far from 100."
+          }
+        }
+      }
+    },
+    {
+      "id": "p059_word_says", "type": "visual", "par_time": 18, "reward": 10,
+      "tags": ["stroop-reversed", "word-meaning"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي يطابق ما تقوله الكلمة، لا لونها",
+          "layout": "flow",
+          "elements": [
+            {"id": "word", "kind": "label", "text": "أحمر", "color": "blue", "font_size": 48, "row": 0},
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red", "row": 1},
+            {"id": "c_blue", "kind": "shape", "shape": "circle", "color": "blue", "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "c_red"},
+          "hints": [
+            "تجاهل تمامًا اللون الذي كُتبت به الكلمة.",
+            "اقرأ معنى الكلمة، ثم ابحث عن الشكل المطابق لهذا المعنى."
+          ],
+          "explanation": "الكلمة تقول «أحمر» رغم أنها كُتبت بالأزرق. الفوز هنا للمعنى لا للحبر — عكس الخدعة المعتادة.",
+          "wrong": {
+            "c_blue": "هذا يطابق لون الحبر، لا معنى الكلمة.",
+            "word": "هذه هي الكلمة نفسها، وليست شكلًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape that matches what the word SAYS, not the colour it's printed in.",
+          "layout": "flow",
+          "elements": [
+            {"id": "word", "kind": "label", "text": "RED", "color": "blue", "font_size": 48, "row": 0},
+            {"id": "c_red", "kind": "shape", "shape": "circle", "color": "red", "row": 1},
+            {"id": "c_blue", "kind": "shape", "shape": "circle", "color": "blue", "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "c_red"},
+          "hints": [
+            "Ignore the ink colour completely.",
+            "Read what the word means, then find the shape matching that meaning."
+          ],
+          "explanation": "The word said RED, even though it was printed in blue ink. This time meaning wins over ink — the mirror image of the usual trick.",
+          "wrong": {
+            "c_blue": "That matches the ink colour, not the word's meaning.",
+            "word": "That's the word itself, not a shape."
+          }
+        }
+      }
+    },
+    {
+      "id": "p060_true_count", "type": "pattern", "par_time": 20, "reward": 10,
+      "tags": ["counting", "overlap", "free-layout"],
+      "locales": {
+        "ar": {
+          "instruction": "كم دائرة موجودة هنا فعلاً؟",
+          "layout": "free",
+          "elements": [
+            {"id": "ov1", "kind": "shape", "shape": "circle", "color": "cyan", "pos": [0.28, 0.3], "interactive": false},
+            {"id": "ov2", "kind": "shape", "shape": "circle", "color": "cyan", "pos": [0.28, 0.3], "interactive": false},
+            {"id": "c3", "kind": "shape", "shape": "circle", "color": "orange", "pos": [0.68, 0.26], "interactive": false},
+            {"id": "c4", "kind": "shape", "shape": "circle", "color": "purple", "pos": [0.5, 0.58], "interactive": false},
+            {"id": "n2", "kind": "button", "text": "2", "color": "surface", "pos": [0.2, 0.85]},
+            {"id": "n3", "kind": "button", "text": "3", "color": "surface", "pos": [0.4, 0.85]},
+            {"id": "n4", "kind": "button", "text": "4", "color": "surface", "pos": [0.6, 0.85]},
+            {"id": "n5", "kind": "button", "text": "5", "color": "surface", "pos": [0.8, 0.85]}
+          ],
+          "solution": {"kind": "tap", "target": "n4"},
+          "hints": [
+            "بعض الدوائر قد تكون متطابقة الموضع فوق بعضها تمامًا.",
+            "دائرتان تشتركان في المكان نفسه بالضبط."
+          ],
+          "explanation": "دائرتان متطابقتان تمامًا في المكان نفسه، فبدتا كدائرة واحدة. العدد الحقيقي بعد الحساب الدقيق هو أربع دوائر.",
+          "wrong": {
+            "n2": "أقل من العدد الحقيقي بكثير.",
+            "n3": "هذا ما تراه للوهلة الأولى، لا العدد الحقيقي.",
+            "n5": "هذا أكثر من العدد الحقيقي بواحد."
+          }
+        },
+        "en": {
+          "instruction": "How many circles are really here?",
+          "layout": "free",
+          "elements": [
+            {"id": "ov1", "kind": "shape", "shape": "circle", "color": "cyan", "pos": [0.28, 0.3], "interactive": false},
+            {"id": "ov2", "kind": "shape", "shape": "circle", "color": "cyan", "pos": [0.28, 0.3], "interactive": false},
+            {"id": "c3", "kind": "shape", "shape": "circle", "color": "orange", "pos": [0.68, 0.26], "interactive": false},
+            {"id": "c4", "kind": "shape", "shape": "circle", "color": "purple", "pos": [0.5, 0.58], "interactive": false},
+            {"id": "n2", "kind": "button", "text": "2", "color": "surface", "pos": [0.2, 0.85]},
+            {"id": "n3", "kind": "button", "text": "3", "color": "surface", "pos": [0.4, 0.85]},
+            {"id": "n4", "kind": "button", "text": "4", "color": "surface", "pos": [0.6, 0.85]},
+            {"id": "n5", "kind": "button", "text": "5", "color": "surface", "pos": [0.8, 0.85]}
+          ],
+          "solution": {"kind": "tap", "target": "n4"},
+          "hints": [
+            "Some circles might sit in exactly the same spot as another.",
+            "Two circles share the exact same position."
+          ],
+          "explanation": "Two circles perfectly overlap in the same spot, so they read as one. Counted honestly, there are four circles in total.",
+          "wrong": {
+            "n2": "That's far fewer than the real total.",
+            "n3": "That's what it looks like at a glance, not the real total.",
+            "n5": "That's one more than the real total."
+          }
+        }
+      }
+    },
+    {
+      "id": "p061_blue_triangle", "type": "visual", "par_time": 15, "reward": 10,
+      "tags": ["compound-attribute", "grid2"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على المثلث الأزرق",
+          "layout": "grid2",
+          "elements": [
+            {"id": "sq_blue", "kind": "shape", "shape": "square", "color": "blue"},
+            {"id": "tri_red", "kind": "shape", "shape": "triangle", "color": "red"},
+            {"id": "tri_blue", "kind": "shape", "shape": "triangle", "color": "blue"},
+            {"id": "cir_green", "kind": "shape", "shape": "circle", "color": "green"}
+          ],
+          "solution": {"kind": "tap", "target": "tri_blue"},
+          "hints": [
+            "يجب أن يتحقق الشرطان معًا: اللون والشكل.",
+            "هناك مثلث ليس أزرق، وشكل أزرق ليس مثلثًا — واحد فقط يجمع الاثنين."
+          ],
+          "explanation": "المثلث الأزرق هو الوحيد الذي يحقق الصفتين معًا. البقية تحقق صفة واحدة فقط.",
+          "wrong": {
+            "sq_blue": "أزرق، لكنه ليس مثلثًا.",
+            "tri_red": "مثلث، لكنه ليس أزرق.",
+            "cir_green": "ليس أزرق ولا مثلثًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap the blue triangle.",
+          "layout": "grid2",
+          "elements": [
+            {"id": "sq_blue", "kind": "shape", "shape": "square", "color": "blue"},
+            {"id": "tri_red", "kind": "shape", "shape": "triangle", "color": "red"},
+            {"id": "tri_blue", "kind": "shape", "shape": "triangle", "color": "blue"},
+            {"id": "cir_green", "kind": "shape", "shape": "circle", "color": "green"}
+          ],
+          "solution": {"kind": "tap", "target": "tri_blue"},
+          "hints": [
+            "Both things have to be true at once: the colour and the shape.",
+            "There's a triangle that isn't blue, and a blue shape that isn't a triangle — only one is both."
+          ],
+          "explanation": "The blue triangle is the only shape matching both properties at once. The others match only one.",
+          "wrong": {
+            "sq_blue": "Blue, but not a triangle.",
+            "tri_red": "A triangle, but not blue.",
+            "cir_green": "Neither blue nor a triangle."
+          }
+        }
+      }
+    },
+    {
+      "id": "p062_loudest_voice", "type": "visual", "par_time": 18, "reward": 10,
+      "tags": ["salience-trap"],
+      "locales": {
+        "ar": {
+          "instruction": "أعلى صوت على هذه الشاشة ليس الجواب أبدًا",
+          "layout": "flow",
+          "elements": [
+            {"id": "b_loud", "kind": "button", "text": "اضغط هنا", "color": "red", "scale": 1.3, "pulse": true},
+            {"id": "z_quiet", "kind": "zone", "color": "#12161B", "scale": 0.6, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "z_quiet"},
+          "hints": [
+            "ابحث عن الجزء الذي لا يصرخ لجذب انتباهك.",
+            "هناك بقعة صغيرة هادئة لم تُزيَّن بشيء."
+          ],
+          "explanation": "الزر الكبير النابض صُمّم ليجذب انتباهك، وهذا بالضبط ما جعله فخًا. الزاوية الهادئة غير المزخرفة كانت الجواب الصادق.",
+          "wrong": {
+            "b_loud": "هذا أعلى شيء صوتًا هنا. ولهذا بالتحديد هو خطأ."
+          }
+        },
+        "en": {
+          "instruction": "The loudest voice on this screen is never the answer.",
+          "layout": "flow",
+          "elements": [
+            {"id": "b_loud", "kind": "button", "text": "TAP HERE", "color": "red", "scale": 1.3, "pulse": true},
+            {"id": "z_quiet", "kind": "zone", "color": "#12161B", "scale": 0.6, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "z_quiet"},
+          "hints": [
+            "Look for the part of the screen that isn't shouting for attention.",
+            "There's a small, quiet spot that isn't dressed up at all."
+          ],
+          "explanation": "The bold, pulsing button was built to grab your attention — which is exactly why it was the trap. The quiet, undecorated spot was the honest answer.",
+          "wrong": {
+            "b_loud": "That's the loudest thing here. That's exactly why it's wrong."
+          }
+        }
+      }
+    },
+    {
+      "id": "p063_the_digit_4", "type": "language", "par_time": 20, "reward": 10,
+      "tags": ["numeral-forms", "literal-glyph"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الرقم 4",
+          "layout": "row",
+          "elements": [
+            {"id": "n_digit", "kind": "label", "text": "4", "font_size": 56},
+            {"id": "n_word", "kind": "label", "text": "أربعة", "font_size": 40},
+            {"id": "n_roman", "kind": "label", "text": "IV", "font_size": 56},
+            {"id": "n_indic", "kind": "label", "text": "٤", "font_size": 56}
+          ],
+          "solution": {"kind": "tap", "target": "n_digit"},
+          "hints": [
+            "لا يتعلق الأمر بقيمة أربعة، بل بالرمز نفسه.",
+            "ثلاثة من هذه الخيارات تمثل القيمة أربعة بطرق مختلفة. واحد فقط هو الرمز 4 بالضبط كما ورد في التعليمة."
+          ],
+          "explanation": "«أربعة» و«IV» و«٤» كلها تمثل قيمة أربعة بأشكال مختلفة. الرمز 4 نفسه، كما ورد حرفيًا في التعليمة، كان الجواب الوحيد.",
+          "wrong": {
+            "n_word": "هذه هي الكلمة، وليست الرمز 4.",
+            "n_roman": "هذا رقم روماني، وليس الرمز 4.",
+            "n_indic": "هذا رقم هندي شرقي يمثل القيمة أربعة، وليس الرمز 4 نفسه."
+          }
+        },
+        "en": {
+          "instruction": "Tap the number 4.",
+          "layout": "row",
+          "elements": [
+            {"id": "n_digit", "kind": "label", "text": "4", "font_size": 56},
+            {"id": "n_word", "kind": "label", "text": "four", "font_size": 40},
+            {"id": "n_roman", "kind": "label", "text": "IV", "font_size": 56},
+            {"id": "n_indic", "kind": "label", "text": "٤", "font_size": 56}
+          ],
+          "solution": {"kind": "tap", "target": "n_digit"},
+          "hints": [
+            "This isn't about the value four, it's about the exact symbol.",
+            "Three of these represent the value four in different ways. Only one is the digit 4, exactly as it appeared in the instruction."
+          ],
+          "explanation": "\"four\", \"IV\", and \"٤\" all represent the value four in different forms. The symbol 4 itself, exactly as written in the instruction, was the only answer.",
+          "wrong": {
+            "n_word": "That's the word, not the digit 4.",
+            "n_roman": "That's a roman numeral, not the digit 4.",
+            "n_indic": "That's an Eastern Arabic-Indic digit for four, not the digit 4 itself."
+          }
+        }
+      }
+    },
+    {
+      "id": "p064_bigger_number", "type": "visual", "par_time": 22, "reward": 10,
+      "tags": ["size-vs-value", "reading-not-eyeballing"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشريط صاحب الرقم الأكبر",
+          "layout": "row",
+          "elements": [
+            {"id": "bar_small", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.6, "text": "120"},
+            {"id": "bar_big", "kind": "shape", "shape": "square", "color": "green", "scale": 1.6, "text": "45"}
+          ],
+          "solution": {"kind": "tap", "target": "bar_small"},
+          "hints": [
+            "اقرأ الأرقام المكتوبة، لا تقس حجم الأشكال.",
+            "أحد الرقمين أكبر من الآخر بوضوح، بغضّ النظر عن حجم الشريط الذي يحمله."
+          ],
+          "explanation": "١٢٠ أكبر من ٤٥، رغم أن الشريط الذي يحمل ١٢٠ رُسم أصغر. المطلوب كان قراءة الرقم، لا تقدير حجم الشكل.",
+          "wrong": {
+            "bar_big": "هذا الشريط أكبر شكلًا، لكن ٤٥ رقم أصغر."
+          }
+        },
+        "en": {
+          "instruction": "Tap the bar with the LARGER number.",
+          "layout": "row",
+          "elements": [
+            {"id": "bar_small", "kind": "shape", "shape": "square", "color": "blue", "scale": 0.6, "text": "120"},
+            {"id": "bar_big", "kind": "shape", "shape": "square", "color": "green", "scale": 1.6, "text": "45"}
+          ],
+          "solution": {"kind": "tap", "target": "bar_small"},
+          "hints": [
+            "Read the numbers, don't measure the bars.",
+            "One number is clearly bigger than the other, no matter which bar looks bigger."
+          ],
+          "explanation": "120 is larger than 45, even though the bar showing 120 was drawn smaller. This was about reading the number, not eyeballing the bar.",
+          "wrong": {
+            "bar_big": "That's the bigger-looking bar, but 45 is the smaller number."
+          }
+        }
+      }
+    },
+    {
+      "id": "p065_full_marking", "type": "language", "par_time": 24, "reward": 10,
+      "tags": ["typography", "script-specific"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة المشكولة بالكامل",
+          "layout": "column",
+          "elements": [
+            {"id": "w_full", "kind": "label", "text": "قَلَمٌ", "font_size": 64},
+            {"id": "w_bare", "kind": "label", "text": "قلم", "font_size": 64},
+            {"id": "w_partial1", "kind": "label", "text": "قَلم", "font_size": 64},
+            {"id": "w_partial2", "kind": "label", "text": "قلَمٌ", "font_size": 64}
+          ],
+          "solution": {"kind": "tap", "target": "w_full"},
+          "hints": [
+            "التشكيل هو العلامات الصغيرة فوق الحروف وتحتها.",
+            "ثلاث من هذه الكلمات ناقصة التشكيل بشكل أو بآخر. واحدة فقط مشكولة على كل حرف."
+          ],
+          "explanation": "«قَلَمٌ» هي الوحيدة التي وُضعت عليها علامة تشكيل على كل حرف فيها. البقية بلا تشكيل أو بتشكيل جزئي فقط.",
+          "wrong": {
+            "w_bare": "هذه بلا أي تشكيل إطلاقًا.",
+            "w_partial1": "مشكولة جزئيًا فقط، وينقصها تشكيل حرف آخر.",
+            "w_partial2": "تشكيل جزئي أيضًا، ناقص من أول الكلمة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word written in ALL CAPITAL LETTERS.",
+          "layout": "column",
+          "elements": [
+            {"id": "w_stop_caps", "kind": "label", "text": "STOP", "font_size": 64},
+            {"id": "w_stop_lower", "kind": "label", "text": "stop", "font_size": 64},
+            {"id": "w_stop_mixed1", "kind": "label", "text": "StOp", "font_size": 64},
+            {"id": "w_stop_mixed2", "kind": "label", "text": "sTOP", "font_size": 64}
+          ],
+          "solution": {"kind": "tap", "target": "w_stop_caps"},
+          "hints": [
+            "Look at the letters' case, not what the word means.",
+            "Only one version uses a capital letter for every single letter."
+          ],
+          "explanation": "STOP is the only version written in full capital letters. The others mix capitals and lowercase, or drop them completely.",
+          "wrong": {
+            "w_stop_lower": "That's all lowercase — not what was asked.",
+            "w_stop_mixed1": "Mixed case, not fully capital.",
+            "w_stop_mixed2": "Mixed case, not fully capital."
+          }
+        }
+      }
+    },
+    {
+      "id": "p066_wrong_equation", "type": "pattern", "par_time": 14, "reward": 10,
+      "tags": ["arithmetic", "error-spotting"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على المعادلة الخاطئة",
+          "layout": "row",
+          "elements": [
+            {"id": "eq_wrong", "kind": "label", "text": "2 + 2 = 5", "font_size": 40},
+            {"id": "eq_right", "kind": "label", "text": "3 + 1 = 4", "font_size": 40}
+          ],
+          "solution": {"kind": "tap", "target": "eq_wrong"},
+          "hints": [
+            "تحقق من الحساب فعليًا، لا من شكل الأرقام.",
+            "إحدى هاتين المعادلتين لا تساوي فعلاً ما تدّعيه."
+          ],
+          "explanation": "٢+٢ يساوي ٤ لا ٥. المعادلة الأخرى صحيحة تمامًا.",
+          "wrong": {
+            "eq_right": "هذه المعادلة صحيحة فعلاً."
+          }
+        },
+        "en": {
+          "instruction": "Tap the equation that's wrong.",
+          "layout": "row",
+          "elements": [
+            {"id": "eq_wrong", "kind": "label", "text": "2 + 2 = 5", "font_size": 40},
+            {"id": "eq_right", "kind": "label", "text": "3 + 1 = 4", "font_size": 40}
+          ],
+          "solution": {"kind": "tap", "target": "eq_wrong"},
+          "hints": [
+            "Actually check the math, don't just glance at it.",
+            "One of these equations doesn't actually add up to what it claims."
+          ],
+          "explanation": "2 + 2 equals 4, not 5. The other equation is correct.",
+          "wrong": {
+            "eq_right": "That equation is actually correct."
+          }
+        }
+      }
+    },
+    {
+      "id": "p067_lying_shape", "type": "meta", "par_time": 18, "reward": 10,
+      "tags": ["self-reference", "truth-vs-shape"],
+      "locales": {
+        "ar": {
+          "instruction": "أحد هذه الأشكال يكذب بشأن هويته. اضغط عليه.",
+          "layout": "flow",
+          "elements": [
+            {"id": "s_circle_true", "kind": "shape", "shape": "circle", "color": "blue", "text": "أنا دائرة."},
+            {"id": "s_square_lie", "kind": "shape", "shape": "square", "color": "green", "text": "أنا دائرة."},
+            {"id": "s_triangle_true", "kind": "shape", "shape": "triangle", "color": "orange", "text": "أنا مثلث."}
+          ],
+          "solution": {"kind": "tap", "target": "s_square_lie"},
+          "hints": [
+            "قارن ما يقوله كل شكل بما هو عليه فعلاً.",
+            "اثنان من الأشكال الثلاثة صادقان بشأن أنفسهما."
+          ],
+          "explanation": "المربع ادّعى أنه دائرة، لكن الدوائر لا تملك زوايا. تلك كانت الكذبة.",
+          "wrong": {
+            "s_circle_true": "هذا يقول الصدق عن نفسه.",
+            "s_triangle_true": "هذا أيضًا صادق بشأن نفسه."
+          }
+        },
+        "en": {
+          "instruction": "One of these shapes is lying about what it is. Tap it.",
+          "layout": "flow",
+          "elements": [
+            {"id": "s_circle_true", "kind": "shape", "shape": "circle", "color": "blue", "text": "I am a circle."},
+            {"id": "s_square_lie", "kind": "shape", "shape": "square", "color": "green", "text": "I am a circle."},
+            {"id": "s_triangle_true", "kind": "shape", "shape": "triangle", "color": "orange", "text": "I am a triangle."}
+          ],
+          "solution": {"kind": "tap", "target": "s_square_lie"},
+          "hints": [
+            "Compare what each shape claims to what it actually is.",
+            "Two out of the three are being honest about themselves."
+          ],
+          "explanation": "The square claimed \"I am a circle\" — but circles don't have corners. That was the lie.",
+          "wrong": {
+            "s_circle_true": "This one is telling the truth about itself.",
+            "s_triangle_true": "This one is honest too."
+          }
+        }
+      }
+    },
+    {
+      "id": "p068_fully_solid", "type": "visual", "par_time": 15, "reward": 10,
+      "tags": ["opacity", "solidity"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الوحيد المصمت بالكامل",
+          "layout": "grid2",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "opacity": 0.25},
+            {"id": "s2", "kind": "shape", "shape": "square", "color": "green", "opacity": 0.6},
+            {"id": "s3", "kind": "shape", "shape": "triangle", "color": "orange", "opacity": 0.7},
+            {"id": "s4", "kind": "shape", "shape": "diamond", "color": "purple", "opacity": 1.0}
+          ],
+          "solution": {"kind": "tap", "target": "s4"},
+          "hints": [
+            "قارن مدى صلابة كل شكل، لا لونه.",
+            "واحد فقط من هذه الأشكال بلا أي شفافية إطلاقًا."
+          ],
+          "explanation": "كل شكل آخر شفاف قليلاً على الأقل. المعين البنفسجي وحده مصمت بالكامل — شفافيته صفر.",
+          "wrong": {
+            "s1": "هذا باهت جدًا.",
+            "s2": "لا يزال شفافًا بعض الشيء.",
+            "s3": "شبه مصمت، لكن ليس تمامًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap the only fully solid shape.",
+          "layout": "grid2",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "opacity": 0.25},
+            {"id": "s2", "kind": "shape", "shape": "square", "color": "green", "opacity": 0.6},
+            {"id": "s3", "kind": "shape", "shape": "triangle", "color": "orange", "opacity": 0.7},
+            {"id": "s4", "kind": "shape", "shape": "diamond", "color": "purple", "opacity": 1.0}
+          ],
+          "solution": {"kind": "tap", "target": "s4"},
+          "hints": [
+            "Compare how solid each shape looks, not its colour.",
+            "Only one of these has zero transparency."
+          ],
+          "explanation": "Every other shape has at least a little transparency. Only the purple diamond is fully solid — zero transparency.",
+          "wrong": {
+            "s1": "That one is heavily faded.",
+            "s2": "Still a bit transparent.",
+            "s3": "Nearly solid, but not quite."
+          }
+        }
+      }
+    },
+    {
+      "id": "p069_points_down", "type": "visual", "par_time": 14, "reward": 10,
+      "tags": ["rotation", "breather"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على المثلث الذي يشير إلى الأسفل",
+          "layout": "flow",
+          "elements": [
+            {"id": "tri1", "kind": "shape", "shape": "triangle", "color": "blue"},
+            {"id": "tri2", "kind": "shape", "shape": "triangle", "color": "green"},
+            {"id": "tri3", "kind": "shape", "shape": "triangle", "color": "orange", "rotation_deg": 180}
+          ],
+          "solution": {"kind": "tap", "target": "tri3"},
+          "hints": [
+            "انظر إلى الجهة التي تشير إليها قمة كل مثلث.",
+            "واحد فقط من هذه المثلثات مقلوب رأسًا على عقب."
+          ],
+          "explanation": "تدوير الشكل ١٨٠ درجة يقلب الجهة التي يشير إليها. المثلث البرتقالي هو الوحيد المتجه للأسفل.",
+          "wrong": {
+            "tri1": "هذا لا يزال يشير للأعلى.",
+            "tri2": "هذا أيضًا يشير للأعلى."
+          }
+        },
+        "en": {
+          "instruction": "Tap the triangle that points down.",
+          "layout": "flow",
+          "elements": [
+            {"id": "tri1", "kind": "shape", "shape": "triangle", "color": "blue"},
+            {"id": "tri2", "kind": "shape", "shape": "triangle", "color": "green"},
+            {"id": "tri3", "kind": "shape", "shape": "triangle", "color": "orange", "rotation_deg": 180}
+          ],
+          "solution": {"kind": "tap", "target": "tri3"},
+          "hints": [
+            "Look at which way each triangle's tip points.",
+            "Only one of these has been flipped upside down."
+          ],
+          "explanation": "Rotating a shape 180 degrees flips which way it points. The orange triangle is the only one pointing down.",
+          "wrong": {
+            "tri1": "That one still points up.",
+            "tri2": "That one still points up too."
+          }
+        }
+      }
+    },
+    {
+      "id": "p070_the_blue_circle", "type": "assumption", "par_time": 14, "reward": 20,
+      "tags": ["honest", "anti-paranoia", "callback-p051"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الدائرة الزرقاء",
+          "sub_instruction": "تدرّبتَ على الشك. أحيانًا يكون هذا هو الفخ أيضًا.",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_blue", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "sq_green", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "tri_red", "kind": "shape", "shape": "triangle", "color": "red"}
+          ],
+          "solution": {"kind": "tap", "target": "c_blue"},
+          "hints": [
+            "لا يوجد فخ هذه المرة. اقرأ التعليمة كما هي.",
+            "هناك دائرة زرقاء واحدة فقط، ولا شيء آخر يشبهها."
+          ],
+          "explanation": "لا خدعة هنا. طُلبت دائرة زرقاء، وكانت هناك دائرة زرقاء واحدة بالضبط. التفكير الزائد كان الخطأ الوحيد الممكن.",
+          "wrong": {
+            "sq_green": "هذا أخضر، وليس أزرق.",
+            "tri_red": "هذا مثلث، وليس دائرة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the blue circle.",
+          "sub_instruction": "You've been trained to doubt. Sometimes that's the trick too.",
+          "layout": "flow",
+          "elements": [
+            {"id": "c_blue", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "sq_green", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "tri_red", "kind": "shape", "shape": "triangle", "color": "red"}
+          ],
+          "solution": {"kind": "tap", "target": "c_blue"},
+          "hints": [
+            "There's no trap this time. Read the instruction exactly as written.",
+            "There is exactly one blue circle, and nothing else close to it."
+          ],
+          "explanation": "No trick here. A blue circle was asked for, and there was exactly one blue circle. Overthinking would have been the only possible mistake.",
+          "wrong": {
+            "sq_green": "That's green, not blue.",
+            "tri_red": "That's a triangle, not a circle."
+          }
+        }
+      }
+    }
+  ]
+}

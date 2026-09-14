@@ -1,0 +1,3268 @@
+{
+  "schema": 1,
+  "chapter": 7,
+  "puzzles": [
+    {
+      "id": "p071_pattern_break",
+      "type": "pattern",
+      "par_time": 14,
+      "reward": 10,
+      "tags": [
+        "pattern",
+        "odd-one-out"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي يكسر النمط.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c6",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c7",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c5"
+          },
+          "hints": [
+            "الألوان تتكرر بنمط واضح من لونين متبادلين.",
+            "دائرة واحدة قرب المنتصف لا تشبه إيقاع الأحمر والأزرق."
+          ],
+          "explanation": "التسلسل يتناوب بين الأحمر والأزرق... إلا دائرة واحدة في المنتصف جاءت خضراء بدل أن تكمل النمط.",
+          "wrong": {
+            "c1": "هذه تتبع النمط.",
+            "c2": "هذه تتبع النمط.",
+            "c3": "هذه تتبع النمط.",
+            "c4": "هذه تتبع النمط.",
+            "c6": "هذه تتبع النمط.",
+            "c7": "هذه تتبع النمط."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape that breaks the pattern.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "c4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c6",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c7",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c5"
+          },
+          "hints": [
+            "The colours repeat in a clear back-and-forth pattern.",
+            "One circle near the middle doesn't match the red-blue rhythm."
+          ],
+          "explanation": "The sequence alternates red, blue, red, blue... except one circle in the middle, which is green instead of continuing the pattern.",
+          "wrong": {
+            "c1": "That one follows the pattern.",
+            "c2": "That one follows the pattern.",
+            "c3": "That one follows the pattern.",
+            "c4": "That one follows the pattern.",
+            "c6": "That one follows the pattern.",
+            "c7": "That one follows the pattern."
+          }
+        }
+      }
+    },
+    {
+      "id": "p072_repeated_word",
+      "type": "pattern",
+      "par_time": 20,
+      "reward": 10,
+      "tags": [
+        "repetition",
+        "counting"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الكلمة التي تكررت أكثر من مرة.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "w_cat",
+              "kind": "label",
+              "text": "قطة",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_sun_a",
+              "kind": "label",
+              "text": "شمس",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_tree",
+              "kind": "label",
+              "text": "شجرة",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_sun_b",
+              "kind": "label",
+              "text": "شمس",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_moon",
+              "kind": "label",
+              "text": "قمر",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_star",
+              "kind": "label",
+              "text": "نجمة",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_sun_c",
+              "kind": "label",
+              "text": "شمس",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_leaf",
+              "kind": "label",
+              "text": "ورقة",
+              "color": "text",
+              "font_size": 40
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_sun_a",
+            "alternatives": [
+              "w_sun_b",
+              "w_sun_c"
+            ]
+          },
+          "hints": [
+            "خمس من هذه الكلمات تظهر مرة واحدة فقط.",
+            "كلمة واحدة فقط تكررت ثلاث مرات منفصلة."
+          ],
+          "explanation": "كلمة «شمس» تكررت ثلاث مرات بين الكلمات المبعثرة — أما قطة وشجرة وقمر ونجمة وورقة فكل منها ظهر مرة واحدة فقط.",
+          "wrong": {
+            "w_cat": "هذه الكلمة ظهرت مرة واحدة فقط.",
+            "w_tree": "هذه الكلمة ظهرت مرة واحدة فقط.",
+            "w_moon": "هذه الكلمة ظهرت مرة واحدة فقط.",
+            "w_star": "هذه الكلمة ظهرت مرة واحدة فقط.",
+            "w_leaf": "هذه الكلمة ظهرت مرة واحدة فقط."
+          }
+        },
+        "en": {
+          "instruction": "Tap the word that appears more than once.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "w_cat",
+              "kind": "label",
+              "text": "CAT",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_sun_a",
+              "kind": "label",
+              "text": "SUN",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_tree",
+              "kind": "label",
+              "text": "TREE",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_sun_b",
+              "kind": "label",
+              "text": "SUN",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_moon",
+              "kind": "label",
+              "text": "MOON",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_star",
+              "kind": "label",
+              "text": "STAR",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_sun_c",
+              "kind": "label",
+              "text": "SUN",
+              "color": "text",
+              "font_size": 40
+            },
+            {
+              "id": "w_leaf",
+              "kind": "label",
+              "text": "LEAF",
+              "color": "text",
+              "font_size": 40
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_sun_a",
+            "alternatives": [
+              "w_sun_b",
+              "w_sun_c"
+            ]
+          },
+          "hints": [
+            "Five of these words appear only once.",
+            "One word — the same one — shows up three separate times."
+          ],
+          "explanation": "SUN appears three times among the scattered words — CAT, TREE, MOON, STAR and LEAF each show up only once.",
+          "wrong": {
+            "w_cat": "That word only appears once.",
+            "w_tree": "That word only appears once.",
+            "w_moon": "That word only appears once.",
+            "w_star": "That word only appears once.",
+            "w_leaf": "That word only appears once."
+          }
+        }
+      }
+    },
+    {
+      "id": "p073_next_number",
+      "type": "pattern",
+      "par_time": 16,
+      "reward": 10,
+      "tags": [
+        "numbers",
+        "sequence"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الرقم الذي يكمل النمط.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "n2",
+              "kind": "label",
+              "text": "2",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n4",
+              "kind": "label",
+              "text": "4",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n6",
+              "kind": "label",
+              "text": "6",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n8",
+              "kind": "label",
+              "text": "8",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "c9",
+              "kind": "button",
+              "text": "9",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c10",
+              "kind": "button",
+              "text": "10",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c11",
+              "kind": "button",
+              "text": "11",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c10"
+          },
+          "hints": [
+            "كل رقم في الصف العلوي أكبر من سابقه باثنين.",
+            "ما الذي يأتي بعد ٨ إذا أضفنا اثنين مرة أخرى؟"
+          ],
+          "explanation": "التسلسل يزيد بمقدار ٢ في كل مرة: ٢، ٤، ٦، ٨، ١٠. فقط ١٠ يكمل النمط، أما ٩ و١١ فيكسران قاعدة +٢.",
+          "wrong": {
+            "c9": "هذا يكسر قاعدة +٢.",
+            "c11": "هذا يتجاوز النمط بمقدار واحد."
+          }
+        },
+        "en": {
+          "instruction": "Tap the number that continues the pattern.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "n2",
+              "kind": "label",
+              "text": "2",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n4",
+              "kind": "label",
+              "text": "4",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n6",
+              "kind": "label",
+              "text": "6",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n8",
+              "kind": "label",
+              "text": "8",
+              "font_size": 54,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "c9",
+              "kind": "button",
+              "text": "9",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c10",
+              "kind": "button",
+              "text": "10",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c11",
+              "kind": "button",
+              "text": "11",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c10"
+          },
+          "hints": [
+            "Each number in the top row is two more than the last.",
+            "What comes right after 8, adding two again?"
+          ],
+          "explanation": "The sequence counts up by 2: 2, 4, 6, 8, 10. Only 10 continues it — 9 and 11 break the +2 rule.",
+          "wrong": {
+            "c9": "That breaks the +2 rule.",
+            "c11": "That overshoots the pattern by one."
+          }
+        }
+      }
+    },
+    {
+      "id": "p074_fourth_beat",
+      "type": "timing",
+      "par_time": 10,
+      "reward": 10,
+      "tags": [
+        "timing",
+        "rhythm"
+      ],
+      "show_timer": true,
+      "time_limit": 6,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الزر بالضبط عندما كانت النبضة الرابعة ستحدث.",
+          "sub_instruction": "راقب إيقاع الأشكال الثلاثة الأولى.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "beat1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "reveal_after": 0.5,
+              "hide_after": 0.9,
+              "interactive": false
+            },
+            {
+              "id": "beat2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "reveal_after": 1.5,
+              "hide_after": 1.9,
+              "interactive": false
+            },
+            {
+              "id": "beat3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange",
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "reveal_after": 2.5,
+              "hide_after": 2.9,
+              "interactive": false
+            },
+            {
+              "id": "btn",
+              "kind": "button",
+              "text": "اضغط",
+              "color": "surface",
+              "pos": [
+                0.5,
+                0.7
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn",
+            "not_before": 3.5,
+            "not_after": 4.1
+          },
+          "hints": [
+            "ظهرت الأشكال الثلاثة الأولى بفارق ثانية واحدة تقريبًا بين كل منها.",
+            "حافظ على نفس إيقاع الثانية الواحدة، واضغط في النبضة التي لم يظهر فيها أي شكل."
+          ],
+          "explanation": "ظهرت الأشكال عند ٠٫٥ و١٫٥ و٢٫٥ ثانية — إيقاع ثابت بفارق ثانية واحدة. النبضة الرابعة عند ٣٫٥ ثانية لم تُظهر شيئًا، لكن الإيقاع نفسه كان يخبرك بالضبط متى ستحدث.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the button exactly when the 4th beat would have happened.",
+          "sub_instruction": "Watch the rhythm of the first three shapes.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "beat1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "reveal_after": 0.5,
+              "hide_after": 0.9,
+              "interactive": false
+            },
+            {
+              "id": "beat2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "reveal_after": 1.5,
+              "hide_after": 1.9,
+              "interactive": false
+            },
+            {
+              "id": "beat3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange",
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "reveal_after": 2.5,
+              "hide_after": 2.9,
+              "interactive": false
+            },
+            {
+              "id": "btn",
+              "kind": "button",
+              "text": "TAP",
+              "color": "surface",
+              "pos": [
+                0.5,
+                0.7
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn",
+            "not_before": 3.5,
+            "not_after": 4.1
+          },
+          "hints": [
+            "The first three shapes appeared about a second apart.",
+            "Keep that same one-second rhythm going, and tap on the beat that never showed a shape."
+          ],
+          "explanation": "The shapes appeared at 0.5s, 1.5s and 2.5s — a steady one-second rhythm. The 4th beat, at 3.5s, never showed anything, but the rhythm still predicted exactly when it should land.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p075_size_order",
+      "type": "pattern",
+      "par_time": 18,
+      "reward": 10,
+      "tags": [
+        "size-order",
+        "pattern"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي خرج عن ترتيب الحجم.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "sc1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5
+            },
+            {
+              "id": "sc2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.7
+            },
+            {
+              "id": "sc3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            },
+            {
+              "id": "sc4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "sc5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 1.1
+            },
+            {
+              "id": "sc6",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 1.3
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "sc4"
+          },
+          "hints": [
+            "تابع الدوائر بالترتيب — من المفترض أن تكبر تباعًا.",
+            "إحدى الدوائر أصغر من التي قبلها مباشرة، فتكسر التصاعد."
+          ],
+          "explanation": "الحجم يتصاعد بثبات على طول الصف، إلا دائرة واحدة صغرت بدل أن تكبر — كسرٌ في ترتيب الحجم لا في اللون أو الشكل.",
+          "wrong": {
+            "sc1": "هذه ما زالت متوافقة مع التصاعد.",
+            "sc2": "هذه ما زالت متوافقة مع التصاعد.",
+            "sc3": "هذه ما زالت متوافقة مع التصاعد.",
+            "sc5": "هذه ما زالت متوافقة مع التصاعد.",
+            "sc6": "هذه ما زالت متوافقة مع التصاعد."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape that's out of size order.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "sc1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5
+            },
+            {
+              "id": "sc2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.7
+            },
+            {
+              "id": "sc3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            },
+            {
+              "id": "sc4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.6
+            },
+            {
+              "id": "sc5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 1.1
+            },
+            {
+              "id": "sc6",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 1.3
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "sc4"
+          },
+          "hints": [
+            "Follow the circles in order — they're supposed to keep growing.",
+            "One circle is smaller than the one just before it, breaking the growth."
+          ],
+          "explanation": "Scale increases steadily along the row, except one circle that shrinks instead of continuing to grow — a break in the size order, not the colour or shape.",
+          "wrong": {
+            "sc1": "That one still fits the growth.",
+            "sc2": "That one still fits the growth.",
+            "sc3": "That one still fits the growth.",
+            "sc5": "That one still fits the growth.",
+            "sc6": "That one still fits the growth."
+          }
+        }
+      }
+    },
+    {
+      "id": "p076_broken_mirror",
+      "type": "pattern",
+      "par_time": 20,
+      "reward": 10,
+      "tags": [
+        "mirror",
+        "pattern"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل في الصف السفلي الذي يكسر الانعكاس.",
+          "sub_instruction": "من المفترض أن يكون الصف السفلي هو الصف العلوي معكوسًا.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "t1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "row": 0
+            },
+            {
+              "id": "t2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "row": 0
+            },
+            {
+              "id": "t3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "row": 0
+            },
+            {
+              "id": "t4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "row": 0
+            },
+            {
+              "id": "b1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "row": 1
+            },
+            {
+              "id": "b2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "row": 1
+            },
+            {
+              "id": "b3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "row": 1
+            },
+            {
+              "id": "b4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "b3"
+          },
+          "hints": [
+            "اعكس ألوان الصف العلوي ذهنيًا قبل أن تقارن.",
+            "ثلاثة ألوان في الصف السفلي تطابق الصف العلوي المعكوس. واحد منها لا يطابق."
+          ],
+          "explanation": "الصف العلوي (أحمر، أزرق، أخضر، أصفر) معكوسًا يجب أن يكون: أصفر، أخضر، أزرق، أحمر. الشكل الثالث في الصف السفلي جاء بنفسجيًا بدل الأزرق.",
+          "wrong": {
+            "b1": "هذا يعكس بشكل صحيح.",
+            "b2": "هذا يعكس بشكل صحيح.",
+            "b4": "هذا يعكس بشكل صحيح."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape in the bottom row that breaks the mirror.",
+          "sub_instruction": "The bottom row should be the top row, reversed.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "t1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "row": 0
+            },
+            {
+              "id": "t2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "row": 0
+            },
+            {
+              "id": "t3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "row": 0
+            },
+            {
+              "id": "t4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "row": 0
+            },
+            {
+              "id": "b1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "row": 1
+            },
+            {
+              "id": "b2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "row": 1
+            },
+            {
+              "id": "b3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple",
+              "row": 1
+            },
+            {
+              "id": "b4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "b3"
+          },
+          "hints": [
+            "Reverse the top row's colours in your head before comparing.",
+            "Three of the bottom colours match the reversed top row. One doesn't."
+          ],
+          "explanation": "Reversed, the top row (red, blue, green, yellow) should read yellow, green, blue, red. The third shape in the bottom row is purple instead of blue.",
+          "wrong": {
+            "b1": "That one mirrors correctly.",
+            "b2": "That one mirrors correctly.",
+            "b4": "That one mirrors correctly."
+          }
+        }
+      }
+    },
+    {
+      "id": "p077_off_count",
+      "type": "pattern",
+      "par_time": 14,
+      "reward": 10,
+      "tags": [
+        "numbers",
+        "sequence"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الرقم الذي لا ينتمي لهذا العدّ.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "n5",
+              "kind": "label",
+              "text": "5",
+              "font_size": 48
+            },
+            {
+              "id": "n10",
+              "kind": "label",
+              "text": "10",
+              "font_size": 48
+            },
+            {
+              "id": "n15",
+              "kind": "label",
+              "text": "15",
+              "font_size": 48
+            },
+            {
+              "id": "n20",
+              "kind": "label",
+              "text": "20",
+              "font_size": 48
+            },
+            {
+              "id": "n26",
+              "kind": "label",
+              "text": "26",
+              "font_size": 48
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n26"
+          },
+          "hints": [
+            "بقية الأرقام تُعدّ تصاعديًا بمقدار ٥.",
+            "٢٠ زائد ٥ لا يساوي ٢٦."
+          ],
+          "explanation": "هذا عدّ بمقدار ٥: ٥، ١٠، ١٥، ٢٠، ٢٥. لكن المعروض هو ٢٦ — رقم واحد زيادة عمّا يجب أن يصل إليه العدّ بمقدار ٥.",
+          "wrong": {
+            "n5": "هذا يتوافق مع العدّ بمقدار ٥.",
+            "n10": "هذا يتوافق مع العدّ بمقدار ٥.",
+            "n15": "هذا يتوافق مع العدّ بمقدار ٥.",
+            "n20": "هذا يتوافق مع العدّ بمقدار ٥."
+          }
+        },
+        "en": {
+          "instruction": "Tap the number that doesn't belong in this count.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "n5",
+              "kind": "label",
+              "text": "5",
+              "font_size": 48
+            },
+            {
+              "id": "n10",
+              "kind": "label",
+              "text": "10",
+              "font_size": 48
+            },
+            {
+              "id": "n15",
+              "kind": "label",
+              "text": "15",
+              "font_size": 48
+            },
+            {
+              "id": "n20",
+              "kind": "label",
+              "text": "20",
+              "font_size": 48
+            },
+            {
+              "id": "n26",
+              "kind": "label",
+              "text": "26",
+              "font_size": 48
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n26"
+          },
+          "hints": [
+            "The rest of the numbers are counting up by 5.",
+            "20 plus 5 is not 26."
+          ],
+          "explanation": "This is a count by 5s: 5, 10, 15, 20, 25. The sequence shows 26 instead — one off from where counting by 5 should land.",
+          "wrong": {
+            "n5": "That one fits the count by 5s.",
+            "n10": "That one fits the count by 5s.",
+            "n15": "That one fits the count by 5s.",
+            "n20": "That one fits the count by 5s."
+          }
+        }
+      }
+    },
+    {
+      "id": "p078_turns_green",
+      "type": "timing",
+      "par_time": 8,
+      "reward": 10,
+      "tags": [
+        "timing",
+        "live-sequence"
+      ],
+      "show_timer": true,
+      "time_limit": 5,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط عليه عندما يتحول إلى الأخضر.",
+          "sub_instruction": "راقب تغيّر الألوان، كإشارة المرور.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "light_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.5,
+                0.4
+              ],
+              "hide_after": 0.9
+            },
+            {
+              "id": "light_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "pos": [
+                0.5,
+                0.4
+              ],
+              "reveal_after": 1.0,
+              "hide_after": 1.9
+            },
+            {
+              "id": "light_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "pos": [
+                0.5,
+                0.4
+              ],
+              "reveal_after": 2.0,
+              "hide_after": 2.9
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "light_green",
+            "not_before": 2.0,
+            "not_after": 2.9
+          },
+          "hints": [
+            "لون واحد فقط يظهر على الشاشة في كل لحظة، كإشارة مرور حقيقية.",
+            "الأحمر أولًا، ثم الأصفر، ثم الأخضر — اضغط أثناء دور الأخضر."
+          ],
+          "explanation": "ظهر الأحمر في الثانية الأولى، ثم الأصفر في التالية، ثم الأخضر فقط من الثانية ٢٫٠ إلى ٢٫٩. الضغط على الأخضر خارج هذه النافذة يُحتسب مبكرًا جدًا أو متأخرًا جدًا.",
+          "wrong": {
+            "light_red": "هذا أحمر، لا أخضر.",
+            "light_yellow": "هذا أصفر، لا أخضر.",
+            "light_green": "الشكل الصحيح، لكن في وقت خاطئ."
+          }
+        },
+        "en": {
+          "instruction": "Tap it when it turns green.",
+          "sub_instruction": "Watch the colours change, like a traffic light.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "light_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.5,
+                0.4
+              ],
+              "hide_after": 0.9
+            },
+            {
+              "id": "light_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "pos": [
+                0.5,
+                0.4
+              ],
+              "reveal_after": 1.0,
+              "hide_after": 1.9
+            },
+            {
+              "id": "light_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "pos": [
+                0.5,
+                0.4
+              ],
+              "reveal_after": 2.0,
+              "hide_after": 2.9
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "light_green",
+            "not_before": 2.0,
+            "not_after": 2.9
+          },
+          "hints": [
+            "Only one colour is on screen at any moment, like a real signal.",
+            "Red comes first, then yellow, then green — tap during green's turn."
+          ],
+          "explanation": "Red showed for the first second, yellow for the next, and green only from 2.0s to 2.9s. Tapping green outside that window still counts as tapping too early or too late.",
+          "wrong": {
+            "light_red": "That's red, not green.",
+            "light_yellow": "That's yellow, not green.",
+            "light_green": "Right shape, wrong moment."
+          }
+        }
+      }
+    },
+    {
+      "id": "p079_number_order",
+      "type": "position",
+      "par_time": 26,
+      "reward": 10,
+      "tags": [
+        "sequence",
+        "spatial"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الأشكال بترتيب أرقامها، من الأصغر إلى الأكبر.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "shape_a",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.72,
+                0.18
+              ],
+              "text": "2",
+              "font_size": 36
+            },
+            {
+              "id": "shape_b",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.18,
+                0.5
+              ],
+              "text": "4",
+              "font_size": 36
+            },
+            {
+              "id": "shape_c",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.78,
+                0.78
+              ],
+              "text": "1",
+              "font_size": 36
+            },
+            {
+              "id": "shape_d",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.32,
+                0.14
+              ],
+              "text": "3",
+              "font_size": 36
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "shape_c",
+              "shape_a",
+              "shape_d",
+              "shape_b"
+            ]
+          },
+          "hints": [
+            "تجاهل موضع كل شكل — الرقم فقط هو المهم.",
+            "ابدأ بالشكل رقم ١، أينما كان موجودًا."
+          ],
+          "explanation": "وُزّعت الأرقام خارج ترتيب القراءة عمدًا. مرتّبة من الأصغر إلى الأكبر يكون الترتيب ١، ٢، ٣، ٤ — بغضّ النظر عن موضع كل شكل على الشاشة.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the shapes in the order of their numbers, smallest first.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "shape_a",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.72,
+                0.18
+              ],
+              "text": "2",
+              "font_size": 36
+            },
+            {
+              "id": "shape_b",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.18,
+                0.5
+              ],
+              "text": "4",
+              "font_size": 36
+            },
+            {
+              "id": "shape_c",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.78,
+                0.78
+              ],
+              "text": "1",
+              "font_size": 36
+            },
+            {
+              "id": "shape_d",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.32,
+                0.14
+              ],
+              "text": "3",
+              "font_size": 36
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "shape_c",
+              "shape_a",
+              "shape_d",
+              "shape_b"
+            ]
+          },
+          "hints": [
+            "Ignore where each shape sits — only its number matters.",
+            "Start with the shape numbered 1, wherever it happens to be."
+          ],
+          "explanation": "The numbers were scattered out of reading order on purpose. Sorted smallest to largest, the order is 1, 2, 3, 4 — regardless of where each shape sits on screen.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p080_twice_not_thrice",
+      "type": "pattern",
+      "par_time": 24,
+      "reward": 20,
+      "tags": [
+        "counting",
+        "decoy"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الرقم الذي تكرر مرتين بالضبط — وليس الذي تكرر ثلاث مرات.",
+          "sub_instruction": "عُدّ بعناية. الأكثر تكرارًا ليس بالضرورة هو الجواب.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "n2",
+              "kind": "label",
+              "text": "2",
+              "font_size": 44,
+              "pos": [
+                0.15,
+                0.2
+              ]
+            },
+            {
+              "id": "n7_a",
+              "kind": "label",
+              "text": "7",
+              "font_size": 44,
+              "pos": [
+                0.45,
+                0.15
+              ]
+            },
+            {
+              "id": "n4_a",
+              "kind": "label",
+              "text": "4",
+              "font_size": 44,
+              "pos": [
+                0.75,
+                0.22
+              ]
+            },
+            {
+              "id": "n9",
+              "kind": "label",
+              "text": "9",
+              "font_size": 44,
+              "pos": [
+                0.85,
+                0.45
+              ]
+            },
+            {
+              "id": "n4_b",
+              "kind": "label",
+              "text": "4",
+              "font_size": 44,
+              "pos": [
+                0.55,
+                0.42
+              ]
+            },
+            {
+              "id": "n7_b",
+              "kind": "label",
+              "text": "7",
+              "font_size": 44,
+              "pos": [
+                0.25,
+                0.48
+              ]
+            },
+            {
+              "id": "n5",
+              "kind": "label",
+              "text": "5",
+              "font_size": 44,
+              "pos": [
+                0.1,
+                0.7
+              ]
+            },
+            {
+              "id": "n4_c",
+              "kind": "label",
+              "text": "4",
+              "font_size": 44,
+              "pos": [
+                0.4,
+                0.68
+              ]
+            },
+            {
+              "id": "n3",
+              "kind": "label",
+              "text": "3",
+              "font_size": 44,
+              "pos": [
+                0.65,
+                0.72
+              ]
+            },
+            {
+              "id": "n8",
+              "kind": "label",
+              "text": "8",
+              "font_size": 44,
+              "pos": [
+                0.88,
+                0.75
+              ]
+            },
+            {
+              "id": "n6",
+              "kind": "label",
+              "text": "6",
+              "font_size": 44,
+              "pos": [
+                0.5,
+                0.9
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n7_a",
+            "alternatives": [
+              "n7_b"
+            ]
+          },
+          "hints": [
+            "رقم واحد يظهر مرتين. رقم مختلف يظهر ثلاث مرات.",
+            "الرقم ٤ هو الذي تكرر ثلاث مرات — وهو ليس الجواب."
+          ],
+          "explanation": "الرقم ٤ تكرر ثلاث مرات — وهو التكرار الأوضح، لكنه أكثر من المطلوب. الرقم ٧ تكرر مرتين بالضبط، وهذا ما طلبته التعليمة فعلًا.",
+          "wrong": {
+            "n4_a": "هذا الرقم تكرر ثلاث مرات، لا مرتين.",
+            "n4_b": "هذا الرقم تكرر ثلاث مرات، لا مرتين.",
+            "n4_c": "هذا الرقم تكرر ثلاث مرات، لا مرتين.",
+            "n2": "هذا الرقم ظهر مرة واحدة فقط.",
+            "n9": "هذا الرقم ظهر مرة واحدة فقط.",
+            "n5": "هذا الرقم ظهر مرة واحدة فقط.",
+            "n3": "هذا الرقم ظهر مرة واحدة فقط.",
+            "n8": "هذا الرقم ظهر مرة واحدة فقط.",
+            "n6": "هذا الرقم ظهر مرة واحدة فقط."
+          }
+        },
+        "en": {
+          "instruction": "Tap the number that appears exactly twice — not the one that appears three times.",
+          "sub_instruction": "Count carefully. More repeats doesn't mean it's the answer.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "n2",
+              "kind": "label",
+              "text": "2",
+              "font_size": 44,
+              "pos": [
+                0.15,
+                0.2
+              ]
+            },
+            {
+              "id": "n7_a",
+              "kind": "label",
+              "text": "7",
+              "font_size": 44,
+              "pos": [
+                0.45,
+                0.15
+              ]
+            },
+            {
+              "id": "n4_a",
+              "kind": "label",
+              "text": "4",
+              "font_size": 44,
+              "pos": [
+                0.75,
+                0.22
+              ]
+            },
+            {
+              "id": "n9",
+              "kind": "label",
+              "text": "9",
+              "font_size": 44,
+              "pos": [
+                0.85,
+                0.45
+              ]
+            },
+            {
+              "id": "n4_b",
+              "kind": "label",
+              "text": "4",
+              "font_size": 44,
+              "pos": [
+                0.55,
+                0.42
+              ]
+            },
+            {
+              "id": "n7_b",
+              "kind": "label",
+              "text": "7",
+              "font_size": 44,
+              "pos": [
+                0.25,
+                0.48
+              ]
+            },
+            {
+              "id": "n5",
+              "kind": "label",
+              "text": "5",
+              "font_size": 44,
+              "pos": [
+                0.1,
+                0.7
+              ]
+            },
+            {
+              "id": "n4_c",
+              "kind": "label",
+              "text": "4",
+              "font_size": 44,
+              "pos": [
+                0.4,
+                0.68
+              ]
+            },
+            {
+              "id": "n3",
+              "kind": "label",
+              "text": "3",
+              "font_size": 44,
+              "pos": [
+                0.65,
+                0.72
+              ]
+            },
+            {
+              "id": "n8",
+              "kind": "label",
+              "text": "8",
+              "font_size": 44,
+              "pos": [
+                0.88,
+                0.75
+              ]
+            },
+            {
+              "id": "n6",
+              "kind": "label",
+              "text": "6",
+              "font_size": 44,
+              "pos": [
+                0.5,
+                0.9
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n7_a",
+            "alternatives": [
+              "n7_b"
+            ]
+          },
+          "hints": [
+            "One number shows up twice. A different number shows up three times.",
+            "The number 4 is the one that appears three times — it's not the answer."
+          ],
+          "explanation": "4 appears three times — the obvious-looking repeat, but too many. 7 appears exactly twice, which is what the instruction actually asked for.",
+          "wrong": {
+            "n4_a": "That number appears three times, not twice.",
+            "n4_b": "That number appears three times, not twice.",
+            "n4_c": "That number appears three times, not twice.",
+            "n2": "That number only appears once.",
+            "n9": "That number only appears once.",
+            "n5": "That number only appears once.",
+            "n3": "That number only appears once.",
+            "n8": "That number only appears once.",
+            "n6": "That number only appears once."
+          }
+        }
+      }
+    },
+    {
+      "id": "p081_longest_streak",
+      "type": "pattern",
+      "par_time": 20,
+      "reward": 10,
+      "tags": [
+        "streak",
+        "counting"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "أي لون له أطول سلسلة متواصلة؟ اضغط على اسمه.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d6",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d7",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d8",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d9",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "btn_red",
+              "kind": "button",
+              "text": "أحمر",
+              "color": "red",
+              "row": 1
+            },
+            {
+              "id": "btn_blue",
+              "kind": "button",
+              "text": "أزرق",
+              "color": "blue",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn_blue"
+          },
+          "hints": [
+            "عُدّ أطول سلسلة من نفس اللون متتالية دون انقطاع.",
+            "أطول سلسلة للأزرق أطول من أطول سلسلة للأحمر."
+          ],
+          "explanation": "أطول سلسلة متواصلة للأزرق هي أربع نقاط متتالية. أطول سلسلة للأحمر ثلاث نقاط فقط.",
+          "wrong": {
+            "btn_red": "أطول سلسلة للأحمر ثلاث نقاط فقط."
+          }
+        },
+        "en": {
+          "instruction": "Which colour has the longest unbroken streak? Tap its name.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d6",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d7",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d8",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "d9",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.5,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "btn_red",
+              "kind": "button",
+              "text": "RED",
+              "color": "red",
+              "row": 1
+            },
+            {
+              "id": "btn_blue",
+              "kind": "button",
+              "text": "BLUE",
+              "color": "blue",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn_blue"
+          },
+          "hints": [
+            "Count the longest run of the SAME colour in a row, without switching.",
+            "Blue's longest run is longer than red's."
+          ],
+          "explanation": "Blue's longest unbroken streak is four dots in a row. Red's longest streak is only three.",
+          "wrong": {
+            "btn_red": "Red's longest streak is only three."
+          }
+        }
+      }
+    },
+    {
+      "id": "p082_odd_count",
+      "type": "pattern",
+      "par_time": 18,
+      "reward": 10,
+      "tags": [
+        "counting",
+        "parity"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على أي شكل من النوع الذي يظهر عددًا فرديًا من المرات.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "sq1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "t1",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green"
+            },
+            {
+              "id": "sq2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            },
+            {
+              "id": "c2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple"
+            },
+            {
+              "id": "sq3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "yellow"
+            },
+            {
+              "id": "t2",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "cyan"
+            },
+            {
+              "id": "c3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "sq4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c1",
+            "alternatives": [
+              "c2",
+              "c3"
+            ]
+          },
+          "hints": [
+            "عُدّ كل نوع شكل على حدة: دوائر، مربعات، مثلثات.",
+            "المربعات والمثلثات كلاهما بعدد زوجي. نوع واحد فقط ليس كذلك."
+          ],
+          "explanation": "هناك ٣ دوائر و٤ مربعات و٢ مثلثات. الدوائر فقط هي التي يكون عددها فرديًا.",
+          "wrong": {
+            "sq1": "المربعات تظهر عددًا زوجيًا من المرات.",
+            "sq2": "المربعات تظهر عددًا زوجيًا من المرات.",
+            "sq3": "المربعات تظهر عددًا زوجيًا من المرات.",
+            "sq4": "المربعات تظهر عددًا زوجيًا من المرات.",
+            "t1": "المثلثات تظهر عددًا زوجيًا من المرات.",
+            "t2": "المثلثات تظهر عددًا زوجيًا من المرات."
+          }
+        },
+        "en": {
+          "instruction": "Tap any shape of the kind that appears an odd number of times.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "sq1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "c1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "t1",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green"
+            },
+            {
+              "id": "sq2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            },
+            {
+              "id": "c2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "purple"
+            },
+            {
+              "id": "sq3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "yellow"
+            },
+            {
+              "id": "t2",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "cyan"
+            },
+            {
+              "id": "c3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "sq4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c1",
+            "alternatives": [
+              "c2",
+              "c3"
+            ]
+          },
+          "hints": [
+            "Count each shape type separately: circles, squares, triangles.",
+            "Squares and triangles both total an even number. One shape type doesn't."
+          ],
+          "explanation": "There are 3 circles, 4 squares, and 2 triangles. Only the circles total an odd number.",
+          "wrong": {
+            "sq1": "Squares appear an even number of times.",
+            "sq2": "Squares appear an even number of times.",
+            "sq3": "Squares appear an even number of times.",
+            "sq4": "Squares appear an even number of times.",
+            "t1": "Triangles appear an even number of times.",
+            "t2": "Triangles appear an even number of times."
+          }
+        }
+      }
+    },
+    {
+      "id": "p083_blue_yellow_blue",
+      "type": "multi_step",
+      "par_time": 24,
+      "reward": 10,
+      "tags": [
+        "sequence",
+        "repeat-step"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط الأزرق، ثم الأصفر، ثم الأزرق مرة أخرى.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow"
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "c_blue",
+              "c_yellow",
+              "c_blue"
+            ],
+            "reset_on_wrong": true
+          },
+          "hints": [
+            "التسلسل يتكوّن من ثلاث خطوات، واللون الأول يتكرر.",
+            "لا شيء يمنع أن يكون نفس الشكل خطوة صحيحة مرتين."
+          ],
+          "explanation": "التعليمة تطلب الأزرق، ثم الأصفر، ثم الأزرق مرة ثانية — ثلاث ضغطات، بلونين مختلفين فقط.",
+          "wrong": {
+            "c_green": "هذا اللون ليس جزءًا من التسلسل.",
+            "c_red": "هذا اللون ليس جزءًا من التسلسل."
+          }
+        },
+        "en": {
+          "instruction": "Tap blue, yellow, then blue again.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "c_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow"
+            },
+            {
+              "id": "c_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "c_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "c_blue",
+              "c_yellow",
+              "c_blue"
+            ],
+            "reset_on_wrong": true
+          },
+          "hints": [
+            "The sequence has three steps, and the first colour repeats.",
+            "Nothing stops the same shape from being a valid step twice."
+          ],
+          "explanation": "The instruction asks for blue, then yellow, then blue a second time — three taps, only two different colours.",
+          "wrong": {
+            "c_green": "That colour isn't part of the sequence.",
+            "c_red": "That colour isn't part of the sequence."
+          }
+        }
+      }
+    },
+    {
+      "id": "p084_checkerboard_break",
+      "type": "pattern",
+      "par_time": 20,
+      "reward": 10,
+      "tags": [
+        "checkerboard",
+        "grid"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي يكسر رقعة الشطرنج.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "g1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "g2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "g5",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "g6",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g7",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g8",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "g8"
+          },
+          "hints": [
+            "من المفترض أن يتبادل لون كل خانة مع جاراتها، كرقعة الشطرنج.",
+            "الخانة الأخيرة لا تتبادل اللون كما يقتضي النمط."
+          ],
+          "explanation": "الشبكة تتبادل بين الأحمر والأزرق كرقعة الشطرنج. كان يجب أن تكون الخانة الأخيرة حمراء ليستمر النمط، لكنها جاءت خضراء.",
+          "wrong": {
+            "g1": "هذه الخانة ما زالت متوافقة مع رقعة الشطرنج.",
+            "g2": "هذه الخانة ما زالت متوافقة مع رقعة الشطرنج.",
+            "g3": "هذه الخانة ما زالت متوافقة مع رقعة الشطرنج.",
+            "g4": "هذه الخانة ما زالت متوافقة مع رقعة الشطرنج.",
+            "g5": "هذه الخانة ما زالت متوافقة مع رقعة الشطرنج.",
+            "g6": "هذه الخانة ما زالت متوافقة مع رقعة الشطرنج.",
+            "g7": "هذه الخانة ما زالت متوافقة مع رقعة الشطرنج."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape that breaks the checkerboard.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "g1",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "g2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g3",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g4",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "g5",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red"
+            },
+            {
+              "id": "g6",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g7",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue"
+            },
+            {
+              "id": "g8",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "g8"
+          },
+          "hints": [
+            "Each cell should alternate colour from its neighbours, like a checkerboard.",
+            "The last cell doesn't switch colour the way the pattern demands."
+          ],
+          "explanation": "The grid alternates red and blue like a checkerboard. The last cell should be red to keep the pattern, but it's green instead.",
+          "wrong": {
+            "g1": "That cell still fits the checkerboard.",
+            "g2": "That cell still fits the checkerboard.",
+            "g3": "That cell still fits the checkerboard.",
+            "g4": "That cell still fits the checkerboard.",
+            "g5": "That cell still fits the checkerboard.",
+            "g6": "That cell still fits the checkerboard.",
+            "g7": "That cell still fits the checkerboard."
+          }
+        }
+      }
+    },
+    {
+      "id": "p085_phantom_one",
+      "type": "timing",
+      "par_time": 10,
+      "reward": 10,
+      "tags": [
+        "timing",
+        "countdown"
+      ],
+      "show_timer": true,
+      "time_limit": 6,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الزر في اللحظة التي كان سيظهر فيها الرقم ١.",
+          "sub_instruction": "راقب العدّ التنازلي: ٥، ٤، ٣، ٢...",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "cd5",
+              "kind": "label",
+              "text": "5",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 0.9
+            },
+            {
+              "id": "cd4",
+              "kind": "label",
+              "text": "4",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 1.9,
+              "reveal_after": 1.0
+            },
+            {
+              "id": "cd3",
+              "kind": "label",
+              "text": "3",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 2.9,
+              "reveal_after": 2.0
+            },
+            {
+              "id": "cd2",
+              "kind": "label",
+              "text": "2",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 3.9,
+              "reveal_after": 3.0
+            },
+            {
+              "id": "btn",
+              "kind": "button",
+              "text": "اضغط",
+              "color": "surface",
+              "pos": [
+                0.5,
+                0.7
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn",
+            "not_before": 4.0,
+            "not_after": 4.9
+          },
+          "hints": [
+            "كل رقم يبقى نحو ثانية واحدة قبل ظهور التالي.",
+            "العدّ التنازلي لا يُظهر الرقم ١ أبدًا — لكن الإيقاع يخبرك بالضبط متى كان سيظهر."
+          ],
+          "explanation": "ظهر كل من ٥ و٤ و٣ و٢ لمدة ثانية تقريبًا، الواحد تلو الآخر. لو استمر الإيقاع نفسه، كان الرقم ١ سيظهر عند الثانية ٤٫٠ — لكن العدّ التنازلي لم يرسمه فقط.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Tap the button the moment it would have shown 1.",
+          "sub_instruction": "Watch the countdown: 5, 4, 3, 2...",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "cd5",
+              "kind": "label",
+              "text": "5",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 0.9
+            },
+            {
+              "id": "cd4",
+              "kind": "label",
+              "text": "4",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 1.9,
+              "reveal_after": 1.0
+            },
+            {
+              "id": "cd3",
+              "kind": "label",
+              "text": "3",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 2.9,
+              "reveal_after": 2.0
+            },
+            {
+              "id": "cd2",
+              "kind": "label",
+              "text": "2",
+              "font_size": 60,
+              "pos": [
+                0.5,
+                0.35
+              ],
+              "interactive": false,
+              "hide_after": 3.9,
+              "reveal_after": 3.0
+            },
+            {
+              "id": "btn",
+              "kind": "button",
+              "text": "TAP",
+              "color": "surface",
+              "pos": [
+                0.5,
+                0.7
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn",
+            "not_before": 4.0,
+            "not_after": 4.9
+          },
+          "hints": [
+            "Each number lasts about one second before the next appears.",
+            "The countdown never shows 1 — but the rhythm says exactly when it would."
+          ],
+          "explanation": "5, 4, 3 and 2 each appeared for about a second, one after another. Continuing that same rhythm, 1 would have appeared at 4.0s — the countdown just never drew it.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p086_upside_down",
+      "type": "visual",
+      "par_time": 12,
+      "reward": 10,
+      "tags": [
+        "orientation",
+        "breather"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على المثلث الذي يشير إلى الأسفل.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "deco1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "deco2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            },
+            {
+              "id": "tri_up",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "purple"
+            },
+            {
+              "id": "tri_down",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "purple",
+              "rotation_deg": 180.0
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "tri_down"
+          },
+          "hints": [
+            "اثنان من هذه الأشكال مثلثات، متطابقان إلا في شيء واحد.",
+            "أحد المثلثين مقلوب رأسًا على عقب."
+          ],
+          "explanation": "المثلثان متطابقان في اللون والحجم — الفرق الوحيد هو الدوران. أحدهما يشير للأعلى والآخر للأسفل.",
+          "wrong": {
+            "tri_up": "هذا ما زال يشير إلى الأعلى.",
+            "deco1": "هذا ليس مثلثًا.",
+            "deco2": "هذا ليس مثلثًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap the triangle that points down.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "deco1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "deco2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            },
+            {
+              "id": "tri_up",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "purple"
+            },
+            {
+              "id": "tri_down",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "purple",
+              "rotation_deg": 180.0
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "tri_down"
+          },
+          "hints": [
+            "Two of these shapes are triangles, identical except for one thing.",
+            "One triangle has been flipped upside down."
+          ],
+          "explanation": "Both triangles share the same colour and size — only their rotation differs. One points up, the other points down.",
+          "wrong": {
+            "tri_up": "That one still points up.",
+            "deco1": "That's not a triangle.",
+            "deco2": "That's not a triangle."
+          }
+        }
+      }
+    },
+    {
+      "id": "p087_double_it",
+      "type": "pattern",
+      "par_time": 16,
+      "reward": 10,
+      "tags": [
+        "numbers",
+        "geometric"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الرقم الذي يكمل النمط.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "n3",
+              "kind": "label",
+              "text": "3",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n6",
+              "kind": "label",
+              "text": "6",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n12",
+              "kind": "label",
+              "text": "12",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n24",
+              "kind": "label",
+              "text": "24",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "c30",
+              "kind": "button",
+              "text": "30",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c48",
+              "kind": "button",
+              "text": "48",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c36",
+              "kind": "button",
+              "text": "36",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c48"
+          },
+          "hints": [
+            "كل رقم في الصف العلوي هو ضعف الرقم الذي قبله.",
+            "كم يساوي ضعف ٢٤؟"
+          ],
+          "explanation": "التسلسل يتضاعف في كل مرة: ٣، ٦، ١٢، ٢٤، ٤٨. فقط ٤٨ يكمل هذه القاعدة.",
+          "wrong": {
+            "c30": "هذا ليس ضعف الرقم الأخير.",
+            "c36": "قريب، لكنه ليس الضعف."
+          }
+        },
+        "en": {
+          "instruction": "Tap the number that continues the pattern.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "n3",
+              "kind": "label",
+              "text": "3",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n6",
+              "kind": "label",
+              "text": "6",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n12",
+              "kind": "label",
+              "text": "12",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "n24",
+              "kind": "label",
+              "text": "24",
+              "font_size": 48,
+              "row": 0,
+              "interactive": false
+            },
+            {
+              "id": "c30",
+              "kind": "button",
+              "text": "30",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c48",
+              "kind": "button",
+              "text": "48",
+              "color": "surface",
+              "row": 1
+            },
+            {
+              "id": "c36",
+              "kind": "button",
+              "text": "36",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c48"
+          },
+          "hints": [
+            "Each number in the top row is double the one before it.",
+            "What is 24 doubled?"
+          ],
+          "explanation": "The sequence doubles each time: 3, 6, 12, 24, 48. Only 48 continues that rule.",
+          "wrong": {
+            "c30": "That's not double the last number.",
+            "c36": "Close, but not double."
+          }
+        }
+      }
+    },
+    {
+      "id": "p088_row_mismatch",
+      "type": "pattern",
+      "par_time": 24,
+      "reward": 10,
+      "tags": [
+        "odd-one-out",
+        "grid"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي لا يطابق صفّه.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "a1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "a2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "a3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "a4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "b1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "b2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "b3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "b4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "a3",
+            "alternatives": [
+              "b2"
+            ]
+          },
+          "hints": [
+            "الكتلة العلوية غالبًا بلون واحد، وكذلك الكتلة السفلية.",
+            "كل كتلة تخفي شكلًا واحدًا بالضبط لا ينتمي إليها — وكلاهما إجابة صحيحة."
+          ],
+          "explanation": "الكتلة العلوية غالبها أحمر مع شكل أزرق واحد، والكتلة السفلية غالبها أخضر مع شكل أحمر واحد. أيّ من الشكلين الغريبين يحقق التعليمة.",
+          "wrong": {
+            "a1": "هذا يطابق صفّه.",
+            "a2": "هذا يطابق صفّه.",
+            "a4": "هذا يطابق صفّه.",
+            "b1": "هذا يطابق صفّه.",
+            "b3": "هذا يطابق صفّه.",
+            "b4": "هذا يطابق صفّه."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape that doesn't match its own row.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "a1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "a2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "a3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "a4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "b1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "b2",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "b3",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            },
+            {
+              "id": "b4",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "a3",
+            "alternatives": [
+              "b2"
+            ]
+          },
+          "hints": [
+            "The top block is mostly one colour, and so is the bottom block.",
+            "Each block hides exactly one shape that doesn't belong — either counts."
+          ],
+          "explanation": "The top block is mostly red with one blue shape, and the bottom block is mostly green with one red shape. Either odd one out satisfies the instruction.",
+          "wrong": {
+            "a1": "That matches its row.",
+            "a2": "That matches its row.",
+            "a4": "That matches its row.",
+            "b1": "That matches its row.",
+            "b3": "That matches its row.",
+            "b4": "That matches its row."
+          }
+        }
+      }
+    },
+    {
+      "id": "p089_broken_symmetry",
+      "type": "position",
+      "par_time": 22,
+      "reward": 10,
+      "tags": [
+        "symmetry",
+        "spatial"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الشكل الذي يكسر التماثل بين اليمين واليسار.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "L_a",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.2,
+                0.2
+              ]
+            },
+            {
+              "id": "R_a",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.8,
+                0.2
+              ]
+            },
+            {
+              "id": "L_b",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "pos": [
+                0.25,
+                0.4
+              ]
+            },
+            {
+              "id": "R_b",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "pos": [
+                0.75,
+                0.4
+              ]
+            },
+            {
+              "id": "L_c",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green",
+              "pos": [
+                0.3,
+                0.6
+              ]
+            },
+            {
+              "id": "R_c",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "pos": [
+                0.7,
+                0.6
+              ]
+            },
+            {
+              "id": "L_d",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "pos": [
+                0.2,
+                0.8
+              ]
+            },
+            {
+              "id": "R_d",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "pos": [
+                0.8,
+                0.8
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "R_c"
+          },
+          "hints": [
+            "قارن كل شكل بشريكه المرآتي على الجانب الآخر.",
+            "زوج واحد يتطابق في اللون لكن ليس في الشكل."
+          ],
+          "explanation": "لكل شكل توأم معكوس على الجانب الآخر، إلا واحدًا: المثلث الأخضر على اليسار قابله مربع أخضر، لا مثلث.",
+          "wrong": {
+            "L_a": "هذا الزوج ينعكس بشكل مثالي.",
+            "R_a": "هذا الزوج ينعكس بشكل مثالي.",
+            "L_b": "هذا الزوج ينعكس بشكل مثالي.",
+            "R_b": "هذا الزوج ينعكس بشكل مثالي.",
+            "L_d": "هذا الزوج ينعكس بشكل مثالي.",
+            "R_d": "هذا الزوج ينعكس بشكل مثالي.",
+            "L_c": "هذا الجانب يبدو طبيعيًا — تحقق من انعكاسه في الجهة الأخرى."
+          }
+        },
+        "en": {
+          "instruction": "Tap the shape that breaks the left-right symmetry.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "L_a",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.2,
+                0.2
+              ]
+            },
+            {
+              "id": "R_a",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.8,
+                0.2
+              ]
+            },
+            {
+              "id": "L_b",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "pos": [
+                0.25,
+                0.4
+              ]
+            },
+            {
+              "id": "R_b",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "pos": [
+                0.75,
+                0.4
+              ]
+            },
+            {
+              "id": "L_c",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green",
+              "pos": [
+                0.3,
+                0.6
+              ]
+            },
+            {
+              "id": "R_c",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "pos": [
+                0.7,
+                0.6
+              ]
+            },
+            {
+              "id": "L_d",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "pos": [
+                0.2,
+                0.8
+              ]
+            },
+            {
+              "id": "R_d",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "pos": [
+                0.8,
+                0.8
+              ]
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "R_c"
+          },
+          "hints": [
+            "Compare each shape with its mirrored partner on the other side.",
+            "One pair matches in colour but not in shape."
+          ],
+          "explanation": "Every shape has a mirrored twin on the opposite side, except one: the green triangle on the left is mirrored by a green square, not a triangle.",
+          "wrong": {
+            "L_a": "This pair mirrors perfectly.",
+            "R_a": "This pair mirrors perfectly.",
+            "L_b": "This pair mirrors perfectly.",
+            "R_b": "This pair mirrors perfectly.",
+            "L_d": "This pair mirrors perfectly.",
+            "R_d": "This pair mirrors perfectly.",
+            "L_c": "This side looks normal — check its mirror on the other side."
+          }
+        }
+      }
+    },
+    {
+      "id": "p090_no_pattern_here",
+      "type": "assumption",
+      "par_time": 14,
+      "reward": 20,
+      "tags": [
+        "honest",
+        "breather"
+      ],
+      "locales": {
+        "ar": {
+          "instruction": "لا يوجد أي نمط في كل هذا. فقط اضغط على المكتوب عليه «هنا».",
+          "sub_instruction": "الأنماط تخدع. وغيابها يخدع أيضًا — لكن ليس هذه المرة.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "r1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "r2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "rotation_deg": 30.0
+            },
+            {
+              "id": "r3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green",
+              "rotation_deg": 45.0,
+              "scale": 1.2
+            },
+            {
+              "id": "r4",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "scale": 0.7
+            },
+            {
+              "id": "r5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "scale": 1.4
+            },
+            {
+              "id": "r6",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange",
+              "rotation_deg": 60.0
+            },
+            {
+              "id": "btn_here",
+              "kind": "button",
+              "text": "هنا",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn_here"
+          },
+          "hints": [
+            "دربتك تسع عشرة مرحلة على البحث عن خدعة. هذه المرحلة لا تحتوي على واحدة.",
+            "اقرأ التعليمة حرفيًا، وابحث عن الملصق الذي يقول ذلك بالضبط."
+          ],
+          "explanation": "لا لون ولا حجم ولا شكل هنا يتبع أي قاعدة — إنها عشوائية فعلًا. الشيء الوحيد المهم كان الزر المكتوب عليه بوضوح، تمامًا كما قالت التعليمة.",
+          "wrong": {
+            "r1": "لا يوجد نمط لتجده هنا. ابحث عن الملصق.",
+            "r2": "لا يوجد نمط لتجده هنا. ابحث عن الملصق.",
+            "r3": "لا يوجد نمط لتجده هنا. ابحث عن الملصق.",
+            "r4": "لا يوجد نمط لتجده هنا. ابحث عن الملصق.",
+            "r5": "لا يوجد نمط لتجده هنا. ابحث عن الملصق.",
+            "r6": "لا يوجد نمط لتجده هنا. ابحث عن الملصق."
+          }
+        },
+        "en": {
+          "instruction": "There is no pattern in any of this. Just tap the one labeled 'here'.",
+          "sub_instruction": "Patterns lie. So does their absence — but not this time.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "r1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            },
+            {
+              "id": "r2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "blue",
+              "rotation_deg": 30.0
+            },
+            {
+              "id": "r3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "green",
+              "rotation_deg": 45.0,
+              "scale": 1.2
+            },
+            {
+              "id": "r4",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "scale": 0.7
+            },
+            {
+              "id": "r5",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "scale": 1.4
+            },
+            {
+              "id": "r6",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange",
+              "rotation_deg": 60.0
+            },
+            {
+              "id": "btn_here",
+              "kind": "button",
+              "text": "here",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "btn_here"
+          },
+          "hints": [
+            "Nineteen stages have trained you to hunt for a trick. This one doesn't have one.",
+            "Read the instruction literally, and look for the label that says exactly that."
+          ],
+          "explanation": "No colour, size, or shape here follows any rule — they're genuinely random. The only thing that mattered was the plainly labeled button, exactly as the instruction said.",
+          "wrong": {
+            "r1": "No pattern to find here. Look for the label.",
+            "r2": "No pattern to find here. Look for the label.",
+            "r3": "No pattern to find here. Look for the label.",
+            "r4": "No pattern to find here. Look for the label.",
+            "r5": "No pattern to find here. Look for the label.",
+            "r6": "No pattern to find here. Look for the label."
+          }
+        }
+      }
+    }
+  ]
+}
