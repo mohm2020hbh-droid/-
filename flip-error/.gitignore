@@ -1,6 +1,7 @@
 build/
 .gradle/
 kotlin-js-store/
+node_modules/
 local.properties
 *.iml
 .idea/

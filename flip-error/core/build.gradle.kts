@@ -3,6 +3,9 @@ plugins { kotlin("multiplatform") }
 repositories { mavenCentral() }
 
 kotlin {
+    js(IR) {
+        browser()
+    }
     jvm {
         compilations.all { compilerOptions.configure { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11) } }
         testRuns["test"].executionTask.configure { useJUnitPlatform() }

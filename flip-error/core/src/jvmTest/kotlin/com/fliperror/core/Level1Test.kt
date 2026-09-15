@@ -76,6 +76,25 @@ class Level1Test {
         assertTrue(level.stars[0].y <= Tuning.JUMP_APEX + 0.9, "star is out of reach")
     }
 
+    /** Exported so the browser playtest can drive a real perfect run. */
+    @Test fun `export the perfect run plan`() {
+        val f = java.io.File("build/level1-plan.json")
+        f.parentFile.mkdirs()
+        f.writeText(buildString {
+            append("{\"finishX\":").append(level.finishX)
+            append(",\"durationSeconds\":").append(level.durationSeconds)
+            append(",\"taps\":").append(report.taps)
+            append(",\"minWindow\":").append(report.minWindow)
+            append(",\"jumps\":[")
+            report.jumps.forEachIndexed { i, j ->
+                if (i > 0) append(",")
+                append("{\"x\":").append(j.x).append(",\"window\":").append(j.window).append("}")
+            }
+            append("]}")
+        })
+        assertTrue(f.length() > 50)
+    }
+
     @Test fun `report`() {
         println("LEVEL 1 '${level.name}' -> solvable=${report.solvable} taps=${report.taps} " +
             "duration=${"%.2f".format(level.durationSeconds)}s " +

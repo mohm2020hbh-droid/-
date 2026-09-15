@@ -188,11 +188,13 @@ class Game(val level: Level) {
             }
         }
 
-        // Wall crash: the body is inside a block well below its top surface.
+        // Crashing into the side of a block. Falling into the far wall of a gap
+        // is a missed jump, not a wall run - say the thing the player did wrong.
         val hb2 = hitBox
         level.forEachSolidNear(hb2.x0, hb2.x1) { s ->
             if (hb2.y0 < s.top - Tuning.STEP_TOLERANCE && hb2.y1 > s.bottom) {
-                die(DeathCause.WALL); return
+                die(if (!grounded && vy < 0.0) DeathCause.PIT else DeathCause.WALL)
+                return
             }
         }
 

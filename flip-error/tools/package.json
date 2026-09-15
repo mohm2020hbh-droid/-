@@ -1,0 +1,8 @@
+{
+  "name": "flip-error-playtest",
+  "private": true,
+  "type": "module",
+  "description": "Automated browser playtest for the FLIP ERROR web build",
+  "scripts": { "playtest": "node playtest.mjs" },
+  "devDependencies": { "playwright": "^1.49.0" }
+}
