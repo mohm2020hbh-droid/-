@@ -152,7 +152,7 @@ class Game(val level: Level) {
 
         // 5. Hazards.
         val hb = hitBox
-        for (h in level.hazardsNear(hb.x0, hb.x1)) {
+        level.forEachHazardNear(hb.x0, hb.x1) { h ->
             if (hb.overlaps(h.hitBox)) {
                 die(if (h.kind == HazardKind.SPIKE_DOWN) DeathCause.CEILING_SPIKE else DeathCause.SPIKE)
                 return
@@ -173,12 +173,9 @@ class Game(val level: Level) {
 
     private fun resolveSolids(prevBottom: Double, prevTop: Double) {
         val hb = hitBox
-        val near = level.solidsNear(hb.x0 - 1.0, hb.x1 + 1.0)
         var landed = false
 
-        for (s in near) {
-            if (hb.x1 <= s.x0 || hb.x0 >= s.x1) continue
-
+        level.forEachSolidNear(hb.x0, hb.x1) { s ->
             if (vy <= 0.0 && prevBottom >= s.top - 1e-6 && y <= s.top + 1e-6) {
                 y = s.top
                 vy = 0.0
@@ -193,8 +190,7 @@ class Game(val level: Level) {
 
         // Wall crash: the body is inside a block well below its top surface.
         val hb2 = hitBox
-        for (s in near) {
-            if (hb2.x1 <= s.x0 || hb2.x0 >= s.x1) continue
+        level.forEachSolidNear(hb2.x0, hb2.x1) { s ->
             if (hb2.y0 < s.top - Tuning.STEP_TOLERANCE && hb2.y1 > s.bottom) {
                 die(DeathCause.WALL); return
             }
@@ -209,10 +205,35 @@ class Game(val level: Level) {
     /** Is there a solid surface directly under the feet right now? */
     private fun hasSupport(): Boolean {
         val hb = hitBox
-        return level.solidsNear(hb.x0, hb.x1).any { s ->
-            hb.x1 > s.x0 && hb.x0 < s.x1 && abs(y - s.top) < 1e-4
-        }
+        var found = false
+        level.forEachSolidNear(hb.x0, hb.x1) { s -> if (abs(y - s.top) < 1e-4) found = true }
+        return found
     }
+
+    /**
+     * Full simulation state. Used by the level verifier to branch a run
+     * without replaying it from the start.
+     */
+    class Snapshot internal constructor(
+        internal val x: Double, internal val y: Double, internal val vy: Double,
+        internal val grounded: Boolean, internal val rotationDeg: Double,
+        internal val coyoteTimer: Double, internal val bufferTimer: Double,
+        internal val elapsed: Double, internal val taps: Int, internal val state: GameState,
+        internal val accumulator: Double,
+    )
+
+    fun snapshot() = Snapshot(x, y, vy, grounded, rotationDeg, coyoteTimer, bufferTimer, elapsed, taps, state, accumulator)
+
+    fun restore(s: Snapshot) {
+        x = s.x; y = s.y; vy = s.vy; grounded = s.grounded; rotationDeg = s.rotationDeg
+        coyoteTimer = s.coyoteTimer; bufferTimer = s.bufferTimer
+        elapsed = s.elapsed; taps = s.taps; state = s.state; accumulator = s.accumulator
+        deathCause = DeathCause.NONE
+        stateTime = 0.0
+    }
+
+    /** One fixed physics step, for deterministic offline analysis. */
+    fun stepFixed() { if (state == GameState.RUNNING) step(Tuning.FIXED_DT) }
 
     private fun die(cause: DeathCause) {
         if (state != GameState.RUNNING) return

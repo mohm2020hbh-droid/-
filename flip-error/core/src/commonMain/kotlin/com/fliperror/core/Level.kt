@@ -42,13 +42,27 @@ data class Level(
     /** Level length in seconds at the level's run speed. */
     val durationSeconds: Double get() = finishX / Tuning.RUN_SPEED
 
-    private val solidsSorted = solids.sortedBy { it.x0 }
-    private val hazardsSorted = hazards.sortedBy { it.x0 }
+    @PublishedApi internal val solidsSorted = solids.sortedBy { it.x0 }
+    @PublishedApi internal val hazardsSorted = hazards.sortedBy { it.x0 }
 
-    /** Solids whose x-range can touch [x0,x1]. Linear over a short window, sorted input. */
-    fun solidsNear(x0: Double, x1: Double): List<Solid> =
-        solidsSorted.filter { it.x1 >= x0 && it.x0 <= x1 }
+    /**
+     * Visit every solid whose x-range can touch [x0,x1].
+     * Callback form on purpose: this runs 240 times a second and a mobile
+     * frame budget has no room for allocating a fresh list each step.
+     */
+    inline fun forEachSolidNear(x0: Double, x1: Double, action: (Solid) -> Unit) {
+        for (i in solidsSorted.indices) {
+            val s = solidsSorted[i]
+            if (s.x0 > x1) break
+            if (s.x1 >= x0) action(s)
+        }
+    }
 
-    fun hazardsNear(x0: Double, x1: Double): List<Hazard> =
-        hazardsSorted.filter { it.x1 >= x0 && it.x0 <= x1 }
+    inline fun forEachHazardNear(x0: Double, x1: Double, action: (Hazard) -> Unit) {
+        for (i in hazardsSorted.indices) {
+            val h = hazardsSorted[i]
+            if (h.x0 > x1) break
+            if (h.x1 >= x0) action(h)
+        }
+    }
 }
