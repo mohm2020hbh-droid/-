@@ -36,7 +36,8 @@ func _plan() -> Array:
 			shots.append({"loc": loc, "screen": screen,
 					"name": "%s_screen_%s" % [loc, screen]})
 		# One puzzle per chapter, plus the stages that exercise the trickiest layout.
-		for stage in [1, 4, 8, 15, 19, 21, 27, 31, 42, 47, 50]:
+		for stage in [1, 4, 8, 15, 19, 21, 27, 31, 42, 47, 50,
+				60, 65, 80, 90, 100, 111, 116, 120, 134, 140, 147, 148, 150]:
 			shots.append({"loc": loc, "stage": stage,
 					"name": "%s_stage_%02d" % [loc, stage]})
 		# The result screen itself: what the player sees right after solving.

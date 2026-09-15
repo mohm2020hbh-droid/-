@@ -1,0 +1,2078 @@
+{
+  "schema": 1,
+  "chapter": 10,
+  "puzzles": [
+    {
+      "id": "p131_second_layer_circle",
+      "type": "visual",
+      "par_time": 16,
+      "reward": 15,
+      "tags": [
+        "callback-p051",
+        "mislabeled",
+        "shape-vs-caption"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Tap the circle.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "rotation_deg": 35.0
+            },
+            {
+              "id": "sq_mislabel",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "text": "CIRCLE"
+            },
+            {
+              "id": "tri_mislabel",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange",
+              "text": "SQUARE"
+            },
+            {
+              "id": "di_mislabel",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "text": "CIRCLE"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c_circle"
+          },
+          "hints": [
+            "A caption is not a shape. Two different shapes both claim to be the circle here.",
+            "The real circle carries no label at all -- round is round, whatever anything else says."
+          ],
+          "explanation": "Two decoys both claimed to be the circle: a square and a diamond, each captioned CIRCLE. The real circle, rotated and unlabeled, never needed to say anything.",
+          "wrong": {
+            "sq_mislabel": "That's a square with the wrong caption.",
+            "tri_mislabel": "That's a triangle wearing someone else's name.",
+            "di_mislabel": "That's a diamond, not a circle, no matter what it says."
+          }
+        },
+        "ar": {
+          "instruction": "اضغط على الدائرة.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "c_circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "rotation_deg": 35.0
+            },
+            {
+              "id": "sq_mislabel",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "text": "دائرة"
+            },
+            {
+              "id": "tri_mislabel",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange",
+              "text": "مربع"
+            },
+            {
+              "id": "di_mislabel",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "purple",
+              "text": "دائرة"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c_circle"
+          },
+          "hints": [
+            "التسمية ليست الشكل. شكلان مختلفان هنا يدّعيان أنهما الدائرة.",
+            "الدائرة الحقيقية لا تحمل أي تسمية إطلاقًا -- المستدير مستدير مهما قيل غيره."
+          ],
+          "explanation": "شكلان ادّعيا أنهما الدائرة: مربع ومعيّن، كلاهما مكتوب عليه «دائرة». الدائرة الحقيقية، الدوّارة وغير المُسمّاة، لم تحتج أن تقول شيئًا.",
+          "wrong": {
+            "sq_mislabel": "هذا مربع يحمل تسمية خاطئة.",
+            "tri_mislabel": "هذا مثلث يرتدي اسم غيره.",
+            "di_mislabel": "هذا معيّن، لا دائرة، مهما كُتب عليه."
+          }
+        }
+      }
+    },
+    {
+      "id": "p132_trust_the_dark",
+      "type": "timing",
+      "par_time": 20,
+      "reward": 18,
+      "tags": [
+        "callback-p091",
+        "hold",
+        "no-feedback"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Hold. Nothing will tell you when.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "pad",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "cyan",
+              "scale": 1.8
+            }
+          ],
+          "solution": {
+            "kind": "hold",
+            "target": "pad",
+            "duration": 8.0
+          },
+          "hints": [
+            "There is no countdown here at all, not even a hidden one you could guess at.",
+            "Eight seconds, held still, on faith alone -- the same trust stage 91 asked for, with nothing left to look at."
+          ],
+          "explanation": "No number, no fill, no pulse -- nothing marked the eight seconds passing. The only instrument you had was your own patience.",
+          "wrong": {}
+        },
+        "ar": {
+          "instruction": "اضغط مع الاستمرار. لا شيء سيخبرك متى.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "pad",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "cyan",
+              "scale": 1.8
+            }
+          ],
+          "solution": {
+            "kind": "hold",
+            "target": "pad",
+            "duration": 8.0
+          },
+          "hints": [
+            "لا يوجد أي عدّاد هنا على الإطلاق، ولا حتى عدّاد مخفي يمكن تخمينه.",
+            "ثماني ثوانٍ، بلا حراك، بالثقة وحدها -- الثقة نفسها التي طلبتها المرحلة ٩١، بلا شيء تنظر إليه هذه المرة."
+          ],
+          "explanation": "لا رقم، ولا امتلاء تدريجي، ولا نبض -- لا شيء وسم مرور الثواني الثماني. أداتك الوحيدة كانت صبرك.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p133_every_instruction_ever",
+      "type": "meta",
+      "par_time": 18,
+      "reward": 22,
+      "tags": [
+        "callback-p010",
+        "callback-p049",
+        "truth-value"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Every instruction in this entire game has been false. Tap the square.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "Stage 10 said this about one stage. This one says it about all 149 before it -- read it just as literally.",
+            "If the sentence is false, then \"tap the square\" is false too. With only two shapes, its opposite is unambiguous."
+          ],
+          "explanation": "The scope grew from one stage to the whole game, but the logic never changed: a sentence claiming to be false inverts the instruction riding on it. \"Tap the square\" is false, so the answer is its opposite -- the circle.",
+          "wrong": {
+            "square": "You believed an instruction that told you it was lying."
+          }
+        },
+        "ar": {
+          "instruction": "كل تعليمة في هذه اللعبة كانت كاذبة. اضغط على المربع.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "المرحلة ١٠ قالت هذا عن مرحلة واحدة. هذه تقوله عن ١٤٩ مرحلة قبلها -- اقرأها بالحرفية نفسها.",
+            "إن كانت الجملة كاذبة، فـ«اضغط على المربع» كاذبة أيضًا. بوجود شكلين فقط، عكسها لا لبس فيه."
+          ],
+          "explanation": "اتسع النطاق من مرحلة واحدة إلى اللعبة كلها، لكن المنطق لم يتغيّر: جملة تعلن أنها كاذبة تعكس التعليمة المحمولة عليها. «اضغط على المربع» كاذبة، فالإجابة عكسها: الدائرة.",
+          "wrong": {
+            "square": "صدّقت تعليمة أخبرتك أنها تكذب."
+          }
+        }
+      }
+    },
+    {
+      "id": "p134_the_mixed_chain",
+      "type": "multi_step",
+      "par_time": 26,
+      "reward": 24,
+      "tags": [
+        "sequence",
+        "chrome",
+        "chars",
+        "mixed"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Tap back, then the first letter, then the red shape.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "MIND",
+              "font_size": 80
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.9
+            },
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            }
+          ],
+          "ui_targets": [
+            "ui:back"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "ui:back",
+              "char:word:0",
+              "s_red"
+            ],
+            "expect": [
+              "",
+              "M",
+              ""
+            ]
+          },
+          "hints": [
+            "Three steps, three chapters: the interface, the letters, and the shapes.",
+            "The back arrow first, the far-left letter of MIND second, then the shape that's actually red."
+          ],
+          "explanation": "The chain borrowed one trick from each corner of the game: chrome as an answer, reading direction on a word, and colour as literal fact -- back arrow, M, red circle.",
+          "wrong": {
+            "s_blue": "Wrong colour, and out of order besides."
+          }
+        },
+        "ar": {
+          "instruction": "اضغط على العودة، ثم الحرف الأول، ثم الشكل الأحمر.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "عقل",
+              "font_size": 80
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "scale": 0.9
+            },
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            }
+          ],
+          "ui_targets": [
+            "ui:back"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "ui:back",
+              "char:word:0",
+              "s_red"
+            ],
+            "expect": [
+              "",
+              "ع",
+              ""
+            ]
+          },
+          "hints": [
+            "ثلاث خطوات، ثلاثة فصول: الواجهة، والحروف، والأشكال.",
+            "سهم العودة أولًا، ثم أقصى حرف يمين كلمة «عقل»، ثم الشكل الأحمر فعلًا."
+          ],
+          "explanation": "دمجت السلسلة خدعة من كل ركن في اللعبة: الواجهة كجواب، واتجاه القراءة في كلمة، واللون كحقيقة حرفية -- سهم العودة، ثم العين، ثم الدائرة الحمراء.",
+          "wrong": {
+            "s_blue": "لون خاطئ، وخارج الترتيب أيضًا."
+          }
+        }
+      }
+    },
+    {
+      "id": "p135_divergent_letters",
+      "type": "language",
+      "par_time": 18,
+      "reward": 16,
+      "tags": [
+        "divergent-answer",
+        "counting-letters"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Tap the word with exactly five letters.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w_sun",
+              "kind": "label",
+              "text": "SUN",
+              "font_size": 44
+            },
+            {
+              "id": "w_star",
+              "kind": "label",
+              "text": "STAR",
+              "font_size": 44
+            },
+            {
+              "id": "w_ocean",
+              "kind": "label",
+              "text": "OCEAN",
+              "font_size": 44
+            },
+            {
+              "id": "w_animal",
+              "kind": "label",
+              "text": "ANIMAL",
+              "font_size": 44
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_ocean"
+          },
+          "hints": [
+            "Count letters, not sounds or meaning -- SUN and STAR are already too short.",
+            "OCEAN has five; ANIMAL has six."
+          ],
+          "explanation": "OCEAN is the only five-letter word here, plainly. The Arabic version of this stage reaches five letters too -- by a completely different route.",
+          "wrong": {
+            "w_sun": "Three letters.",
+            "w_star": "Four letters.",
+            "w_animal": "Six letters."
+          }
+        },
+        "ar": {
+          "instruction": "اضغط على الكلمة المكوّنة من خمسة أحرف.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "w_shams",
+              "kind": "label",
+              "text": "شمس",
+              "font_size": 44
+            },
+            {
+              "id": "w_najma",
+              "kind": "label",
+              "text": "نجمة",
+              "font_size": 44
+            },
+            {
+              "id": "w_qamar",
+              "kind": "label",
+              "text": "القمر",
+              "font_size": 44
+            },
+            {
+              "id": "w_muhit",
+              "kind": "label",
+              "text": "المحيط",
+              "font_size": 44
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "w_qamar"
+          },
+          "hints": [
+            "عُدّ الحروف لا المعنى -- «شمس» و«نجمة» أقصر من المطلوب أصلًا.",
+            "«القمر» خمسة أحرف؛ «المحيط» ستة."
+          ],
+          "explanation": "«القمر» خمسة أحرف، لكنها تصل إلى خمسة بطريقة مختلفة تمامًا عن الإنجليزية: جذرها «قمر» ثلاثة أحرف فقط، و«ال» التعريف تلتصق به فتضيف حرفين. الإنجليزية لا تملك أداة تعريف تلتحم بالكلمة هكذا.",
+          "wrong": {
+            "w_shams": "ثلاثة أحرف.",
+            "w_najma": "أربعة أحرف.",
+            "w_muhit": "ستة أحرف."
+          }
+        }
+      }
+    },
+    {
+      "id": "p136_help_in_the_window",
+      "type": "ui",
+      "par_time": 16,
+      "reward": 20,
+      "tags": [
+        "chrome",
+        "not-before",
+        "pulse-decoy"
+      ],
+      "show_timer": true,
+      "time_limit": 14,
+      "locales": {
+        "en": {
+          "instruction": "Tap for help between the third and sixth second. Ignore what's begging for attention.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d_urgent",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red",
+              "scale": 1.6,
+              "pulse": true,
+              "text": "URGENT"
+            }
+          ],
+          "ui_targets": [
+            "ui:hint"
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "ui:hint",
+            "not_before": 3.0,
+            "not_after": 6.0
+          },
+          "hints": [],
+          "explanation": "The pulsing square was pure noise, exactly as promised. The real answer sat quietly at the bottom of the screen, and only counted between the third and sixth second.",
+          "wrong": {
+            "d_urgent": "That's the thing begging for attention. You were told to ignore it.",
+            "ui:hint": "Wrong moment. It only counts between the third and sixth second."
+          }
+        },
+        "ar": {
+          "instruction": "اضغط على المساعدة بين الثانية الثالثة والسادسة. تجاهل ما يستجدي انتباهك.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d_urgent",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red",
+              "scale": 1.6,
+              "pulse": true,
+              "text": "عاجل"
+            }
+          ],
+          "ui_targets": [
+            "ui:hint"
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "ui:hint",
+            "not_before": 3.0,
+            "not_after": 6.0
+          },
+          "hints": [],
+          "explanation": "المربع النابض كان مجرد ضجيج، كما وُعدت تمامًا. الجواب الحقيقي جلس بهدوء أسفل الشاشة، ولم يُحتسب إلا بين الثانية الثالثة والسادسة.",
+          "wrong": {
+            "d_urgent": "هذا ما يستجدي انتباهك. طُلب منك تجاهله.",
+            "ui:hint": "لحظة خاطئة. لا يُحتسب إلا بين الثانية الثالثة والسادسة."
+          }
+        }
+      }
+    },
+    {
+      "id": "p137_the_honest_label",
+      "type": "memory",
+      "par_time": 20,
+      "reward": 20,
+      "tags": [
+        "memory",
+        "mislabeled",
+        "callback-p001"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Memorise the colour, then tap the button whose WORD names it.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "mem",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "scale": 1.3,
+              "pos": [
+                0.5,
+                0.28
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "RED",
+              "color": "green",
+              "pos": [
+                0.22,
+                0.68
+              ],
+              "reveal_after": 3.1
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "GREEN",
+              "color": "red",
+              "pos": [
+                0.78,
+                0.68
+              ],
+              "reveal_after": 3.1
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "BLUE",
+              "color": "blue",
+              "pos": [
+                0.22,
+                0.86
+              ],
+              "reveal_after": 3.1
+            },
+            {
+              "id": "b4",
+              "kind": "button",
+              "text": "YELLOW",
+              "color": "yellow",
+              "pos": [
+                0.78,
+                0.86
+              ],
+              "reveal_after": 3.1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "b2"
+          },
+          "hints": [
+            "The colour you saw was green. Now look at the WORDS on the buttons, not their paint.",
+            "One button is painted red but reads GREEN -- that word is the one that matters."
+          ],
+          "explanation": "Green was the colour shown. Only one button's word said GREEN, and it happened to be painted red -- the same lesson as stage 1, this time hiding behind a memory test.",
+          "wrong": {
+            "b1": "That one is painted green, but its word says RED.",
+            "b3": "Its word says BLUE -- never the colour you saw.",
+            "b4": "Its word says YELLOW -- never the colour you saw."
+          }
+        },
+        "ar": {
+          "instruction": "احفظ اللون، ثم اضغط على الزر الذي تُسمّيه كلمته.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "mem",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "scale": 1.3,
+              "pos": [
+                0.5,
+                0.28
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "أحمر",
+              "color": "green",
+              "pos": [
+                0.22,
+                0.68
+              ],
+              "reveal_after": 3.1
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "أخضر",
+              "color": "red",
+              "pos": [
+                0.78,
+                0.68
+              ],
+              "reveal_after": 3.1
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "أزرق",
+              "color": "blue",
+              "pos": [
+                0.22,
+                0.86
+              ],
+              "reveal_after": 3.1
+            },
+            {
+              "id": "b4",
+              "kind": "button",
+              "text": "أصفر",
+              "color": "yellow",
+              "pos": [
+                0.78,
+                0.86
+              ],
+              "reveal_after": 3.1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "b2"
+          },
+          "hints": [
+            "اللون الذي رأيته كان أخضر. انظر الآن إلى الكلمات على الأزرار، لا إلى ألوانها.",
+            "أحد الأزرار مطليّ بالأحمر لكنه مكتوب عليه «أخضر» -- تلك الكلمة هي المهمة."
+          ],
+          "explanation": "الأخضر كان اللون الذي ظهر. زر واحد فقط كانت كلمته «أخضر»، وقد صودف أنه مطليّ بالأحمر -- الدرس نفسه من المرحلة الأولى، متخفيًا هذه المرة خلف اختبار ذاكرة.",
+          "wrong": {
+            "b1": "هذا مطليّ بالأخضر، لكن كلمته تقول «أحمر».",
+            "b3": "كلمته تقول «أزرق» -- ليس اللون الذي رأيته أبدًا.",
+            "b4": "كلمته تقول «أصفر» -- ليس اللون الذي رأيته أبدًا."
+          }
+        }
+      }
+    },
+    {
+      "id": "p138_thesis_statement",
+      "type": "meta",
+      "par_time": 16,
+      "reward": 18,
+      "tags": [
+        "thesis",
+        "pulse-decoy"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "This is almost the end. Trust what you've learned, not what looks urgent.",
+          "sub_instruction": "The answer is obvious. Probably.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d_loud",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red",
+              "scale": 1.8,
+              "pulse": true,
+              "text": "TAP NOW"
+            },
+            {
+              "id": "c_calm",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c_calm"
+          },
+          "hints": [
+            "One of these has been shouting since the screen loaded. That alone should tell you something by now.",
+            "You've met this exact trap before -- loud does not mean correct. Pick the calm one."
+          ],
+          "explanation": "The pulsing square was doing exactly what pulsing things have always done in this game: begging for a tap it didn't deserve. The calm circle asked for nothing, and that's precisely why it was right.",
+          "wrong": {
+            "d_loud": "That's the one shouting for attention. You were told not to trust that."
+          }
+        },
+        "ar": {
+          "instruction": "هذه تقريبًا النهاية. ثق بما تعلّمته، لا بما يبدو عاجلًا.",
+          "sub_instruction": "الحل واضح. غالبًا.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d_loud",
+              "kind": "shape",
+              "shape": "square",
+              "color": "red",
+              "scale": 1.8,
+              "pulse": true,
+              "text": "اضغط الآن"
+            },
+            {
+              "id": "c_calm",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "scale": 0.9
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "c_calm"
+          },
+          "hints": [
+            "أحد هذين العنصرين يصرخ منذ أن ظهرت الشاشة. هذا وحده يجب أن يخبرك بشيء الآن.",
+            "قابلت هذا الفخ بالضبط من قبل -- الصوت العالي لا يعني الصواب. اختر الهادئ."
+          ],
+          "explanation": "المربع النابض فعل بالضبط ما فعلته الأشياء النابضة دائمًا في هذه اللعبة: توسّل ضغطة لا يستحقها. الدائرة الهادئة لم تطلب شيئًا، ولهذا بالضبط كانت الصحيحة.",
+          "wrong": {
+            "d_loud": "هذا هو الذي يصرخ لطلب الانتباه. قيل لك ألا تثق به."
+          }
+        }
+      }
+    },
+    {
+      "id": "p139_still_no_trick",
+      "type": "meta",
+      "par_time": 10,
+      "reward": 10,
+      "tags": [
+        "honest",
+        "anti-paranoia",
+        "callback-p041"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Still no trick. Tap the circle.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "triangle",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "Ten chapters in, and this one still means exactly what it says.",
+            "Tap the circle. That really is all."
+          ],
+          "explanation": "No trick, same as stage 41. Even this deep in, sometimes the obvious answer is just the answer.",
+          "wrong": {
+            "square": "That's a square.",
+            "triangle": "That's a triangle."
+          }
+        },
+        "ar": {
+          "instruction": "ما زالت لا توجد خدعة. اضغط على الدائرة.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "triangle",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "بعد عشرة فصول، ما زالت هذه الجملة تعني ما تقوله بالضبط.",
+            "اضغط على الدائرة. هذا كل شيء فعلًا."
+          ],
+          "explanation": "لا خدعة، تمامًا كالمرحلة ٤١. حتى في هذا العمق، أحيانًا تكون الإجابة الواضحة هي الإجابة فقط.",
+          "wrong": {
+            "square": "هذا مربع.",
+            "triangle": "هذا مثلث."
+          }
+        }
+      }
+    },
+    {
+      "id": "p140_slow_down",
+      "type": "multi_step",
+      "par_time": 35,
+      "reward": 30,
+      "tags": [
+        "capstone",
+        "sequence",
+        "chrome",
+        "chars"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "The green square, then the stage number, then the third letter, then the red circle.",
+          "sub_instruction": "Slow down. Every step matters.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "s_green",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "LEARN",
+              "font_size": 74
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "ui_targets": [
+            "ui:stage"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "s_green",
+              "ui:stage",
+              "char:word:2",
+              "s_red"
+            ],
+            "expect": [
+              "",
+              "",
+              "A",
+              ""
+            ],
+            "not_before": 4.0,
+            "reset_on_wrong": true
+          },
+          "hints": [
+            "Four steps, and the clock has to run a while before the first one even counts.",
+            "After the wait: green square, the stage counter up top, the third letter of LEARN, then the red circle."
+          ],
+          "explanation": "Waiting was the hidden first step nobody wrote down as its own line. After that: colour, chrome, a letter counted from the start, and colour again -- one piece from four different chapters of this game.",
+          "wrong": {
+            "s_blue": "Not part of the chain.",
+            "s_green": "Too early. The instruction said to slow down."
+          }
+        },
+        "ar": {
+          "instruction": "المربع الأخضر، ثم رقم المرحلة، ثم الحرف الثالث، ثم الدائرة الحمراء.",
+          "sub_instruction": "تمهّل. كل خطوة مهمة.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "s_green",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "انتبه",
+              "font_size": 74
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "ui_targets": [
+            "ui:stage"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "s_green",
+              "ui:stage",
+              "char:word:2",
+              "s_red"
+            ],
+            "expect": [
+              "",
+              "",
+              "ت",
+              ""
+            ],
+            "not_before": 4.0,
+            "reset_on_wrong": true
+          },
+          "hints": [
+            "أربع خطوات، والساعة يجب أن تمرّ قليلًا قبل أن تُحتسب الخطوة الأولى أصلًا.",
+            "بعد الانتظار: المربع الأخضر، عدّاد المرحلة في الأعلى، الحرف الثالث من «انتبه»، ثم الدائرة الحمراء."
+          ],
+          "explanation": "الانتظار كان الخطوة الأولى المخفية التي لم يكتبها أحد كسطر مستقل. بعدها: لون، ثم واجهة، ثم حرف مُعدود من البداية، ثم لون مرة أخرى -- قطعة واحدة من أربعة فصول مختلفة من هذه اللعبة.",
+          "wrong": {
+            "s_blue": "ليس جزءًا من السلسلة.",
+            "s_green": "مبكر جدًا. التعليمة طلبت التمهّل."
+          }
+        }
+      }
+    },
+    {
+      "id": "p141_exactly_five",
+      "type": "timing",
+      "par_time": 8,
+      "reward": 20,
+      "tags": [
+        "callback-p003",
+        "callback-p050",
+        "no-tap",
+        "urgency"
+      ],
+      "show_timer": true,
+      "time_limit": 6.0,
+      "locales": {
+        "en": {
+          "instruction": "Wait exactly five seconds. Not more, not less. Don't tap anything.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "HURRY",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "TAP NOW",
+              "color": "surface",
+              "pulse": true
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 5.0
+          },
+          "hints": [
+            "You've already learned this lesson twice -- in stage 3, and again in stage 50.",
+            "Five full seconds of doing nothing is the whole answer. The clock is only watching, not asking."
+          ],
+          "explanation": "The clock made it feel urgent, and the buttons begged to be tapped, but the instruction was, as always, exactly true: wait five seconds, touch nothing.",
+          "wrong": {
+            "b1": "The wait started over.",
+            "b2": "The wait started over."
+          }
+        },
+        "ar": {
+          "instruction": "انتظر خمس ثوانٍ بالضبط. لا أكثر، ولا أقل. لا تضغط أي شيء.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "أسرع",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "اضغط الآن",
+              "color": "surface",
+              "pulse": true
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 5.0
+          },
+          "hints": [
+            "تعلّمت هذا الدرس مرتين من قبل -- في المرحلة ٣، ومرة أخرى في المرحلة ٥٠.",
+            "خمس ثوانٍ كاملة من عدم فعل شيء هي الإجابة كلها. الساعة تراقب فقط، لا تسأل."
+          ],
+          "explanation": "أشعرتك الساعة بالإلحاح، وتوسّلت الأزرار أن تُضغط، لكن التعليمة كانت، كالعادة، صحيحة تمامًا: انتظر خمس ثوانٍ، ولا تلمس شيئًا.",
+          "wrong": {
+            "b1": "بدأ الانتظار من جديد.",
+            "b2": "بدأ الانتظار من جديد."
+          }
+        }
+      }
+    },
+    {
+      "id": "p142_two_ways_same_answer",
+      "type": "meta",
+      "par_time": 14,
+      "reward": 12,
+      "tags": [
+        "reassurance",
+        "paraphrase",
+        "breather"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Tap the shape with three sides.",
+          "sub_instruction": "In other words: tap the triangle.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "triangle",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "triangle"
+          },
+          "hints": [
+            "Count the sides on each shape, or just read the second line.",
+            "Both sentences point at the same shape. There is nowhere else it could be."
+          ],
+          "explanation": "Two different sentences, one honest target. No matter which one you trusted, you landed on the triangle.",
+          "wrong": {
+            "circle": "Zero sides.",
+            "square": "Four sides."
+          }
+        },
+        "ar": {
+          "instruction": "اضغط على الشكل ذي الأضلاع الثلاثة.",
+          "sub_instruction": "بعبارة أخرى: اضغط على المثلث.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "square",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green"
+            },
+            {
+              "id": "triangle",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "orange"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "triangle"
+          },
+          "hints": [
+            "عُدّ أضلاع كل شكل، أو ببساطة اقرأ السطر الثاني.",
+            "الجملتان تشيران إلى الشكل نفسه. لا مكان آخر يمكن أن يكون فيه."
+          ],
+          "explanation": "جملتان مختلفتان، وهدف صادق واحد. أيًا كانت الجملة التي وثقت بها، وصلت إلى المثلث.",
+          "wrong": {
+            "circle": "لا أضلاع له.",
+            "square": "له أربعة أضلاع."
+          }
+        }
+      }
+    },
+    {
+      "id": "p143_triple_negative",
+      "type": "meta",
+      "par_time": 20,
+      "reward": 20,
+      "tags": [
+        "callback-p029",
+        "callback-p046",
+        "double-negative"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Do not do the opposite of doing the opposite of tapping the triangle.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "triangle",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "purple"
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "Count every \"not\" and \"opposite\" in the sentence. Three of them, not two.",
+            "An odd number of negatives inverts the instruction below; an even number leaves it as it is -- stage 46 only ever had two."
+          ],
+          "explanation": "\"Opposite of opposite\" cancels back to the plain action -- tapping the triangle. But \"do not\" sits on top of that as a third negative, and three is odd: the whole sentence inverts once. With only two shapes, the opposite of the triangle is unambiguous: the circle.",
+          "wrong": {
+            "triangle": "That's the literal instruction hiding inside the sentence -- but there are three negatives wrapped around it, not two, so it still flips."
+          }
+        },
+        "ar": {
+          "instruction": "لا تفعل عكس فعل عكس الضغط على المثلث.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "triangle",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "purple"
+            },
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "عدّ كل كلمة نفي أو «عكس» في الجملة. ثلاثة، لا اثنتان.",
+            "عدد فردي من النفي يعكس التعليمة؛ عدد زوجي يُبقيها كما هي -- المرحلة ٤٦ كان فيها اثنتان فقط."
+          ],
+          "explanation": "«عكس العكس» يعود إلى الفعل المباشر: الضغط على المثلث. لكن «لا تفعل» تعلوه كنفي ثالث، وثلاثة عدد فردي: تنعكس الجملة كاملة مرة واحدة. بوجود شكلين فقط، عكس المثلث لا لبس فيه: الدائرة.",
+          "wrong": {
+            "triangle": "هذه هي التعليمة الحرفية المختبئة داخل الجملة -- لكن هناك ثلاث نفيات حولها لا اثنتان، فتنعكس رغم ذلك."
+          }
+        }
+      }
+    },
+    {
+      "id": "p144_ten_chapters",
+      "type": "meta",
+      "par_time": 14,
+      "reward": 14,
+      "tags": [
+        "self-reference",
+        "verifiable-fact"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Tap the number of chapters in this game.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "n8",
+              "kind": "button",
+              "text": "8",
+              "color": "surface"
+            },
+            {
+              "id": "n9",
+              "kind": "button",
+              "text": "9",
+              "color": "surface"
+            },
+            {
+              "id": "n10",
+              "kind": "button",
+              "text": "10",
+              "color": "surface"
+            },
+            {
+              "id": "n11",
+              "kind": "button",
+              "text": "11",
+              "color": "surface"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n10"
+          },
+          "hints": [
+            "This isn't a guess. It's a fact about the exact game you're playing right now.",
+            "You are inside the last of them at this very moment."
+          ],
+          "explanation": "Ten. You're standing in the tenth chapter as you read this, which makes the answer something you can check, not just trust.",
+          "wrong": {
+            "n8": "Too few.",
+            "n9": "Close, but not quite.",
+            "n11": "One too many."
+          }
+        },
+        "ar": {
+          "instruction": "اضغط على عدد فصول هذه اللعبة.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "n8",
+              "kind": "button",
+              "text": "8",
+              "color": "surface"
+            },
+            {
+              "id": "n9",
+              "kind": "button",
+              "text": "9",
+              "color": "surface"
+            },
+            {
+              "id": "n10",
+              "kind": "button",
+              "text": "10",
+              "color": "surface"
+            },
+            {
+              "id": "n11",
+              "kind": "button",
+              "text": "11",
+              "color": "surface"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "n10"
+          },
+          "hints": [
+            "هذا ليس تخمينًا. إنها حقيقة عن اللعبة نفسها التي تلعبها الآن.",
+            "أنت داخل آخر هذه الفصول في هذه اللحظة بالذات."
+          ],
+          "explanation": "عشرة. أنت تقف في الفصل العاشر وأنت تقرأ هذا، ما يجعل الإجابة شيئًا يمكنك التحقق منه، لا مجرد الثقة به.",
+          "wrong": {
+            "n8": "أقل من اللازم.",
+            "n9": "قريب، لكن ليس تمامًا.",
+            "n11": "واحد أكثر من اللازم."
+          }
+        }
+      }
+    },
+    {
+      "id": "p145_grand_chrome_tour",
+      "type": "ui",
+      "par_time": 40,
+      "reward": 30,
+      "tags": [
+        "chrome",
+        "capstone",
+        "sequence"
+      ],
+      "show_timer": true,
+      "time_limit": 60,
+      "locales": {
+        "en": {
+          "instruction": "Everything on this screen has been an answer before. Tap them all, in this order.",
+          "sub_instruction": "Timer, hint, skip, stage, back.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "button",
+              "text": "ALL OF IT",
+              "color": "surface"
+            },
+            {
+              "id": "d2",
+              "kind": "button",
+              "text": "IN THIS ORDER",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "ui_targets": [
+            "ui:timer",
+            "ui:hint",
+            "ui:skip",
+            "ui:stage",
+            "ui:back"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "ui:timer",
+              "ui:hint",
+              "ui:skip",
+              "ui:stage",
+              "ui:back"
+            ]
+          },
+          "hints": [],
+          "explanation": "Every piece of chrome around this board has been the hidden answer to some earlier stage. This time none of it is hidden -- you just have to visit all five, in the order named.",
+          "wrong": {
+            "d1": "That's a label, not the interface.",
+            "d2": "Also just a label. The real five are around the edges of the screen."
+          }
+        },
+        "ar": {
+          "instruction": "كل ما في هذه الشاشة كان جوابًا من قبل. اضغط عليها كلها، بهذا الترتيب.",
+          "sub_instruction": "الوقت، التلميح، التخطي، رقم المرحلة، الرجوع.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "d1",
+              "kind": "button",
+              "text": "كل شيء",
+              "color": "surface"
+            },
+            {
+              "id": "d2",
+              "kind": "button",
+              "text": "بهذا الترتيب",
+              "color": "surface",
+              "row": 1
+            }
+          ],
+          "ui_targets": [
+            "ui:timer",
+            "ui:hint",
+            "ui:skip",
+            "ui:stage",
+            "ui:back"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "ui:timer",
+              "ui:hint",
+              "ui:skip",
+              "ui:stage",
+              "ui:back"
+            ]
+          },
+          "hints": [],
+          "explanation": "كل قطعة من واجهة هذه الشاشة كانت الجواب المخفي لمرحلة سابقة. هذه المرة لا شيء مخفيًا -- عليك فقط زيارة الخمس كلها، بالترتيب المذكور.",
+          "wrong": {
+            "d1": "هذه تسمية، لا الواجهة نفسها.",
+            "d2": "أيضًا مجرد تسمية. الخمسة الحقيقية على حواف الشاشة."
+          }
+        }
+      }
+    },
+    {
+      "id": "p146_not_lying_about_colour",
+      "type": "visual",
+      "par_time": 16,
+      "reward": 16,
+      "tags": [
+        "callback-p051",
+        "colour-vs-caption",
+        "stroop"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "You don't need to see the trick to solve it. Tap the only shape that isn't lying about its own colour.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "text": "BLUE"
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "text": "GREEN"
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "text": "PURPLE"
+            },
+            {
+              "id": "s4",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "blue",
+              "text": "RED"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "s2"
+          },
+          "hints": [
+            "Three of these four captions describe a colour other than their own paint.",
+            "Find the one shape whose word and whose ink finally agree -- the green one."
+          ],
+          "explanation": "Every shape but one was captioned with a colour it wasn't. The green square was the only honest one: its word said GREEN, and so was its paint.",
+          "wrong": {
+            "s1": "Painted red, captioned BLUE -- lying.",
+            "s3": "Painted yellow, captioned PURPLE -- lying.",
+            "s4": "Painted blue, captioned RED -- lying."
+          }
+        },
+        "ar": {
+          "instruction": "لا تحتاج أن ترى الخدعة لتحلّها. اضغط على الشكل الوحيد الذي لا يكذب عن لونه.",
+          "layout": "grid2",
+          "elements": [
+            {
+              "id": "s1",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "text": "أزرق"
+            },
+            {
+              "id": "s2",
+              "kind": "shape",
+              "shape": "square",
+              "color": "green",
+              "text": "أخضر"
+            },
+            {
+              "id": "s3",
+              "kind": "shape",
+              "shape": "triangle",
+              "color": "yellow",
+              "text": "بنفسجي"
+            },
+            {
+              "id": "s4",
+              "kind": "shape",
+              "shape": "diamond",
+              "color": "blue",
+              "text": "أحمر"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "s2"
+          },
+          "hints": [
+            "ثلاثة من هذه الأشكال الأربعة مكتوب عليها لون غير لون طلائها.",
+            "ابحث عن الشكل الوحيد الذي تتفق كلمته مع لون حبره أخيرًا -- الأخضر."
+          ],
+          "explanation": "كل شكل سوى واحد كُتب عليه لون ليس لونه. المربع الأخضر كان الصادق الوحيد: كلمته قالت «أخضر»، وكذلك كان طلاؤه.",
+          "wrong": {
+            "s1": "مطليّ أحمر، ومكتوب عليه «أزرق» -- كاذب.",
+            "s3": "مطليّ أصفر، ومكتوب عليه «بنفسجي» -- كاذب.",
+            "s4": "مطليّ أزرق، ومكتوب عليه «أحمر» -- كاذب."
+          }
+        }
+      }
+    },
+    {
+      "id": "p147_last_memory_test",
+      "type": "memory",
+      "par_time": 18,
+      "reward": 20,
+      "tags": [
+        "memory",
+        "callback-p021",
+        "finale-echo"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Memorise the colours, then tap where blue was.",
+          "sub_instruction": "Last time you'll need to remember anything.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.28,
+                0.3
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.72,
+                0.3
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "s_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "pos": [
+                0.28,
+                0.68
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "s_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "pos": [
+                0.72,
+                0.68
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "z_tl",
+              "kind": "zone",
+              "pos": [
+                0.28,
+                0.3
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            },
+            {
+              "id": "z_tr",
+              "kind": "zone",
+              "pos": [
+                0.72,
+                0.3
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            },
+            {
+              "id": "z_bl",
+              "kind": "zone",
+              "pos": [
+                0.28,
+                0.68
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            },
+            {
+              "id": "z_br",
+              "kind": "zone",
+              "pos": [
+                0.72,
+                0.68
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "z_tl"
+          },
+          "hints": [
+            "Watch only blue this time, and note which side and which row it sat in.",
+            "Blue was on the left, and in the top row."
+          ],
+          "explanation": "Blue sat top-left. One last recall, as clean and fair as the very first one back in chapter 3.",
+          "wrong": {}
+        },
+        "ar": {
+          "instruction": "احفظ الألوان، ثم اضغط مكان الأزرق.",
+          "sub_instruction": "آخر مرة ستحتاج أن تتذكّر فيها شيئًا.",
+          "layout": "free",
+          "elements": [
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue",
+              "pos": [
+                0.28,
+                0.3
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red",
+              "pos": [
+                0.72,
+                0.3
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "s_green",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "green",
+              "pos": [
+                0.28,
+                0.68
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "s_yellow",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "yellow",
+              "pos": [
+                0.72,
+                0.68
+              ],
+              "hide_after": 3.0,
+              "interactive": false
+            },
+            {
+              "id": "z_tl",
+              "kind": "zone",
+              "pos": [
+                0.28,
+                0.3
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            },
+            {
+              "id": "z_tr",
+              "kind": "zone",
+              "pos": [
+                0.72,
+                0.3
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            },
+            {
+              "id": "z_bl",
+              "kind": "zone",
+              "pos": [
+                0.28,
+                0.68
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            },
+            {
+              "id": "z_br",
+              "kind": "zone",
+              "pos": [
+                0.72,
+                0.68
+              ],
+              "color": "#12161B",
+              "reveal_after": 3.1
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "z_tl"
+          },
+          "hints": [
+            "راقب الأزرق فقط هذه المرة، ولاحظ في أي جهة وأي صف كان.",
+            "كان الأزرق في اليسار، وفي الصف العلوي."
+          ],
+          "explanation": "كان الأزرق أعلى اليسار. اختبار تذكّر أخير، نظيف وعادل مثل أول اختبار في الفصل الثالث تمامًا.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p148_the_real_final_challenge",
+      "type": "multi_step",
+      "par_time": 45,
+      "reward": 40,
+      "tags": [
+        "capstone",
+        "callback-p047",
+        "sequence",
+        "repeat-step"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "The blue circle, the first letter, skip, the blue circle again, then the red circle.",
+          "sub_instruction": "This is the real final challenge. What follows -- stages 149 and 150 -- is the wind-down, just like it was after stage 47.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "REAL",
+              "font_size": 74
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "ui_targets": [
+            "ui:skip"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "s_blue",
+              "char:word:0",
+              "ui:skip",
+              "s_blue",
+              "s_red"
+            ],
+            "expect": [
+              "",
+              "R",
+              "",
+              "",
+              ""
+            ],
+            "not_before": 5.0,
+            "reset_on_wrong": true
+          },
+          "hints": [
+            "Five steps, and one shape gets tapped twice -- not back to back, but it repeats.",
+            "Wait first. Then: blue, R, skip, blue again, red."
+          ],
+          "explanation": "Every category this game ever used shows up here at once: colour, a letter, chrome, a repeated step, and a wait before you may even begin. Nothing after this stage asks this much of you again.",
+          "wrong": {}
+        },
+        "ar": {
+          "instruction": "الدائرة الزرقاء، الحرف الأول، تخطٍّ، الدائرة الزرقاء مرة أخرى، ثم الدائرة الحمراء.",
+          "sub_instruction": "هذا التحدي الأخير الحقيقي. ما يليه -- المرحلتان ١٤٩ و١٥٠ -- هو التهدئة، تمامًا كما كان بعد المرحلة ٤٧.",
+          "layout": "column",
+          "elements": [
+            {
+              "id": "s_blue",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            },
+            {
+              "id": "word",
+              "kind": "chars",
+              "text": "حقيقي",
+              "font_size": 74
+            },
+            {
+              "id": "s_red",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "red"
+            }
+          ],
+          "ui_targets": [
+            "ui:skip"
+          ],
+          "solution": {
+            "kind": "sequence",
+            "targets": [
+              "s_blue",
+              "char:word:0",
+              "ui:skip",
+              "s_blue",
+              "s_red"
+            ],
+            "expect": [
+              "",
+              "ح",
+              "",
+              "",
+              ""
+            ],
+            "not_before": 5.0,
+            "reset_on_wrong": true
+          },
+          "hints": [
+            "خمس خطوات، وشكل واحد يُضغط مرتين -- ليس متتاليًا، لكنه يتكرر.",
+            "انتظر أولًا. ثم: أزرق، حاء، تخطٍّ، أزرق مرة أخرى، أحمر."
+          ],
+          "explanation": "كل فئة استخدمتها هذه اللعبة يومًا تظهر هنا دفعة واحدة: اللون، والحرف، والواجهة، وخطوة متكررة، وانتظار قبل أن تبدأ حتى. لا شيء بعد هذه المرحلة سيطلب منك هذا القدر مرة أخرى.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p149_breather_after_the_hardest",
+      "type": "meta",
+      "par_time": 8,
+      "reward": 10,
+      "tags": [
+        "breather",
+        "pacing",
+        "callback-p139"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "Tap the circle.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "After that last one, this is exactly as simple as it looks.",
+            "One shape. Tap it."
+          ],
+          "explanation": "You earned an easy one. Stage 148 was the mountain; this is the flat ground right after it.",
+          "wrong": {}
+        },
+        "ar": {
+          "instruction": "اضغط على الدائرة.",
+          "layout": "row",
+          "elements": [
+            {
+              "id": "circle",
+              "kind": "shape",
+              "shape": "circle",
+              "color": "blue"
+            }
+          ],
+          "solution": {
+            "kind": "tap",
+            "target": "circle"
+          },
+          "hints": [
+            "بعد تلك المرحلة الأخيرة، هذه بسيطة تمامًا كما تبدو.",
+            "شكل واحد. اضغط عليه."
+          ],
+          "explanation": "استحققت مرحلة سهلة. المرحلة ١٤٨ كانت الجبل؛ وهذه الأرض المستوية بعده مباشرة.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p150_no_solution_ever",
+      "type": "meta",
+      "par_time": 14,
+      "reward": 50,
+      "tags": [
+        "finale",
+        "callback-p003",
+        "callback-p050",
+        "trust"
+      ],
+      "locales": {
+        "en": {
+          "instruction": "This is the last stage. There has never been a solution to any of this -- only your own certainty. Don't tap anything.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "TAP TO WIN",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "THE ANSWER IS HERE",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "HURRY",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            },
+            {
+              "id": "b4",
+              "kind": "button",
+              "text": "ONE LAST TAP",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 9.0
+          },
+          "hints": [
+            "You've felt this exact stillness twice before -- stage 3, and stage 50.",
+            "There is nothing here to tap. There never was. Just wait, and touch nothing."
+          ],
+          "explanation": "There was never a puzzle to solve here -- only an instruction to trust. Every stage before this one taught you to doubt the obvious answer, because it was usually a trap. This time the obvious answer was simply true. The game's oldest line was never really a joke: the answer is obvious. Probably. You just had to decide, on your own, that 'probably' was good enough. That decision -- not any tap -- was the whole game.",
+          "wrong": {
+            "b1": "The wait started over.",
+            "b2": "The wait started over.",
+            "b3": "The wait started over.",
+            "b4": "The wait started over."
+          }
+        },
+        "ar": {
+          "instruction": "هذه آخر مرحلة. لم يكن هناك حل قط في أي مما سبق -- فقط يقينك أنت. لا تضغط أي شيء.",
+          "layout": "flow",
+          "elements": [
+            {
+              "id": "b1",
+              "kind": "button",
+              "text": "اضغط لتفوز",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b2",
+              "kind": "button",
+              "text": "الجواب هنا",
+              "color": "surface",
+              "pulse": true
+            },
+            {
+              "id": "b3",
+              "kind": "button",
+              "text": "أسرع",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            },
+            {
+              "id": "b4",
+              "kind": "button",
+              "text": "آخر ضغطة",
+              "color": "surface",
+              "pulse": true,
+              "row": 1
+            }
+          ],
+          "solution": {
+            "kind": "no_tap",
+            "duration": 9.0
+          },
+          "hints": [
+            "شعرت بهذا السكون بالضبط مرتين من قبل -- في المرحلة ٣، والمرحلة ٥٠.",
+            "لا يوجد هنا شيء لتضغطه. لم يكن موجودًا قط. انتظر فقط، ولا تلمس شيئًا."
+          ],
+          "explanation": "لم يكن هنا لغز لتحلّه -- بل تعليمة عليك أن تثق بها. كل مرحلة قبل هذه علّمتك أن تشكّ في الإجابة الواضحة، لأنها غالبًا كانت فخًا. هذه المرة كانت الإجابة الواضحة صحيحة ببساطة. جملة اللعبة الأقدم لم تكن مزحة أبدًا: الحل واضح. غالبًا. كان عليك فقط أن تقرر، بنفسك، أن «غالبًا» كافية. ذلك القرار -- لا أي ضغطة -- كان اللعبة كلها.",
+          "wrong": {
+            "b1": "بدأ الانتظار من جديد.",
+            "b2": "بدأ الانتظار من جديد.",
+            "b3": "بدأ الانتظار من جديد.",
+            "b4": "بدأ الانتظار من جديد."
+          }
+        }
+      }
+    }
+  ]
+}
