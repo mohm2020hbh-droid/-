@@ -1,0 +1,842 @@
+{
+  "schema": 1,
+  "chapter": 8,
+  "puzzles": [
+    {
+      "id": "p091_long_hold", "type": "timing", "par_time": 20, "reward": 10,
+      "tags": ["hold", "patience", "no-feedback"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط مع الاستمرار. لن يبدو أن شيئًا يحدث. استمر.",
+          "layout": "column",
+          "elements": [
+            {"id": "pad", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.8}
+          ],
+          "solution": {"kind": "hold", "target": "pad", "duration": 8.0},
+          "hints": [
+            "سيبدو الأمر وكأن لا شيء يحدث. هذا طبيعي هنا.",
+            "ثماني ثوانٍ كاملة دون أن ترفع إصبعك — ثق بالآلية لا بعينيك."
+          ],
+          "explanation": "لم تكن هناك أي إشارة بصرية لأنه لم يُوعد بها أصلًا؛ الصبر وحده كان المطلوب. ثماني ثوانٍ أطول مما تشعر به حين لا يؤكد لك شيء على الشاشة أنك على الطريق الصحيح.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Press and hold. Nothing will look like it's happening. Keep going.",
+          "layout": "column",
+          "elements": [
+            {"id": "pad", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.8}
+          ],
+          "solution": {"kind": "hold", "target": "pad", "duration": 8.0},
+          "hints": [
+            "It will feel like nothing is happening. That is normal here.",
+            "Eight full seconds without lifting your finger — trust the mechanic, not your eyes."
+          ],
+          "explanation": "There was no visual feedback because none was promised, only patience mattered. Eight seconds is longer than it feels when nothing on screen confirms it.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p092_calm_down", "type": "timing", "par_time": 14, "reward": 10,
+      "tags": ["decoy", "pulse", "reveal-after"],
+      "locales": {
+        "ar": {
+          "instruction": "انتظر حتى تهدأ الشاشة، ثم اضغط على الدائرة.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "square", "color": "orange", "pulse": true, "hide_after": 2.0, "row": 0},
+            {"id": "d2", "kind": "shape", "shape": "triangle", "color": "purple", "pulse": true, "hide_after": 2.8, "row": 0},
+            {"id": "d3", "kind": "shape", "shape": "diamond", "color": "pink", "pulse": true, "hide_after": 3.5, "row": 0},
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue", "reveal_after": 3.6, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "circle"},
+          "hints": [
+            "الأشكال النابضة هي بالضبط ما لا يجب أن تضغط عليه.",
+            "بمجرد اختفاء آخر شكل، يظهر الهدف الحقيقي."
+          ],
+          "explanation": "كل شكل نابض كان فخًا حقيقيًا يختفي في وقته الخاص. لم تظهر الدائرة الحقيقية إلا بعد اختفاء آخر شكل — والضغط المبكر كان مجرد تخمين ضائع على الضوضاء.",
+          "wrong": {
+            "d1": "لا يزال هذا يتحرك. ليس هو الجواب.",
+            "d2": "لا يزال هذا يتحرك. ليس هو الجواب.",
+            "d3": "لا يزال هذا يتحرك. ليس هو الجواب.",
+            "board": "لا يوجد شيء هناك بعد — انتظر حتى تهدأ الشاشة."
+          }
+        },
+        "en": {
+          "instruction": "Wait for the screen to calm down, then tap the circle.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "square", "color": "orange", "pulse": true, "hide_after": 2.0, "row": 0},
+            {"id": "d2", "kind": "shape", "shape": "triangle", "color": "purple", "pulse": true, "hide_after": 2.8, "row": 0},
+            {"id": "d3", "kind": "shape", "shape": "diamond", "color": "pink", "pulse": true, "hide_after": 3.5, "row": 0},
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue", "reveal_after": 3.6, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "circle"},
+          "hints": [
+            "The pulsing shapes are exactly what you shouldn't tap.",
+            "Once the last one disappears, the real target appears."
+          ],
+          "explanation": "Each pulsing shape was a live decoy that vanished on its own schedule. Only once the last one was gone did the real circle appear — tapping early just wasted a guess on noise.",
+          "wrong": {
+            "d1": "That one is still bouncing around. Not the answer.",
+            "d2": "That one is still bouncing around. Not the answer.",
+            "d3": "That one is still bouncing around. Not the answer.",
+            "board": "Nothing there yet — wait for the screen to calm down."
+          }
+        }
+      }
+    },
+    {
+      "id": "p093_ignore_the_clock", "type": "visual", "par_time": 10, "reward": 10,
+      "tags": ["timer-decoy", "red-herring"], "show_timer": true, "time_limit": 25,
+      "locales": {
+        "ar": {
+          "instruction": "تجاهل الساعة. اضغط على الدائرة.",
+          "layout": "row",
+          "elements": [
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "square", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "triangle", "kind": "shape", "shape": "triangle", "color": "orange"}
+          ],
+          "solution": {"kind": "tap", "target": "circle"},
+          "hints": [
+            "العدّاد حقيقي، لكن لا علاقة له بالإجابة.",
+            "لديك وقت أطول بكثير مما يوحي به صوت التكة."
+          ],
+          "explanation": "استمر العدّاد طوال الوقت وكأن له شأنًا، لكن الإجابة كانت دائمًا الدائرة فقط. الخمس وعشرون ثانية لم تكن يومًا قريبة من النفاد.",
+          "wrong": {
+            "square": "هذا مربع.",
+            "triangle": "هذا مثلث."
+          }
+        },
+        "en": {
+          "instruction": "Ignore the clock. Tap the circle.",
+          "layout": "row",
+          "elements": [
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "square", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "triangle", "kind": "shape", "shape": "triangle", "color": "orange"}
+          ],
+          "solution": {"kind": "tap", "target": "circle"},
+          "hints": [
+            "The countdown is real, but it has nothing to do with the answer.",
+            "You have far more time than the ticking makes it feel like."
+          ],
+          "explanation": "The timer ran the whole time, ticking like it mattered — but the answer was always just the circle. Twenty-five seconds was never in real danger of running out.",
+          "wrong": {
+            "square": "That's a square.",
+            "triangle": "That's a triangle."
+          }
+        }
+      }
+    },
+    {
+      "id": "p094_shouting_hurry", "type": "visual", "par_time": 10, "reward": 10,
+      "tags": ["decoy", "urgency", "pulse"],
+      "locales": {
+        "ar": {
+          "instruction": "أيًا كان ما يصرخ بك لتسرع، فهو ليس الجواب.",
+          "layout": "row",
+          "elements": [
+            {"id": "b_shout", "kind": "button", "text": "أسرع!", "color": "red", "scale": 1.6, "pulse": true},
+            {"id": "b_calm", "kind": "button", "text": "لا داعي للعجلة", "color": "surface", "scale": 0.8}
+          ],
+          "solution": {"kind": "tap", "target": "b_calm"},
+          "hints": [
+            "الصوت العالي لا يعني الصواب.",
+            "ابحث عن الزر الذي لا يحاول جذب انتباهك."
+          ],
+          "explanation": "الزر الأحمر الكبير الذي يصرخ «أسرع» كان خاطئًا بقدر ما كان صاخبًا. الزر الهادئ بجانبه كان الجواب الحقيقي طوال الوقت.",
+          "wrong": {
+            "b_shout": "هذا هو الذي يتوسل انتباهك. تجاهله."
+          }
+        },
+        "en": {
+          "instruction": "Whatever's shouting at you to hurry is not the answer.",
+          "layout": "row",
+          "elements": [
+            {"id": "b_shout", "kind": "button", "text": "HURRY!", "color": "red", "scale": 1.6, "pulse": true},
+            {"id": "b_calm", "kind": "button", "text": "No rush", "color": "surface", "scale": 0.8}
+          ],
+          "solution": {"kind": "tap", "target": "b_calm"},
+          "hints": [
+            "Loud does not mean correct.",
+            "Look for the one that isn't trying to grab your attention."
+          ],
+          "explanation": "The big red button screaming HURRY was exactly as wrong as it was loud. The quiet, correctly-labelled button next to it was the real answer the whole time.",
+          "wrong": {
+            "b_shout": "That's the one begging for attention. Ignore it."
+          }
+        }
+      }
+    },
+    {
+      "id": "p095_quick_tap_it", "type": "timing", "par_time": 18, "reward": 10,
+      "tags": ["reveal-after", "rushing-trap"],
+      "locales": {
+        "ar": {
+          "instruction": "بسرعة! اضغط عليه!",
+          "sub_instruction": "...أيًا كان وقت ظهوره.",
+          "layout": "column",
+          "elements": [
+            {"id": "c", "kind": "shape", "shape": "circle", "color": "green", "scale": 1.3, "reveal_after": 6.0}
+          ],
+          "solution": {"kind": "tap", "target": "c"},
+          "hints": [
+            "لا يوجد شيء على اللوح بعد. هذا ليس خطأً.",
+            "انتظر حتى يظهر فعلًا، ثم اضغط بهدوء."
+          ],
+          "explanation": "كلمة «بسرعة» أثارت غريزة الضغط الفوري — لكن لم يكن هناك شيء طوال الثواني الست الأولى. الانتظار ثم الضغط بهدوء كان الطريقة الأسرع فعلًا لحل هذه المرحلة.",
+          "wrong": {
+            "board": "لا يوجد شيء هناك بعد. أمهله لحظة."
+          }
+        },
+        "en": {
+          "instruction": "Quick! Tap it!",
+          "sub_instruction": "...whenever it shows up.",
+          "layout": "column",
+          "elements": [
+            {"id": "c", "kind": "shape", "shape": "circle", "color": "green", "scale": 1.3, "reveal_after": 6.0}
+          ],
+          "solution": {"kind": "tap", "target": "c"},
+          "hints": [
+            "There is nothing on the board yet. That's not a bug.",
+            "Wait for it to actually appear, then tap calmly."
+          ],
+          "explanation": "The word \"Quick\" triggered an instinct to tap immediately — but there was nothing there for the first six seconds. Waiting, then tapping calmly, was the actually fast way to solve it.",
+          "wrong": {
+            "board": "There's nothing there yet. Give it a moment."
+          }
+        }
+      }
+    },
+    {
+      "id": "p096_convince_it", "type": "multi_step", "par_time": 10, "reward": 10,
+      "tags": ["sequence", "repeated-target"],
+      "locales": {
+        "ar": {
+          "instruction": "هذا الزر يحتاج إلى إقناع. اضغط عليه ثلاث مرات.",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "أقنعني", "color": "purple", "scale": 1.2}
+          ],
+          "solution": {"kind": "sequence", "targets": ["b", "b", "b"]},
+          "hints": [
+            "نقرة واحدة لا تكفي هذه المرة.",
+            "ثلاث نقرات على الزر نفسه، واحدة تلو الأخرى."
+          ],
+          "explanation": "لم يكن هناك سوى زر واحد على اللوح، والخدعة كانت الصبر عليه: نفس الهدف، مضغوطًا ثلاث مرات متتالية، قبل أن يُحتسب أخيرًا.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "This button needs convincing. Tap it three times.",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "Convince me", "color": "purple", "scale": 1.2}
+          ],
+          "solution": {"kind": "sequence", "targets": ["b", "b", "b"]},
+          "hints": [
+            "One tap is not enough this time.",
+            "Three taps on the very same button, one after another."
+          ],
+          "explanation": "There was only one button on the board, and the trick was patience with it: the same target, tapped three times in a row, before it finally counted.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p097_habit", "type": "timing", "par_time": 20, "reward": 10,
+      "tags": ["no-tap", "escalation", "pulse"],
+      "locales": {
+        "ar": {
+          "instruction": "لا تضغط أي شيء. ولا حتى من العادة.",
+          "layout": "flow",
+          "elements": [
+            {"id": "b1", "kind": "button", "text": "اضغط الآن", "color": "red", "pulse": true, "row": 0},
+            {"id": "b2", "kind": "button", "text": "افعلها", "color": "orange", "pulse": true, "row": 0},
+            {"id": "b3", "kind": "button", "text": "هنا", "color": "yellow", "pulse": true, "row": 1},
+            {"id": "b4", "kind": "button", "text": "انطلق", "color": "green", "pulse": true, "row": 1},
+            {"id": "b5", "kind": "button", "text": "آخر فرصة", "color": "purple", "pulse": true, "row": 1}
+          ],
+          "solution": {"kind": "no_tap", "duration": 10.0},
+          "hints": [
+            "كل زر هنا فخ، مهما كان صاخبًا.",
+            "عشر ثوانٍ. لا تفعل شيئًا فعلًا، حتى لو ارتعشت إصبعك."
+          ],
+          "explanation": "كانت الأزرار الخمسة جميعها فخاخًا مصممة لإثارة ضغطة تلقائية من العادة. الحركة الصحيحة الوحيدة كانت الصبر: عدم لمس أي شيء لعشر ثوانٍ كاملة.",
+          "wrong": {
+            "b1": "أعاد ذلك العدّاد إلى الصفر. حاول مجددًا.",
+            "b2": "أعاد ذلك العدّاد إلى الصفر. حاول مجددًا.",
+            "b3": "أعاد ذلك العدّاد إلى الصفر. حاول مجددًا.",
+            "b4": "أعاد ذلك العدّاد إلى الصفر. حاول مجددًا.",
+            "b5": "أعاد ذلك العدّاد إلى الصفر. حاول مجددًا."
+          }
+        },
+        "en": {
+          "instruction": "Don't tap anything. Not even out of habit.",
+          "layout": "flow",
+          "elements": [
+            {"id": "b1", "kind": "button", "text": "TAP NOW", "color": "red", "pulse": true, "row": 0},
+            {"id": "b2", "kind": "button", "text": "DO IT", "color": "orange", "pulse": true, "row": 0},
+            {"id": "b3", "kind": "button", "text": "HERE", "color": "yellow", "pulse": true, "row": 1},
+            {"id": "b4", "kind": "button", "text": "GO", "color": "green", "pulse": true, "row": 1},
+            {"id": "b5", "kind": "button", "text": "LAST CHANCE", "color": "purple", "pulse": true, "row": 1}
+          ],
+          "solution": {"kind": "no_tap", "duration": 10.0},
+          "hints": [
+            "Every button here is a trap, no matter how loud.",
+            "Ten seconds. Truly do nothing, even when your finger twitches."
+          ],
+          "explanation": "All five buttons were decoys built to trigger a habitual tap. The only correct move was patience: touch nothing at all for ten full seconds.",
+          "wrong": {
+            "b1": "That reset the count. Try again.",
+            "b2": "That reset the count. Try again.",
+            "b3": "That reset the count. Try again.",
+            "b4": "That reset the count. Try again.",
+            "b5": "That reset the count. Try again."
+          }
+        }
+      }
+    },
+    {
+      "id": "p098_between_8_and_4", "type": "timing", "par_time": 10, "reward": 10,
+      "tags": ["window", "countdown"], "show_timer": true, "time_limit": 12,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط الزر بينما يعرض العدّاد رقمًا بين ٨ و٤.",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "الآن", "color": "green", "scale": 1.3}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 4.0, "not_after": 8.0},
+          "hints": [
+            "العدّاد في الأعلى يبدأ من ١٢ وينزل تنازليًا.",
+            "لا تضغط قبل أن يصل إلى ٨، ولا تنتظر بعد أن يمر ٤."
+          ],
+          "explanation": "أي ضغطة قبل وصول العدّاد إلى ثمانية كانت مبكرة جدًا، وأي ضغطة بعد مروره بأربعة كانت متأخرة جدًا. كانت المنطقة الآمنة واسعة هذه المرة، لكن كان لا بد من مراقبتها لا تخمينها.",
+          "wrong": {
+            "b": "خارج النافذة."
+          }
+        },
+        "en": {
+          "instruction": "Tap the button while the counter reads between 8 and 4.",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "NOW", "color": "green", "scale": 1.3}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 4.0, "not_after": 8.0},
+          "hints": [
+            "The counter at the top starts at 12 and counts down.",
+            "Don't tap before it reaches eight, and don't wait past four."
+          ],
+          "explanation": "Anything before the counter reached eight was too early, and anything after it passed four was too late. The safe zone was wide this time, but it still had to be watched, not guessed.",
+          "wrong": {
+            "b": "Outside the window."
+          }
+        }
+      }
+    },
+    {
+      "id": "p099_hold_the_circle", "type": "timing", "par_time": 13, "reward": 10,
+      "tags": ["hold", "precision", "decoy"],
+      "locales": {
+        "ar": {
+          "instruction": "أمسك الدائرة. لا المربع.",
+          "layout": "row",
+          "elements": [
+            {"id": "pad_circle", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.4},
+            {"id": "pad_square", "kind": "shape", "shape": "square", "color": "orange", "scale": 1.4}
+          ],
+          "solution": {"kind": "hold", "target": "pad_circle", "duration": 3.0},
+          "hints": [
+            "يبدو كلا الشكلين وكأنه يدعوك للإمساك به. واحد منهما فقط هو الجواب.",
+            "الدائرة، ممسوكة لثلاث ثوانٍ كاملة. المربع لا يفيدك بشيء."
+          ],
+          "explanation": "لم يكن المربع شكلًا خادعًا — هو ببساطة لم يكن الشكل الذي طُلب منك إمساكه. مهمة الصبر لا تزال تتطلب منك التحقق من الهدف قبل أن تلتزم به.",
+          "wrong": {
+            "pad_square": "الإمساك بهذا لا يفعل شيئًا. التعليمة ذكرت الدائرة."
+          }
+        },
+        "en": {
+          "instruction": "Hold the circle. Not the square.",
+          "layout": "row",
+          "elements": [
+            {"id": "pad_circle", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.4},
+            {"id": "pad_square", "kind": "shape", "shape": "square", "color": "orange", "scale": 1.4}
+          ],
+          "solution": {"kind": "hold", "target": "pad_circle", "duration": 3.0},
+          "hints": [
+            "Both shapes look like they invite a hold. Only one actually is the answer.",
+            "Circle, held for three full seconds. The square does nothing for you."
+          ],
+          "explanation": "The square wasn't a trick shape — it simply wasn't the one you were told to hold. A patience task still needs you to check which target before you commit.",
+          "wrong": {
+            "pad_square": "Holding this does nothing. The instruction named the circle."
+          }
+        }
+      }
+    },
+    {
+      "id": "p100_go_go_go", "type": "timing", "par_time": 20, "reward": 22,
+      "tags": ["capstone", "no-tap", "pulse", "halfway"],
+      "locales": {
+        "ar": {
+          "instruction": "يلا يلا يلا! اضغط أي شيء!",
+          "layout": "flow",
+          "elements": [
+            {"id": "b_go", "kind": "button", "text": "انطلق!", "color": "red", "pulse": true, "row": 0},
+            {"id": "b_now", "kind": "button", "text": "الآن!", "color": "orange", "pulse": true, "row": 0},
+            {"id": "b_anything", "kind": "button", "text": "أي شيء!", "color": "yellow", "pulse": true, "row": 1},
+            {"id": "b_hurry", "kind": "button", "text": "أسرع!", "color": "purple", "pulse": true, "row": 1}
+          ],
+          "solution": {"kind": "no_tap", "duration": 7.0},
+          "hints": [
+            "كم مرة حتى الآن كانت كلمة «عاجل» تعني في الحقيقة «خطأ»؟",
+            "الحركة الآمنة الوحيدة هي التي لا يصرخ بها أحد عليك: لا شيء."
+          ],
+          "explanation": "كل زر بمفرده صرخ بك لتتحرك فورًا. وبأوضح ما يمكن أن يقوله هذا الفصل: عدم لمس أي شيء كان الجواب الصحيح الوحيد.",
+          "wrong": {
+            "b_go": "ارتبكت. بدأ العدّاد من جديد.",
+            "b_now": "ارتبكت. بدأ العدّاد من جديد.",
+            "b_anything": "ارتبكت. بدأ العدّاد من جديد.",
+            "b_hurry": "ارتبكت. بدأ العدّاد من جديد."
+          }
+        },
+        "en": {
+          "instruction": "GO GO GO! Tap anything!",
+          "layout": "flow",
+          "elements": [
+            {"id": "b_go", "kind": "button", "text": "GO!", "color": "red", "pulse": true, "row": 0},
+            {"id": "b_now", "kind": "button", "text": "NOW!", "color": "orange", "pulse": true, "row": 0},
+            {"id": "b_anything", "kind": "button", "text": "ANYTHING!", "color": "yellow", "pulse": true, "row": 1},
+            {"id": "b_hurry", "kind": "button", "text": "HURRY!", "color": "purple", "pulse": true, "row": 1}
+          ],
+          "solution": {"kind": "no_tap", "duration": 7.0},
+          "hints": [
+            "How many times has 'urgent' turned out to mean 'wrong' so far?",
+            "The only safe move is the one nobody is shouting at you to make: nothing."
+          ],
+          "explanation": "Every single button screamed at you to move immediately. Stated as plainly as this chapter ever will: touching nothing was the only right answer.",
+          "wrong": {
+            "b_go": "You flinched. The count restarted.",
+            "b_now": "You flinched. The count restarted.",
+            "b_anything": "You flinched. The count restarted.",
+            "b_hurry": "You flinched. The count restarted."
+          }
+        }
+      }
+    },
+    {
+      "id": "p101_wait_for_it", "type": "timing", "par_time": 13, "reward": 10,
+      "tags": ["not-before", "decoy", "patience"],
+      "locales": {
+        "ar": {
+          "instruction": "أيًا كان ما تريد الضغط عليه الآن، فهو خطأ. انتظر.",
+          "layout": "row",
+          "elements": [
+            {"id": "c_target", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.2},
+            {"id": "c_decoy", "kind": "shape", "shape": "square", "color": "red", "pulse": true, "scale": 1.1}
+          ],
+          "solution": {"kind": "tap", "target": "c_target", "not_before": 5.0},
+          "hints": [
+            "الدائرة هي الصحيحة — في النهاية.",
+            "دع خمس ثوانٍ تمر قبل أن تضغط عليها."
+          ],
+          "explanation": "كانت الدائرة هي الجواب فعلًا. الخدعة أنها لم تكن صحيحة بعد — الضغط عليها قبل مرور خمس ثوانٍ كان يُحتسب خطأً تمامًا مثل الضغط على الفخ النابض.",
+          "wrong": {
+            "c_target": "مبكر جدًا. الدائرة صحيحة، لكن ليس الآن.",
+            "c_decoy": "هذا مجرد ضوضاء. تجاهله."
+          }
+        },
+        "en": {
+          "instruction": "Whatever you want to tap right now is wrong. Wait.",
+          "layout": "row",
+          "elements": [
+            {"id": "c_target", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.2},
+            {"id": "c_decoy", "kind": "shape", "shape": "square", "color": "red", "pulse": true, "scale": 1.1}
+          ],
+          "solution": {"kind": "tap", "target": "c_target", "not_before": 5.0},
+          "hints": [
+            "The circle is correct — eventually.",
+            "Let five seconds pass before you tap it."
+          ],
+          "explanation": "The circle really was the answer. The trick was that it wasn't correct yet — tapping it before five seconds had passed counted exactly as wrong as tapping the pulsing decoy.",
+          "wrong": {
+            "c_target": "Too early. The circle is right, but not yet.",
+            "c_decoy": "That one is just noise. Ignore it."
+          }
+        }
+      }
+    },
+    {
+      "id": "p102_move_now", "type": "reverse", "par_time": 9, "reward": 10,
+      "tags": ["reflex", "reversal", "hide-after"],
+      "locales": {
+        "ar": {
+          "instruction": "أحيانًا يأتي الصبر متأخرًا. تحرّك الآن.",
+          "layout": "column",
+          "elements": [
+            {"id": "flash", "kind": "shape", "shape": "diamond", "color": "yellow", "scale": 1.3, "reveal_after": 2.0, "hide_after": 2.7}
+          ],
+          "solution": {"kind": "tap", "target": "flash", "not_after": 2.7},
+          "hints": [
+            "راقب بدقة حول علامة الثانيتين.",
+            "لن يكون لديك وقت طويل. اضغط فور رؤيته."
+          ],
+          "explanation": "ظهر المعين لأقل من ثانية بوضوح. هذه المرة، الانتظار للتأكد كان سيجعلك تفوته — الجواب كان التحرك فور ظهوره.",
+          "wrong": {
+            "board": "لا يوجد شيء لتضغطه بعد — وإذا استمررت بالانتظار، ستفوته تمامًا."
+          }
+        },
+        "en": {
+          "instruction": "Sometimes patience is late. Move now.",
+          "layout": "column",
+          "elements": [
+            {"id": "flash", "kind": "shape", "shape": "diamond", "color": "yellow", "scale": 1.3, "reveal_after": 2.0, "hide_after": 2.7}
+          ],
+          "solution": {"kind": "tap", "target": "flash", "not_after": 2.7},
+          "hints": [
+            "Watch closely around the two-second mark.",
+            "You will not have long. Tap the instant you see it."
+          ],
+          "explanation": "The diamond appeared for well under a second. This time, waiting to be sure would have made you miss it — the answer was to move the instant it showed up.",
+          "wrong": {
+            "board": "Nothing to tap yet — and if you keep waiting, you'll miss it entirely."
+          }
+        }
+      }
+    },
+    {
+      "id": "p103_watch_the_dots", "type": "timing", "par_time": 16, "reward": 10,
+      "tags": ["no-tap", "visual-pacing", "dots"],
+      "locales": {
+        "ar": {
+          "instruction": "لا تضغط. راقب النقاط — حين تختفي جميعها، تكون قد انتهيت.",
+          "layout": "row",
+          "elements": [
+            {"id": "dot1", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 2.0},
+            {"id": "dot2", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 4.0},
+            {"id": "dot3", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 6.0},
+            {"id": "dot4", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 8.0}
+          ],
+          "solution": {"kind": "no_tap", "duration": 8.0},
+          "hints": [
+            "لا تعدّ الثواني — عدّ النقاط.",
+            "حين تختفي آخر نقطة، تكون قد فزت بالفعل؛ فقط لا تلمس شيئًا قبل ذلك."
+          ],
+          "explanation": "لم يكن هناك عدّاد برقم، بل أربع نقاط تختفي كل ثانيتين تقريبًا. قراءة إيقاعها بدل المطالبة برقم كانت المهمة الحقيقية — وعدم فعل أي شيء لتلك الثواني الثماني كان كافيًا لحل المرحلة.",
+          "wrong": {
+            "board": "أعاد ذلك الانتظار من جديد. لا يوجد شيء لتضغطه هنا — ولا حتى الخلفية."
+          }
+        },
+        "en": {
+          "instruction": "Don't tap. Watch the dots — when they're all gone, you're done.",
+          "layout": "row",
+          "elements": [
+            {"id": "dot1", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 2.0},
+            {"id": "dot2", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 4.0},
+            {"id": "dot3", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 6.0},
+            {"id": "dot4", "kind": "shape", "shape": "circle", "color": "dim", "scale": 0.5, "hide_after": 8.0}
+          ],
+          "solution": {"kind": "no_tap", "duration": 8.0},
+          "hints": [
+            "Don't count seconds — count dots.",
+            "When the last dot vanishes, you've already won; just don't touch anything before then."
+          ],
+          "explanation": "There was no numbered countdown, only four dots disappearing roughly two seconds apart. Reading their pace instead of demanding a number was the real task — and doing nothing for those eight seconds solved it.",
+          "wrong": {
+            "board": "That reset the wait. Nothing to tap here — not even the background."
+          }
+        }
+      }
+    },
+    {
+      "id": "p104_wont_wait_forever", "type": "timing", "par_time": 8, "reward": 10,
+      "tags": ["not-after", "deadline", "balance"], "show_timer": true, "time_limit": 10,
+      "locales": {
+        "ar": {
+          "instruction": "هذا أيضًا لن ينتظر إلى الأبد. لا تبالغ في الحذر.",
+          "layout": "row",
+          "elements": [
+            {"id": "b_correct", "kind": "button", "text": "نعم، هذا", "color": "green", "scale": 1.1},
+            {"id": "b_decoy", "kind": "button", "text": "ليس هذا", "color": "grey", "scale": 1.1}
+          ],
+          "solution": {"kind": "tap", "target": "b_correct", "not_after": 4.0},
+          "hints": [
+            "هذا الزر صادق في أنه لن يدوم — حتى دون أن يذكر رقمًا.",
+            "اضغط خلال الثواني الأربع الأولى. انتظار لحظة أفضل سيكلفك هذه الفرصة."
+          ],
+          "explanation": "بعد كل دروس «انتظر» السابقة، كافأت هذه المرحلة العكس تمامًا: توقف الزر الصحيح عن الاحتساب بعد أربع ثوانٍ فقط، قبل أن ينفد وقت العدّاد في الأعلى بوقت طويل.",
+          "wrong": {
+            "b_correct": "انتظرت طويلاً. لم يعد يُحتسب كإجابة.",
+            "b_decoy": "هذا لم يكن صحيحًا أبدًا، بغض النظر عن التوقيت."
+          }
+        },
+        "en": {
+          "instruction": "This one won't wait forever either. Don't over-correct.",
+          "layout": "row",
+          "elements": [
+            {"id": "b_correct", "kind": "button", "text": "Yes, this one", "color": "green", "scale": 1.1},
+            {"id": "b_decoy", "kind": "button", "text": "Not this one", "color": "grey", "scale": 1.1}
+          ],
+          "solution": {"kind": "tap", "target": "b_correct", "not_after": 4.0},
+          "hints": [
+            "This one is honest that it won't last — even without saying a number.",
+            "Tap within the first four seconds. Waiting for a better moment costs you this one."
+          ],
+          "explanation": "After so many 'wait for it' lessons, this one rewarded the opposite: the correct button stopped counting after four seconds, well before the clock at the top ran out.",
+          "wrong": {
+            "b_correct": "You waited too long. It stopped counting as an answer.",
+            "b_decoy": "That one was never right, timing or not."
+          }
+        }
+      }
+    },
+    {
+      "id": "p105_wait_then_sequence", "type": "multi_step", "par_time": 13, "reward": 10,
+      "tags": ["sequence", "not-before", "two-step"],
+      "locales": {
+        "ar": {
+          "instruction": "انتظر. ثم اضغط الأزرق، ثم الأصفر.",
+          "layout": "row",
+          "elements": [
+            {"id": "c_blue", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "c_yellow", "kind": "shape", "shape": "circle", "color": "yellow"}
+          ],
+          "solution": {"kind": "sequence", "targets": ["c_blue", "c_yellow"], "not_before": 3.0},
+          "hints": [
+            "الضغط على الأزرق فورًا لا بأس به — الانتظار مطلوب عند الإنهاء.",
+            "دع ثلاث ثوانٍ تمر قبل أن تحط ضغطتك على الأصفر."
+          ],
+          "explanation": "كان الانتظار شرطًا لإنهاء التسلسل، لا للنقرة الأولى. الضغط على الأزرق فورًا كان مقبولًا، طالما أن ضغطة الأصفر لم تحط إلا بعد مرور ثلاث ثوانٍ — أنهِ مبكرًا جدًا، وتُعاد الخطوتان من جديد.",
+          "wrong": {
+            "c_yellow": "لم تُحتسب — تحقق من الترتيب، ولا تتعجل الإنهاء."
+          }
+        },
+        "en": {
+          "instruction": "Wait. Then tap blue, then yellow.",
+          "layout": "row",
+          "elements": [
+            {"id": "c_blue", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "c_yellow", "kind": "shape", "shape": "circle", "color": "yellow"}
+          ],
+          "solution": {"kind": "sequence", "targets": ["c_blue", "c_yellow"], "not_before": 3.0},
+          "hints": [
+            "Tapping blue right away is fine — it's the finish that has to wait.",
+            "Let three seconds pass before your tap on yellow lands."
+          ],
+          "explanation": "The wait applied to finishing the sequence, not to the first tap. Tapping blue immediately was fine, as long as the tap on yellow didn't land until three seconds had passed — finish too soon, and both steps reset.",
+          "wrong": {
+            "c_yellow": "That didn't count — check the order, and don't rush the finish."
+          }
+        }
+      }
+    },
+    {
+      "id": "p106_fast_fast", "type": "visual", "par_time": 10, "reward": 10,
+      "tags": ["timer-mismatch", "odd-one-out", "tone-vs-fact"], "show_timer": true, "time_limit": 120,
+      "locales": {
+        "ar": {
+          "instruction": "بسرعة! بسرعة! لا يوجد وقت تقريبًا — اضغط على المختلف!",
+          "layout": "flow",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.9},
+            {"id": "s2", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.9},
+            {"id": "s3", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.9},
+            {"id": "s4", "kind": "shape", "shape": "circle", "color": "green", "scale": 0.9}
+          ],
+          "solution": {"kind": "tap", "target": "s4"},
+          "hints": [
+            "تحقق من الساعة قبل أن تصاب بالذعر — كم من الوقت تعرضه فعلًا؟",
+            "مئة وعشرون ثانية ليست «لا وقت تقريبًا»."
+          ],
+          "explanation": "صرخت الكلمات بالعجلة، لكن العدّاد في الأعلى كان يعرض ١٢٠ ثانية — أي بلا حد فعليًا. المهمة الحقيقية الوحيدة كانت رصد الدائرة الخضراء بين الزرقاء.",
+          "wrong": {
+            "s1": "هذه زرقاء مثل البقية.",
+            "s2": "هذه زرقاء مثل البقية.",
+            "s3": "هذه زرقاء مثل البقية."
+          }
+        },
+        "en": {
+          "instruction": "FAST! FAST! There's barely any time — tap the different one!",
+          "layout": "flow",
+          "elements": [
+            {"id": "s1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.9},
+            {"id": "s2", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.9},
+            {"id": "s3", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.9},
+            {"id": "s4", "kind": "shape", "shape": "circle", "color": "green", "scale": 0.9}
+          ],
+          "solution": {"kind": "tap", "target": "s4"},
+          "hints": [
+            "Check the clock before you panic — how much time does it actually show?",
+            "One hundred and twenty seconds is not 'barely any time.'"
+          ],
+          "explanation": "The words screamed urgency, but the counter at the top read 120 seconds — effectively no limit at all. The only real task was spotting the green circle among the blue ones.",
+          "wrong": {
+            "s1": "That one's blue like the rest.",
+            "s2": "That one's blue like the rest.",
+            "s3": "That one's blue like the rest."
+          }
+        }
+      }
+    },
+    {
+      "id": "p107_halfway_confirmation", "type": "timing", "par_time": 16, "reward": 10,
+      "tags": ["hold", "reassurance", "callback-p091"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط مع الاستمرار على الدائرة. ستعرف أنها تعمل في منتصف الطريق.",
+          "layout": "column",
+          "elements": [
+            {"id": "pad", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.6},
+            {"id": "reassure", "kind": "label", "text": "لا يزال يُحتسب...", "color": "dim", "font_size": 26, "reveal_after": 2.0, "interactive": false}
+          ],
+          "solution": {"kind": "hold", "target": "pad", "duration": 4.0},
+          "hints": [
+            "أمسك من البداية تمامًا — لا تضغط وتفلت.",
+            "حول علامة الثانيتين، يؤكد لك شيء بهدوء أنك على المسار الصحيح."
+          ],
+          "explanation": "نفس مهمة المرحلة ٩١: أمسك دون أن تفلت. هذه المرة، في منتصف الثواني الأربع، ظهرت ملاحظة صغيرة تؤكد التقدم — دليل أن الآلية كانت تعمل دائمًا، حتى حين لم يظهر ذلك من قبل.",
+          "wrong": {}
+        },
+        "en": {
+          "instruction": "Press and hold the circle. You'll know it's working partway through.",
+          "layout": "column",
+          "elements": [
+            {"id": "pad", "kind": "shape", "shape": "circle", "color": "cyan", "scale": 1.6},
+            {"id": "reassure", "kind": "label", "text": "Still counting...", "color": "dim", "font_size": 26, "reveal_after": 2.0, "interactive": false}
+          ],
+          "solution": {"kind": "hold", "target": "pad", "duration": 4.0},
+          "hints": [
+            "Hold from the very start — don't tap and release.",
+            "Around the two-second mark, something quietly confirms you're on track."
+          ],
+          "explanation": "Same task as stage 91: hold without letting go. This time, halfway through the four seconds, a small note appeared to confirm progress — proof the mechanic was always working, even back when nothing showed it.",
+          "wrong": {}
+        }
+      }
+    },
+    {
+      "id": "p108_fake_checkmark", "type": "meta", "par_time": 10, "reward": 10,
+      "tags": ["fake-chrome", "success-lookalike", "decoy"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الدائرة الزرقاء.",
+          "layout": "column",
+          "elements": [
+            {"id": "c_target", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.2},
+            {"id": "b_fake", "kind": "button", "text": "✓ تم", "color": "green", "reveal_after": 2.5}
+          ],
+          "solution": {"kind": "tap", "target": "c_target"},
+          "hints": [
+            "ظهور علامة صح لا يعني أن اللغز انتهى بالفعل.",
+            "الدائرة الزرقاء كانت الجواب دائمًا — قبل ظهور ذلك الزر الأخضر وبعده."
+          ],
+          "explanation": "صُمم الزر الأخضر «✓» ليشبه تأكيد النجاح الخاص باللعبة نفسها، لكنه كان مجرد عنصر آخر على اللوح. لا شيء داخل اللغز يُعلن نفسه «تم» — الحل الحقيقي وحده يفعل ذلك.",
+          "wrong": {
+            "b_fake": "بدا وكأن التطبيق يخبرك أنك «حللت» — لكنه لم يكن كذلك. إنه مجرد فخ في هذا اللغز."
+          }
+        },
+        "en": {
+          "instruction": "Tap the blue circle.",
+          "layout": "column",
+          "elements": [
+            {"id": "c_target", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.2},
+            {"id": "b_fake", "kind": "button", "text": "✓ Done", "color": "green", "reveal_after": 2.5}
+          ],
+          "solution": {"kind": "tap", "target": "c_target"},
+          "hints": [
+            "A checkmark appearing doesn't mean the puzzle already ended.",
+            "The blue circle was always the answer — before that green button showed up and after."
+          ],
+          "explanation": "The green checkmark button was styled to look like the game's own success confirmation, but it was just another element on the board. Nothing inside a puzzle marks itself \"done\" — only the real solve does that.",
+          "wrong": {
+            "b_fake": "That looked like the app telling you 'solved' — it wasn't. It's just this puzzle's decoy."
+          }
+        }
+      }
+    },
+    {
+      "id": "p109_final_two_seconds", "type": "timing", "par_time": 10, "reward": 10,
+      "tags": ["precision", "tight-window", "pressure"], "show_timer": true, "time_limit": 8.0,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط عليه، لكن فقط قرب النهاية تمامًا.",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "الآن", "color": "orange", "scale": 1.3}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 5.5, "not_after": 7.5},
+          "hints": [
+            "هذه النافذة صغيرة، وهي قرب النهاية تمامًا.",
+            "انتظر حتى يُظهر العدّاد نحو ثانيتين متبقيتين، ثم اضغط قبل أن يصل إلى الصفر."
+          ],
+          "explanation": "كانت النافذة المقبولة الوحيدة بينما كان العدّاد لا يزال يُظهر تقريبًا ثانيتيه الأخيرتين. هذه المرة كانت الدقة أهم من الصبر — الضغط المبكر جدًا أو انتظار الصفر كلاهما كان يُفوّت الفرصة.",
+          "wrong": {
+            "b": "إما مبكر جدًا، أو أن الوقت سبقك."
+          }
+        },
+        "en": {
+          "instruction": "Tap it, but only near the very end.",
+          "layout": "column",
+          "elements": [
+            {"id": "b", "kind": "button", "text": "NOW", "color": "orange", "scale": 1.3}
+          ],
+          "solution": {"kind": "tap", "target": "b", "not_before": 5.5, "not_after": 7.5},
+          "hints": [
+            "This window is small, and it's near the very end.",
+            "Wait until the clock shows about two seconds left, then tap before it reaches zero."
+          ],
+          "explanation": "The only acceptable window was while the clock still showed roughly its last two seconds. This time precision mattered more than patience — tapping too early, or waiting for zero, both missed it.",
+          "wrong": {
+            "b": "Either too early, or the clock beat you to it."
+          }
+        }
+      }
+    },
+    {
+      "id": "p110_no_rush", "type": "meta", "par_time": 8, "reward": 25,
+      "tags": ["honest", "chapter-finale", "anti-paranoia", "payoff"],
+      "locales": {
+        "ar": {
+          "instruction": "لا يوجد عدّاد. لا داعي للعجلة. اضغط على النجمة.",
+          "layout": "flow",
+          "elements": [
+            {"id": "c1", "kind": "shape", "shape": "circle", "color": "blue", "row": 0},
+            {"id": "c2", "kind": "shape", "shape": "square", "color": "green", "row": 0},
+            {"id": "star", "kind": "label", "text": "★", "color": "gold", "font_size": 90, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "star"},
+          "hints": [
+            "اقرأ التعليمة كما هي مكتوبة تمامًا.",
+            "النجمة هي الرمز على شكل نجمة، هناك مباشرة على الشاشة."
+          ],
+          "explanation": "علّمتك تسع عشرة مرحلة أن تتوقع خدعة في كل ساعة وإمساك وعدّاد. هذه المرحلة لا تحمل أيًا منها — كانت التعليمة تعني ما قالته بالضبط، والدرس الحقيقي لهذا الفصل بأكمله كان تعلّم متى تثق بذلك ببساطة.",
+          "wrong": {
+            "c1": "هذه دائرة.",
+            "c2": "هذا مربع."
+          }
+        },
+        "en": {
+          "instruction": "There is no timer. There is no rush. Tap the star.",
+          "layout": "flow",
+          "elements": [
+            {"id": "c1", "kind": "shape", "shape": "circle", "color": "blue", "row": 0},
+            {"id": "c2", "kind": "shape", "shape": "square", "color": "green", "row": 0},
+            {"id": "star", "kind": "label", "text": "★", "color": "gold", "font_size": 90, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "star"},
+          "hints": [
+            "Read the instruction exactly as it's written.",
+            "The star is the star-shaped character, right there on the screen."
+          ],
+          "explanation": "Nineteen stages taught you to expect a catch in every clock, hold, and countdown. This one has none — the instruction meant exactly what it said, and the real lesson of this whole chapter was learning when to simply trust that.",
+          "wrong": {
+            "c1": "That's a circle.",
+            "c2": "That's a square."
+          }
+        }
+      }
+    }
+  ]
+}

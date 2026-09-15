@@ -1,0 +1,919 @@
+{
+  "schema": 1,
+  "chapter": 9,
+  "puzzles": [
+    {
+      "id": "p111_change_the_color", "type": "multi_step", "par_time": 20, "reward": 10,
+      "tags": ["on-tap-set", "sequence", "color-change"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الزر. ثم اضغط على الكلمة عندما تتحول إلى الأحمر.",
+          "layout": "flow",
+          "elements": [
+            {"id": "btn_change", "kind": "button", "text": "غيّره", "color": "surface",
+              "on_tap": {"set": {"lbl_target": {"color": "red"}}}},
+            {"id": "decoy_shape", "kind": "shape", "shape": "circle", "color": "green", "scale": 0.8},
+            {"id": "lbl_target", "kind": "label", "text": "الكلمة", "color": "blue", "font_size": 46, "row": 1}
+          ],
+          "solution": {"kind": "sequence", "targets": ["btn_change", "lbl_target"]},
+          "hints": [
+            "الكلمة لن تتحول إلى الأحمر من تلقاء نفسها.",
+            "اضغط الزر أولًا، ثم اضغط الكلمة بعد أن تتغيّر."
+          ],
+          "explanation": "الزر غيّر لون الكلمة فعليًا عند الضغط عليه. لم تكن الكلمة حمراء حتى صنعت ذلك بنفسك.",
+          "wrong": {
+            "decoy_shape": "هذا الشكل لا علاقة له بالأمر.",
+            "lbl_target": "ما زالت زرقاء. اضغط الزر أولًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap the button. Then tap the word once it turns red.",
+          "layout": "flow",
+          "elements": [
+            {"id": "btn_change", "kind": "button", "text": "Change it", "color": "surface",
+              "on_tap": {"set": {"lbl_target": {"color": "red"}}}},
+            {"id": "decoy_shape", "kind": "shape", "shape": "circle", "color": "green", "scale": 0.8},
+            {"id": "lbl_target", "kind": "label", "text": "WORD", "color": "blue", "font_size": 46, "row": 1}
+          ],
+          "solution": {"kind": "sequence", "targets": ["btn_change", "lbl_target"]},
+          "hints": [
+            "The word will not turn red on its own.",
+            "Tap the button first, then tap the word once it changes."
+          ],
+          "explanation": "The button actually changed the word's colour when you tapped it. The word wasn't red until you made it red yourself.",
+          "wrong": {
+            "decoy_shape": "That shape has nothing to do with it.",
+            "lbl_target": "It's still blue. Tap the button first."
+          }
+        }
+      }
+    },
+    {
+      "id": "p112_biggest_label_lies", "type": "visual", "par_time": 18, "reward": 10,
+      "tags": ["decoy", "loudest-voice", "zone"],
+      "locales": {
+        "ar": {
+          "instruction": "ثق باللوح، لا بأكبر تسمية عليه.",
+          "layout": "flow",
+          "elements": [
+            {"id": "loud_decoy", "kind": "button", "text": "ليس هذا", "color": "red", "scale": 1.8, "font_size": 40},
+            {"id": "quiet_zone", "kind": "zone", "text": "", "color": "line", "scale": 0.5, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "quiet_zone"},
+          "hints": [
+            "أكبر شيء على الشاشة يريد انتباهك. لماذا؟",
+            "ابحث عن شيء صغير لا يقول شيئًا على الإطلاق."
+          ],
+          "explanation": "الزر الكبير الذي يقول «ليس هذا» ليس هو الجواب فعلاً — لكن فقط لأنه أعلى صوت هنا، لا بسبب كلامه. الهدف الحقيقي كان المساحة الهادئة الصغيرة التي لم تطلب انتباهًا قط.",
+          "wrong": {
+            "loud_decoy": "هذا بالضبط ما حذّرك اللوح منه."
+          }
+        },
+        "en": {
+          "instruction": "Trust the board, not the biggest label on it.",
+          "layout": "flow",
+          "elements": [
+            {"id": "loud_decoy", "kind": "button", "text": "NOT THIS ONE", "color": "red", "scale": 1.8, "font_size": 34},
+            {"id": "quiet_zone", "kind": "zone", "text": "", "color": "line", "scale": 0.5, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "quiet_zone"},
+          "hints": [
+            "The loudest thing on screen wants your attention. Why?",
+            "Look for something small that isn't shouting anything at all."
+          ],
+          "explanation": "The big button shouting 'NOT THIS ONE' really isn't the answer — but only because it's the loudest thing here, not because of what it says. The real target was the small, quiet zone that never asked for attention.",
+          "wrong": {
+            "loud_decoy": "That's exactly what the board warned you about."
+          }
+        }
+      }
+    },
+    {
+      "id": "p113_no_board_at_all", "type": "meta", "par_time": 16, "reward": 10,
+      "tags": ["chrome", "skip", "empty-board"],
+      "locales": {
+        "ar": {
+          "instruction": "لا توجد لوحة هنا.",
+          "sub_instruction": "فماذا تفعل إذن؟",
+          "layout": "column",
+          "elements": [
+            {"id": "empty_filler", "kind": "spacer"}
+          ],
+          "ui_targets": ["ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:skip"},
+          "hints": [
+            "إن لم يكن على اللوحة شيء، فليس عليها ما تحله.",
+            "في مكانٍ ما على هذه الشاشة توجد الحركة المناسبة تمامًا لهذا الموقف."
+          ],
+          "explanation": "لم يكن هناك ما تضغط عليه في اللوحة، لأنه لم تكن هناك لوحة أصلاً. والاستجابة الصادقة لمرحلة بلا حل هي الزر المصمم لهذا بالضبط.",
+          "wrong": {
+            "board": "لا يوجد هنا ما تُجيب عنه. هذا هو المغزى بالضبط."
+          }
+        },
+        "en": {
+          "instruction": "There is no board here.",
+          "sub_instruction": "So what do you do?",
+          "layout": "column",
+          "elements": [
+            {"id": "empty_filler", "kind": "spacer"}
+          ],
+          "ui_targets": ["ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:skip"},
+          "hints": [
+            "If a board has nothing on it, there is nothing on it to solve.",
+            "Somewhere on this screen is the move built for exactly this situation."
+          ],
+          "explanation": "There truly was nothing to tap on the board, because there was no board. The honest response to a stage with no solution is the button built for exactly that.",
+          "wrong": {
+            "board": "There's nothing here to answer. That's exactly the point."
+          }
+        }
+      }
+    },
+    {
+      "id": "p114_number_then_leave", "type": "ui", "par_time": 32, "reward": 10,
+      "tags": ["chrome", "sequence", "composite"],
+      "locales": {
+        "ar": {
+          "instruction": "لاحظ رقم هذه المرحلة. ثم غادر.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_stage", "kind": "button", "text": "114", "color": "surface"},
+            {"id": "fake_back", "kind": "button", "text": "خروج", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:stage", "ui:back"],
+          "solution": {"kind": "sequence", "targets": ["ui:stage", "ui:back"]},
+          "hints": [
+            "خطوتان بالترتيب: الرقم الحقيقي في الأعلى أولًا.",
+            "بعد أن تلاحظ الرقم الحقيقي، اضغط على سهم الرجوع الحقيقي."
+          ],
+          "explanation": "كلا الزرين على اللوح كانا مجرد تقليد. الحل الحقيقي كان بالكامل في شريط الأعلى: الرقم أولًا، ثم الخروج.",
+          "wrong": {
+            "fake_stage": "هذا زر يحمل رقمًا، لا رقم المرحلة.",
+            "fake_back": "هذا لا يُخرجك من أي شيء."
+          }
+        },
+        "en": {
+          "instruction": "Note this stage's number. Then leave.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_stage", "kind": "button", "text": "114", "color": "surface"},
+            {"id": "fake_back", "kind": "button", "text": "EXIT", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:stage", "ui:back"],
+          "solution": {"kind": "sequence", "targets": ["ui:stage", "ui:back"]},
+          "hints": [
+            "Two steps, in order: the real number at the top comes first.",
+            "After you note the real number, tap the real back arrow."
+          ],
+          "explanation": "Both board buttons were only copies. The real answer lived entirely in the top bar: the number, then the way out.",
+          "wrong": {
+            "fake_stage": "That's a button with a number on it, not the stage indicator.",
+            "fake_back": "That doesn't take you anywhere."
+          }
+        }
+      }
+    },
+    {
+      "id": "p115_let_it_settle", "type": "ui", "par_time": 14, "reward": 10,
+      "tags": ["chrome", "instruction", "not-before"],
+      "show_timer": true, "time_limit": 15,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على هذه الجملة. دعها تستقر أولًا.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "هذه الجملة", "color": "surface"},
+            {"id": "d2", "kind": "button", "text": "هذه الجملة", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:instruction"],
+          "solution": {"kind": "tap", "target": "ui:instruction", "not_before": 2.0},
+          "hints": [
+            "الاستقرار يحتاج وقتًا. لا تضغط فورًا.",
+            "انتظر ثانيتين على الأقل، ثم اضغط على الجملة نفسها في الأعلى."
+          ],
+          "explanation": "الضغط الفوري كان سابقًا لأوانه. «دعها تستقر» كانت تعليمة حرفية عن الوقت، لا مجرد تعبير.",
+          "wrong": {
+            "d1": "هذا زر يحمل الكلمات، لا الجملة.",
+            "d2": "هذا زر يحمل الكلمات، لا الجملة.",
+            "ui:instruction": "ليس بعد. أعطها لحظة."
+          }
+        },
+        "en": {
+          "instruction": "Tap this sentence. Let it settle first.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "THIS SENTENCE", "color": "surface"},
+            {"id": "d2", "kind": "button", "text": "THIS SENTENCE", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:instruction"],
+          "solution": {"kind": "tap", "target": "ui:instruction", "not_before": 2.0},
+          "hints": [
+            "Settling takes time. Don't tap right away.",
+            "Wait at least two seconds, then tap the sentence itself, at the top."
+          ],
+          "explanation": "An immediate tap was too early. \"Let it settle\" was a literal instruction about time, not a figure of speech.",
+          "wrong": {
+            "d1": "That's a button with the words on it, not the sentence.",
+            "d2": "That's a button with the words on it, not the sentence.",
+            "ui:instruction": "Not yet. Give it a moment."
+          }
+        }
+      }
+    },
+    {
+      "id": "p116_two_hint_buttons", "type": "ui", "par_time": 18, "reward": 10,
+      "tags": ["chrome", "hint", "decoy"],
+      "locales": {
+        "ar": {
+          "instruction": "زرّا تلميح هنا. واحد منهما فقط هو الحقيقي فعلاً.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7},
+            {"id": "fake_hint", "kind": "button", "text": "تلميح", "color": "surface", "text_color": "dim", "row": 1}
+          ],
+          "ui_targets": ["ui:hint"],
+          "solution": {"kind": "tap", "target": "ui:hint"},
+          "hints": [],
+          "explanation": "الزر الموجود على اللوح مجرد تقليد باهت لشكل زر التلميح. زر التلميح الحقيقي، في الأسفل، هو الوحيد الذي يستجيب فعلاً.",
+          "wrong": {
+            "d1": "هذا شكل ديكوري فقط.",
+            "d2": "هذا شكل ديكوري فقط.",
+            "fake_hint": "هذا يبدو مثله فقط."
+          }
+        },
+        "en": {
+          "instruction": "Two hint buttons. Only one of them really is one.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7},
+            {"id": "fake_hint", "kind": "button", "text": "Hint", "color": "surface", "text_color": "dim", "row": 1}
+          ],
+          "ui_targets": ["ui:hint"],
+          "solution": {"kind": "tap", "target": "ui:hint"},
+          "hints": [],
+          "explanation": "The button on the board is only a dim copy shaped like the hint button. The real hint button, at the bottom, is the only one that actually responds.",
+          "wrong": {
+            "d1": "That's just a decorative shape.",
+            "d2": "That's just a decorative shape.",
+            "fake_hint": "That one only looks like it."
+          }
+        }
+      }
+    },
+    {
+      "id": "p117_ask_in_time", "type": "ui", "par_time": 10, "reward": 10,
+      "tags": ["chrome", "hint", "not-after"],
+      "show_timer": true, "time_limit": 12,
+      "locales": {
+        "ar": {
+          "instruction": "اطلب المساعدة. لكن لا تنتظر طويلًا لتطلبها.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7}
+          ],
+          "ui_targets": ["ui:hint"],
+          "solution": {"kind": "tap", "target": "ui:hint", "not_after": 4.0},
+          "hints": [],
+          "explanation": "زر المساعدة كان الجواب، لكن لفترة محدودة فقط. طلب المساعدة بعد فوات الأوان لا يُحتسب طلبًا في وقته.",
+          "wrong": {
+            "d1": "الأشكال هنا ديكور.",
+            "d2": "الأشكال هنا ديكور.",
+            "ui:hint": "تأخرت. لم يعد يُحتسب."
+          }
+        },
+        "en": {
+          "instruction": "Ask for help. But don't wait too long to ask.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7}
+          ],
+          "ui_targets": ["ui:hint"],
+          "solution": {"kind": "tap", "target": "ui:hint", "not_after": 4.0},
+          "hints": [],
+          "explanation": "The help button was the answer, but only for a short while. Asking for help too late doesn't count as asking in time.",
+          "wrong": {
+            "d1": "The shapes here are scenery.",
+            "d2": "The shapes here are scenery.",
+            "ui:hint": "Too late. It no longer counts."
+          }
+        }
+      }
+    },
+    {
+      "id": "p118_dont_play", "type": "meta", "par_time": 22, "reward": 10,
+      "tags": ["chrome", "back", "riddle"],
+      "locales": {
+        "ar": {
+          "instruction": "الحركة الفائزة الوحيدة هي ألا تلعب.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "العب", "color": "surface", "pulse": true},
+            {"id": "d2", "kind": "button", "text": "جرّب نقلة", "color": "surface", "pulse": true, "row": 1}
+          ],
+          "ui_targets": ["ui:back"],
+          "solution": {"kind": "tap", "target": "ui:back"},
+          "hints": [
+            "هذه جملة عن لعبة لا يمكن الفوز بها إلا بعدم خوضها.",
+            "إن كنت لن تلعب، فماذا تفعل بدلًا من ذلك؟ انظر إلى زاوية الشاشة."
+          ],
+          "explanation": "التعليمة كانت لغزًا: الحركة الفائزة الوحيدة في لعبة لا يمكن كسبها هي عدم الحركة إطلاقًا. المغادرة — الضغط على سهم الرجوع الحقيقي — كانت النقلة الوحيدة خارج الفخ.",
+          "wrong": {
+            "d1": "اللعب هو بالضبط ما يخسرك هنا.",
+            "d2": "أي نقلة هنا نقلة خاسرة."
+          }
+        },
+        "en": {
+          "instruction": "The only winning move is not to play.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "PLAY", "color": "surface", "pulse": true},
+            {"id": "d2", "kind": "button", "text": "TRY A MOVE", "color": "surface", "pulse": true, "row": 1}
+          ],
+          "ui_targets": ["ui:back"],
+          "solution": {"kind": "tap", "target": "ui:back"},
+          "hints": [
+            "This is a line about a game that can only be won by not playing it.",
+            "If you won't play, what do you do instead? Look at the corner of the screen."
+          ],
+          "explanation": "The instruction was a riddle: the only winning move in an unwinnable game is to make no move at all. Leaving — tapping the real back arrow — was the only move outside the trap.",
+          "wrong": {
+            "d1": "Playing is exactly what loses here.",
+            "d2": "Any move here is a losing move."
+          }
+        }
+      }
+    },
+    {
+      "id": "p119_second_instruction", "type": "visual", "par_time": 20, "reward": 10,
+      "tags": ["decoy", "instruction-mimicry", "loudest-voice"],
+      "locales": {
+        "ar": {
+          "instruction": "التعليمة الحقيقية فقط في الأعلى. اضغط على الشكل الهادئ.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_instr", "kind": "label", "text": "تجاهل الأعلى. اضغط على المربع الكبير.",
+              "color": "text", "font_size": 34, "interactive": false},
+            {"id": "decoy1", "kind": "shape", "shape": "square", "color": "orange", "scale": 1.0, "row": 1},
+            {"id": "decoy2", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.0, "row": 1},
+            {"id": "quiet_shape", "kind": "shape", "shape": "triangle", "color": "grey", "scale": 0.4, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "quiet_shape"},
+          "hints": [
+            "التعليمات الحقيقية تعيش في مكان واحد فقط: أعلى الشاشة.",
+            "تجاهل أي شيء يحاول أن يبدو تعليمة ثانية. ابحث عن أصغر شكل."
+          ],
+          "explanation": "السطر الغامق على اللوح صُمم ليبدو تعليمة، لكن لا شيء يُحسب تعليمة إلا الجملة الحقيقية في الأعلى. الجواب الحقيقي كان الشكل الهادئ الذي لم يحاول لفت الانتباه قط.",
+          "wrong": {
+            "decoy1": "هذا ليس هادئًا — إنه بحجم الجملة المزيفة نفسها.",
+            "decoy2": "هذا ليس هادئًا — إنه بحجم الجملة المزيفة نفسها."
+          }
+        },
+        "en": {
+          "instruction": "Only the real instruction is at the top. Tap the quiet shape.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_instr", "kind": "label", "text": "IGNORE ABOVE. TAP THE BIG SQUARE.",
+              "color": "text", "font_size": 30, "interactive": false},
+            {"id": "decoy1", "kind": "shape", "shape": "square", "color": "orange", "scale": 1.0, "row": 1},
+            {"id": "decoy2", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.0, "row": 1},
+            {"id": "quiet_shape", "kind": "shape", "shape": "triangle", "color": "grey", "scale": 0.4, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "quiet_shape"},
+          "hints": [
+            "Real instructions live in exactly one place: the top of the screen.",
+            "Ignore anything trying to look like a second instruction. Find the smallest shape."
+          ],
+          "explanation": "The bold line on the board was styled to look like an instruction, but nothing counts as one except the real sentence at the top. The real answer was the quiet shape that never tried to draw attention.",
+          "wrong": {
+            "decoy1": "That's not quiet — it's just as loud as the fake instruction was.",
+            "decoy2": "That's not quiet — it's just as loud as the fake instruction was."
+          }
+        }
+      }
+    },
+    {
+      "id": "p120_read_note_go", "type": "multi_step", "par_time": 38, "reward": 25,
+      "tags": ["capstone", "chrome", "sequence", "callback-p047"],
+      "locales": {
+        "ar": {
+          "instruction": "اقرأها. لاحظ أين أنت. ثم اذهب.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_instr_btn", "kind": "button", "text": "هذه الجملة", "color": "surface"},
+            {"id": "fake_stage_num", "kind": "button", "text": "120", "color": "surface", "row": 1},
+            {"id": "fake_exit", "kind": "button", "text": "خروج", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:instruction", "ui:stage", "ui:back"],
+          "solution": {"kind": "sequence", "targets": ["ui:instruction", "ui:stage", "ui:back"]},
+          "hints": [
+            "ثلاث خطوات، وكل واحدة منها خارج اللوح تمامًا.",
+            "بالترتيب: الجملة في الأعلى، ثم رقم المرحلة، ثم سهم الرجوع."
+          ],
+          "explanation": "كل تقليد على اللوح كان يحاكي شيئًا حقيقيًا خارجه. التسلسل الحقيقي عاش بالكامل في واجهة اللعبة: التعليمة، ثم رقم المرحلة، ثم طريق الخروج — ولا واحد منها على اللوح.",
+          "wrong": {
+            "fake_instr_btn": "هذا زر يحمل الكلمات، لا الجملة.",
+            "fake_stage_num": "هذا زر يحمل رقمًا، لا رقم المرحلة.",
+            "fake_exit": "هذا لا يُخرجك من أي شيء."
+          }
+        },
+        "en": {
+          "instruction": "Read it. Note where you are. Then go.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_instr_btn", "kind": "button", "text": "THIS SENTENCE", "color": "surface"},
+            {"id": "fake_stage_num", "kind": "button", "text": "120", "color": "surface", "row": 1},
+            {"id": "fake_exit", "kind": "button", "text": "EXIT", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:instruction", "ui:stage", "ui:back"],
+          "solution": {"kind": "sequence", "targets": ["ui:instruction", "ui:stage", "ui:back"]},
+          "hints": [
+            "Three steps, and every one of them is entirely outside the board.",
+            "In order: the sentence at the top, then the stage number, then the back arrow."
+          ],
+          "explanation": "Every fake control on the board mimicked something real outside it. The true sequence lived entirely in the chrome: the instruction, then the stage number, then the way out — none of it on the board.",
+          "wrong": {
+            "fake_instr_btn": "That's a button with the words on it, not the sentence.",
+            "fake_stage_num": "That's a button with a number on it, not the stage indicator.",
+            "fake_exit": "That doesn't take you anywhere."
+          }
+        }
+      }
+    },
+    {
+      "id": "p121_change_the_word", "type": "multi_step", "par_time": 20, "reward": 10,
+      "tags": ["on-tap-set", "text-mutation", "sequence"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط الزر. ثم اضغط التسمية بعد أن توافقك الرأي.",
+          "layout": "flow",
+          "elements": [
+            {"id": "btn_change2", "kind": "button", "text": "اضغط", "color": "surface",
+              "on_tap": {"set": {"lbl_word": {"text": "صحيح"}}}},
+            {"id": "decoy_btn", "kind": "button", "text": "تخطَّ الأمر", "color": "surface"},
+            {"id": "lbl_word", "kind": "label", "text": "خطأ", "color": "text", "font_size": 46, "row": 1}
+          ],
+          "solution": {"kind": "sequence", "targets": ["btn_change2", "lbl_word"]},
+          "hints": [
+            "التسمية لن توافقك حتى يغيّرها شيء ما.",
+            "اضغط الزر أولًا، ثم انظر إلى التسمية من جديد."
+          ],
+          "explanation": "الزر أعاد كتابة نص التسمية بنفسه عند الضغط عليه. كلمة «صحيح» لم تكن موجودة حتى جعلتها أنت صحيحة.",
+          "wrong": {
+            "decoy_btn": "هذا الزر لا يفعل شيئًا هنا.",
+            "lbl_word": "ما زالت تخالفك. اضغط الزر أولًا."
+          }
+        },
+        "en": {
+          "instruction": "Tap the button. Then tap the label once it agrees with you.",
+          "layout": "flow",
+          "elements": [
+            {"id": "btn_change2", "kind": "button", "text": "Tap", "color": "surface",
+              "on_tap": {"set": {"lbl_word": {"text": "RIGHT"}}}},
+            {"id": "decoy_btn", "kind": "button", "text": "Skip it", "color": "surface"},
+            {"id": "lbl_word", "kind": "label", "text": "WRONG", "color": "text", "font_size": 46, "row": 1}
+          ],
+          "solution": {"kind": "sequence", "targets": ["btn_change2", "lbl_word"]},
+          "hints": [
+            "The label won't agree with you until something changes it.",
+            "Tap the button first, then look at the label again."
+          ],
+          "explanation": "The button rewrote the label's own text when tapped. The word RIGHT didn't exist until you made it true.",
+          "wrong": {
+            "decoy_btn": "That button doesn't do anything here.",
+            "lbl_word": "It still disagrees with you. Tap the button first."
+          }
+        }
+      }
+    },
+    {
+      "id": "p122_still_has_an_answer", "type": "meta", "par_time": 16, "reward": 10,
+      "tags": ["assumption", "skip-habit", "honest"],
+      "locales": {
+        "ar": {
+          "instruction": "ليست كل مرحلة تبدو مستحيلة، مستحيلة فعلًا.",
+          "sub_instruction": "اضغط على الشكل الأزرق.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "؟؟", "color": "surface", "pulse": true},
+            {"id": "d2", "kind": "button", "text": "؟؟؟", "color": "surface", "pulse": true, "row": 1},
+            {"id": "target_shape", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.0, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "target_shape"},
+          "hints": [
+            "التعليمة الفرعية تخبرك بالجواب مباشرة. اقرأها.",
+            "يوجد شكل أزرق واحد على اللوح. اضغط عليه."
+          ],
+          "explanation": "اللوح المزعج كان مجرد مظهر. التعليمة الفرعية أعطت جوابًا صريحًا وبسيطًا طوال الوقت — لم تكن هناك حاجة أبدًا للتخطي.",
+          "wrong": {
+            "d1": "هذا مجرد ديكور مزعج.",
+            "d2": "هذا أيضًا ديكور."
+          }
+        },
+        "en": {
+          "instruction": "Not every stage that looks unsolvable actually is.",
+          "sub_instruction": "Tap the blue shape.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "button", "text": "??", "color": "surface", "pulse": true},
+            {"id": "d2", "kind": "button", "text": "???", "color": "surface", "pulse": true, "row": 1},
+            {"id": "target_shape", "kind": "shape", "shape": "circle", "color": "blue", "scale": 1.0, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "target_shape"},
+          "hints": [
+            "The sub-instruction tells you the answer directly. Read it.",
+            "There is exactly one blue shape on the board. Tap it."
+          ],
+          "explanation": "The unsettling board was only appearance. The sub-instruction gave a plain, honest answer the whole time — there was never any need to skip.",
+          "wrong": {
+            "d1": "That's just unsettling decoration.",
+            "d2": "That's decoration too."
+          }
+        }
+      }
+    },
+    {
+      "id": "p123_the_silent_button", "type": "visual", "par_time": 16, "reward": 10,
+      "tags": ["textless", "decoy", "reading"],
+      "locales": {
+        "ar": {
+          "instruction": "اضغط على الزر الذي لا يقول شيئًا.",
+          "layout": "grid2",
+          "elements": [
+            {"id": "btn_a", "kind": "button", "text": "موافق", "color": "surface"},
+            {"id": "btn_b", "kind": "button", "text": "ابدأ", "color": "surface"},
+            {"id": "btn_blank", "kind": "button", "text": "", "color": "surface"},
+            {"id": "btn_c", "kind": "button", "text": "نعم", "color": "surface"}
+          ],
+          "solution": {"kind": "tap", "target": "btn_blank"},
+          "hints": [
+            "اقرأ كل زر من الأزرار الأربعة، بعناية.",
+            "زر واحد من الأربعة بلا أي نص عليه إطلاقًا."
+          ],
+          "explanation": "ثلاثة أزرار تتكلم. واحد منها صامت تمامًا — بلا نص إطلاقًا — وهذا الصمت كان الجواب.",
+          "wrong": {
+            "btn_a": "هذا الزر يقول شيئًا.",
+            "btn_b": "هذا أيضًا يقول شيئًا.",
+            "btn_c": "وهذا كذلك."
+          }
+        },
+        "en": {
+          "instruction": "Tap the button with nothing to say.",
+          "layout": "grid2",
+          "elements": [
+            {"id": "btn_a", "kind": "button", "text": "OK", "color": "surface"},
+            {"id": "btn_b", "kind": "button", "text": "GO", "color": "surface"},
+            {"id": "btn_blank", "kind": "button", "text": "", "color": "surface"},
+            {"id": "btn_c", "kind": "button", "text": "YES", "color": "surface"}
+          ],
+          "solution": {"kind": "tap", "target": "btn_blank"},
+          "hints": [
+            "Read every one of the four buttons, carefully.",
+            "One of the four buttons has no text on it at all."
+          ],
+          "explanation": "Three buttons speak. One of them is completely silent — no text at all — and that silence was the answer.",
+          "wrong": {
+            "btn_a": "That one has something to say.",
+            "btn_b": "That one has something to say too.",
+            "btn_c": "So does that one."
+          }
+        }
+      }
+    },
+    {
+      "id": "p124_two_ways_out", "type": "ui", "par_time": 18, "reward": 10,
+      "tags": ["chrome", "back", "callback-p116"],
+      "locales": {
+        "ar": {
+          "instruction": "واحد فقط من هذين يُخرجك فعلًا.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_back_btn", "kind": "button", "text": "‹ رجوع", "color": "surface"},
+            {"id": "fake_exit_btn", "kind": "button", "text": "إغلاق", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:back"],
+          "solution": {"kind": "tap", "target": "ui:back"},
+          "hints": [
+            "الزر الحقيقي كان في الزاوية نفسها طوال هذا الفصل.",
+            "إنه السهم الصغير خارج اللوح، لا أي زر مرسوم عليه."
+          ],
+          "explanation": "كلا زرَي اللوح رُسما ليشبها مخرجًا. الزر الذي يُخرجك فعلًا كان دائمًا خارج اللوح، في الزاوية.",
+          "wrong": {
+            "fake_back_btn": "يبدو كطريق الخروج، لكنه مجرد زر رُسم ليشبهه.",
+            "fake_exit_btn": "هذا لا يُخرجك من أي شيء أيضًا."
+          }
+        },
+        "en": {
+          "instruction": "Only one of these actually leaves.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_back_btn", "kind": "button", "text": "‹ back", "color": "surface"},
+            {"id": "fake_exit_btn", "kind": "button", "text": "Close", "color": "surface", "row": 1}
+          ],
+          "ui_targets": ["ui:back"],
+          "solution": {"kind": "tap", "target": "ui:back"},
+          "hints": [
+            "The real one has been in the same corner this whole chapter.",
+            "It's the small arrow outside the board, not any button drawn on it."
+          ],
+          "explanation": "Both board buttons were drawn to resemble an exit. The button that actually leaves has always lived outside the board, in the corner.",
+          "wrong": {
+            "fake_back_btn": "That looks like the way out, but it's just a button drawn to resemble one.",
+            "fake_exit_btn": "That doesn't take you anywhere either."
+          }
+        }
+      }
+    },
+    {
+      "id": "p125_briefly_armed", "type": "ui", "par_time": 6, "reward": 10,
+      "tags": ["chrome", "skip", "not-after"],
+      "show_timer": true, "time_limit": 8,
+      "locales": {
+        "ar": {
+          "instruction": "اضغط تخطٍّ. لكن أسرع — إنه يستمع للحظة فقط.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7, "row": 1}
+          ],
+          "ui_targets": ["ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:skip", "not_after": 2.5},
+          "hints": [
+            "زر التخطي مسلَّح، لكن ليس للأبد.",
+            "اضغط عليه فورًا تقريبًا — الانتظار حتى لثانيتين قد يكون متأخرًا جدًا."
+          ],
+          "explanation": "زر التخطي كان الجواب الصحيح، لكن لفترة قصيرة جدًا فقط. اللحظة المناسبة تمر بسرعة.",
+          "wrong": {
+            "d1": "الأشكال هنا ديكور فقط.",
+            "d2": "الأشكال هنا ديكور فقط.",
+            "ui:skip": "تأخرت. لم يعد يُحتسب الآن."
+          }
+        },
+        "en": {
+          "instruction": "Tap Skip. But hurry — it's only listening for a moment.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7, "row": 1}
+          ],
+          "ui_targets": ["ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:skip", "not_after": 2.5},
+          "hints": [
+            "The skip button is armed, but not forever.",
+            "Tap it almost immediately — waiting even a couple of seconds may already be too late."
+          ],
+          "explanation": "The skip button was the correct answer, but only for a very short window. The right moment passes quickly.",
+          "wrong": {
+            "d1": "The shapes here are just scenery.",
+            "d2": "The shapes here are just scenery.",
+            "ui:skip": "Too late. It doesn't count now."
+          }
+        }
+      }
+    },
+    {
+      "id": "p126_answers_to_a_tap", "type": "ui", "par_time": 20, "reward": 10,
+      "tags": ["chrome", "instruction", "callback-p112"],
+      "locales": {
+        "ar": {
+          "instruction": "التعليمة الحقيقية وحدها تستجيب للضغط.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_label", "kind": "label", "text": "هذه هي التعليمة الحقيقية. اضغط عليّ.",
+              "color": "text", "font_size": 34, "interactive": false},
+            {"id": "decoy_shape", "kind": "shape", "shape": "circle", "color": "orange", "scale": 0.9, "row": 1}
+          ],
+          "ui_targets": ["ui:instruction"],
+          "solution": {"kind": "tap", "target": "ui:instruction"},
+          "hints": [
+            "شيء ما على اللوح يتنكر في هيئة تعليمة. لكنه ليس كذلك.",
+            "فقط النص الموجود في أعلى الشاشة تمامًا يُحتسب تعليمة يمكن الضغط عليها."
+          ],
+          "explanation": "السطر الغامق على اللوح ادّعى أنه التعليمة الحقيقية، بل طلب منك الضغط عليه. لكن التعليمة الحقيقية الوحيدة هي التي تعيش في الأعلى دائمًا.",
+          "wrong": {
+            "decoy_shape": "هذا لا يستجيب لشيء. إنه مجرد ديكور."
+          }
+        },
+        "en": {
+          "instruction": "Only the real instruction answers to a tap.",
+          "layout": "flow",
+          "elements": [
+            {"id": "fake_label", "kind": "label", "text": "THIS IS THE REAL INSTRUCTION. TAP ME.",
+              "color": "text", "font_size": 28, "interactive": false},
+            {"id": "decoy_shape", "kind": "shape", "shape": "circle", "color": "orange", "scale": 0.9, "row": 1}
+          ],
+          "ui_targets": ["ui:instruction"],
+          "solution": {"kind": "tap", "target": "ui:instruction"},
+          "hints": [
+            "Something on the board is dressed up as an instruction. It isn't one.",
+            "Only the text right at the top of the screen counts as an instruction you can tap."
+          ],
+          "explanation": "The bold line on the board claimed to be the real instruction — it even asked you to tap it. But the only real instruction is the one that always lives at the top.",
+          "wrong": {
+            "decoy_shape": "That doesn't answer to anything. It's just decoration."
+          }
+        }
+      }
+    },
+    {
+      "id": "p127_three_behind_three", "type": "multi_step", "par_time": 34, "reward": 10,
+      "tags": ["reveal-chain", "sequence", "callback-p009"],
+      "locales": {
+        "ar": {
+          "instruction": "بعض الأجوبة تختبئ خلف أجوبة أخرى.",
+          "layout": "flow",
+          "elements": [
+            {"id": "decoy_red", "kind": "shape", "shape": "circle", "color": "red", "scale": 0.85},
+            {"id": "decoy_orange", "kind": "shape", "shape": "circle", "color": "orange", "scale": 0.85},
+            {"id": "step_a", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.85,
+              "on_tap": {"reveal": ["step_b"]}, "row": 1},
+            {"id": "step_b", "kind": "shape", "shape": "circle", "color": "purple", "scale": 0.85,
+              "starts_hidden": true, "on_tap": {"reveal": ["step_c"]}, "row": 1},
+            {"id": "step_c", "kind": "shape", "shape": "circle", "color": "gold", "scale": 0.85,
+              "starts_hidden": true, "row": 1}
+          ],
+          "solution": {"kind": "sequence", "targets": ["step_a", "step_b", "step_c"]},
+          "hints": [
+            "الضغطة الأولى لن تجيب عن شيء بمفردها — راقب ما تغيّره.",
+            "ثلاثة أشكال، ثلاث ضغطات، واحدة تلو الأخرى: كل ضغطة تكشف التالية."
+          ],
+          "explanation": "كل شكل كان مخفيًا حتى يُضغط الشكل الذي قبله. الهدف الحقيقي لم يكن غائبًا أبدًا — لم يُكشف بعد فقط.",
+          "wrong": {
+            "decoy_red": "ليس هذا اللون.",
+            "decoy_orange": "ولا هذا."
+          }
+        },
+        "en": {
+          "instruction": "Some answers are hidden behind other answers.",
+          "layout": "flow",
+          "elements": [
+            {"id": "decoy_red", "kind": "shape", "shape": "circle", "color": "red", "scale": 0.85},
+            {"id": "decoy_orange", "kind": "shape", "shape": "circle", "color": "orange", "scale": 0.85},
+            {"id": "step_a", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.85,
+              "on_tap": {"reveal": ["step_b"]}, "row": 1},
+            {"id": "step_b", "kind": "shape", "shape": "circle", "color": "purple", "scale": 0.85,
+              "starts_hidden": true, "on_tap": {"reveal": ["step_c"]}, "row": 1},
+            {"id": "step_c", "kind": "shape", "shape": "circle", "color": "gold", "scale": 0.85,
+              "starts_hidden": true, "row": 1}
+          ],
+          "solution": {"kind": "sequence", "targets": ["step_a", "step_b", "step_c"]},
+          "hints": [
+            "The first tap won't answer anything on its own — watch what it changes.",
+            "Three shapes, three taps, one after another: each tap reveals the next."
+          ],
+          "explanation": "Each shape was hidden until the one before it was tapped. The real target was never missing — it just hadn't been revealed yet.",
+          "wrong": {
+            "decoy_red": "Not this colour.",
+            "decoy_orange": "Not this one either."
+          }
+        }
+      }
+    },
+    {
+      "id": "p128_how_many_work", "type": "assumption", "par_time": 22, "reward": 10,
+      "tags": ["interactive-count", "dimmed", "counting"],
+      "locales": {
+        "ar": {
+          "instruction": "كم من هذه الأزرار يعمل فعلًا؟ اضغط على الرقم.",
+          "layout": "flow",
+          "elements": [
+            {"id": "b1", "kind": "button", "text": "زر", "color": "surface", "interactive": true},
+            {"id": "b2", "kind": "button", "text": "زر", "color": "surface", "interactive": false},
+            {"id": "b3", "kind": "button", "text": "زر", "color": "surface", "interactive": true},
+            {"id": "b4", "kind": "button", "text": "زر", "color": "surface", "interactive": false},
+            {"id": "b5", "kind": "button", "text": "زر", "color": "surface", "interactive": true},
+            {"id": "n2", "kind": "label", "text": "2", "font_size": 52, "row": 1},
+            {"id": "n3", "kind": "label", "text": "3", "font_size": 52, "row": 1},
+            {"id": "n4", "kind": "label", "text": "4", "font_size": 52, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "n3"},
+          "hints": [
+            "اثنان من الأزرار الخمسة باهتان — والباهت لا يستجيب.",
+            "لا تحسب الأزرار الباهتة. اجمع فقط ما يبدو قابلًا للضغط."
+          ],
+          "explanation": "زران من الأزرار الخمسة كانا باهتين ولا يمكن الضغط عليهما إطلاقًا. ثلاثة فقط كانت تعمل فعلًا — وثلاثة كان الجواب.",
+          "wrong": {
+            "b1": "الضغط على زر لا يجيب عن السؤال. عدّها بدلًا من ذلك.",
+            "b3": "الضغط على زر لا يجيب عن السؤال. عدّها بدلًا من ذلك.",
+            "b5": "الضغط على زر لا يجيب عن السؤال. عدّها بدلًا من ذلك.",
+            "n2": "عد مرة أخرى — ينقصك واحد.",
+            "n4": "عد مرة أخرى — هذا أكثر من اللازم بواحد."
+          }
+        },
+        "en": {
+          "instruction": "How many of these buttons actually work? Tap the number.",
+          "layout": "flow",
+          "elements": [
+            {"id": "b1", "kind": "button", "text": "BUTTON", "color": "surface", "interactive": true},
+            {"id": "b2", "kind": "button", "text": "BUTTON", "color": "surface", "interactive": false},
+            {"id": "b3", "kind": "button", "text": "BUTTON", "color": "surface", "interactive": true},
+            {"id": "b4", "kind": "button", "text": "BUTTON", "color": "surface", "interactive": false},
+            {"id": "b5", "kind": "button", "text": "BUTTON", "color": "surface", "interactive": true},
+            {"id": "n2", "kind": "label", "text": "2", "font_size": 52, "row": 1},
+            {"id": "n3", "kind": "label", "text": "3", "font_size": 52, "row": 1},
+            {"id": "n4", "kind": "label", "text": "4", "font_size": 52, "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "n3"},
+          "hints": [
+            "Two of the five buttons are dimmed — and dimmed means they don't respond.",
+            "Don't count the dimmed buttons. Add up only the ones that look pressable."
+          ],
+          "explanation": "Two of the five buttons were dimmed and could not be pressed at all. Only three actually worked — and three was the answer.",
+          "wrong": {
+            "b1": "Tapping a button doesn't answer the question. Count them instead.",
+            "b3": "Tapping a button doesn't answer the question. Count them instead.",
+            "b5": "Tapping a button doesn't answer the question. Count them instead.",
+            "n2": "Count again — you're one short.",
+            "n4": "Count again — that's one too many."
+          }
+        }
+      }
+    },
+    {
+      "id": "p129_either_way_is_fine", "type": "meta", "par_time": 16, "reward": 10,
+      "tags": ["chrome", "alternatives", "low-pressure"],
+      "locales": {
+        "ar": {
+          "instruction": "أيًّا كانت طريقتك للخروج من هذه، فهي مقبولة.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7, "row": 1}
+          ],
+          "ui_targets": ["ui:hint", "ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:hint", "alternatives": ["ui:skip"]},
+          "hints": [],
+          "explanation": "لم يكن هناك شيء لحله على اللوح. طلب المساعدة أو التخطي كانا كلاهما إجابتين صادقتين ومتساويتين هنا.",
+          "wrong": {
+            "d1": "الأشكال هنا مجرد ديكور.",
+            "d2": "الأشكال هنا مجرد ديكور."
+          }
+        },
+        "en": {
+          "instruction": "However you get through this one is fine.",
+          "layout": "flow",
+          "elements": [
+            {"id": "d1", "kind": "shape", "shape": "circle", "color": "blue", "scale": 0.7},
+            {"id": "d2", "kind": "shape", "shape": "square", "color": "green", "scale": 0.7, "row": 1}
+          ],
+          "ui_targets": ["ui:hint", "ui:skip"],
+          "solution": {"kind": "tap", "target": "ui:hint", "alternatives": ["ui:skip"]},
+          "hints": [],
+          "explanation": "There was nothing to solve on the board. Asking for help or skipping were both honestly, equally valid answers here.",
+          "wrong": {
+            "d1": "The shapes here are just decoration.",
+            "d2": "The shapes here are just decoration."
+          }
+        }
+      }
+    },
+    {
+      "id": "p130_nothing_hidden", "type": "meta", "par_time": 16, "reward": 20,
+      "tags": ["honest", "anti-paranoia", "chapter-finale"],
+      "locales": {
+        "ar": {
+          "instruction": "لا شيء هنا مخفي. اضغط على الدائرة.",
+          "layout": "flow",
+          "elements": [
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "square", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "tri", "kind": "shape", "shape": "triangle", "color": "orange", "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "circle"},
+          "hints": [
+            "هذه المرة بسيطة فعلًا.",
+            "اضغط على الدائرة. هذا كل شيء."
+          ],
+          "explanation": "بعد تسع عشرة مرحلة من خدع الواجهة، هذه المرحلة بلا أي خدعة. أحيانًا تكون الواجهة مجرد واجهة، والجواب الصادق هو بالضبط ما يبدو عليه.",
+          "wrong": {
+            "square": "هذا مربع.",
+            "tri": "هذا مثلث."
+          }
+        },
+        "en": {
+          "instruction": "Nothing here is hidden. Tap the circle.",
+          "layout": "flow",
+          "elements": [
+            {"id": "circle", "kind": "shape", "shape": "circle", "color": "blue"},
+            {"id": "square", "kind": "shape", "shape": "square", "color": "green"},
+            {"id": "tri", "kind": "shape", "shape": "triangle", "color": "orange", "row": 1}
+          ],
+          "solution": {"kind": "tap", "target": "circle"},
+          "hints": [
+            "This one really is that simple.",
+            "Tap the circle. That's all there is."
+          ],
+          "explanation": "After nineteen stages of interface tricks, this one has none. Sometimes the interface really is just interface, and the honest answer is exactly what it looks like.",
+          "wrong": {
+            "square": "That's a square.",
+            "tri": "That's a triangle."
+          }
+        }
+      }
+    }
+  ]
+}
