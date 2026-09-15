@@ -41,7 +41,7 @@ func _plan() -> Array:
 			shots.append({"loc": loc, "stage": stage,
 					"name": "%s_stage_%02d" % [loc, stage]})
 		# The result screen itself: what the player sees right after solving.
-		for stage in [1, 50]:
+		for stage in [1, 50, 100, 150]:
 			shots.append({"loc": loc, "stage": stage, "solved": true,
 					"name": "%s_result_%02d" % [loc, stage]})
 	return shots
