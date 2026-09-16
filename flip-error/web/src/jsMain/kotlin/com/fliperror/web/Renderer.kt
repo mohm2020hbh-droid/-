@@ -27,6 +27,8 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
 
     /** Visible world height in units. Keeps ~2.2s of track ahead of the runner. */
     private val viewHeight = 13.0
+    /** Floor on the world width shown, so a narrow frame cannot hide the track ahead. */
+    private val minViewWidth = 18.0
     private val playerScreenFraction = 0.22
 
     private var camY = 0.0
@@ -38,9 +40,19 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     var w = 0.0; var h = 0.0
 
     private var scale = 60.0
+    /** The height the camera scale corresponds to. Equals h in landscape; in a
+     *  frame the width floor has zoomed out, it is what the UI must size against,
+     *  or a tall frame blows the HUD up until the labels collide. */
+    private var uiH = 0.0
     private var originX = 0.0
 
     fun resetRun() { trail.clear(); shards.clear(); shardsSpawned = false }
+
+    /** World units visible across the frame. Asserted by the playtest. */
+    val visibleWorldWidth: Double get() = if (scale > 0.0) w / scale else 0.0
+
+    /** The height the UI is sized against. Asserted by the playtest. */
+    val uiHeight: Double get() = uiH
 
     fun update(g: Game, dt: Double) {
         if (g.grounded) groundRefY = g.y
@@ -78,7 +90,12 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private var camX = 0.0
 
     fun draw(g: Game) {
-        scale = h / viewHeight
+        // Height sets the scale, as it always has: every landscape aspect from 3:2
+        // up is wide enough that the floor below never binds. It binds only in a
+        // frame narrow for its height, where scaling off height alone would leave
+        // the runner barely a second of visible track and make deaths unreadable.
+        scale = min(h / viewHeight, w / minViewWidth)
+        uiH = scale * viewHeight
         originX = w * playerScreenFraction
         camX = g.x
 
@@ -276,16 +293,16 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     }
 
     private fun drawHud(g: Game) {
-        val pad = h * 0.045
+        val pad = uiH * 0.045
         ctx.textAlign = CanvasTextAlign.LEFT
         ctx.fillStyle = "#e8e8ff"
-        ctx.font = "700 ${h * 0.048}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText("LEVEL ${g.level.id}", pad, pad + h * 0.045)
+        ctx.font = "700 ${uiH * 0.048}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.fillText("LEVEL ${g.level.id}", pad, pad + uiH * 0.045)
         ctx.fillStyle = "#8a7fd6"
-        ctx.font = "600 ${h * 0.028}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText(g.level.name, pad, pad + h * 0.082)
+        ctx.font = "600 ${uiH * 0.028}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.fillText(g.level.name, pad, pad + uiH * 0.082)
 
-        val bw = w * 0.34; val bx = (w - bw) / 2; val by = pad + h * 0.01; val bh = h * 0.032
+        val bw = w * 0.34; val bx = (w - bw) / 2; val by = pad + uiH * 0.01; val bh = uiH * 0.032
         ctx.strokeStyle = "#5ad6ff"; ctx.lineWidth = 2.0
         roundRect(bx, by, bw, bh, bh / 2); ctx.stroke()
         ctx.fillStyle = "#5ad6ff"
@@ -296,14 +313,14 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.beginPath(); ctx.moveTo(mx, by - 3); ctx.lineTo(mx, by + bh + 3); ctx.stroke()
         }
         ctx.fillStyle = "#e8e8ff"
-        ctx.font = "700 ${h * 0.042}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "700 ${uiH * 0.042}px 'Chakra Petch', system-ui, sans-serif"
         ctx.textAlign = CanvasTextAlign.LEFT
-        ctx.fillText("${(g.progress * 100).toInt()}%", bx + bw + h * 0.028, by + bh * 0.9)
+        ctx.fillText("${(g.progress * 100).toInt()}%", bx + bw + uiH * 0.028, by + bh * 0.9)
 
         ctx.textAlign = CanvasTextAlign.RIGHT
         ctx.fillStyle = "#6a6a9a"
-        ctx.font = "600 ${h * 0.026}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText("ATTEMPT ${g.attempts}", w - pad, pad + h * 0.045)
+        ctx.font = "600 ${uiH * 0.026}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.fillText("ATTEMPT ${g.attempts}", w - pad, pad + uiH * 0.045)
     }
 
     private fun reason(c: DeathCause) = when (c) {
@@ -320,19 +337,19 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillRect(0.0, 0.0, w, h)
         ctx.textAlign = CanvasTextAlign.CENTER
         ctx.fillStyle = hazard
-        ctx.font = "800 ${h * 0.13}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "800 ${uiH * 0.13}px 'Chakra Petch', system-ui, sans-serif"
         ctx.fillText("GAME OVER", w / 2, h * 0.36)
         ctx.fillStyle = "#e8e8ff"
-        ctx.font = "700 ${h * 0.042}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "700 ${uiH * 0.042}px 'Chakra Petch', system-ui, sans-serif"
         ctx.fillText(reason(g.deathCause), w / 2, h * 0.47)
         ctx.fillStyle = "#8a7fd6"
-        ctx.font = "600 ${h * 0.034}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "600 ${uiH * 0.034}px 'Chakra Petch', system-ui, sans-serif"
         ctx.fillText("${(g.progress * 100).toInt()}%  ·  BEST ${(g.bestProgress * 100).toInt()}%", w / 2, h * 0.55)
         if (g.canRetry) {
             val pulse = 0.72 + 0.28 * abs(sin(g.stateTime * 3.0))
             ctx.globalAlpha = pulse
             ctx.fillStyle = "#e8e8ff"
-            ctx.font = "800 ${h * 0.055}px 'Chakra Petch', system-ui, sans-serif"
+            ctx.font = "800 ${uiH * 0.055}px 'Chakra Petch', system-ui, sans-serif"
             ctx.fillText("TAP ANYWHERE TO RETRY", w / 2, h * 0.70)
             ctx.globalAlpha = 1.0
         }
@@ -343,23 +360,23 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillRect(0.0, 0.0, w, h)
         ctx.textAlign = CanvasTextAlign.CENTER
         ctx.fillStyle = finish
-        ctx.font = "800 ${h * 0.13}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "800 ${uiH * 0.13}px 'Chakra Petch', system-ui, sans-serif"
         ctx.fillText("LEVEL COMPLETE", w / 2, h * 0.33)
         ctx.fillStyle = "#e8e8ff"
-        ctx.font = "700 ${h * 0.040}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "700 ${uiH * 0.040}px 'Chakra Petch', system-ui, sans-serif"
         val t = ((g.elapsed * 1000).toInt() / 1000.0)
         ctx.fillText("TIME ${t}s   ATTEMPTS ${g.attempts}   STAR ${g.starsCollected}/${g.level.stars.size}",
             w / 2, h * 0.45)
-        val bw = w * 0.36; val bh = h * 0.13; val bx = (w - bw) / 2; val by = h * 0.56
+        val bw = w * 0.36; val bh = uiH * 0.13; val bx = (w - bw) / 2; val by = h * 0.56
         ctx.fillStyle = "rgba(74,222,128,0.16)"
         ctx.strokeStyle = finish; ctx.lineWidth = 3.0
         roundRect(bx, by, bw, bh, bh * 0.3); ctx.fill(); ctx.stroke()
         ctx.fillStyle = finish
-        ctx.font = "800 ${h * 0.055}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "800 ${uiH * 0.055}px 'Chakra Petch', system-ui, sans-serif"
         ctx.fillText("NEXT LEVEL", w / 2, by + bh * 0.64)
         ctx.fillStyle = "#6a6a9a"
-        ctx.font = "600 ${h * 0.026}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText("LEVEL 2 IS NOT BUILT YET — TAP TO REPLAY LEVEL 1", w / 2, by + bh + h * 0.07)
+        ctx.font = "600 ${uiH * 0.026}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.fillText("LEVEL 2 IS NOT BUILT YET — TAP TO REPLAY LEVEL 1", w / 2, by + bh + uiH * 0.07)
     }
 
     private fun roundRect(x: Double, y: Double, rw: Double, rh: Double, r: Double) {

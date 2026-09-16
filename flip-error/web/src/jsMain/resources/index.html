@@ -10,18 +10,30 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
+  [hidden]{display:none!important;}
   html,body{width:100%;height:100%;overflow:hidden;background:#05060f;
     -webkit-tap-highlight-color:transparent;touch-action:none;overscroll-behavior:none;}
   canvas{display:block;width:100%;height:100%;}
-  #rotate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  /* Shown by script only, and only on a screen that really is portrait.
+     A CSS media query here would measure the frame, not the device. */
+  #rotate{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:14px;padding:0 16px;text-align:center;
     background:#05060f;color:#5ad6ff;font:700 18px/1.6 'Chakra Petch',system-ui,sans-serif;
-    letter-spacing:.18em;text-align:center;z-index:10;}
-  @media (orientation:portrait){#rotate{display:flex;}}
+    letter-spacing:.18em;z-index:10;}
+  #rotate span{color:#8a7fd6;font-size:13px;}
+  #escape{appearance:none;background:none;border:0;margin-top:10px;cursor:pointer;
+    color:#6a6a9a;font:600 12px/1.6 'Chakra Petch',system-ui,sans-serif;
+    letter-spacing:.14em;text-decoration:underline;text-underline-offset:4px;}
+  #escape:hover,#escape:focus-visible{color:#ffc93c;outline:none;}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="rotate">ROTATE YOUR DEVICE<br><span style="color:#8a7fd6;font-size:13px">FLIP ERROR IS PLAYED IN LANDSCAPE</span></div>
+<div id="rotate" hidden>
+  ROTATE YOUR DEVICE
+  <span>FLIP ERROR IS PLAYED IN LANDSCAPE</span>
+  <button id="escape" type="button" hidden>PLAY IN PORTRAIT ANYWAY</button>
+</div>
 <script src="flip-error.js"></script>
 </body>
 </html>
