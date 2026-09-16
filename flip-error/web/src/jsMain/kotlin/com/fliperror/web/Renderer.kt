@@ -22,14 +22,23 @@ import kotlin.random.Random
 class Renderer(private val ctx: CanvasRenderingContext2D) {
 
     // GDD 11.2: hot colours are reserved for death, everywhere, always.
-    private val hazard = "#ff2e63"
-    private val hazardDim = "#5c0f24"
-    private val safe = "#31d4f2"
-    private val safeFill = "#0a1420"
-    private val player = "#ffc93c"
-    private val gold = "#ffd166"
-    private val boost = "#fff6d8"      // the second jump's own colour, nothing else uses it
-    private val finish = "#4ade80"
+    private val hazard = Palette.HAZARD
+    private val hazardDim = Palette.HAZARD_DIM
+    private val safe = Palette.SAFE
+    private val safeFill = Palette.SAFE_FILL
+    private val gold = Palette.COIN
+    private val boost = Palette.BOOST
+    private val finish = Palette.FINISH
+
+    /** What the player is wearing. Set by the shell from saved progress. */
+    class Look {
+        var shape = "shape.square"
+        var colour = "color.yellow"
+        var trail = "trail.basic"
+        var face = "face.classic"
+    }
+    val look = Look()
+    private val player get() = Palette.player(look.colour)
 
     /** Visible world height in units. Keeps ~2.2s of track ahead of the runner. */
     private val viewHeight = 13.0
@@ -56,6 +65,11 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private var kickY = 0.0
     private var emitTimer = 0.0
     private var trailTimer = 0.0
+    /** Screen tint after a jump: [flash] is its life, [flashBoost] picks the colour. */
+    private var flash = 0.0
+    private var flashMax = 0.12
+    private var flashBoost = false
+    private var prevStars = 0
     /** Counts down after a boost; while it runs the trail is longer and brighter. */
     private var boostGlow = 0.0
 
@@ -64,6 +78,10 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private var wasRunning = true
 
     var w = 0.0; var h = 0.0
+    /** Banked coins, for the in-run counter. Star coins picked up now add to it live. */
+    var coins = 0
+    /** Set once by the shell; the tint and the spinner both sit this one out. */
+    var reducedMotion = false
 
     private var scale = 60.0
     /** The height the camera scale corresponds to. Equals h in landscape; in a
@@ -76,7 +94,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         trail.clear(); parts.clear(); rings.clear(); shards.clear()
         shardsSpawned = false
         stretch = 0.0; kickY = 0.0; boostGlow = 0.0
-        emitTimer = 0.0; trailTimer = 0.0
+        emitTimer = 0.0; trailTimer = 0.0; flash = 0.0; prevStars = 0
         prevGrounded = true; prevDoubles = 0; wasRunning = true
     }
 
@@ -128,18 +146,30 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         val restarted = !wasRunning && g.state == GameState.RUNNING
 
         if (restarted) resetRun()
-        if (justJumped) { stretch = 0.22; kickY = 1.6; burst(g, 9, 4.5, 0.85, 1.2) }
+        if (justJumped) {
+            stretch = 0.22; kickY = 1.6; burst(g, 9, 4.5, 0.85, 1.2)
+            flash = 0.085; flashMax = 0.085; flashBoost = false
+        }
         if (justDoubled) {
             stretch = 0.42
             kickY = 3.4
             boostGlow = 0.42
             burst(g, 20, 7.5, 1.25, 2.4)
             rings.add(doubleArrayOf(g.x + 0.5, g.y + 0.5, 0.26, 0.26))
+            flash = 0.115; flashMax = 0.115; flashBoost = true
             // a few long streaks so the second jump reads even in a still frame
             repeat(5) { spark(g.x + 0.5, g.y + 0.4, rnd(-9.0, -4.0), rnd(-1.0, 2.5), rnd(0.26, 0.42), 0.30, 2) }
         }
         if (justLanded) { stretch = -0.30; kickY = 2.2; burst(g, 8, 4.0, 0.55, 0.5) }
 
+        if (g.starsCollected != prevStars) {
+            prevStars = g.starsCollected
+            rings.add(doubleArrayOf(g.x + 0.5, g.y + 0.5, 0.30, 0.30))
+            for (i in 0 until 16) {
+                val a = i * PI * 2 / 16
+                spark(g.x + 0.5, g.y + 0.5, cos(a) * 5.5, sin(a) * 5.5 + 1.5, rnd(0.30, 0.55), 0.20, 1)
+            }
+        }
         prevGrounded = g.grounded
         prevDoubles = g.doubleJumps
         wasRunning = g.state == GameState.RUNNING
@@ -147,6 +177,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         // --- decay ----------------------------------------------------------
         stretch += (0.0 - stretch) * min(1.0, dt * 13.0)
         kickY += (0.0 - kickY) * min(1.0, dt * 11.0)
+        flash = max(0.0, flash - dt)
         boostGlow = max(0.0, boostGlow - dt)
         if (g.grounded && g.state == GameState.RUNNING) runPhase += dt * Tuning.RUN_SPEED / 1.35
 
@@ -221,6 +252,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         // the runner barely a second of visible track and make deaths unreadable.
         scale = min(h / viewHeight, w / minViewWidth)
         uiH = scale * viewHeight
+        takenStars = g.takenStarIndices()
         originX = w * playerScreenFraction
         camX = g.x
 
@@ -228,6 +260,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.save()
         ctx.translate(0.0, kickY)
         drawLevel(g.level)
+        drawReflection(g)
         drawShadow(g)
         drawTrail(g)
         drawParticles(g)
@@ -235,6 +268,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         if (g.state != GameState.DEAD) drawPlayer(g)
         drawShards()
         ctx.restore()
+        drawFlash()
         drawHud(g)
         if (g.state == GameState.DEAD) drawDeath(g)
         if (g.state == GameState.COMPLETE) drawComplete(g)
@@ -284,6 +318,8 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillRect(0.0, h * 0.18, w, h * 0.82)
     }
 
+    private var takenStars: Set<Int> = emptySet()
+
     private fun drawLevel(level: Level) {
         val left = camX - originX / scale - 2.0
         val right = camX + (w - originX) / scale + 2.0
@@ -326,8 +362,9 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.shadowBlur = 0.0
         }
 
-        for (st in level.stars) {
+        for ((i, st) in level.stars.withIndex()) {
             if (st.x < left || st.x > right) continue
+            if (takenStars.contains(i)) continue
             ctx.strokeStyle = gold; ctx.fillStyle = "rgba(255,209,102,0.18)"
             ctx.shadowBlur = 12.0; ctx.shadowColor = gold
             ctx.beginPath()
@@ -400,18 +437,19 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private fun drawTrail(g: Game) {
         val front = sx(g.x + Tuning.PLAYER_SIZE)
         ctx.lineWidth = 2.0
-        for (t in trail) {
+        for ((i, t) in trail.withIndex()) {
             val a = (t[2] / t[3]).coerceIn(0.0, 1.0)
             val px = sx(t[0] + 0.5)
             if (px > front) continue                      // never ahead of the runner
-            val size = scale * Tuning.PLAYER_SIZE * (0.26 + 0.62 * a)
-            ctx.globalAlpha = a.pow(1.3) * (if (boostGlow > 0.0) 0.88 else 0.64)
+            val size = scale * Tuning.PLAYER_SIZE * Art.trailScale(look.trail, a)
+            ctx.globalAlpha = if (boostGlow > 0.0) a.pow(1.15) * 0.92
+                              else Art.trailAlpha(look.trail, a.pow(1.15))
             ctx.lineWidth = 2.0 + a
-            ctx.strokeStyle = if (boostGlow > 0.0) boost else player
+            ctx.strokeStyle = if (boostGlow > 0.0) boost else Art.trailColour(look.trail, player, a, i)
             ctx.save()
             ctx.translate(px, sy(t[1] + 0.5))
             ctx.rotate(t[4] * PI / 180.0)
-            roundSquare(size, size * 0.18)
+            Art.shapePath(ctx, look.shape, size)
             ctx.stroke()
             ctx.restore()
         }
@@ -495,12 +533,14 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.translate(cx, cy)
         ctx.rotate(g.rotationDeg * PI / 180.0)
         ctx.scale(sx2, sy2)
-        ctx.shadowBlur = 16.0; ctx.shadowColor = if (g.face == Face.DOUBLE) boost else player
-        ctx.fillStyle = "#1a1405"
-        ctx.strokeStyle = if (g.face == Face.DOUBLE) boost else player
+        val edge = if (g.face == Face.DOUBLE) boost else player
+        ctx.shadowBlur = 22.0; ctx.shadowColor = edge
+        ctx.fillStyle = Palette.playerFill(look.colour)
+        ctx.strokeStyle = edge
         ctx.lineWidth = 3.0
-        roundSquare(s, 4.0)
+        Art.shapePath(ctx, look.shape, s)
         ctx.fill(); ctx.stroke()
+        ctx.stroke()                       // twice: the glow is the point
         ctx.shadowBlur = 0.0
         ctx.restore()
         // The body spins so the rotation reads as timing, but the face does not:
@@ -514,46 +554,54 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
 
     /** GDD 2.2: the face is a readability element, so it must stay legible at phone size. */
     private fun drawFace(g: Game, s: Double) {
-        val face = g.face
-        ctx.fillStyle = if (face == Face.DOUBLE) boost else player
-        val eye = s * 0.13
-        val ey = -s * 0.10
-        // A little life: the eyes lead the run, and look up on the way up.
-        val look = if (g.grounded) sin(runPhase * PI * 2) * s * 0.022 else 0.0
+        // A little life: the eyes lead the run, and lift on the way up.
+        val lead = if (g.grounded) sin(runPhase * PI * 2) * s * 0.022 else 0.0
         val lift = if (!g.grounded) (g.vy / Tuning.JUMP_VELOCITY).coerceIn(-1.0, 1.0) * s * 0.03 else 0.0
-        when (face) {
-            Face.RUN -> {
-                ctx.fillRect(-s * 0.22 - eye / 2 + look, ey - eye / 2, eye, eye)
-                ctx.fillRect(s * 0.22 - eye / 2 + look, ey - eye / 2, eye, eye)
-                ctx.strokeStyle = player; ctx.lineWidth = s * 0.07
-                ctx.beginPath(); ctx.arc(0.0, s * 0.06, s * 0.20, 0.15 * PI, 0.85 * PI); ctx.stroke()
-            }
-            Face.JUMP -> {
-                ctx.fillRect(-s * 0.24 - eye / 2, ey - eye * 0.8 - lift, eye, eye * 1.5)
-                ctx.fillRect(s * 0.24 - eye / 2, ey - eye * 0.8 - lift, eye, eye * 1.5)
-                ctx.beginPath(); ctx.ellipse(0.0, s * 0.12, s * 0.15, s * 0.17, 0.0, 0.0, PI * 2); ctx.fill()
-            }
-            // The boost gets its own face for the moment it lasts: eyes wide,
-            // mouth open. Even muted, the second jump is unmistakable.
-            Face.DOUBLE -> {
-                ctx.beginPath()
-                ctx.arc(-s * 0.23, ey - s * 0.02, eye * 0.85, 0.0, PI * 2)
-                ctx.arc(s * 0.23, ey - s * 0.02, eye * 0.85, 0.0, PI * 2)
-                ctx.fill()
-                ctx.beginPath(); ctx.ellipse(0.0, s * 0.15, s * 0.13, s * 0.20, 0.0, 0.0, PI * 2); ctx.fill()
-            }
-            Face.DEAD -> {
-                ctx.strokeStyle = hazard; ctx.lineWidth = s * 0.07
-                for (sgn in listOf(-1.0, 1.0)) {
-                    val ox = sgn * s * 0.22
-                    ctx.beginPath()
-                    ctx.moveTo(ox - eye, ey - eye); ctx.lineTo(ox + eye, ey + eye)
-                    ctx.moveTo(ox + eye, ey - eye); ctx.lineTo(ox - eye, ey + eye)
-                    ctx.stroke()
-                }
-                ctx.beginPath(); ctx.arc(0.0, s * 0.24, s * 0.17, 1.15 * PI, 1.85 * PI); ctx.stroke()
-            }
-        }
+        ctx.save()
+        ctx.translate(lead, Art.faceOffset(look.shape, s) - lift)
+        Art.face(ctx, look.face, g.face, s, if (g.face == Face.DOUBLE) boost else player)
+        ctx.restore()
+    }
+
+    /**
+     * The runner, upside down on the floor it is over. Cheap, and it is what
+     * makes a neon floor read as a surface rather than as a painted line.
+     */
+    private fun drawReflection(g: Game) {
+        if (g.state != GameState.RUNNING) return
+        val ground = groundUnder(g) ?: return
+        val height = g.y - ground
+        if (height > 4.2) return
+        val fade = (1.0 - height / 4.2).coerceIn(0.0, 1.0)
+        val s = scale * Tuning.PLAYER_SIZE
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(0.0, sy(ground), w, h)          // never above the surface
+        ctx.clip()
+        ctx.globalAlpha = 0.20 * fade
+        ctx.translate(sx(g.x + 0.5), sy(ground) + (sy(ground) - sy(g.y + 0.5)))
+        ctx.scale(1.0, -1.0)
+        ctx.rotate(g.rotationDeg * PI / 180.0)
+        ctx.strokeStyle = player
+        ctx.lineWidth = 3.0
+        Art.shapePath(ctx, look.shape, s)
+        ctx.stroke()
+        ctx.restore()
+        ctx.globalAlpha = 1.0
+    }
+
+    /**
+     * A tint, not a flash. Under a tenth of a second and never past 14% opacity,
+     * so a jump feels like it lit the room without hiding what is coming.
+     */
+    private fun drawFlash() {
+        if (flash <= 0.0 || reducedMotion) return
+        val a = (flash / flashMax).coerceIn(0.0, 1.0)
+        val peak = if (flashBoost) 0.14 else 0.075
+        ctx.globalAlpha = a * a * peak
+        ctx.fillStyle = if (flashBoost) boost else player
+        ctx.fillRect(0.0, 0.0, w, h)
+        ctx.globalAlpha = 1.0
     }
 
     private fun drawHud(g: Game) {
@@ -585,6 +633,11 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = "#6a6a9a"
         ctx.font = "600 ${uiH * 0.026}px 'Chakra Petch', system-ui, sans-serif"
         ctx.fillText("ATTEMPT ${g.attempts}", w - pad, pad + uiH * 0.045)
+        // Small on purpose: during a run the counter is a reminder, not a score.
+        ctx.fillStyle = gold
+        ctx.font = "700 ${uiH * 0.030}px 'Chakra Petch', system-ui, sans-serif"
+        val carried = coins + g.starsCollected
+        ctx.fillText("★ $carried", w - pad, pad + uiH * 0.088)
     }
 
     private fun reason(c: DeathCause) = when (c) {
@@ -619,28 +672,22 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         }
     }
 
+    /**
+     * The beat between crossing the gate and the reward screen coming up. It is
+     * deliberately thin: the panel that follows owns the payout and the buttons,
+     * and two of anything here would read through it.
+     */
     private fun drawComplete(g: Game) {
-        ctx.fillStyle = "rgba(5,6,15,0.82)"
+        ctx.fillStyle = "rgba(5,6,15,0.80)"
         ctx.fillRect(0.0, 0.0, w, h)
         ctx.textAlign = CanvasTextAlign.CENTER
         ctx.fillStyle = finish
-        ctx.font = "800 ${uiH * 0.13}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText("LEVEL COMPLETE", w / 2, h * 0.33)
+        ctx.font = "800 ${uiH * 0.12}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.fillText("LEVEL COMPLETE", w / 2, h * 0.46)
         ctx.fillStyle = "#e8e8ff"
-        ctx.font = "700 ${uiH * 0.040}px 'Chakra Petch', system-ui, sans-serif"
+        ctx.font = "700 ${uiH * 0.038}px 'Chakra Petch', system-ui, sans-serif"
         val t = ((g.elapsed * 1000).toInt() / 1000.0)
-        ctx.fillText("TIME ${t}s   ATTEMPTS ${g.attempts}   STAR ${g.starsCollected}/${g.level.stars.size}",
-            w / 2, h * 0.45)
-        val bw = w * 0.36; val bh = uiH * 0.13; val bx = (w - bw) / 2; val by = h * 0.56
-        ctx.fillStyle = "rgba(74,222,128,0.16)"
-        ctx.strokeStyle = finish; ctx.lineWidth = 3.0
-        roundRect(bx, by, bw, bh, bh * 0.3); ctx.fill(); ctx.stroke()
-        ctx.fillStyle = finish
-        ctx.font = "800 ${uiH * 0.055}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText("NEXT LEVEL", w / 2, by + bh * 0.64)
-        ctx.fillStyle = "#6a6a9a"
-        ctx.font = "600 ${uiH * 0.026}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText("LEVEL 2 IS NOT BUILT YET — TAP TO REPLAY LEVEL 1", w / 2, by + bh + uiH * 0.07)
+        ctx.fillText("TIME ${t}s   ATTEMPTS ${g.attempts}", w / 2, h * 0.56)
     }
 
     private fun roundRect(x: Double, y: Double, rw: Double, rh: Double, r: Double) {

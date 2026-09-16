@@ -78,10 +78,16 @@ object Level1 {
         hazards += spike(289.0, LOW)
         hazards += spike(292.9, LOW)
 
-        // bar 11: the breath. The only star, optional, and hung above a single
-        // jump's ceiling: it is what the second jump is FOR, and the one place
-        // on the level where spending it costs nothing.
-        val stars = listOf(Star(171.0, 4.3))
+        // Three STAR COINS. All optional, none of them on the line the verifier
+        // flies, so the level's own difficulty is untouched by them.
+        val stars = listOf(
+            Star(60.0, 2.4),         // between two spikes: one ordinary jump, taken on purpose
+            Star(171.0, 4.3),        // bar 11's breath, hung above a single jump's ceiling:
+                                     // this is what the second jump is FOR
+            Star(258.0, -1.0),       // deep in the gauntlet, on the one stretch the fast line
+                                     // runs along the floor: taking it costs an extra jump
+                                     // between two gaps, where a mistimed one is a pit
+        )
 
         return Level(
             id = 1,

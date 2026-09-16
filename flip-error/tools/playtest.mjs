@@ -59,6 +59,9 @@ page.on('pageerror', e => errors.push(String(e)));
 await page.addInitScript(p => { window.__plan = p; }, plan.jumps);
 await page.goto(url, { waitUntil: 'load' });
 await page.waitForFunction(() => window.FLIP && typeof window.FLIP.x === 'function', { timeout: 10000 });
+// The game opens on the level select now, so every harness starts a level.
+await page.evaluate(() => { FLIP.wipe(); FLIP.play(1); });
+await page.waitForFunction(() => FLIP.screen() === 'PLAYING', { timeout: 5000 });
 
 const S = () => page.evaluate(() => ({
   state: FLIP.state(), x: FLIP.x(), y: FLIP.y(), vy: FLIP.vy(),

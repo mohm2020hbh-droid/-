@@ -57,6 +57,10 @@ class Game(val level: Level) {
     var starsCollected = 0; private set
     private val takenStars = HashSet<Int>()
 
+    /** Which star coins are already in the bag this run. The shell draws the rest. */
+    fun starTaken(index: Int) = index in takenStars
+    fun takenStarIndices(): Set<Int> = takenStars.toSet()
+
     private var accumulator = 0.0
 
     val progress: Double get() = (x / level.finishX).coerceIn(0.0, 1.0)

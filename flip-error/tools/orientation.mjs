@@ -60,6 +60,13 @@ async function open(opts, { query = '' } = {}) {
   page.on('pageerror', e => jsErrors.push(String(e)));
   await page.goto(base + query, { waitUntil: 'load' });
   await page.waitForFunction(() => window.FLIP && typeof window.FLIP.gated === 'function', { timeout: 10000 });
+  // The gate is judged with a level actually running behind it - and with a few
+  // frames already drawn, because a renderer that has not drawn yet still
+  // reports the scale it was constructed with.
+  await page.evaluate(() => { FLIP.wipe(); FLIP.play(1); });
+  await page.evaluate(() => new Promise(r => {
+    let i = 0; const go = () => (++i >= 4 ? r() : requestAnimationFrame(go)); requestAnimationFrame(go);
+  })).catch(() => {});
   return { ctx, page };
 }
 

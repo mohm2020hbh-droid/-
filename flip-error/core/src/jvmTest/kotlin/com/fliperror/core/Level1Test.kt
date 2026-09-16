@@ -99,9 +99,12 @@ class Level1Test {
         return best
     }
 
-    @Test fun `the star is what the second jump is for`() {
-        assertEquals(1, level.stars.size)
-        val y = level.stars[0].y
+    @Test fun `the level carries three star coins`() {
+        assertEquals(3, level.stars.size)
+    }
+
+    @Test fun `the highest star is what the second jump is for`() {
+        val y = level.stars.maxOf { it.y }
         assertEquals(0, bestStars(y, boost = false),
             "a single jump reaches the star at y=$y; then the boost has no purpose here")
         assertEquals(1, bestStars(y, boost = true),
@@ -156,11 +159,36 @@ class Level1Test {
             append(",\"jumps\":[")
             report.jumps.forEachIndexed { i, j ->
                 if (i > 0) append(",")
-                append("{\"x\":").append(j.x).append(",\"window\":").append(j.window).append("}")
+                append("{\"x\":").append(j.x).append(",\"window\":").append(j.window)
+                append(",\"boosted\":").append(j.boosted).append(",\"boostX\":").append(j.boostX).append("}")
             }
             append("]}")
         })
         assertTrue(f.length() > 50)
+    }
+
+    /**
+     * A collectible that the optimal line picks up on its way past is not a
+     * reward, it is decoration: it pays the player for doing nothing different.
+     */
+    @Test fun `no star coin is free on the verified line`() {
+        val g = Game(level)
+        var i = 0
+        var owed = false
+        var guard = 0
+        while (g.state == GameState.RUNNING && guard++ < 40_000) {
+            if (i < report.jumps.size && g.x >= report.jumps[i].x) {
+                owed = report.jumps[i].boosted; i++; g.onTap()
+            } else if (owed && g.canDoubleJump && g.x >= report.jumps[i - 1].boostX) {
+                g.onTap(); owed = false
+            }
+            g.update(Tuning.FIXED_DT)
+        }
+        assertEquals(GameState.COMPLETE, g.state, "the exported line does not clear the level")
+        assertEquals(0, g.starsCollected,
+            "the fastest line collects " + g.takenStarIndices().sorted().joinToString { i ->
+                "#$i at (${level.stars[i].x}, ${level.stars[i].y})"
+            } + " on its way past")
     }
 
     @Test fun `report`() {
@@ -171,7 +199,8 @@ class Level1Test {
             "nodes=${report.nodesExplored}")
         report.jumps.forEachIndexed { i, j ->
             println("  jump ${(i + 1).toString().padStart(2)}: window ${"%.3f".format(j.window)}s " +
-                "at x=${"%.1f".format(j.x)} (${"%.0f".format(j.percent)}%)")
+                "at x=${"%.1f".format(j.x)} (${"%.0f".format(j.percent)}%)" +
+                if (j.boosted) "  +BOOST window ${"%.3f".format(j.boostWindow)}s" else "")
         }
     }
 }

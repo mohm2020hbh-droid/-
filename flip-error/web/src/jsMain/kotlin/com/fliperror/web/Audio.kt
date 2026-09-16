@@ -25,8 +25,18 @@ object Audio {
             if (C == null) return false
             ctx = js("new C()")
             master = ctx.createGain()
-            master.gain.value = 0.22
-            master.connect(ctx.destination)
+            master.gain.value = 0.62
+            // A limiter, not a loudness trick: it lets the master sit much higher
+            // for a phone speaker while a jump landing on top of the music still
+            // cannot clip. Everything below is mixed against this ceiling.
+            val comp = ctx.createDynamicsCompressor()
+            comp.threshold.value = -12.0
+            comp.knee.value = 24.0
+            comp.ratio.value = 12.0
+            comp.attack.value = 0.003
+            comp.release.value = 0.16
+            master.connect(comp)
+            comp.connect(ctx.destination)
         }
         return ctx != null
     }
@@ -100,8 +110,8 @@ object Audio {
     /** Light, round, and upward: a hop, not a launch. */
     fun jump() {
         val root = jumpRoot()
-        tone(root * 0.75, root * 1.30, 0.085, "triangle", 0.15)
-        tone(root * 1.5, root * 2.4, 0.055, "sine", 0.045)      // a little air on top
+        tone(root * 0.75, root * 1.30, 0.095, "triangle", 0.34)
+        tone(root * 1.5, root * 2.4, 0.060, "sine", 0.12)      // a little air on top
         streak++
     }
 
@@ -112,38 +122,48 @@ object Audio {
      */
     fun doubleJump() {
         val root = jumpRoot() * 1.5
-        tone(root, root * 1.18, 0.055, "triangle", 0.14)
-        tone(root * 1.34, root * 1.9, 0.090, "triangle", 0.13, delay = 0.045)
-        tone(root * 3.0, root * 3.6, 0.070, "sine", 0.04, delay = 0.045)
+        tone(root, root * 1.18, 0.060, "triangle", 0.34)
+        tone(root * 1.34, root * 1.9, 0.100, "triangle", 0.36, delay = 0.045)
+        tone(root * 3.0, root * 3.6, 0.075, "sine", 0.13, delay = 0.045)
     }
 
     /** A short rubbery drop. Comic, not catastrophic, and out of the way fast. */
     fun death() {
         streak = 0
-        tone(520.0, 90.0, 0.17, "triangle", 0.20)
-        tone(260.0, 62.0, 0.19, "sine", 0.12, delay = 0.012)
+        tone(520.0, 90.0, 0.18, "triangle", 0.44)
+        tone(260.0, 62.0, 0.20, "sine", 0.28, delay = 0.012)
     }
 
     /** Barely there: a soft tap so the ground has weight. */
     fun land() {
-        tone(180.0, 96.0, 0.065, "sine", 0.085)
+        tone(180.0, 96.0, 0.070, "sine", 0.20)
     }
 
     /** A spike cleared with nothing to spare. */
     fun nearMiss() {
-        whoosh(2400.0, 0.11, 0.055)
+        whoosh(2400.0, 0.11, 0.14)
+    }
+
+    /** Menu feedback. Quieter than anything in the run, and out of the way fast. */
+    fun uiConfirm() {
+        tone(700.0, 1050.0, 0.075, "triangle", 0.30)
+        tone(1400.0, 1760.0, 0.095, "sine", 0.14, delay = 0.05)
+    }
+
+    fun uiDenied() {
+        tone(220.0, 165.0, 0.10, "triangle", 0.26)
     }
 
     fun star() {
-        tone(1318.5, 1318.5, 0.07, "triangle", 0.11)
-        tone(1975.5, 1975.5, 0.12, "triangle", 0.10, delay = 0.06)
+        tone(1318.5, 1318.5, 0.075, "triangle", 0.30)
+        tone(1975.5, 1975.5, 0.13, "triangle", 0.28, delay = 0.06)
     }
 
     fun finish() {
         streak = 0
         listOf(523.25, 659.25, 783.99, 1046.5).forEachIndexed { i, f ->
-            tone(f, f, 0.20, "triangle", 0.16, delay = i * 0.085)
-            tone(f * 2, f * 2, 0.14, "sine", 0.05, delay = i * 0.085)
+            tone(f, f, 0.21, "triangle", 0.38, delay = i * 0.085)
+            tone(f * 2, f * 2, 0.15, "sine", 0.14, delay = i * 0.085)
         }
     }
 
@@ -160,7 +180,7 @@ object Audio {
                 k.type = "sine"
                 k.frequency.setValueAtTime(140.0, t)
                 k.frequency.exponentialRampToValueAtTime(42.0, t + 0.11)
-                kg.gain.setValueAtTime(0.42, t)
+                kg.gain.setValueAtTime(0.62, t)
                 kg.gain.exponentialRampToValueAtTime(0.0001, t + 0.16)
                 k.connect(kg); kg.connect(master); k.start(t); k.stop(t + 0.17)
                 // Triangle, not sawtooth: the bed should carry the pulse without
@@ -168,7 +188,7 @@ object Audio {
                 val b = ctx.createOscillator(); val bg = ctx.createGain()
                 b.type = "triangle"
                 b.frequency.setValueAtTime(notes[step % notes.size], t)
-                bg.gain.setValueAtTime(0.11, t)
+                bg.gain.setValueAtTime(0.20, t)
                 bg.gain.exponentialRampToValueAtTime(0.0001, t + beat * 0.85)
                 b.connect(bg); bg.connect(master); b.start(t); b.stop(t + beat)
                 step++
