@@ -26,7 +26,7 @@ class NearMissTest {
         val g = Game(level)
         // Measure through the same boxes the game kills with, or the number here
         // describes a different pass than the one the cue is judging.
-        val box = level.hazards[0].hitBox
+        val box = level.hazards[0].hitBoxAt(0.0)
         var clearance = Double.MAX_VALUE
         var tapped = false
         var guard = 0
@@ -95,7 +95,7 @@ class NearMissTest {
             g.update(Tuning.FIXED_DT)
             val hb = g.hitBox
             level.forEachHazardNear(hb.x0, hb.x1) { h ->
-                val b = h.hitBox
+                val b = h.hitBoxAt(g.elapsed)
                 if (hb.x1 > b.x0 && hb.x0 < b.x1) {
                     val gap = if (h.kind == HazardKind.SPIKE_UP) hb.y0 - b.y1 else b.y0 - hb.y1
                     val cur = mins[h.x0]

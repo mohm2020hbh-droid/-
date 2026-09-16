@@ -189,7 +189,7 @@ class Game(val level: Level) {
         // 5. Hazards.
         val hb = hitBox
         level.forEachHazardNear(hb.x0, hb.x1) { h ->
-            if (hb.overlaps(h.hitBox)) {
+            if (hb.overlaps(h.hitBoxAt(elapsed))) {
                 die(if (h.kind == HazardKind.SPIKE_DOWN) DeathCause.CEILING_SPIKE else DeathCause.SPIKE)
                 return
             }
@@ -201,7 +201,7 @@ class Game(val level: Level) {
         var tightest = Double.MAX_VALUE
         var edge = Double.NaN
         level.forEachHazardNear(hb.x0, hb.x1) { h ->
-            val box = h.hitBox
+            val box = h.hitBoxAt(elapsed)
             if (hb.x1 > box.x0 && hb.x0 < box.x1) {
                 val gap = if (h.kind == HazardKind.SPIKE_UP) hb.y0 - box.y1 else box.y0 - hb.y1
                 if (edge.isNaN() || box.x1 < edge) { edge = box.x1; tightest = gap }

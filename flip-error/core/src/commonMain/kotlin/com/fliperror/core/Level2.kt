@@ -22,6 +22,20 @@ object Level2 {
     private const val LOW = -3.4
 
     private fun spike(x: Double, y: Double) = Hazard(HazardKind.SPIKE_UP, x, x + 1.0, y, y + 1.0)
+
+    /**
+     * A spike that slides along its platform. One bar per round trip, so it is
+     * moving visibly for the whole approach and is back where it started every
+     * time the music comes round - the player learns it once and owns it.
+     */
+    private fun slider(x: Double, y: Double, reach: Double, phase: Double = 0.0) =
+        Hazard(HazardKind.SPIKE_UP, x, x + 1.0, y, y + 1.0,
+            Motion(dx = reach, period = Tuning.BAR, phase = phase))
+
+    /** A spike that rises out of the floor and sinks back into it. */
+    private fun piston(x: Double, y: Double, rise: Double, period: Double, phase: Double = 0.0) =
+        Hazard(HazardKind.SPIKE_UP, x, x + 1.0, y, y + 1.0,
+            Motion(dy = rise, period = period, phase = phase))
     private fun ceilingSpikes(x0: Double, x1: Double, tip: Double): List<Hazard> {
         val out = ArrayList<Hazard>()
         var x = x0
@@ -66,16 +80,16 @@ object Level2 {
         hazards += spike(58.0, GROUND)
         hazards += spike(84.0, GROUND)
         // 30-55%: spikes guarding the landings, so a gap is never the only threat.
-        hazards += spike(133.0, GROUND)
+        hazards += slider(133.0, GROUND, 2.0)                 // slides: read where it IS
         hazards += spike(150.0, GROUND)
-        hazards += spike(171.0, GROUND)
+        hazards += slider(171.0, GROUND, 2.4, phase = 0.5)    // the same idea, out of step
         hazards += spike(200.0, GROUND)
         // A low ceiling on the run-up to the rest: the one place the second tap
         // is fatal, set immediately after the gaps that demand it.
         hazards += ceilingSpikes(186.0, 194.0, 2.3)
         // 70-90%: the gauntlet's spikes sit on the two longest landings.
         hazards += spike(283.0, LOW)
-        hazards += spike(300.0, LOW)
+        hazards += piston(300.0, LOW - 0.9, 1.3, Tuning.BAR * 0.75)  // rises out of the floor
         // 90-100%: clear one, then land in the slot between the last two.
         hazards += spike(318.0, LOW)
         hazards += spike(325.0, LOW)

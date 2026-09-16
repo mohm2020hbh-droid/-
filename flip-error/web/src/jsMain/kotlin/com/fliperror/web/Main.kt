@@ -8,7 +8,9 @@ import com.fliperror.core.GameState
 import com.fliperror.core.Level
 import com.fliperror.core.Level1
 import com.fliperror.core.Level2
+import com.fliperror.core.Lang
 import com.fliperror.core.Progress
+import com.fliperror.core.Settings
 import com.fliperror.core.ViewportProbe
 import com.fliperror.core.blocksPlay
 import com.fliperror.core.decideGate
@@ -27,6 +29,7 @@ import kotlin.math.min
 /** Seconds the rotate screen may stay up before it offers a way past itself. */
 private const val ESCAPE_HATCH_DELAY_MS = 2500
 private const val SAVE_KEY = "flip-error.progress.v1"
+private const val SETTINGS_KEY = "flip-error.settings.v1"
 
 private enum class Screen { MENU, PLAYING, SHOP, REWARD }
 
@@ -64,8 +67,10 @@ private fun readDevOverride(): Boolean {
 }
 
 /** Storage can be absent, full, or refuse to answer. None of that is fatal. */
-private fun loadSave(): String? = try { localStorage[SAVE_KEY] } catch (e: Throwable) { null }
-private fun writeSave(v: String) { try { localStorage[SAVE_KEY] = v } catch (e: Throwable) { } }
+private fun read(key: String): String? = try { localStorage[key] } catch (e: Throwable) { null }
+private fun write(key: String, v: String) { try { localStorage[key] = v } catch (e: Throwable) { } }
+private fun loadSave(): String? = read(SAVE_KEY)
+private fun writeSave(v: String) = write(SAVE_KEY, v)
 
 fun main() {
     val canvas = document.getElementById("c") as HTMLCanvasElement
@@ -77,6 +82,7 @@ fun main() {
     renderer.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
     val progress = Progress.parse(loadSave())
+    val settings = Settings.parse(read(SETTINGS_KEY))
     val levels = listOf(
         LevelDef(LevelCard(1, "FIRST STEPS HURT", 3, true)) { Level1.build() },
         LevelDef(LevelCard(2, "GAP LOGIC", 3, true)) { Level2.build() },
@@ -92,6 +98,23 @@ fun main() {
 
     fun save() = writeSave(progress.serialize())
 
+    /** Push every switch to the thing it controls. Called on load and on change. */
+    fun applySettings() {
+        write(SETTINGS_KEY, settings.serialize())
+        Audio.sfxEnabled = settings.sfx
+        Audio.musicEnabled = settings.music
+        renderer.reduceEffects = settings.reduceEffects
+        renderer.colorblind = settings.colorblind
+        document.documentElement?.setAttribute("dir", if (settings.lang == Lang.AR) "rtl" else "ltr")
+        Strings.lang = settings.lang
+    }
+
+    /** A short pulse, where the device has one and the player wants it. */
+    fun buzz(ms: Int) {
+        if (!settings.vibration) return
+        try { window.navigator.asDynamic().vibrate(ms) } catch (e: Throwable) { }
+    }
+
     fun applyLook() {
         renderer.look.shape = progress.equipped(Category.SHAPE)
         renderer.look.colour = progress.equipped(Category.COLOR)
@@ -100,6 +123,7 @@ fun main() {
         renderer.coins = progress.coins
     }
     applyLook()
+    applySettings()
 
     // The play area, not the frame around it: a host that pads the page for a
     // notch gives the canvas a different box than the window, and the gate must
@@ -151,6 +175,7 @@ fun main() {
         val build = def.build ?: return
         if (!progress.unlocked(id)) return
         currentLevel = id
+        renderer.theme = Theme.forLevel(id)
         game = Game(build())
         lastAttempt = game.attempts
         awarded = false
@@ -162,7 +187,16 @@ fun main() {
         Audio.resume()
     }
 
-    ui = Ui(progress, levels.map { it.card }, onPlay = ::startLevel, onSave = { save(); applyLook() })
+    ui = Ui(
+        progress, settings, levels.map { it.card },
+        onPlay = ::startLevel,
+        onSave = { save(); applyLook() },
+        onSettingsChanged = { applySettings() },
+        onWipe = {
+            try { localStorage.removeItem(SAVE_KEY) } catch (e: Throwable) { }
+            window.location.reload()
+        },
+    )
 
     fun evaluateGate() {
         reason = decideGate(probe())
@@ -240,8 +274,16 @@ fun main() {
             if (!groundedBefore && game.grounded && running) Audio.land()
             if (game.doubleJumps != prevDoubles) { prevDoubles = game.doubleJumps; Audio.doubleJump() }
             if (game.nearMisses != prevNear) { prevNear = game.nearMisses; Audio.nearMiss() }
-            if (game.starsCollected != prevStars) { prevStars = game.starsCollected; Audio.star() }
-            if (prevState == GameState.RUNNING && game.state == GameState.DEAD) Audio.death()
+            if (game.starsCollected != prevStars) {
+                prevStars = game.starsCollected
+                Audio.star()
+                buzz(18)
+                // Banked now, not at the finish: there are no checkpoints, and a
+                // coin reached at 85% is still a coin the player reached.
+                game.takenStarIndices().forEach { progress.collectStar(currentLevel, it) }
+                save(); applyLook()
+            }
+            if (prevState == GameState.RUNNING && game.state == GameState.DEAD) { Audio.death(); buzz(45) }
             if (prevState == GameState.RUNNING && game.state == GameState.COMPLETE) {
                 Audio.finish()
                 rewardAt = now + 900.0
@@ -328,5 +370,35 @@ fun main() {
     api.openMenu = { showScreen(Screen.MENU) }
     api.grant = { n: Int -> progress.coins += n; save(); applyLook() }
     api.saved = { loadSave() ?: "" }
-    api.wipe = { try { localStorage.removeItem(SAVE_KEY) } catch (e: Throwable) {} }
+    api.wipe = {
+        try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SETTINGS_KEY) } catch (e: Throwable) {}
+    }
+    api.setting = { key: String, on: Boolean ->
+        when (key) {
+            "music" -> settings.music = on
+            "sfx" -> settings.sfx = on
+            "vibration" -> settings.vibration = on
+            "reduceEffects" -> settings.reduceEffects = on
+            "colorblind" -> settings.colorblind = on
+        }
+        applySettings()
+    }
+    api.settingOf = { key: String ->
+        when (key) {
+            "music" -> settings.music
+            "sfx" -> settings.sfx
+            "vibration" -> settings.vibration
+            "reduceEffects" -> settings.reduceEffects
+            "colorblind" -> settings.colorblind
+            else -> false
+        }
+    }
+    api.setLang = { code: String -> settings.lang = if (code == "AR") Lang.AR else Lang.EN; applySettings(); ui.refresh() }
+    api.lang = { settings.lang.name }
+    api.movers = { game.level.hazards.count { it.moves } }
+    /** Where mover [i] is this instant, so a test can prove it moves and repeats. */
+    api.moverX = { i: Int ->
+        val h = game.level.hazards.filter { it.moves }.getOrNull(i)
+        if (h == null) -1.0 else (h.drawBoxAt(game.elapsed).x0 + h.drawBoxAt(game.elapsed).x1) / 2.0
+    }
 }

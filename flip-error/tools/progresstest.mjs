@@ -166,21 +166,78 @@ const waitScreen = (s, t = 8000) =>
   const buyable = await page.locator('#shop .buy').count();
   check('coins make the shop live', buyable > 0, `${buyable} buyable`);
 
-  // buy the first paid shape and check the runner is actually wearing it
+  // BUY -> CONFIRMATION -> CANCEL -> nothing changed
+  const cancelled = await page.evaluate(async () => {
+    const before = FLIP.coins();
+    const btn = document.querySelector('#shop .buy[data-ask]');
+    const id = btn.dataset.ask;
+    btn.click();
+    const asked = !document.getElementById('modal').hidden;
+    document.getElementById('m-cancel').click();
+    return { before, after: FLIP.coins(), id, owns: FLIP.owns(id), asked,
+             closed: document.getElementById('modal').hidden };
+  });
+  check('a tap on BUY asks first', cancelled.asked);
+  check('CANCEL closes the sheet', cancelled.closed);
+  check('CANCEL spends nothing', cancelled.after === cancelled.before, `★ ${cancelled.after}`);
+  check('CANCEL grants nothing', !cancelled.owns, cancelled.id);
+  await page.screenshot({ path: path.join(shotDir, '04-confirm.png') });
+
+  // BUY -> CONFIRMATION -> BUY -> purchased
   const spent = await page.evaluate(async () => {
     const before = FLIP.coins();
-    const btn = document.querySelector('#shop .buy');
-    const id = btn.dataset.id;
+    const btn = document.querySelector('#shop .buy[data-ask]');
+    const id = btn.dataset.ask;
     btn.click();
-    return { before, after: FLIP.coins(), id, owns: FLIP.owns(id), worn: FLIP.equippedOf('SHAPE') };
+    document.getElementById('m-buy').click();
+    return { before, after: FLIP.coins(), id, owns: FLIP.owns(id), worn: FLIP.equippedOf('SHAPE'),
+             closed: document.getElementById('modal').hidden };
   });
-  check('buying spends the coins', spent.after < spent.before, `★ ${spent.before} -> ★ ${spent.after}`);
-  check('buying grants the item', spent.owns, spent.id);
+  check('confirming spends the coins', spent.after < spent.before, `★ ${spent.before} -> ★ ${spent.after}`);
+  check('confirming grants the item', spent.owns, spent.id);
   check('and equips it straight away', spent.worn === spent.id, spent.worn);
-  await page.screenshot({ path: path.join(shotDir, '04-shop-bought.png') });
+  check('the sheet closes after buying', spent.closed);
+  await page.screenshot({ path: path.join(shotDir, '05-shop-bought.png') });
 
   const wornTag = await page.locator('#shop .tag.worn').count();
   check('the shop marks what is equipped', wornTag >= 1, `${wornTag} marked`);
+  const shapes = await page.locator('#shop .item').count();
+  check('the new silhouettes are on sale', shapes >= 13, `${shapes} shapes`);
+}
+
+// 6b — the switches, and the second language.
+{
+  await page.evaluate(() => { FLIP.openMenu(); document.getElementById('to-settings').click(); });
+  const rows = await page.locator('#settings .sw').count();
+  check('settings offers every switch', rows === 5, `${rows} toggles`);
+
+  const toggled = await page.evaluate(() => {
+    const before = FLIP.settingOf('music');
+    document.querySelector('#settings .sw[data-toggle="music"]').click();
+    return { before, after: FLIP.settingOf('music') };
+  });
+  check('a switch actually flips', toggled.after === !toggled.before,
+        `music ${toggled.before} -> ${toggled.after}`);
+
+  await page.evaluate(() => document.querySelector('#settings .lang[data-lang="AR"]').click());
+  const ar = await page.evaluate(() => ({
+    lang: FLIP.lang(),
+    dir: document.documentElement.getAttribute('dir'),
+    text: document.querySelector('#settings .row.set span').textContent.trim(),
+  }));
+  check('switching to Arabic flips the page to RTL', ar.lang === 'AR' && ar.dir === 'rtl', ar.dir);
+  check('and the interface is actually translated', /[\u0600-\u06FF]/.test(ar.text), ar.text);
+  await page.screenshot({ path: path.join(shotDir, '06-settings-ar.png') });
+
+  await page.evaluate(() => document.querySelector('#settings .lang[data-lang="EN"]').click());
+  const back = await page.evaluate(() => ({ lang: FLIP.lang(), dir: document.documentElement.getAttribute('dir') }));
+  check('and back to English', back.lang === 'EN' && back.dir === 'ltr');
+
+  // settings survive the reload too
+  await page.evaluate(() => FLIP.setting('colorblind', true));
+  await boot();
+  check('settings survive a reload', await page.evaluate(() => FLIP.settingOf('colorblind')));
+  await page.evaluate(() => FLIP.setting('colorblind', false));
 }
 
 // 7 — the purchase survives a reload too, and nothing on sale is power.
@@ -227,6 +284,87 @@ const waitScreen = (s, t = 8000) =>
     requestAnimationFrame(go);
   }), plan1.jumps);
   check('a star coin can be picked up in a run', got >= 1, `${got} collected`);
+}
+
+// 9b — COLLECT STAR -> DIE -> RESTART -> the star is still yours.
+{
+  await page.evaluate(() => FLIP.play(1));
+  await waitScreen('PLAYING');
+  const run = await page.evaluate(p => new Promise(res => {
+    let i = 0, f = 0, jumped = false, boosted = false;
+    const go = () => {
+      f++;
+      const x = FLIP.x();
+      if (i < p.length && x >= p[i].x) { FLIP.tap(); i++; }
+      else if (!jumped && x >= 166.3) { FLIP.tap(); jumped = true; }
+      else if (jumped && !boosted && !FLIP.grounded() && FLIP.vy() <= 0) { FLIP.tap(); boosted = true; }
+      if (FLIP.stars() > 0 || f > 4000 || FLIP.state() !== 'RUNNING') {
+        return res({ stars: FLIP.stars(), banked: FLIP.levelStars(1), coins: FLIP.coins() });
+      }
+      requestAnimationFrame(go);
+    };
+    requestAnimationFrame(go);
+  }), plan1.jumps);
+  check('a collected coin is banked the instant it is touched',
+        run.stars >= 1 && run.banked >= 1, `${run.stars} in hand, ${run.banked} banked`);
+
+  // now throw the run away well before the finish
+  const died = await page.evaluate(() => new Promise(res => {
+    let f = 0;
+    const go = () => {
+      f++;
+      if (FLIP.state() === 'DEAD' || f > 3000) {
+        return res({ state: FLIP.state(), pct: FLIP.progress(), banked: FLIP.levelStars(1) });
+      }
+      requestAnimationFrame(go);
+    };
+    requestAnimationFrame(go);
+  }));
+  check('the run is lost without finishing', died.state === 'DEAD',
+        `${(died.pct * 100).toFixed(0)}%`);
+  check('dying does not take the coin back', died.banked >= 1, `${died.banked} still banked`);
+
+  await page.evaluate(() => FLIP.restart());
+  await boot();
+  check('and it is still there after a reload', await page.evaluate(() => FLIP.levelStars(1)) >= 1);
+}
+
+// 9c — the moving hazards actually move, and move the same way every run.
+{
+  await page.evaluate(() => FLIP.play(2));
+  await waitScreen('PLAYING');
+  const movers = await page.evaluate(() => FLIP.movers());
+  check('level 2 carries moving hazards', movers >= 3, `${movers} movers`);
+
+  const track = await page.evaluate(() => new Promise(res => {
+    const seen = []; let f = 0;
+    const go = () => {
+      f++;
+      if (f % 6 === 0) seen.push({ x: FLIP.x(), m: FLIP.moverX(0) });
+      if (f > 120) return res(seen);
+      requestAnimationFrame(go);
+    };
+    requestAnimationFrame(go);
+  }));
+  const spread = Math.max(...track.map(s => s.m)) - Math.min(...track.map(s => s.m));
+  check('a mover is actually sliding', spread > 1.0, `${spread.toFixed(2)}u of travel`);
+
+  // Same position for the same player position, on a fresh attempt: the hazard
+  // is a function of where you are, which is what makes it learnable.
+  const first = track[8];
+  const repeat = await page.evaluate(targetX => new Promise(res => {
+    FLIP.restart();
+    let f = 0;
+    const go = () => {
+      f++;
+      if (FLIP.x() >= targetX || f > 4000) return res({ x: FLIP.x(), m: FLIP.moverX(0) });
+      requestAnimationFrame(go);
+    };
+    requestAnimationFrame(go);
+  }), first.x);
+  check('and it is in the same place at the same point of the level',
+        Math.abs(repeat.m - first.m) < 0.25,
+        `${first.m.toFixed(2)}u then ${repeat.m.toFixed(2)}u at x≈${first.x.toFixed(0)}`);
 }
 
 // 10 — the effects budget holds on the new level too.

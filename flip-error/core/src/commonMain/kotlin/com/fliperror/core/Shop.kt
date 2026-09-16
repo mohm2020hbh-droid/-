@@ -25,6 +25,13 @@ object Shop {
         Cosmetic("shape.diamond", "DIAMOND", Category.SHAPE, 150),
         Cosmetic("shape.star", "STAR", Category.SHAPE, 200),
         Cosmetic("shape.cat", "CAT", Category.SHAPE, 260),
+        Cosmetic("shape.hexagon", "HEXAGON", Category.SHAPE, 140),
+        Cosmetic("shape.octagon", "OCTAGON", Category.SHAPE, 160),
+        Cosmetic("shape.crystal", "CRYSTAL", Category.SHAPE, 220),
+        Cosmetic("shape.bolt", "BOLT", Category.SHAPE, 240),
+        Cosmetic("shape.arrow", "ARROW", Category.SHAPE, 180),
+        Cosmetic("shape.ring", "RING", Category.SHAPE, 200),
+        Cosmetic("shape.cross", "CROSS", Category.SHAPE, 180),
 
         Cosmetic("color.yellow", "YELLOW", Category.COLOR, 0),
         Cosmetic("color.cyan", "CYAN", Category.COLOR, 80),

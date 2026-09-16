@@ -62,10 +62,10 @@ class Level1Test {
 
     @Test fun `hazards never intersect a landing surface`() {
         for (h in level.hazards) for (s in level.solids) {
-            if (h.hitBox.x0 < s.x1 && h.hitBox.x1 > s.x0) {
-                val sitsOn = kotlin.math.abs(h.hitBox.y0 - s.top) < 0.3
-                val above = h.hitBox.y0 >= s.top - 0.3
-                val below = h.hitBox.y1 <= s.bottom + 0.3
+            if (h.hitBoxAt(0.0).x0 < s.x1 && h.hitBoxAt(0.0).x1 > s.x0) {
+                val sitsOn = kotlin.math.abs(h.hitBoxAt(0.0).y0 - s.top) < 0.3
+                val above = h.hitBoxAt(0.0).y0 >= s.top - 0.3
+                val below = h.hitBoxAt(0.0).y1 <= s.bottom + 0.3
                 assertTrue(sitsOn || above || below, "hazard $h intersects solid $s")
             }
         }

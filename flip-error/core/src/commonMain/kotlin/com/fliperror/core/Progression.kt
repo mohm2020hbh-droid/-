@@ -72,6 +72,22 @@ class Progress private constructor(
         return Award(paid, fresh.size, firstClear, perfect)
     }
 
+    /**
+     * Bank a coin the moment it is touched, not when the level ends.
+     *
+     * There are no checkpoints, so a player who reaches 85% with three coins and
+     * dies would otherwise lose all three for the crime of being nearly good
+     * enough. What they picked up is theirs; the run still has to be finished for
+     * the level itself to count. Returns the coins paid, 0 if it was already had.
+     */
+    fun collectStar(levelId: Int, index: Int): Int {
+        val before = record(levelId)
+        if (index in before.stars) return 0
+        levels[levelId] = before.copy(stars = before.stars + index)
+        coins += Payout.STAR
+        return Payout.STAR
+    }
+
     fun owns(id: String) = id in owned
 
     fun buy(id: String): Boolean {

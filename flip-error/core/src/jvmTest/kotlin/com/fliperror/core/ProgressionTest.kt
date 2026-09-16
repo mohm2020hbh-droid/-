@@ -150,3 +150,69 @@ class ProgressionTest {
             "a perfect pass through both levels should buy at least one thing")
     }
 }
+
+class StarPersistenceTest {
+
+    @Test fun `a coin picked up is kept even when the run is lost`() {
+        val p = Progress()
+        assertEquals(Payout.STAR, p.collectStar(1, 0))
+        assertEquals(Payout.STAR, p.collectStar(1, 2))
+        // ...and then the player dies at 85%. No finish() is ever called.
+        assertEquals(setOf(0, 2), p.starsIn(1))
+        assertEquals(2 * Payout.STAR, p.coins)
+        assertFalse(p.unlocked(2), "dying must still not unlock the next level")
+    }
+
+    @Test fun `picking the same coin up again pays nothing`() {
+        val p = Progress()
+        p.collectStar(1, 0)
+        assertEquals(0, p.collectStar(1, 0))
+        assertEquals(Payout.STAR, p.coins)
+    }
+
+    @Test fun `finishing does not pay twice for coins already banked`() {
+        val p = Progress()
+        p.collectStar(1, 0)
+        p.collectStar(1, 1)
+        val award = p.finish(1, setOf(0, 1, 2), attempts = 6)
+        assertEquals(1, award.newStars, "only the coin found on the winning run is new")
+        assertEquals(Payout.FIRST_CLEAR + Payout.STAR, award.coins)
+        assertEquals(setOf(0, 1, 2), p.starsIn(1))
+    }
+
+    @Test fun `banked coins survive the save`() {
+        val p = Progress()
+        p.collectStar(2, 1)
+        val back = Progress.parse(p.serialize())
+        assertEquals(setOf(1), back.starsIn(2))
+        assertEquals(Payout.STAR, back.coins)
+    }
+}
+
+class SettingsTest {
+
+    @Test fun `a new profile plays with sound on and in english`() {
+        val s = Settings()
+        assertTrue(s.music && s.sfx && s.vibration)
+        assertFalse(s.reduceEffects || s.colorblind)
+        assertEquals(Lang.EN, s.lang)
+    }
+
+    @Test fun `settings survive a round trip`() {
+        val s = Settings()
+        s.music = false; s.vibration = false; s.colorblind = true; s.lang = Lang.AR
+        val back = Settings.parse(s.serialize())
+        assertFalse(back.music); assertTrue(back.sfx); assertFalse(back.vibration)
+        assertFalse(back.reduceEffects); assertTrue(back.colorblind)
+        assertEquals(Lang.AR, back.lang)
+        assertEquals(s.serialize(), back.serialize())
+    }
+
+    @Test fun `a broken settings blob becomes the defaults`() {
+        for (junk in listOf(null, "", "s9|11111|EN", "s1|", "s1|xx|ZZ", "||")) {
+            val s = Settings.parse(junk)
+            assertTrue(s.music && s.sfx, "junk '$junk' turned the sound off")
+            assertEquals(Lang.EN, s.lang)
+        }
+    }
+}

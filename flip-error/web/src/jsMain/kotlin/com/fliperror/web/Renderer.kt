@@ -82,6 +82,11 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     var coins = 0
     /** Set once by the shell; the tint and the spinner both sit this one out. */
     var reducedMotion = false
+    /** Player choice: drops reflections, windows and half the particles. */
+    var reduceEffects = false
+    /** Hazards get a white-hot core that no kind of colour vision can miss. */
+    var colorblind = false
+    var theme: Theme = Theme.forLevel(1)
 
     private var scale = 60.0
     /** The height the camera scale corresponds to. Equals h in landscape; in a
@@ -253,6 +258,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         scale = min(h / viewHeight, w / minViewWidth)
         uiH = scale * viewHeight
         takenStars = g.takenStarIndices()
+        levelTime = g.elapsed
         originX = w * playerScreenFraction
         camX = g.x
 
@@ -260,6 +266,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.save()
         ctx.translate(0.0, kickY)
         drawLevel(g.level)
+        drawFloorMirror(g)
         drawReflection(g)
         drawShadow(g)
         drawTrail(g)
@@ -274,51 +281,152 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         if (g.state == GameState.COMPLETE) drawComplete(g)
     }
 
+    /** Stable pseudo-random per index: the skyline is the same every run. */
+    private fun hash(i: Int): Double {
+        var x = i * 374761393
+        x = (x xor (x shr 13)) * 1274126177
+        return ((x xor (x shr 16)) and 0x7fffffff) / 2147483647.0
+    }
+
+    /**
+     * One band of city. Parallax sets how fast it slides, which is the whole
+     * depth cue; everything else is there to make the band read as buildings
+     * rather than as a bar chart.
+     */
+    private fun skyline(
+        g: Game, parallax: Double, spanUnits: Double, base: Double, rise: Double,
+        colour: String, alpha: Double, windows: Boolean, seed: Int,
+    ) {
+        val horizon = h * 0.645
+        val span = spanUnits * scale
+        if (span < 1.0) return
+        val shift = (g.x * parallax * scale) % span
+        var i = -1
+        ctx.globalAlpha = alpha
+        while (i * span - shift < w + span) {
+            val bx = i * span - shift
+            val r = hash(i + seed)
+            val bh = h * (base + rise * r)
+            val bw = span * (0.60 + 0.28 * hash(i + seed + 977))
+            ctx.fillStyle = colour
+            ctx.fillRect(bx, horizon - bh, bw, bh)
+            if (windows && !reduceEffects && bw > 10) {
+                // Lit windows, on a grid, skipped pseudo-randomly. Cheap, and it
+                // is what stops a silhouette looking like a cardboard cut-out.
+                ctx.fillStyle = theme.horizon
+                val step = maxOf(6.0, bw / 4.0)
+                var wy = horizon - bh + step
+                var k = 0
+                while (wy < horizon - step * 0.6) {
+                    var wx = bx + step * 0.45
+                    while (wx < bx + bw - step * 0.5) {
+                        val lit = hash(i * 733 + k + seed)
+                        if (lit > 0.58) {
+                            // A city is not lit in one colour. Most windows take the
+                            // world's own light, a few take the sign colour.
+                            ctx.fillStyle = if (lit > 0.93) theme.accent else theme.horizon
+                            ctx.globalAlpha = alpha * (0.45 + 1.0 * hash(k * 31 + i))
+                            ctx.fillRect(wx, wy, step * 0.28, step * 0.34)
+                        }
+                        wx += step; k++
+                    }
+                    wy += step
+                }
+                ctx.globalAlpha = alpha
+            }
+            i++
+        }
+        ctx.globalAlpha = 1.0
+    }
+
+    /** Neon signage. A few per screen, far enough apart to read as landmarks. */
+    private fun billboards(g: Game, parallax: Double, seed: Int) {
+        val horizon = h * 0.645
+        val span = 26.0 * scale
+        if (span < 1.0) return
+        val shift = (g.x * parallax * scale) % span
+        var i = -1
+        while (i * span - shift < w + span) {
+            val bx = i * span - shift
+            val r = hash(i + seed)
+            val bw = span * (0.14 + 0.08 * r)
+            val bh = bw * (1.1 + 0.9 * hash(i + seed + 41))
+            val by = horizon - h * (0.20 + 0.30 * hash(i + seed + 83))
+            val tint = when {
+                r > 0.66 -> theme.billboard
+                r > 0.33 -> theme.accent
+                else -> theme.horizon
+            }
+            ctx.globalAlpha = 0.30
+            ctx.fillStyle = tint
+            ctx.fillRect(bx, by, bw, bh)
+            ctx.globalAlpha = 0.85
+            ctx.strokeStyle = tint
+            ctx.lineWidth = 2.0
+            ctx.shadowBlur = if (reduceEffects) 0.0 else 14.0
+            ctx.shadowColor = tint
+            ctx.strokeRect(bx, by, bw, bh)
+            ctx.shadowBlur = 0.0
+            i++
+        }
+        ctx.globalAlpha = 1.0
+    }
+
     private fun drawBackground(g: Game) {
         val grad = ctx.createLinearGradient(0.0, 0.0, 0.0, h)
-        grad.addColorStop(0.0, "#0a0a1c")
-        grad.addColorStop(0.55, "#120a24")
-        grad.addColorStop(1.0, "#05060f")
+        grad.addColorStop(0.0, theme.skyTop)
+        grad.addColorStop(0.52, theme.skyMid)
+        grad.addColorStop(1.0, theme.skyLow)
         ctx.fillStyle = grad
         ctx.fillRect(0.0, 0.0, w, h)
 
-        // Far skyline: dim, slow, and never bright enough to compete with a spike.
-        ctx.globalAlpha = 0.20
-        ctx.fillStyle = "#241a4a"
-        val par = g.x * 0.15
-        var i = -2
-        while (i < 40) {
-            val bx = (i * 34.0 - par % 34.0) * (scale / 60.0) * 1.6
-            val bh = h * (0.12 + 0.07 * ((i * 7) % 5))
-            ctx.fillRect(bx, h * 0.52 - bh, 26.0 * (scale / 60.0), bh + h)
-            i++
+        // The ring on the horizon. One big soft light source gives the whole
+        // scene somewhere for its glow to come from.
+        if (!reduceEffects) {
+            val cx = w * 0.62 - (g.x * 0.02 * scale) % (w * 1.6)
+            val cy = h * 0.40
+            val r = h * 0.30
+            val ring = ctx.createRadialGradient(cx, cy, r * 0.55, cx, cy, r)
+            ring.addColorStop(0.0, "rgba(0,0,0,0)")
+            ring.addColorStop(0.72, theme.horizon + "33")
+            ring.addColorStop(1.0, "rgba(0,0,0,0)")
+            ctx.fillStyle = ring
+            ctx.fillRect(0.0, 0.0, w, h * 0.72)
         }
 
-        // A nearer layer of thin streaks, moving much faster. This is the only
-        // place the sense of speed comes from for free - it costs no readability
-        // because it lives above the play line and stays under the vignette.
-        ctx.globalAlpha = 0.13
-        ctx.fillStyle = "#4a3a8c"
+        skyline(g, 0.06, 5.2, 0.10, 0.13, theme.far, 0.55, windows = false, seed = 11)
+        skyline(g, 0.16, 3.6, 0.14, 0.20, theme.mid, 0.60, windows = true, seed = 307)
+        billboards(g, 0.26, 613)
+        skyline(g, 0.34, 2.6, 0.06, 0.12, theme.near, 0.70, windows = false, seed = 929)
+
+        // Thin streaks, much faster than anything behind them. This is where the
+        // sense of speed comes from for free.
+        ctx.globalAlpha = 0.16
+        ctx.fillStyle = theme.horizon
         val fast = g.x * 0.62
         var k = -2
         while (k < 30) {
             val bx = w - ((k * 41.0 - fast % 41.0) * (scale / 60.0)) % (w + 120.0)
-            val by = h * (0.06 + 0.042 * ((k * 11) % 8))
-            ctx.fillRect(bx, by, 22.0 * (scale / 60.0), 2.0)
+            val by = h * (0.05 + 0.040 * ((k * 11) % 8))
+            ctx.fillRect(bx, by, 24.0 * (scale / 60.0), 2.0)
             k++
         }
         ctx.globalAlpha = 1.0
 
-        // Readability vignette behind the play line.
-        val v = ctx.createLinearGradient(0.0, h * 0.18, 0.0, h * 0.95)
+        // Readability vignette behind the play line. Everything above is scenery;
+        // from here down the only things allowed to be bright are the level.
+        val v = ctx.createLinearGradient(0.0, h * 0.16, 0.0, h * 0.95)
         v.addColorStop(0.0, "rgba(5,6,15,0)")
-        v.addColorStop(0.45, "rgba(5,6,15,0.72)")
-        v.addColorStop(1.0, "rgba(5,6,15,0.92)")
+        v.addColorStop(0.38, "rgba(5,6,15,0.62)")
+        v.addColorStop(0.62, "rgba(5,6,15,0.90)")
+        v.addColorStop(1.0, "rgba(5,6,15,0.97)")
         ctx.fillStyle = v
-        ctx.fillRect(0.0, h * 0.18, w, h * 0.82)
+        ctx.fillRect(0.0, h * 0.16, w, h * 0.84)
     }
 
     private var takenStars: Set<Int> = emptySet()
+    /** The sim clock, so a moving hazard is drawn where the collision says it is. */
+    private var levelTime = 0.0
 
     private fun drawLevel(level: Level) {
         val left = camX - originX / scale - 2.0
@@ -330,11 +438,15 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             val bottom = sy(maxOf(s.bottom, camY - viewHeight))
             ctx.fillStyle = safeFill
             ctx.fillRect(x0, yTop, x1 - x0, bottom - yTop)
-            ctx.shadowBlur = 10.0; ctx.shadowColor = safe
+            ctx.shadowBlur = if (reduceEffects) 0.0 else 22.0
+            ctx.shadowColor = safe
             ctx.strokeStyle = safe
+            ctx.lineWidth = 3.0
             ctx.beginPath()
             ctx.moveTo(x0, yTop); ctx.lineTo(x1, yTop)
             ctx.stroke()
+            ctx.stroke()                       // twice: the surface is the anchor
+            ctx.lineWidth = 2.5
             ctx.shadowBlur = 0.0
             ctx.strokeStyle = "rgba(49,212,242,0.35)"
             ctx.beginPath()
@@ -344,10 +456,13 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         }
 
         level.forEachHazardNear(left, right) { hz ->
-            val b = hz.drawBox
-            ctx.fillStyle = hazardDim
+            val b = hz.drawBoxAt(levelTime)
+            // Colour-blind mode does not recolour danger, it adds a second signal:
+            // a white-hot core inside the same red triangle, which reads at any
+            // kind of colour vision and still says "hot" to everyone else.
+            ctx.fillStyle = if (colorblind) "#fff0f4" else hazardDim
             ctx.strokeStyle = hazard
-            ctx.shadowBlur = 8.0; ctx.shadowColor = hazard
+            ctx.shadowBlur = 12.0; ctx.shadowColor = hazard
             ctx.beginPath()
             if (hz.kind == HazardKind.SPIKE_UP) {
                 ctx.moveTo(sx(b.x0), sy(b.y0))
@@ -360,6 +475,21 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             }
             ctx.closePath(); ctx.fill(); ctx.stroke()
             ctx.shadowBlur = 0.0
+            // A mover gets a track line so its range is readable before it arrives.
+            hz.motion?.let { m ->
+                if (m.reachX > 0.0) {
+                    val cy = sy((b.y0 + b.y1) / 2)
+                    ctx.globalAlpha = 0.28
+                    ctx.strokeStyle = hazard
+                    ctx.lineWidth = 1.5
+                    ctx.beginPath()
+                    ctx.moveTo(sx(hz.x0 + 0.5 - m.reachX), cy)
+                    ctx.lineTo(sx(hz.x0 + 0.5 + m.reachX), cy)
+                    ctx.stroke()
+                    ctx.globalAlpha = 1.0
+                    ctx.lineWidth = 2.5
+                }
+            }
         }
 
         for ((i, st) in level.stars.withIndex()) {
@@ -394,6 +524,51 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.stroke()
             ctx.shadowBlur = 0.0; ctx.lineWidth = 2.5
         }
+    }
+
+    /**
+     * The floor as a mirror. The city overhead, then the runner, flipped about
+     * the surface they are standing over and heavily dimmed. It is the single
+     * cheapest thing that turns a flat dark band into somewhere the game is
+     * happening, and it is the first thing Reduce Effects turns off.
+     */
+    private fun drawFloorMirror(g: Game) {
+        if (reduceEffects || g.state != GameState.RUNNING) return
+        val ground = groundUnder(g) ?: return
+        val gy = sy(ground)
+        if (gy > h || gy < 0) return
+        // What a wet floor under a neon strip actually does: it bleeds the
+        // strip's own light downward and gives back nothing else. Mirroring the
+        // skyline into it was tried and read as a wall of panels, which is worse
+        // than no reflection at all - it put vertical edges under the play line.
+        val depth = scale * 3.2
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(0.0, gy, w, depth)
+        ctx.clip()
+        val bleed = ctx.createLinearGradient(0.0, gy, 0.0, gy + depth)
+        bleed.addColorStop(0.0, safe + "4d")
+        bleed.addColorStop(0.22, safe + "1f")
+        bleed.addColorStop(1.0, "rgba(5,6,15,0)")
+        ctx.fillStyle = bleed
+        ctx.fillRect(0.0, gy, w, depth)
+
+        // Streaks sliding along the surface, so the floor is moving too.
+        ctx.globalAlpha = 0.16
+        ctx.fillStyle = theme.horizon
+        val span = 7.0 * scale
+        if (span > 1.0) {
+            val shift = (g.x * 1.0 * scale) % span
+            var i = -1
+            while (i * span - shift < w + span) {
+                val bx = i * span - shift
+                ctx.fillRect(bx, gy + depth * 0.10, span * 0.30, 2.0)
+                ctx.fillRect(bx + span * 0.5, gy + depth * 0.26, span * 0.16, 1.5)
+                i++
+            }
+        }
+        ctx.globalAlpha = 1.0
+        ctx.restore()
     }
 
     /** Highest surface under the runner, or null over a pit. */
@@ -557,35 +732,54 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         // A little life: the eyes lead the run, and lift on the way up.
         val lead = if (g.grounded) sin(runPhase * PI * 2) * s * 0.022 else 0.0
         val lift = if (!g.grounded) (g.vy / Tuning.JUMP_VELOCITY).coerceIn(-1.0, 1.0) * s * 0.03 else 0.0
+        val fs = Art.faceScale(look.shape)
+        if (fs <= 0.0) return
         ctx.save()
         ctx.translate(lead, Art.faceOffset(look.shape, s) - lift)
-        Art.face(ctx, look.face, g.face, s, if (g.face == Face.DOUBLE) boost else player)
+        Art.face(ctx, look.face, g.face, s * fs, if (g.face == Face.DOUBLE) boost else player)
         ctx.restore()
     }
 
     /**
-     * The runner, upside down on the floor it is over. Cheap, and it is what
-     * makes a neon floor read as a surface rather than as a painted line.
+     * The runner, upside down on the floor it is over - the same silhouette and
+     * the same face, because a reflection that is only a blur says nothing about
+     * which way up the player is. It fades and shrinks with height, so it is
+     * also the read for how far there is left to fall.
      */
     private fun drawReflection(g: Game) {
-        if (g.state != GameState.RUNNING) return
+        if (reduceEffects || g.state != GameState.RUNNING) return
         val ground = groundUnder(g) ?: return
         val height = g.y - ground
-        if (height > 4.2) return
-        val fade = (1.0 - height / 4.2).coerceIn(0.0, 1.0)
+        if (height > 4.6) return
+        val fade = (1.0 - height / 4.6).coerceIn(0.0, 1.0)
         val s = scale * Tuning.PLAYER_SIZE
+        val gy = sy(ground)
         ctx.save()
         ctx.beginPath()
-        ctx.rect(0.0, sy(ground), w, h)          // never above the surface
+        ctx.rect(0.0, gy, w, h)              // never above the surface
         ctx.clip()
-        ctx.globalAlpha = 0.20 * fade
-        ctx.translate(sx(g.x + 0.5), sy(ground) + (sy(ground) - sy(g.y + 0.5)))
+        // Compressed towards the surface rather than a true mirror distance: at
+        // the top of a double jump a true reflection is off the bottom of the
+        // screen, which tells the player nothing. Compressed, it stays visible
+        // and still shrinks and fades the higher they are.
+        ctx.translate(sx(g.x + 0.5), gy + (gy - sy(g.y + 0.5)) * 0.42)
         ctx.scale(1.0, -1.0)
+        ctx.globalAlpha = 0.26 * fade
+        ctx.save()
         ctx.rotate(g.rotationDeg * PI / 180.0)
+        ctx.fillStyle = Palette.playerFill(look.colour)
         ctx.strokeStyle = player
-        ctx.lineWidth = 3.0
+        ctx.lineWidth = 2.5
         Art.shapePath(ctx, look.shape, s)
-        ctx.stroke()
+        ctx.fill(); ctx.stroke()
+        ctx.restore()
+        // The face does not spin in the mirror either.
+        val fs = Art.faceScale(look.shape)
+        if (fs > 0.0) {
+            ctx.globalAlpha = 0.22 * fade
+            ctx.translate(0.0, Art.faceOffset(look.shape, s))
+            Art.face(ctx, look.face, g.face, s * fs, player)
+        }
         ctx.restore()
         ctx.globalAlpha = 1.0
     }

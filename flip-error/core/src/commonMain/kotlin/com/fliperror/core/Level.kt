@@ -13,15 +13,58 @@ data class Box(val x0: Double, val y0: Double, val x1: Double, val y1: Double) {
 
 enum class HazardKind { SPIKE_UP, SPIKE_DOWN }
 
+/**
+ * A hazard that will not stay still.
+ *
+ * Position is a pure function of level time, and level time is x / RUN_SPEED
+ * because the runner never stops or slows. So a moving hazard is still fully
+ * determined by where the player is, which is the property the level verifier
+ * is built on: it can prove a moving level fair exactly as it proves a static
+ * one, with no change to the search.
+ *
+ * The path is a sine on purpose. It is slowest at the two ends, so the hazard
+ * hangs for a moment where the player has to read it, and it has no corners for
+ * a player to be surprised by - GDD 11: learnable, never random.
+ */
+data class Motion(
+    val dx: Double = 0.0,
+    val dy: Double = 0.0,
+    /** Seconds for one full there-and-back. */
+    val period: Double = 2.0,
+    /** Where in the cycle this hazard starts, 0..1. */
+    val phase: Double = 0.0,
+) {
+    private fun wave(t: Double) = kotlin.math.sin((t / period + phase) * 2.0 * kotlin.math.PI)
+    fun offsetX(t: Double) = if (dx == 0.0) 0.0 else dx * wave(t)
+    fun offsetY(t: Double) = if (dy == 0.0) 0.0 else dy * wave(t)
+    val reachX get() = kotlin.math.abs(dx)
+    val reachY get() = kotlin.math.abs(dy)
+}
+
 /** A solid block. Landable on top, lethal to run into from the side. */
 data class Solid(val x0: Double, val x1: Double, val top: Double, val bottom: Double = -40.0) {
     val box get() = Box(x0, bottom, x1, top)
 }
 
-data class Hazard(val kind: HazardKind, val x0: Double, val x1: Double, val y0: Double, val y1: Double) {
+data class Hazard(
+    val kind: HazardKind,
+    val x0: Double, val x1: Double, val y0: Double, val y1: Double,
+    val motion: Motion? = null,
+) {
     /** GDD fairness law 3: the killing box is 15% smaller than the drawing. */
-    val hitBox: Box = Box(x0, y0, x1, y1).shrink(Tuning.HAZARD_HITBOX_SCALE)
-    val drawBox: Box get() = Box(x0, y0, x1, y1)
+    private val restingHit: Box = Box(x0, y0, x1, y1).shrink(Tuning.HAZARD_HITBOX_SCALE)
+    private val restingDraw: Box = Box(x0, y0, x1, y1)
+    val moves get() = motion != null
+
+    private fun shift(b: Box, t: Double): Box {
+        val m = motion ?: return b
+        val ox = m.offsetX(t)
+        val oy = m.offsetY(t)
+        return Box(b.x0 + ox, b.y0 + oy, b.x1 + ox, b.y1 + oy)
+    }
+
+    fun hitBoxAt(t: Double): Box = shift(restingHit, t)
+    fun drawBoxAt(t: Double): Box = shift(restingDraw, t)
 }
 
 data class Star(val x: Double, val y: Double) {
@@ -44,6 +87,8 @@ data class Level(
 
     @PublishedApi internal val solidsSorted = solids.sortedBy { it.x0 }
     @PublishedApi internal val hazardsSorted = hazards.sortedBy { it.x0 }
+    /** How far any hazard can wander sideways. The near-search widens by this. */
+    @PublishedApi internal val hazardReachX = hazards.maxOfOrNull { it.motion?.reachX ?: 0.0 } ?: 0.0
 
     /**
      * Visit every solid whose x-range can touch [x0,x1].
@@ -58,11 +103,15 @@ data class Level(
         }
     }
 
+    /** Widened by [hazardReachX] so a hazard that has slid towards the runner is
+     *  still visited; the caller decides where it actually is right now. */
     inline fun forEachHazardNear(x0: Double, x1: Double, action: (Hazard) -> Unit) {
+        val lo = x0 - hazardReachX
+        val hi = x1 + hazardReachX
         for (i in hazardsSorted.indices) {
             val h = hazardsSorted[i]
-            if (h.x0 > x1) break
-            if (h.x1 >= x0) action(h)
+            if (h.x0 > hi) break
+            if (h.x1 >= lo) action(h)
         }
     }
 }

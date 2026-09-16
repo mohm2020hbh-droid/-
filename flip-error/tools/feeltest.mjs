@@ -109,25 +109,31 @@ const fly = (when) => page.evaluate(w => new Promise(res => {
   check('mashing inside the lockout buys no boost', mashed.doubles === 0,
         `${mashed.doubles} boost(s), peak ${mashed.peak.toFixed(2)}u`);
 
-  // Sampled across the first flight only: hammering the screen also retries on
-  // death, and a retry resets the counter, which would hide the answer.
-  const triple = await page.evaluate(() => new Promise(res => {
+  // Hammered inside ONE flight and stopped well before it can end. Sampling a
+  // longer window is useless at 60Hz: the buffered tap re-launches the runner
+  // the instant it lands, inside a single browser frame, so a chain of flights
+  // looks like one. Core tests hold the no-third-jump rule across every timing;
+  // this holds it in the real shell for a flight we know we are still inside.
+  const hammered = await page.evaluate(() => new Promise(res => {
     FLIP.restart();
     requestAnimationFrame(() => {
       FLIP.tap();
-      let f = 0, best = 0, airborne = false;
+      let f = 0;
       const go = () => {
         f++;
-        if (f > 3) FLIP.tap();                  // hammer the whole flight
-        if (!FLIP.grounded()) airborne = true;
-        best = Math.max(best, FLIP.doubleJumps());
-        if (f > 120 || (airborne && FLIP.grounded()) || FLIP.state() !== 'RUNNING') return res(best);
+        FLIP.tap();
+        // one boosted flight is ~49 frames; stop at 26 and we are mid-air
+        if (f >= 26 || FLIP.state() !== 'RUNNING') {
+          return res({ boosts: FLIP.doubleJumps(), grounded: FLIP.grounded() });
+        }
         requestAnimationFrame(go);
       };
       requestAnimationFrame(go);
     });
   }));
-  check('hammering the screen still gives exactly one boost', triple === 1, `${triple} boost(s)`);
+  check('hammering one flight still buys exactly one boost',
+        hammered.boosts === 1 && !hammered.grounded,
+        `${hammered.boosts} boost(s), still airborne ${!hammered.grounded}`);
 }
 
 // 3 — the late window is shut, which is what keeps the landing buffer alive.

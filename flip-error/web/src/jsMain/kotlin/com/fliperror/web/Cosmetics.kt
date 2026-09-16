@@ -49,6 +49,39 @@ object Palette {
     }
 }
 
+/**
+ * A world's colour scheme. Level 1 keeps the cyan-and-yellow the game was built
+ * in; later worlds shift the environment while the two colours that carry
+ * meaning - hazard red and the player's own - stay exactly where they are.
+ */
+class Theme(
+    val skyTop: String, val skyMid: String, val skyLow: String,
+    val far: String, val mid: String, val near: String,
+    val horizon: String, val billboard: String,
+    /** A third sign colour, so the city is not lit by two bulbs. */
+    val accent: String = "#ff3ba7",
+) {
+    companion object {
+        private val WORLDS = listOf(
+            // world 1: cyan + yellow
+            Theme("#0b1030", "#151a4a", "#05060f", "#20276e", "#2a3f9c", "#3a6fd0", "#2ef0ff", "#ffd329", "#ff3ba7"),
+            // world 2: blue + purple
+            Theme("#100a34", "#1d1050", "#05060f", "#2a1a6b", "#3d2496", "#6a3fd4", "#8b5cff", "#2ef0ff", "#ff6bd6"),
+            // world 3: pink + violet
+            Theme("#1a0730", "#2c0b४6".replace("४", "4"), "#05060f", "#45116b", "#6d1a96", "#a92fd4", "#ff3ba7", "#b07bff"),
+            // world 4: green + cyan
+            Theme("#04231f", "#063a33", "#05060f", "#0a5348", "#0d7a63", "#12b089", "#39ff9e", "#2ef0ff"),
+            // world 5: orange + red
+            Theme("#2a0f06", "#43180a", "#05060f", "#5e2410", "#8c3a15", "#c25a1c", "#ff9130", "#ffd329"),
+            // world 6: electric white + blue
+            Theme("#0a1230", "#122048", "#05060f", "#1d3570", "#2a53a8", "#3f84e0", "#dff4ff", "#2ef0ff"),
+        )
+
+        /** Levels are grouped into worlds of five. */
+        fun forLevel(id: Int) = WORLDS[((id - 1) / 5).coerceIn(0, WORLDS.size - 1)]
+    }
+}
+
 object Art {
 
     /** The runner's silhouette, centred on the origin, as a path ready to fill or stroke. */
@@ -77,6 +110,62 @@ object Art {
                     val x = cos(a) * r; val y = sin(a) * r
                     if (k == 0) ctx.moveTo(x, y) else ctx.lineTo(x, y)
                 }
+                ctx.closePath()
+            }
+            "shape.hexagon" -> {
+                for (k in 0 until 6) {
+                    val a = k * PI / 3
+                    val x = cos(a) * h * 1.12; val y = sin(a) * h * 1.12
+                    if (k == 0) ctx.moveTo(x, y) else ctx.lineTo(x, y)
+                }
+                ctx.closePath()
+            }
+            "shape.octagon" -> {
+                for (k in 0 until 8) {
+                    val a = PI / 8 + k * PI / 4
+                    val x = cos(a) * h * 1.10; val y = sin(a) * h * 1.10
+                    if (k == 0) ctx.moveTo(x, y) else ctx.lineTo(x, y)
+                }
+                ctx.closePath()
+            }
+            "shape.bolt" -> {
+                ctx.moveTo(h * 0.16, -h * 1.20)
+                ctx.lineTo(-h * 0.95, h * 0.12)
+                ctx.lineTo(-h * 0.10, h * 0.12)
+                ctx.lineTo(-h * 0.22, h * 1.20)
+                ctx.lineTo(h * 0.95, -h * 0.16)
+                ctx.lineTo(h * 0.10, -h * 0.16)
+                ctx.closePath()
+            }
+            "shape.arrow" -> {
+                ctx.moveTo(h * 1.20, 0.0)
+                ctx.lineTo(h * 0.10, -h * 1.05)
+                ctx.lineTo(h * 0.10, -h * 0.42)
+                ctx.lineTo(-h * 1.15, -h * 0.42)
+                ctx.lineTo(-h * 1.15, h * 0.42)
+                ctx.lineTo(h * 0.10, h * 0.42)
+                ctx.lineTo(h * 0.10, h * 1.05)
+                ctx.closePath()
+            }
+            "shape.crystal" -> {
+                ctx.moveTo(0.0, -h * 1.30)
+                ctx.lineTo(h * 0.86, -h * 0.30)
+                ctx.lineTo(h * 0.52, h * 1.18)
+                ctx.lineTo(-h * 0.52, h * 1.18)
+                ctx.lineTo(-h * 0.86, -h * 0.30)
+                ctx.closePath()
+            }
+            "shape.ring" -> {
+                ctx.arc(0.0, 0.0, h * 1.10, 0.0, PI * 2)
+                ctx.moveTo(h * 0.52, 0.0)
+                ctx.arc(0.0, 0.0, h * 0.52, 0.0, PI * 2, anticlockwise = true)
+            }
+            "shape.cross" -> {
+                val a = h * 0.40
+                val b = h * 1.15
+                ctx.moveTo(-a, -b); ctx.lineTo(a, -b); ctx.lineTo(a, -a); ctx.lineTo(b, -a)
+                ctx.lineTo(b, a); ctx.lineTo(a, a); ctx.lineTo(a, b); ctx.lineTo(-a, b)
+                ctx.lineTo(-a, a); ctx.lineTo(-b, a); ctx.lineTo(-b, -a); ctx.lineTo(-a, -a)
                 ctx.closePath()
             }
             "shape.cat" -> {
@@ -118,7 +207,20 @@ object Art {
         "shape.triangle" -> s * 0.10
         "shape.star" -> s * 0.02
         "shape.cat" -> s * 0.06
+        "shape.crystal" -> s * 0.06
+        "shape.arrow" -> -s * 0.02
         else -> 0.0
+    }
+
+    /** Some silhouettes have less room for a face than a square does. */
+    fun faceScale(shape: String) = when (shape) {
+        "shape.triangle" -> 0.78
+        "shape.bolt" -> 0.62
+        "shape.ring" -> 0.0            // a ring has nowhere to put one
+        "shape.cross" -> 0.66
+        "shape.arrow" -> 0.72
+        "shape.star" -> 0.70
+        else -> 1.0
     }
 
     fun face(ctx: CanvasRenderingContext2D, style: String, state: Face, s: Double, colour: String) {

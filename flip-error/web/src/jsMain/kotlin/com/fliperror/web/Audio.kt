@@ -19,6 +19,12 @@ object Audio {
     private var streak = 0
     private var noise: dynamic = null
 
+    /** Player switches. Music keeps running but silent, so the beat never drifts. */
+    var sfxEnabled = true
+    var musicEnabled = true
+        set(v) { field = v; musicGain?.gain?.value = if (v) 1.0 else 0.0 }
+    private var musicGain: dynamic = null
+
     private fun ensure(): Boolean {
         if (ctx == null) {
             val C = window.asDynamic().AudioContext ?: window.asDynamic().webkitAudioContext
@@ -37,6 +43,9 @@ object Audio {
             comp.release.value = 0.16
             master.connect(comp)
             comp.connect(ctx.destination)
+            musicGain = ctx.createGain()
+            musicGain.gain.value = if (musicEnabled) 1.0 else 0.0
+            musicGain.connect(master)
         }
         return ctx != null
     }
@@ -55,7 +64,7 @@ object Audio {
         from: Double, to: Double, dur: Double, type: String, gain: Double,
         delay: Double = 0.0, attack: Double = 0.006,
     ) {
-        if (!ensure()) return
+        if (!sfxEnabled || !ensure()) return
         val t = (ctx.currentTime as Double) + delay
         val osc = ctx.createOscillator()
         val g = ctx.createGain()
@@ -84,7 +93,7 @@ object Audio {
 
     /** A band of air moving past. Used only for the near miss, and kept quiet. */
     private fun whoosh(centre: Double, dur: Double, gain: Double) {
-        if (!ensure()) return
+        if (!sfxEnabled || !ensure()) return
         val t = ctx.currentTime as Double
         val src = ctx.createBufferSource()
         src.buffer = noiseBuffer()
@@ -182,7 +191,7 @@ object Audio {
                 k.frequency.exponentialRampToValueAtTime(42.0, t + 0.11)
                 kg.gain.setValueAtTime(0.62, t)
                 kg.gain.exponentialRampToValueAtTime(0.0001, t + 0.16)
-                k.connect(kg); kg.connect(master); k.start(t); k.stop(t + 0.17)
+                k.connect(kg); kg.connect(musicGain); k.start(t); k.stop(t + 0.17)
                 // Triangle, not sawtooth: the bed should carry the pulse without
                 // putting a metal edge on every eighth note.
                 val b = ctx.createOscillator(); val bg = ctx.createGain()
@@ -190,7 +199,7 @@ object Audio {
                 b.frequency.setValueAtTime(notes[step % notes.size], t)
                 bg.gain.setValueAtTime(0.20, t)
                 bg.gain.exponentialRampToValueAtTime(0.0001, t + beat * 0.85)
-                b.connect(bg); bg.connect(master); b.start(t); b.stop(t + beat)
+                b.connect(bg); bg.connect(musicGain); b.start(t); b.stop(t + beat)
                 step++
             }
             window.setTimeout({ tick() }, (beat * 1000).toInt())
