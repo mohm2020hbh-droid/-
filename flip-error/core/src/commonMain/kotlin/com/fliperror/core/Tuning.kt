@@ -31,6 +31,24 @@ object Tuning {
 
     const val MAX_FALL_SPEED = 45.0
 
+    // --- Double jump -----------------------------------------------------
+    //
+    // A second tap in the air is a tool, not a parachute. Three limits keep it
+    // honest: it must be armed by a real jump (walking off a ledge does not arm
+    // it), it cannot fire in the first moments of the jump, so mashing buys
+    // nothing, and it closes once the runner is committed to falling, which is
+    // also what leaves the landing input buffer intact.
+    /** Height the second jump adds, measured from wherever it fires. */
+    const val DOUBLE_JUMP_APEX = 2.0
+    /** Dead time after take-off. Mashing two taps together is not a super jump. */
+    const val DOUBLE_LOCKOUT = 0.080
+    /** Once falling faster than this the window is shut and taps buffer for the landing. */
+    const val DOUBLE_MIN_VY = -8.0
+
+    val DOUBLE_JUMP_VELOCITY = kotlin.math.sqrt(2.0 * GRAVITY_RISE * DOUBLE_JUMP_APEX)  // 20.73 u/s
+    /** How long the window stays open, counted from take-off. */
+    val DOUBLE_WINDOW_END = RISE_TIME + (-DOUBLE_MIN_VY) / GRAVITY_FALL                 // 0.358 s
+
     // --- Forgiveness (hard but fair) ------------------------------------
     const val COYOTE_TIME = 0.060        // GDD 1.4
     const val INPUT_BUFFER = 0.090       // GDD 1.4
@@ -42,6 +60,17 @@ object Tuning {
     const val FIXED_DT = 1.0 / 240.0
     /** Never simulate more than this much wall-clock in one frame (spiral-of-death guard). */
     const val MAX_FRAME_DT = 0.10
+
+    /**
+     * Clearance over a hazard that still counts as "that was close".
+     *
+     * Measured, not guessed. On LEVEL 1's verified line the runner passes its
+     * ground spikes with 0.054u or 0.110u to spare, and its ceiling corridor
+     * with 1.425u; see NearMissTest, which fails if that spread ever moves. A
+     * threshold between the two tight groups is what makes the cue mean
+     * something: it marks the hair's-breadth passes and ignores the rest.
+     */
+    const val NEAR_MISS_GAP = 0.08
 
     // --- Death / restart -------------------------------------------------
     /** GDD 2.3: the whole death effect is 0.25s, then the screen is ready. */

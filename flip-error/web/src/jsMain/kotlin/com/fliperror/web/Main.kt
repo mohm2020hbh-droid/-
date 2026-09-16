@@ -157,19 +157,33 @@ fun main() {
     })
 
     var prevState = game.state
+    var prevDoubles = game.doubleJumps
+    var prevNearMisses = game.nearMisses
+    var prevStars = game.starsCollected
     fun frame(now: Double) {
         if (!gated) {
             val dt = if (last == 0.0) 1.0 / 60.0 else ((now - last) / 1000.0).coerceIn(0.0, 0.1)
             last = now
 
-            val jumpedBefore = game.grounded
+            val groundedBefore = game.grounded
             game.update(dt)
-            if (jumpedBefore && !game.grounded && game.state == GameState.RUNNING) Audio.jump()
+            val running = game.state == GameState.RUNNING
+            if (groundedBefore && !game.grounded && running) Audio.jump()
+            if (!groundedBefore && game.grounded && running) Audio.land()
+            if (game.doubleJumps != prevDoubles) { prevDoubles = game.doubleJumps; Audio.doubleJump() }
+            if (game.nearMisses != prevNearMisses) { prevNearMisses = game.nearMisses; Audio.nearMiss() }
+            if (game.starsCollected != prevStars) { prevStars = game.starsCollected; Audio.star() }
             if (prevState == GameState.RUNNING && game.state == GameState.DEAD) Audio.death()
             if (prevState == GameState.RUNNING && game.state == GameState.COMPLETE) Audio.finish()
             prevState = game.state
 
-            if (game.attempts != lastAttempt) { lastAttempt = game.attempts; renderer.resetRun() }
+            if (game.attempts != lastAttempt) {
+                lastAttempt = game.attempts
+                renderer.resetRun()
+                prevDoubles = game.doubleJumps
+                prevNearMisses = game.nearMisses
+                prevStars = game.starsCollected
+            }
 
             renderer.update(game, dt)
             renderer.draw(game)
@@ -196,6 +210,13 @@ fun main() {
     api.elapsed = { game.elapsed }
     api.stateTime = { game.stateTime }
     api.finishX = { game.level.finishX }
+    api.doubleJumps = { game.doubleJumps }
+    api.canDouble = { game.canDoubleJump }
+    api.nearMisses = { game.nearMisses }
+    api.stars = { game.starsCollected }
+    api.effects = { renderer.effectCount }
+    api.trailHeadX = { renderer.trailHeadX }
+    api.trailTailX = { renderer.trailTailX }
     api.gated = { gated }
     api.gateReason = { reason.name }
     api.recheckGate = { evaluateGate() }

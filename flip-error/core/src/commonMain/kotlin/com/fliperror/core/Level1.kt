@@ -78,8 +78,10 @@ object Level1 {
         hazards += spike(289.0, LOW)
         hazards += spike(292.9, LOW)
 
-        // bar 11: the breath. The only star, and it is optional.
-        val stars = listOf(Star(171.0, 2.8))
+        // bar 11: the breath. The only star, optional, and hung above a single
+        // jump's ceiling: it is what the second jump is FOR, and the one place
+        // on the level where spending it costs nothing.
+        val stars = listOf(Star(171.0, 4.3))
 
         return Level(
             id = 1,

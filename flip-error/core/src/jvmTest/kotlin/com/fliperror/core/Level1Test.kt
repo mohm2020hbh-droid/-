@@ -71,9 +71,77 @@ class Level1Test {
         }
     }
 
-    @Test fun `the single star is inside jump reach`() {
+    /** Sweep every take-off frame on flat ground and report the best star haul. */
+    private fun bestStars(starY: Double, boost: Boolean): Int {
+        val probe = Level(
+            id = 0, name = "P", subtitle = "", bpm = Tuning.BPM,
+            solids = listOf(Solid(-10.0, 120.0, 0.0)),
+            hazards = emptyList(), stars = listOf(Star(40.0, starY)), finishX = 300.0,
+        )
+        var best = 0
+        // Take off anywhere in the 10 units before the star; that covers every
+        // approach a player could take to it.
+        val first = ((40.0 - 10.0) / Tuning.RUN_SPEED / Tuning.FIXED_DT).toInt()
+        val last = ((40.0 + 1.0) / Tuning.RUN_SPEED / Tuning.FIXED_DT).toInt()
+        for (takeOff in first..last) {
+            val g = Game(probe)
+            repeat(takeOff) { g.update(Tuning.FIXED_DT) }
+            g.onTap()
+            var boosted = !boost
+            var guard = 0
+            while (g.state == GameState.RUNNING && guard++ < 600) {
+                if (!boosted && !g.grounded && g.vy <= 0.0) { g.onTap(); boosted = true }
+                g.update(Tuning.FIXED_DT)
+                if (g.grounded && guard > 20) break
+            }
+            best = maxOf(best, g.starsCollected)
+        }
+        return best
+    }
+
+    @Test fun `the star is what the second jump is for`() {
         assertEquals(1, level.stars.size)
-        assertTrue(level.stars[0].y <= Tuning.JUMP_APEX + 0.9, "star is out of reach")
+        val y = level.stars[0].y
+        assertEquals(0, bestStars(y, boost = false),
+            "a single jump reaches the star at y=$y; then the boost has no purpose here")
+        assertEquals(1, bestStars(y, boost = true),
+            "a double jump cannot reach the star at y=$y; then it is just decoration")
+    }
+
+    /** Replay the verified line, but greedily boost every jump. */
+    private fun replayWithBoost(boostEvery: Boolean): Game {
+        val g = Game(level)
+        var i = 0
+        var boosted = true
+        var guard = 0
+        while (g.state == GameState.RUNNING && guard++ < 40_000) {
+            if (i < report.jumps.size && g.x >= report.jumps[i].x) { g.onTap(); i++; boosted = !boostEvery }
+            if (!boosted && !g.grounded && g.vy <= 0.0) { g.onTap(); boosted = true }
+            g.update(Tuning.FIXED_DT)
+        }
+        return g
+    }
+
+    @Test fun `the verified line still clears the level untouched`() {
+        val g = replayWithBoost(boostEvery = false)
+        assertEquals(GameState.COMPLETE, g.state,
+            "the single-jump line must survive the double jump landing in the game")
+    }
+
+    @Test fun `boosting every jump does not clear level 1`() {
+        val g = replayWithBoost(boostEvery = true)
+        assertEquals(GameState.DEAD, g.state,
+            "a player who always taps twice cleared the level; the boost is a free pass, not a tool")
+    }
+
+    @Test fun `the ceiling corridor punishes the second tap hardest`() {
+        val corridor = level.hazards.filter { it.kind == HazardKind.SPIKE_DOWN }
+        assertTrue(corridor.isNotEmpty(), "level 1 has no place that forbids the boost")
+        val tip = corridor.minOf { it.y0 }
+        assertTrue(tip < Tuning.JUMP_APEX,
+            "the corridor must already punish a single jump, or it teaches nothing about the second")
+        assertTrue(tip < Tuning.JUMP_APEX + Tuning.DOUBLE_JUMP_APEX,
+            "the boost must not be able to clear the corridor ceiling")
     }
 
     /** Exported so the browser playtest can drive a real perfect run. */

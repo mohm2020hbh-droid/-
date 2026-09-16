@@ -10,7 +10,7 @@ enum class GameState { RUNNING, DEAD, COMPLETE }
 enum class DeathCause { NONE, PIT, WALL, SPIKE, CEILING_SPIKE }
 
 /** GDD 2.2: the face is a readability element, not decoration. */
-enum class Face { RUN, JUMP, DEAD }
+enum class Face { RUN, JUMP, DOUBLE, DEAD }
 
 /** Drives the whole simulation. Pure Kotlin: no rendering, no platform types. */
 class Game(val level: Level) {
@@ -29,6 +29,19 @@ class Game(val level: Level) {
     private var coyoteTimer = 0.0
     private var bufferTimer = -1.0
 
+    // Double jump ---------------------------------------------------------
+    /** Armed by a real jump only, so stepping off a ledge is still a mistake. */
+    private var doubleArmed = false
+    private var airTime = 0.0
+    private var doubleFaceTimer = 0.0
+    /** Increments on every second jump, so the shell can react to one. */
+    var doubleJumps = 0; private set
+
+    /** Is a second jump legal this instant? Drives the tap and the UI tell. */
+    val canDoubleJump: Boolean
+        get() = state == GameState.RUNNING && !grounded && doubleArmed &&
+            airTime >= Tuning.DOUBLE_LOCKOUT && vy > Tuning.DOUBLE_MIN_VY
+
     // Run bookkeeping ------------------------------------------------------
     var deathX = 0.0; private set
     var deathY = 0.0; private set
@@ -37,6 +50,10 @@ class Game(val level: Level) {
     var stateTime = 0.0; private set
     var bestProgress = 0.0; private set
     var taps = 0; private set
+    /** Spikes cleared with almost nothing to spare. Feedback only. */
+    var nearMisses = 0; private set
+    private var passEdge = Double.NaN
+    private var passGap = Double.MAX_VALUE
     var starsCollected = 0; private set
     private val takenStars = HashSet<Int>()
 
@@ -50,6 +67,7 @@ class Game(val level: Level) {
     val face: Face
         get() = when {
             state == GameState.DEAD -> Face.DEAD
+            doubleFaceTimer > 0.0 -> Face.DOUBLE
             !grounded -> Face.JUMP
             else -> Face.RUN
         }
@@ -71,12 +89,19 @@ class Game(val level: Level) {
         rotationDeg = 0.0
         coyoteTimer = 0.0
         bufferTimer = -1.0
+        doubleArmed = false
+        airTime = 0.0
+        doubleFaceTimer = 0.0
+        doubleJumps = 0
         state = GameState.RUNNING
         deathCause = DeathCause.NONE
         elapsed = 0.0
         stateTime = 0.0
         accumulator = 0.0
         taps = 0
+        nearMisses = 0
+        passEdge = Double.NaN
+        passGap = Double.MAX_VALUE
         starsCollected = 0
         takenStars.clear()
     }
@@ -96,7 +121,10 @@ class Game(val level: Level) {
         when (state) {
             GameState.RUNNING -> {
                 taps++
-                bufferTimer = Tuning.INPUT_BUFFER
+                // The second jump answers the tap itself, not a buffered copy of
+                // it: a tap that arrives too early must be spent, or the lockout
+                // would just delay a mashed double instead of denying it.
+                if (canDoubleJump) doubleJump() else bufferTimer = Tuning.INPUT_BUFFER
             }
             GameState.DEAD -> if (canRetry) restart()
             GameState.COMPLETE -> Unit
@@ -123,6 +151,8 @@ class Game(val level: Level) {
 
         if (bufferTimer >= 0.0) bufferTimer -= dt
         if (coyoteTimer > 0.0) coyoteTimer = max(0.0, coyoteTimer - dt)
+        if (doubleFaceTimer > 0.0) doubleFaceTimer = max(0.0, doubleFaceTimer - dt)
+        if (!grounded) airTime += dt
 
         // 1. Jump: a buffered tap fires as soon as it legally can.
         if (bufferTimer >= 0.0 && (grounded || coyoteTimer > 0.0)) {
@@ -130,6 +160,8 @@ class Game(val level: Level) {
             grounded = false
             coyoteTimer = 0.0
             bufferTimer = -1.0
+            airTime = 0.0
+            doubleArmed = true
         }
 
         val prevBottom = y
@@ -159,6 +191,29 @@ class Game(val level: Level) {
             }
         }
 
+        // 5b. Near miss. The tightest moment of a pass is almost always an edge,
+        // not the middle, so the gap is tracked across the whole overlap and
+        // reported once, when the runner is clear of the hazard.
+        var tightest = Double.MAX_VALUE
+        var edge = Double.NaN
+        level.forEachHazardNear(hb.x0, hb.x1) { h ->
+            val box = h.hitBox
+            if (hb.x1 > box.x0 && hb.x0 < box.x1) {
+                val gap = if (h.kind == HazardKind.SPIKE_UP) hb.y0 - box.y1 else box.y0 - hb.y1
+                if (edge.isNaN() || box.x1 < edge) { edge = box.x1; tightest = gap }
+                else if (box.x1 == edge) tightest = min(tightest, gap)
+            }
+        }
+        if (edge.isNaN()) {
+            flushPass()
+        } else if (passEdge != edge) {
+            flushPass()
+            passEdge = edge
+            passGap = tightest
+        } else {
+            passGap = min(passGap, tightest)
+        }
+
         // 6. Stars.
         level.stars.forEachIndexed { i, s ->
             if (i !in takenStars && hb.overlaps(s.box)) { takenStars += i; starsCollected++ }
@@ -182,6 +237,8 @@ class Game(val level: Level) {
                 if (!grounded) rotationDeg = round(rotationDeg / 90.0) * 90.0
                 grounded = true
                 landed = true
+                doubleArmed = false
+                airTime = 0.0
             } else if (vy > 0.0 && prevTop <= s.bottom + 1e-6 && y + Tuning.PLAYER_SIZE >= s.bottom) {
                 y = s.bottom - Tuning.PLAYER_SIZE
                 vy = 0.0
@@ -204,6 +261,23 @@ class Game(val level: Level) {
         }
     }
 
+    /** The boost itself. Sets the rise rather than adding to it, so a late
+     *  second tap trades away height instead of stacking it. */
+    private fun doubleJump() {
+        vy = Tuning.DOUBLE_JUMP_VELOCITY
+        doubleArmed = false
+        doubleJumps++
+        doubleFaceTimer = 0.26
+        bufferTimer = -1.0
+    }
+
+    /** A hazard pass just ended: score it, then forget it. */
+    private fun flushPass() {
+        if (!passEdge.isNaN() && passGap >= 0.0 && passGap <= Tuning.NEAR_MISS_GAP) nearMisses++
+        passEdge = Double.NaN
+        passGap = Double.MAX_VALUE
+    }
+
     /** Is there a solid surface directly under the feet right now? */
     private fun hasSupport(): Boolean {
         val hb = hitBox
@@ -222,14 +296,21 @@ class Game(val level: Level) {
         internal val coyoteTimer: Double, internal val bufferTimer: Double,
         internal val elapsed: Double, internal val taps: Int, internal val state: GameState,
         internal val accumulator: Double,
+        internal val doubleArmed: Boolean, internal val airTime: Double,
+        internal val doubleFaceTimer: Double, internal val doubleJumps: Int,
+        internal val nearMisses: Int, internal val passEdge: Double, internal val passGap: Double,
     )
 
-    fun snapshot() = Snapshot(x, y, vy, grounded, rotationDeg, coyoteTimer, bufferTimer, elapsed, taps, state, accumulator)
+    fun snapshot() = Snapshot(x, y, vy, grounded, rotationDeg, coyoteTimer, bufferTimer, elapsed, taps, state,
+        accumulator, doubleArmed, airTime, doubleFaceTimer, doubleJumps, nearMisses, passEdge, passGap)
 
     fun restore(s: Snapshot) {
         x = s.x; y = s.y; vy = s.vy; grounded = s.grounded; rotationDeg = s.rotationDeg
         coyoteTimer = s.coyoteTimer; bufferTimer = s.bufferTimer
         elapsed = s.elapsed; taps = s.taps; state = s.state; accumulator = s.accumulator
+        doubleArmed = s.doubleArmed; airTime = s.airTime
+        doubleFaceTimer = s.doubleFaceTimer; doubleJumps = s.doubleJumps
+        nearMisses = s.nearMisses; passEdge = s.passEdge; passGap = s.passGap
         deathCause = DeathCause.NONE
         stateTime = 0.0
     }

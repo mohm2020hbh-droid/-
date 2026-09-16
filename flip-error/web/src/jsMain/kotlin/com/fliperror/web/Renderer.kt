@@ -5,13 +5,19 @@ import org.w3c.dom.*
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.random.Random
 
 /**
  * Dark neon geometric renderer. GDD 11: readability outranks graphics.
- * The gameplay layer is drawn crisp and unblurred over a dim background, and
- * nothing decorative is ever drawn inside the runner's forward corridor.
+ *
+ * Everything decorative here obeys one rule: it lives BEHIND the runner. Trail
+ * ghosts, sparks and dust are all culled at the runner's leading edge, so no
+ * amount of effect can ever sit on top of a spike the player has not reached
+ * yet. The effects say how fast and how high; the level says what will kill you.
  */
 class Renderer(private val ctx: CanvasRenderingContext2D) {
 
@@ -22,8 +28,8 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private val safeFill = "#0a1420"
     private val player = "#ffc93c"
     private val gold = "#ffd166"
+    private val boost = "#fff6d8"      // the second jump's own colour, nothing else uses it
     private val finish = "#4ade80"
-    private val ink = "#05060f"
 
     /** Visible world height in units. Keeps ~2.2s of track ahead of the runner. */
     private val viewHeight = 13.0
@@ -33,9 +39,29 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
 
     private var camY = 0.0
     private var groundRefY = 0.0
+
+    // [x, y, life, maxLife, rotation]
     private val trail = ArrayList<DoubleArray>()
+    // [x, y, vx, vy, life, maxLife, size, kind]  kind 0 = chip, 1 = dot, 2 = streak
+    private val parts = ArrayList<DoubleArray>()
+    // [x, y, life, maxLife]
+    private val rings = ArrayList<DoubleArray>()
     private val shards = ArrayList<DoubleArray>()
     private var shardsSpawned = false
+
+    // --- feel state -------------------------------------------------------
+    /** Positive stretches the runner tall and thin, negative squashes it wide. */
+    private var stretch = 0.0
+    private var runPhase = 0.0
+    private var kickY = 0.0
+    private var emitTimer = 0.0
+    private var trailTimer = 0.0
+    /** Counts down after a boost; while it runs the trail is longer and brighter. */
+    private var boostGlow = 0.0
+
+    private var prevGrounded = true
+    private var prevDoubles = 0
+    private var wasRunning = true
 
     var w = 0.0; var h = 0.0
 
@@ -46,13 +72,47 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private var uiH = 0.0
     private var originX = 0.0
 
-    fun resetRun() { trail.clear(); shards.clear(); shardsSpawned = false }
+    fun resetRun() {
+        trail.clear(); parts.clear(); rings.clear(); shards.clear()
+        shardsSpawned = false
+        stretch = 0.0; kickY = 0.0; boostGlow = 0.0
+        emitTimer = 0.0; trailTimer = 0.0
+        prevGrounded = true; prevDoubles = 0; wasRunning = true
+    }
 
     /** World units visible across the frame. Asserted by the playtest. */
     val visibleWorldWidth: Double get() = if (scale > 0.0) w / scale else 0.0
 
     /** The height the UI is sized against. Asserted by the playtest. */
     val uiHeight: Double get() = uiH
+
+    /** Live decoration count. The playtest watches this to prove the trail moves. */
+    val effectCount: Int get() = trail.size + parts.size + rings.size
+
+    /** Newest and oldest ghost. The playtest reads these to prove the trail is a
+     *  spread of moving copies rather than one sprite pinned to the runner. */
+    val trailHeadX: Double get() = if (trail.isEmpty()) Double.NaN else trail[trail.size - 1][0]
+    val trailTailX: Double get() = if (trail.isEmpty()) Double.NaN else trail[0][0]
+
+    // --- emission ---------------------------------------------------------
+
+    private fun rnd(a: Double, b: Double) = a + Random.nextDouble() * (b - a)
+
+    private fun spark(x: Double, y: Double, vx: Double, vy: Double, life: Double, size: Double, kind: Int) {
+        if (parts.size >= 240) return          // a hard ceiling keeps the frame budget honest
+        parts.add(doubleArrayOf(x, y, vx, vy, life, life, size, kind.toDouble()))
+    }
+
+    private fun burst(g: Game, count: Int, power: Double, spread: Double, up: Double) {
+        val cx = g.x + 0.5
+        val cy = g.y + 0.16
+        for (i in 0 until count) {
+            val a = PI + rnd(-spread, spread)          // backwards, always
+            val sp = power * rnd(0.55, 1.0)
+            spark(cx, cy, cos(a) * sp, sin(a) * sp + up, rnd(0.24, 0.50),
+                rnd(0.15, 0.32), if (i % 3 == 0) 1 else 0)
+        }
+    }
 
     fun update(g: Game, dt: Double) {
         if (g.grounded) groundRefY = g.y
@@ -61,12 +121,55 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         val target = if (g.y < groundRefY - 4.0) g.y else groundRefY
         camY += (target - camY) * min(1.0, dt * 9.0)
 
+        // --- transitions, read from the sim rather than pushed into us ------
+        val justJumped = prevGrounded && !g.grounded && g.vy > 0.0
+        val justDoubled = g.doubleJumps != prevDoubles
+        val justLanded = !prevGrounded && g.grounded
+        val restarted = !wasRunning && g.state == GameState.RUNNING
+
+        if (restarted) resetRun()
+        if (justJumped) { stretch = 0.22; kickY = 1.6; burst(g, 9, 4.5, 0.85, 1.2) }
+        if (justDoubled) {
+            stretch = 0.42
+            kickY = 3.4
+            boostGlow = 0.42
+            burst(g, 20, 7.5, 1.25, 2.4)
+            rings.add(doubleArrayOf(g.x + 0.5, g.y + 0.5, 0.26, 0.26))
+            // a few long streaks so the second jump reads even in a still frame
+            repeat(5) { spark(g.x + 0.5, g.y + 0.4, rnd(-9.0, -4.0), rnd(-1.0, 2.5), rnd(0.26, 0.42), 0.30, 2) }
+        }
+        if (justLanded) { stretch = -0.30; kickY = 2.2; burst(g, 8, 4.0, 0.55, 0.5) }
+
+        prevGrounded = g.grounded
+        prevDoubles = g.doubleJumps
+        wasRunning = g.state == GameState.RUNNING
+
+        // --- decay ----------------------------------------------------------
+        stretch += (0.0 - stretch) * min(1.0, dt * 13.0)
+        kickY += (0.0 - kickY) * min(1.0, dt * 11.0)
+        boostGlow = max(0.0, boostGlow - dt)
+        if (g.grounded && g.state == GameState.RUNNING) runPhase += dt * Tuning.RUN_SPEED / 1.35
+
         if (g.state == GameState.RUNNING) {
-            trail.add(doubleArrayOf(g.x, g.y, 0.28))
-            var i = 0
-            while (i < trail.size) {
-                trail[i][2] -= dt
-                if (trail[i][2] <= 0) trail.removeAt(i) else i++
+            // Ghosts are sampled on a clock, not per frame, so the spacing reads
+            // the same whether the device is running at 60 or 120.
+            trailTimer -= dt
+            if (trailTimer <= 0.0) {
+                // Spaced far enough apart to read as separate copies. Sampled any
+                // tighter and the ghosts smear into one dark smudge behind the
+                // runner, which is the opposite of what a motion trail is for.
+                trailTimer = 0.030
+                val life = if (boostGlow > 0.0) 0.50 else 0.34
+                trail.add(doubleArrayOf(g.x, g.y, life, life, g.rotationDeg))
+                if (trail.size > 40) trail.removeAt(0)
+            }
+            // Ground dust while running, thinner air-dust while flying.
+            emitTimer -= dt
+            if (emitTimer <= 0.0) {
+                emitTimer = if (g.grounded) 0.042 else 0.075
+                val y = if (g.grounded) g.y + 0.06 else g.y + rnd(0.15, 0.8)
+                spark(g.x + rnd(0.05, 0.4), y, rnd(-6.5, -3.0), rnd(0.2, 1.9),
+                    rnd(0.22, 0.40), rnd(0.10, 0.20), if (Random.nextInt(4) == 0) 2 else 1)
             }
             shardsSpawned = false
         } else if (g.state == GameState.DEAD && !shardsSpawned) {
@@ -77,7 +180,29 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 shards.add(doubleArrayOf(g.deathX + 0.5, g.deathY + 0.5, cos(a) * sp, sin(a) * sp + 3.0, 0.7))
             }
         }
+
+        // --- integrate the decoration ---------------------------------------
         var i = 0
+        while (i < trail.size) {
+            trail[i][2] -= dt
+            if (trail[i][2] <= 0) trail.removeAt(i) else i++
+        }
+        i = 0
+        while (i < parts.size) {
+            val p = parts[i]
+            p[0] += p[2] * dt
+            p[1] += p[3] * dt
+            p[3] -= 9.0 * dt                     // light gravity: dust settles, it does not plummet
+            p[2] *= 1.0 - min(1.0, dt * 2.2)
+            p[4] -= dt
+            if (p[4] <= 0) parts.removeAt(i) else i++
+        }
+        i = 0
+        while (i < rings.size) {
+            rings[i][2] -= dt
+            if (rings[i][2] <= 0) rings.removeAt(i) else i++
+        }
+        i = 0
         while (i < shards.size) {
             val s = shards[i]
             s[0] += s[2] * dt; s[1] += s[3] * dt; s[3] -= 22.0 * dt; s[4] -= dt
@@ -100,10 +225,16 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         camX = g.x
 
         drawBackground(g)
+        ctx.save()
+        ctx.translate(0.0, kickY)
         drawLevel(g.level)
-        drawTrail()
+        drawShadow(g)
+        drawTrail(g)
+        drawParticles(g)
+        drawRings(g)
         if (g.state != GameState.DEAD) drawPlayer(g)
         drawShards()
+        ctx.restore()
         drawHud(g)
         if (g.state == GameState.DEAD) drawDeath(g)
         if (g.state == GameState.COMPLETE) drawComplete(g)
@@ -127,6 +258,20 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             val bh = h * (0.12 + 0.07 * ((i * 7) % 5))
             ctx.fillRect(bx, h * 0.52 - bh, 26.0 * (scale / 60.0), bh + h)
             i++
+        }
+
+        // A nearer layer of thin streaks, moving much faster. This is the only
+        // place the sense of speed comes from for free - it costs no readability
+        // because it lives above the play line and stays under the vignette.
+        ctx.globalAlpha = 0.13
+        ctx.fillStyle = "#4a3a8c"
+        val fast = g.x * 0.62
+        var k = -2
+        while (k < 30) {
+            val bx = w - ((k * 41.0 - fast % 41.0) * (scale / 60.0)) % (w + 120.0)
+            val by = h * (0.06 + 0.042 * ((k * 11) % 8))
+            ctx.fillRect(bx, by, 22.0 * (scale / 60.0), 2.0)
+            k++
         }
         ctx.globalAlpha = 1.0
 
@@ -214,15 +359,98 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         }
     }
 
-    private fun drawTrail() {
+    /** Highest surface under the runner, or null over a pit. */
+    private fun groundUnder(g: Game): Double? {
+        var best: Double? = null
+        g.level.forEachSolidNear(g.x, g.x + Tuning.PLAYER_SIZE) { s ->
+            if (s.top <= g.y + 1e-6) { val b = best; if (b == null || s.top > b) best = s.top }
+        }
+        return best
+    }
+
+    /**
+     * A contact shadow, directly under the runner and never behind it. Its size
+     * is the whole point: it is the only cue that says how far there is left to
+     * fall, which is exactly what a second jump needs the player to judge.
+     */
+    private fun drawShadow(g: Game) {
+        if (g.state != GameState.RUNNING) return
+        val ground = groundUnder(g) ?: return
+        val height = g.y - ground
+        if (height > 5.4) return
+        val t = (height / 5.4).coerceIn(0.0, 1.0)
+        val rx = scale * (0.48 - 0.26 * t)
+        val ry = rx * 0.30
+        // Light, not darkness. A black contact shadow is invisible on a near-black
+        // floor, so the runner drops a pool of its own colour instead: it tightens
+        // and brightens as the ground comes up, which is the read a second jump
+        // needs before it is spent.
+        val near = 1.0 - t
+        ctx.beginPath()
+        ctx.ellipse(sx(g.x + 0.5), sy(ground) - ry * 0.5, rx, ry, 0.0, 0.0, PI * 2)
+        ctx.fillStyle = "rgba(255,201,60,${0.05 + 0.17 * near})"
+        ctx.fill()
+        ctx.strokeStyle = "rgba(255,201,60,${0.16 + 0.34 * near})"
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+        ctx.lineWidth = 2.5
+    }
+
+    /** Ghost copies of the runner, each smaller and fainter than the last. */
+    private fun drawTrail(g: Game) {
+        val front = sx(g.x + Tuning.PLAYER_SIZE)
+        ctx.lineWidth = 2.0
         for (t in trail) {
-            val a = (t[2] / 0.28).coerceIn(0.0, 1.0)
-            ctx.globalAlpha = a * 0.5
-            ctx.fillStyle = player
-            val s = scale * 0.22 * a
-            ctx.fillRect(sx(t[0] + 0.5) - s / 2, sy(t[1] + 0.5) - s / 2, s, s)
+            val a = (t[2] / t[3]).coerceIn(0.0, 1.0)
+            val px = sx(t[0] + 0.5)
+            if (px > front) continue                      // never ahead of the runner
+            val size = scale * Tuning.PLAYER_SIZE * (0.26 + 0.62 * a)
+            ctx.globalAlpha = a.pow(1.3) * (if (boostGlow > 0.0) 0.88 else 0.64)
+            ctx.lineWidth = 2.0 + a
+            ctx.strokeStyle = if (boostGlow > 0.0) boost else player
+            ctx.save()
+            ctx.translate(px, sy(t[1] + 0.5))
+            ctx.rotate(t[4] * PI / 180.0)
+            roundSquare(size, size * 0.18)
+            ctx.stroke()
+            ctx.restore()
         }
         ctx.globalAlpha = 1.0
+    }
+
+    private fun drawParticles(g: Game) {
+        val front = sx(g.x + Tuning.PLAYER_SIZE)
+        for (p in parts) {
+            val a = (p[4] / p[5]).coerceIn(0.0, 1.0)
+            val px = sx(p[0])
+            if (px > front) continue                      // readability outranks effects
+            val py = sy(p[1])
+            ctx.globalAlpha = a * 0.85
+            ctx.fillStyle = if (p[7] == 1.0) boost else gold
+            val s = scale * p[6] * (0.4 + 0.6 * a)
+            when (p[7].toInt()) {
+                2 -> ctx.fillRect(px, py - s * 0.18, s * 3.2, s * 0.36)   // a streak of speed
+                1 -> ctx.fillRect(px - s * 0.3, py - s * 0.3, s * 0.6, s * 0.6)
+                else -> ctx.fillRect(px - s / 2, py - s / 2, s, s)
+            }
+        }
+        ctx.globalAlpha = 1.0
+    }
+
+    /** The boost's own mark: one bright, quick ring, used nowhere else. */
+    private fun drawRings(g: Game) {
+        ctx.strokeStyle = boost
+        for (r in rings) {
+            val a = (r[2] / r[3]).coerceIn(0.0, 1.0)
+            ctx.globalAlpha = a * a * 0.95
+            ctx.lineWidth = 1.5 + 3.0 * a
+            ctx.beginPath()
+            ctx.ellipse(sx(r[0]), sy(r[1]), scale * (0.45 + 0.95 * (1 - a)),
+                scale * (0.45 + 0.72 * (1 - a)), 0.0, 0.0, PI * 2)
+            ctx.stroke()
+        }
+        ctx.globalAlpha = 1.0
+        ctx.lineWidth = 2.5
     }
 
     private fun drawShards() {
@@ -235,48 +463,84 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.globalAlpha = 1.0
     }
 
+    /** The runner's silhouette, centred on the origin. */
+    private fun roundSquare(size: Double, r: Double) {
+        val h2 = size / 2
+        ctx.beginPath()
+        ctx.moveTo(-h2 + r, -h2); ctx.lineTo(h2 - r, -h2); ctx.quadraticCurveTo(h2, -h2, h2, -h2 + r)
+        ctx.lineTo(h2, h2 - r); ctx.quadraticCurveTo(h2, h2, h2 - r, h2)
+        ctx.lineTo(-h2 + r, h2); ctx.quadraticCurveTo(-h2, h2, -h2, h2 - r)
+        ctx.lineTo(-h2, -h2 + r); ctx.quadraticCurveTo(-h2, -h2, -h2 + r, -h2)
+        ctx.closePath()
+    }
+
     private fun drawPlayer(g: Game) {
-        val cx = sx(g.x + 0.5); val cy = sy(g.y + 0.5)
+        // A light run bounce and a squash that answers every take-off and landing.
+        // Both are drawing only: the hitbox never moves (GDD fairness law 3).
+        val bounce = if (g.grounded) abs(sin(runPhase * PI)) * 0.055 else 0.0
+        var sq = stretch
+        // Compression just before touchdown, so the landing is anticipated.
+        val ground = groundUnder(g)
+        if (!g.grounded && g.vy < 0.0 && ground != null) {
+            val gap = g.y - ground
+            if (gap < 1.1) sq -= 0.13 * (1.0 - gap / 1.1)
+        }
+        val sy2 = 1.0 + sq
+        val sx2 = 1.0 - sq * 0.72
+
+        val cx = sx(g.x + 0.5)
+        val cy = sy(g.y + 0.5 + bounce)
         val s = scale * Tuning.PLAYER_SIZE
         ctx.save()
         ctx.translate(cx, cy)
         ctx.rotate(g.rotationDeg * PI / 180.0)
-        ctx.shadowBlur = 16.0; ctx.shadowColor = player
+        ctx.scale(sx2, sy2)
+        ctx.shadowBlur = 16.0; ctx.shadowColor = if (g.face == Face.DOUBLE) boost else player
         ctx.fillStyle = "#1a1405"
-        ctx.strokeStyle = player; ctx.lineWidth = 3.0
-        val r = s / 2
-        ctx.beginPath()
-        ctx.moveTo(-r + 4, -r); ctx.lineTo(r - 4, -r); ctx.quadraticCurveTo(r, -r, r, -r + 4)
-        ctx.lineTo(r, r - 4); ctx.quadraticCurveTo(r, r, r - 4, r)
-        ctx.lineTo(-r + 4, r); ctx.quadraticCurveTo(-r, r, -r, r - 4)
-        ctx.lineTo(-r, -r + 4); ctx.quadraticCurveTo(-r, -r, -r + 4, -r)
-        ctx.closePath(); ctx.fill(); ctx.stroke()
+        ctx.strokeStyle = if (g.face == Face.DOUBLE) boost else player
+        ctx.lineWidth = 3.0
+        roundSquare(s, 4.0)
+        ctx.fill(); ctx.stroke()
         ctx.shadowBlur = 0.0
         ctx.restore()
         // The body spins so the rotation reads as timing, but the face does not:
         // a sideways face cannot do the job GDD 2.2 gives it.
         ctx.save()
         ctx.translate(cx, cy)
-        drawFace(g.face, s)
+        ctx.scale(sx2, sy2)
+        drawFace(g, s)
         ctx.restore()
     }
 
     /** GDD 2.2: the face is a readability element, so it must stay legible at phone size. */
-    private fun drawFace(face: Face, s: Double) {
-        ctx.fillStyle = player
+    private fun drawFace(g: Game, s: Double) {
+        val face = g.face
+        ctx.fillStyle = if (face == Face.DOUBLE) boost else player
         val eye = s * 0.13
         val ey = -s * 0.10
+        // A little life: the eyes lead the run, and look up on the way up.
+        val look = if (g.grounded) sin(runPhase * PI * 2) * s * 0.022 else 0.0
+        val lift = if (!g.grounded) (g.vy / Tuning.JUMP_VELOCITY).coerceIn(-1.0, 1.0) * s * 0.03 else 0.0
         when (face) {
             Face.RUN -> {
-                ctx.fillRect(-s * 0.22 - eye / 2, ey - eye / 2, eye, eye)
-                ctx.fillRect(s * 0.22 - eye / 2, ey - eye / 2, eye, eye)
+                ctx.fillRect(-s * 0.22 - eye / 2 + look, ey - eye / 2, eye, eye)
+                ctx.fillRect(s * 0.22 - eye / 2 + look, ey - eye / 2, eye, eye)
                 ctx.strokeStyle = player; ctx.lineWidth = s * 0.07
                 ctx.beginPath(); ctx.arc(0.0, s * 0.06, s * 0.20, 0.15 * PI, 0.85 * PI); ctx.stroke()
             }
             Face.JUMP -> {
-                ctx.fillRect(-s * 0.24 - eye / 2, ey - eye * 0.8, eye, eye * 1.5)
-                ctx.fillRect(s * 0.24 - eye / 2, ey - eye * 0.8, eye, eye * 1.5)
+                ctx.fillRect(-s * 0.24 - eye / 2, ey - eye * 0.8 - lift, eye, eye * 1.5)
+                ctx.fillRect(s * 0.24 - eye / 2, ey - eye * 0.8 - lift, eye, eye * 1.5)
                 ctx.beginPath(); ctx.ellipse(0.0, s * 0.12, s * 0.15, s * 0.17, 0.0, 0.0, PI * 2); ctx.fill()
+            }
+            // The boost gets its own face for the moment it lasts: eyes wide,
+            // mouth open. Even muted, the second jump is unmistakable.
+            Face.DOUBLE -> {
+                ctx.beginPath()
+                ctx.arc(-s * 0.23, ey - s * 0.02, eye * 0.85, 0.0, PI * 2)
+                ctx.arc(s * 0.23, ey - s * 0.02, eye * 0.85, 0.0, PI * 2)
+                ctx.fill()
+                ctx.beginPath(); ctx.ellipse(0.0, s * 0.15, s * 0.13, s * 0.20, 0.0, 0.0, PI * 2); ctx.fill()
             }
             Face.DEAD -> {
                 ctx.strokeStyle = hazard; ctx.lineWidth = s * 0.07
