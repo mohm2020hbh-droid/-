@@ -50,7 +50,7 @@ under it, in either world. A world tightens toward that floor and stops.
 **Reading** is everything the player has to see rather than hit: movers, pulses,
 floors that leave, beams, wind. It has no ceiling, and it is what world 2
 escalates instead. World 1 has 41 moving parts across its six levels; world 2
-has 92.
+has 90.
 
 | | L1 | L2 | L3 | L4 | L5 | L6 |
 |---|---|---|---|---|---|---|
