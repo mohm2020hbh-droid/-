@@ -111,6 +111,7 @@ fun main() {
         Audio.musicEnabled = settings.music
         renderer.reduceEffects = settings.reduceEffects
         renderer.colorblind = settings.colorblind
+        progress.unlockAllForTesting = settings.unlockAll
         document.documentElement?.setAttribute("dir", if (settings.lang == Lang.AR) "rtl" else "ltr")
         Strings.lang = settings.lang
     }
@@ -395,6 +396,7 @@ fun main() {
             "vibration" -> settings.vibration = on
             "reduceEffects" -> settings.reduceEffects = on
             "colorblind" -> settings.colorblind = on
+            "unlockAll" -> settings.unlockAll = on
         }
         applySettings()
     }
@@ -405,6 +407,7 @@ fun main() {
             "vibration" -> settings.vibration
             "reduceEffects" -> settings.reduceEffects
             "colorblind" -> settings.colorblind
+            "unlockAll" -> settings.unlockAll
             else -> false
         }
     }

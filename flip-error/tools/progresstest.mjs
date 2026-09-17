@@ -225,7 +225,30 @@ const waitScreen = (s, t = 8000) =>
 {
   await page.evaluate(() => { FLIP.openMenu(); document.getElementById('h-settings').click(); });
   const rows = await page.locator('#settings .sw').count();
-  check('settings offers every switch', rows === 5, `${rows} toggles`);
+  check('settings offers every switch', rows === 6, `${rows} toggles`);
+
+  // the testing switch: it opens doors and touches nothing behind them
+  const unlocked = await page.evaluate(() => {
+    const before = { l5: FLIP.unlocked(5), coins: FLIP.coins(), stars: FLIP.levelStars(1) };
+    document.querySelector('#settings .sw[data-toggle="unlockAll"]').click();
+    const after = { l5: FLIP.unlocked(5), coins: FLIP.coins(), stars: FLIP.levelStars(1) };
+    return { before, after };
+  });
+  check('the testing switch opens every level', !unlocked.before.l5 && unlocked.after.l5);
+  check('and changes nothing else',
+        unlocked.after.coins === unlocked.before.coins && unlocked.after.stars === unlocked.before.stars,
+        `★ ${unlocked.after.coins}`);
+
+  const playable = await page.evaluate(async () => {
+    FLIP.play(5);
+    return { screen: FLIP.screen(), level: FLIP.level() };
+  });
+  check('a locked level is playable once it is on', playable.screen === 'PLAYING' && playable.level === 5,
+        `${playable.screen} level ${playable.level}`);
+  await page.evaluate(() => { FLIP.openMenu(); document.getElementById('h-settings').click();
+                              document.querySelector('#settings .sw[data-toggle="unlockAll"]').click(); });
+  check('turning it back off restores the progression',
+        !(await page.evaluate(() => FLIP.unlocked(5))));
 
   const toggled = await page.evaluate(() => {
     const before = FLIP.settingOf('music');

@@ -354,6 +354,7 @@ class Ui(
               ${toggleRow("vibration", t("vibration"), settings.vibration)}
               ${toggleRow("reduceEffects", t("reduceEffects"), settings.reduceEffects)}
               ${toggleRow("colorblind", t("colorblind"), settings.colorblind)}
+              ${toggleRow("unlockAll", t("unlockAll"), settings.unlockAll)}
               <div class="row set">
                 <span>${t("language")}</span>
                 <span class="langs">
@@ -373,6 +374,7 @@ class Ui(
                     "vibration" -> settings.vibration = !settings.vibration
                     "reduceEffects" -> settings.reduceEffects = !settings.reduceEffects
                     "colorblind" -> settings.colorblind = !settings.colorblind
+                    "unlockAll" -> settings.unlockAll = !settings.unlockAll
                     else -> Unit.also { println("unknown toggle $k") }
                 }
                 onSettingsChanged()

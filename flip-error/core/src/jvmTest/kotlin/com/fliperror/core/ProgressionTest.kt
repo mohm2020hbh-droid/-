@@ -216,3 +216,36 @@ class SettingsTest {
         }
     }
 }
+
+class UnlockAllTest {
+
+    @Test fun `the testing switch opens every door and nothing else`() {
+        val p = Progress()
+        assertFalse(p.unlocked(5))
+        p.unlockAllForTesting = true
+        (1..6).forEach { assertTrue(p.unlocked(it), "level $it stayed shut") }
+        // it is a door key, not a cheat: nothing is completed, nothing is owned,
+        // and the purse has not moved.
+        assertEquals(0, p.coins)
+        assertEquals(0, p.totalStars)
+        assertFalse(p.record(1).completed)
+    }
+
+    @Test fun `turning it back off restores the real progression`() {
+        val p = Progress()
+        p.unlockAllForTesting = true
+        assertTrue(p.unlocked(4))
+        p.unlockAllForTesting = false
+        assertFalse(p.unlocked(2), "the door stayed open after the key was taken away")
+        p.finish(1, emptySet(), attempts = 3)
+        assertTrue(p.unlocked(2))
+    }
+
+    @Test fun `the switch survives a save, and an old save defaults it off`() {
+        val s = Settings()
+        s.unlockAll = true
+        assertTrue(Settings.parse(s.serialize()).unlockAll)
+        // a settings blob written before the switch existed
+        assertFalse(Settings.parse("s1|11100|EN").unlockAll)
+    }
+}

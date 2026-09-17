@@ -27,6 +27,7 @@ object Strings {
         "music" to "MUSIC", "sfx" to "SFX", "vibration" to "VIBRATION",
         "reduceEffects" to "REDUCE EFFECTS", "colorblind" to "COLORBLIND MODE",
         "language" to "LANGUAGE", "reset" to "RESET PROGRESS", "resetGo" to "RESET",
+        "unlockAll" to "UNLOCK ALL LEVELS",
         "resetAsk" to "ERASE ALL PROGRESS?", "notBuilt" to "NOT BUILT YET",
         "shapes" to "SHAPES", "colors" to "COLORS", "trails" to "TRAILS", "faces" to "FACES",
     )
@@ -45,6 +46,7 @@ object Strings {
         "music" to "الموسيقى", "sfx" to "المؤثرات", "vibration" to "الاهتزاز",
         "reduceEffects" to "تقليل المؤثرات", "colorblind" to "وضع عمى الألوان",
         "language" to "اللغة", "reset" to "مسح التقدم", "resetGo" to "مسح",
+        "unlockAll" to "فتح كل المراحل",
         "resetAsk" to "مسح كل التقدم؟", "notBuilt" to "لم تُبنَ بعد",
         "shapes" to "أشكال", "colors" to "ألوان", "trails" to "آثار", "faces" to "وجوه",
     )

@@ -44,8 +44,12 @@ class Progress private constructor(
 
     fun record(levelId: Int): LevelRecord = levels[levelId] ?: LevelRecord()
 
+    /** Set from Settings. Opens every door without touching anything behind them. */
+    var unlockAllForTesting = false
+
     /** Level 1 is always open; each later level opens when the one before is cleared. */
-    fun unlocked(levelId: Int): Boolean = levelId <= 1 || record(levelId - 1).completed
+    fun unlocked(levelId: Int): Boolean =
+        unlockAllForTesting || levelId <= 1 || record(levelId - 1).completed
 
     fun starsIn(levelId: Int): Set<Int> = record(levelId).stars
 

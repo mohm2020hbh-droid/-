@@ -15,10 +15,14 @@ class Settings private constructor(
     var reduceEffects: Boolean,
     var colorblind: Boolean,
     var lang: Lang,
+    /** Testing only, and off by default: opens every level regardless of progress.
+     *  It unlocks doors, it does not touch the game behind them. */
+    var unlockAll: Boolean = false,
 ) {
-    constructor() : this(true, true, true, false, false, Lang.EN)
+    constructor() : this(true, true, true, false, false, Lang.EN, false)
 
-    fun serialize() = "s1|${b(music)}${b(sfx)}${b(vibration)}${b(reduceEffects)}${b(colorblind)}|${lang.name}"
+    fun serialize() =
+        "s1|${b(music)}${b(sfx)}${b(vibration)}${b(reduceEffects)}${b(colorblind)}${b(unlockAll)}|${lang.name}"
 
     private fun b(v: Boolean) = if (v) "1" else "0"
 
@@ -35,6 +39,7 @@ class Settings private constructor(
                 fresh.vibration = f[2] == '1'
                 fresh.reduceEffects = f[3] == '1'
                 fresh.colorblind = f[4] == '1'
+                if (f.length >= 6) fresh.unlockAll = f[5] == '1'
             }
             fresh.lang = Lang.entries.firstOrNull { it.name == parts[2] } ?: Lang.EN
             return fresh
