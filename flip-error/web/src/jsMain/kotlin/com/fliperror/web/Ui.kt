@@ -9,6 +9,7 @@ import com.fliperror.core.Progress
 import com.fliperror.core.Settings
 import com.fliperror.core.Shop
 import kotlinx.browser.document
+import kotlinx.browser.window
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLElement
@@ -37,7 +38,8 @@ class Ui(
     private val reward = el("reward")
     private val modal = el("modal")
     private var shopTab = Category.SHAPE
-    private var open = "menu"
+    private var open = "home"
+    private var previewLoop = 0
 
     private fun el(id: String) = document.getElementById(id) as HTMLElement
 
@@ -52,14 +54,40 @@ class Ui(
 
     private fun show(which: String) {
         open = which
-        menu.hidden = which != "menu"
+        menu.hidden = which != "home" && which != "menu"
         shopEl.hidden = which != "shop"
         settingsEl.hidden = which != "settings"
         reward.hidden = which != "reward"
+        if (which != "shop") stopPreviewLoop()
         if (which != "shop") modal.hidden = true
     }
 
+    /** The front door: four ways in, and the purse. */
+    fun showHome() { renderHome(); show("home") }
     fun showMenu() { renderMenu(); show("menu") }
+
+    /** The level PLAY goes to: the furthest one that is open. */
+    private fun nextLevel(): Int =
+        levels.lastOrNull { it.built && progress.unlocked(it.id) }?.id ?: 1
+
+    private fun renderHome() {
+        menu.innerHTML = """
+            <div class="top"><h1>FLIP ERROR</h1><span class="coins">${coinLine()}</span></div>
+            <p class="tag-line">${t("hint")}</p>
+            <div class="home">
+              <button class="wide go big" id="h-play">${t("play")}</button>
+              <button class="wide" id="h-levels">${t("levels")}</button>
+              <div class="rowbtns">
+                <button class="wide" id="h-shop">${t("shop")}</button>
+                <button class="wide ghost" id="h-settings">${t("settings")}</button>
+              </div>
+            </div>
+        """.trimIndent()
+        (document.getElementById("h-play") as HTMLElement).addEventListener("click", { onPlay(nextLevel()) })
+        (document.getElementById("h-levels") as HTMLElement).addEventListener("click", { showMenu() })
+        (document.getElementById("h-shop") as HTMLElement).addEventListener("click", { showShop() })
+        (document.getElementById("h-settings") as HTMLElement).addEventListener("click", { showSettings() })
+    }
     fun showShop() { renderShop(); show("shop") }
     fun showSettings() { renderSettings(); show("settings") }
     fun hideAll() { show("none"); modal.hidden = true }
@@ -67,6 +95,7 @@ class Ui(
     /** Redraw whatever is open. Used when the language or the purse changes. */
     fun refresh() {
         when (open) {
+            "home" -> renderHome()
             "menu" -> renderMenu()
             "shop" -> renderShop()
             "settings" -> renderSettings()
@@ -108,14 +137,15 @@ class Ui(
             <div class="top"><h1>FLIP ERROR</h1><span class="coins">${coinLine()}</span></div>
             <div class="cards">$cards</div>
             <div class="rowbtns">
+              <button class="wide ghost" id="to-home">&lsaquo; ${t("back")}</button>
               <button class="wide" id="to-shop">${t("shop")}</button>
               <button class="wide ghost" id="to-settings">${t("settings")}</button>
             </div>
-            <p class="hint">${t("hint")}</p>
         """.trimIndent()
         menu.each(".card") { b ->
             b.addEventListener("click", { b.dataset["level"]?.toIntOrNull()?.let(onPlay) })
         }
+        (document.getElementById("to-home") as HTMLElement).addEventListener("click", { showHome() })
         (document.getElementById("to-shop") as HTMLElement).addEventListener("click", { showShop() })
         (document.getElementById("to-settings") as HTMLElement).addEventListener("click", { showSettings() })
     }
@@ -150,7 +180,7 @@ class Ui(
             <div class="grid">$grid</div>
         """.trimIndent()
 
-        (document.getElementById("shop-back") as HTMLElement).addEventListener("click", { showMenu() })
+        (document.getElementById("shop-back") as HTMLElement).addEventListener("click", { showHome() })
         shopEl.each(".tab") { b ->
             b.addEventListener("click", {
                 shopTab = Category.entries.first { it.name == b.dataset["cat"] }
@@ -185,7 +215,10 @@ class Ui(
             </div>
         """.trimIndent()
         modal.hidden = false
-        modal.each(".prev") { c -> drawPreview(c as HTMLCanvasElement) }
+        // A card that only shows a still cannot tell you what a trail does, or
+        // what the face does on the second jump. The sheet's preview runs the
+        // whole loop: run, jump, boost, land.
+        modal.each(".prev") { c -> startPreviewLoop(c as HTMLCanvasElement, id) }
         (document.getElementById("m-cancel") as HTMLElement).addEventListener("click", {
             modal.hidden = true
         })
@@ -197,47 +230,107 @@ class Ui(
         })
     }
 
+    private fun stopPreviewLoop() {
+        if (previewLoop != 0) { window.cancelAnimationFrame(previewLoop); previewLoop = 0 }
+    }
+
+    /**
+     * Four seconds of the runner's life, on a loop: running, a jump, a boosted
+     * jump, and back. Drawn with the game's own art and the game's own arc, so
+     * what the sheet promises is what the level delivers.
+     */
+    private fun startPreviewLoop(canvas: HTMLCanvasElement, id: String) {
+        stopPreviewLoop()
+        val started = window.performance.now()
+        fun tick() {
+            if (modal.hidden) { previewLoop = 0; return }
+            val t = (window.performance.now() - started) / 1000.0
+            drawPreview(canvas, t)
+            previewLoop = window.requestAnimationFrame { tick() }
+        }
+        tick()
+    }
+
     /** The preview is drawn with the game's own art, so a card cannot lie. */
-    private fun drawPreview(canvas: HTMLCanvasElement) {
+    private fun drawPreview(canvas: HTMLCanvasElement, time: Double = -1.0) {
         val id = canvas.dataset["prev"] ?: return
         val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
         val item: Cosmetic = Shop.byId[id] ?: return
         val box = canvas.width.toDouble()
         val size = box * 0.50
         ctx.clearRect(0.0, 0.0, box, box)
+
+        // The pose. A still card sits at rest; the live one flies the real arc.
+        var lift = 0.0
+        var spin = 0.0
+        var pose = com.fliperror.core.Face.RUN
+        var stretch = 0.0
+        if (time >= 0.0) {
+            val cycle = time % 4.0
+            when {
+                cycle < 1.2 -> {                                  // running
+                    lift = kotlin.math.abs(kotlin.math.sin(cycle * 7.0)) * size * 0.05
+                }
+                cycle < 2.2 -> {                                  // a plain jump
+                    val u = (cycle - 1.2) / 1.0
+                    lift = kotlin.math.sin(u * kotlin.math.PI) * size * 0.55
+                    spin = u * 90.0
+                    pose = com.fliperror.core.Face.JUMP
+                    stretch = kotlin.math.cos(u * kotlin.math.PI) * 0.16
+                }
+                cycle < 3.6 -> {                                  // jump, then boost
+                    val u = (cycle - 2.2) / 1.4
+                    lift = kotlin.math.sin(u * kotlin.math.PI) * size * 0.95
+                    spin = u * 180.0
+                    pose = if (u in 0.34..0.58) com.fliperror.core.Face.DOUBLE
+                           else com.fliperror.core.Face.JUMP
+                    stretch = if (u in 0.34..0.58) 0.34 else kotlin.math.cos(u * kotlin.math.PI) * 0.20
+                }
+            }
+        }
+
         ctx.save()
-        ctx.translate(box / 2, box / 2)
+        ctx.translate(box / 2, box / 2 + box * 0.16 - lift)
         val shape = if (item.category == Category.SHAPE) item.id else progress.equipped(Category.SHAPE)
         val colourId = if (item.category == Category.COLOR) item.id else progress.equipped(Category.COLOR)
         val faceId = if (item.category == Category.FACE) item.id else progress.equipped(Category.FACE)
         val colour = Palette.player(colourId)
 
-        if (item.category == Category.TRAIL) {
-            for (i in 4 downTo 1) {
-                val age = 1.0 - i * 0.2
+        // Every live preview shows the trail, not just the trail cards: it is
+        // part of what the runner looks like moving.
+        val trailId = if (item.category == Category.TRAIL) item.id else progress.equipped(Category.TRAIL)
+        if (item.category == Category.TRAIL || time >= 0.0) {
+            for (i in 5 downTo 1) {
+                val age = 1.0 - i * 0.17
                 ctx.save()
-                ctx.translate(-i * size * 0.26, 0.0)
-                ctx.globalAlpha = Art.trailAlpha(item.id, age).coerceIn(0.0, 1.0)
-                ctx.strokeStyle = Art.trailColour(item.id, colour, age, i)
+                ctx.translate(-i * size * 0.26, i * lift * 0.22)
+                ctx.globalAlpha = Art.trailAlpha(trailId, age).coerceIn(0.0, 1.0)
+                ctx.strokeStyle = Art.trailColour(trailId, colour, age, i)
                 ctx.lineWidth = 2.0
-                Art.shapePath(ctx, shape, size * Art.trailScale(item.id, age))
+                ctx.rotate(spin * kotlin.math.PI / 180.0)
+                Art.shapePath(ctx, shape, size * Art.trailScale(trailId, age))
                 ctx.stroke()
                 ctx.restore()
             }
             ctx.globalAlpha = 1.0
         }
 
-        ctx.shadowBlur = 18.0; ctx.shadowColor = colour
+        val edge = if (pose == com.fliperror.core.Face.DOUBLE) Palette.BOOST else colour
+        ctx.save()
+        ctx.rotate(spin * kotlin.math.PI / 180.0)
+        ctx.scale(1.0 - stretch * 0.7, 1.0 + stretch)
+        ctx.shadowBlur = 18.0; ctx.shadowColor = edge
         ctx.fillStyle = Palette.playerFill(colourId)
-        ctx.strokeStyle = colour
+        ctx.strokeStyle = edge
         ctx.lineWidth = 3.0
         Art.shapePath(ctx, shape, size)
         ctx.fill(); ctx.stroke()
         ctx.shadowBlur = 0.0
+        ctx.restore()
         val fs = Art.faceScale(shape)
         if (fs > 0.0) {
             ctx.translate(0.0, Art.faceOffset(shape, size))
-            Art.face(ctx, faceId, com.fliperror.core.Face.RUN, size * fs, colour)
+            Art.face(ctx, faceId, pose, size * fs, edge)
         }
         ctx.restore()
     }
@@ -271,7 +364,7 @@ class Ui(
             </div>
             <button class="wide danger" id="set-reset">${t("reset")}</button>
         """.trimIndent()
-        (document.getElementById("set-back") as HTMLElement).addEventListener("click", { showMenu() })
+        (document.getElementById("set-back") as HTMLElement).addEventListener("click", { showHome() })
         settingsEl.each(".sw") { b ->
             b.addEventListener("click", {
                 when (val k = b.dataset["toggle"]) {

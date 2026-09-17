@@ -92,13 +92,17 @@ const waitScreen = (s, t = 8000) =>
     screen: FLIP.screen(), coins: FLIP.coins(),
     l1: FLIP.unlocked(1), l2: FLIP.unlocked(2), l3: FLIP.unlocked(3),
   }));
-  check('a fresh profile opens on the level select', st.screen === 'MENU', st.screen);
+  check('a fresh profile opens on the main menu', st.screen === 'MENU', st.screen);
+  const homeBtns = await page.locator('#menu .home button').count();
+  check('the main menu offers play, levels, shop and settings', homeBtns === 4, `${homeBtns} buttons`);
+  // everything below reads the level grid, which is one tap in
+  await page.evaluate(() => document.getElementById('h-levels').click());
   check('level 1 is open and level 2 is not', st.l1 && !st.l2 && !st.l3);
   check('a fresh purse is empty', st.coins === 0, `★ ${st.coins}`);
   const cards = await page.locator('#menu .card').count();
-  check('the level select lists every level', cards === 3, `${cards} cards`);
+  check('the level select lists every level', cards === 6, `${cards} cards`);
   const locked = await page.locator('#menu .card[disabled]').count();
-  check('locked levels cannot be tapped', locked === 2, `${locked} disabled`);
+  check('locked levels cannot be tapped', locked === 5, `${locked} disabled`);
   await page.screenshot({ path: path.join(shotDir, '01-menu-fresh.png') });
 }
 
@@ -178,6 +182,18 @@ const waitScreen = (s, t = 8000) =>
              closed: document.getElementById('modal').hidden };
   });
   check('a tap on BUY asks first', cancelled.asked);
+  // the sheet's preview animates; two samples a few frames apart must differ
+  const alive = await page.evaluate(async () => {
+    document.querySelector('#shop .buy[data-ask]').click();
+    const c = document.querySelector('#modal .prev');
+    const grab = () => c.getContext('2d').getImageData(0, 0, c.width, c.height).data.join('').length;
+    const shot = (ms) => new Promise(r => setTimeout(() => r(grab()), ms));
+    const a = await shot(60), b = await shot(420), d = await shot(900);
+    const same = (a === b) && (b === d);
+    document.getElementById('m-cancel').click();
+    return !same;
+  });
+  check('the preview in the sheet is alive, not a still', alive);
   check('CANCEL closes the sheet', cancelled.closed);
   check('CANCEL spends nothing', cancelled.after === cancelled.before, `★ ${cancelled.after}`);
   check('CANCEL grants nothing', !cancelled.owns, cancelled.id);
@@ -207,7 +223,7 @@ const waitScreen = (s, t = 8000) =>
 
 // 6b — the switches, and the second language.
 {
-  await page.evaluate(() => { FLIP.openMenu(); document.getElementById('to-settings').click(); });
+  await page.evaluate(() => { FLIP.openMenu(); document.getElementById('h-settings').click(); });
   const rows = await page.locator('#settings .sw').count();
   check('settings offers every switch', rows === 5, `${rows} toggles`);
 

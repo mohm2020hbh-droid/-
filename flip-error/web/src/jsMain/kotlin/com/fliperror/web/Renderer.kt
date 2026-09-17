@@ -434,8 +434,14 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
 
         ctx.lineWidth = 2.5
         level.forEachSolidNear(left, right) { s ->
-            val x0 = sx(s.x0); val x1 = sx(s.x1); val yTop = sy(s.top)
-            val bottom = sy(maxOf(s.bottom, camY - viewHeight))
+            if (!s.presentAt(levelTime)) return@forEachSolidNear
+            val x0 = sx(s.x0At(levelTime)); val x1 = sx(s.x1At(levelTime))
+            val yTop = sy(s.topAt(levelTime))
+            val bottom = sy(maxOf(s.bottomAt(levelTime), camY - viewHeight))
+            // A platform about to vanish flashes, so the player is told before it
+            // happens rather than after they are already falling.
+            val fading = s.blink?.strengthAt(levelTime) ?: 1.0
+            ctx.globalAlpha = 0.25 + 0.75 * fading
             ctx.fillStyle = safeFill
             ctx.fillRect(x0, yTop, x1 - x0, bottom - yTop)
             ctx.shadowBlur = if (reduceEffects) 0.0 else 22.0
@@ -453,6 +459,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.moveTo(x0, yTop); ctx.lineTo(x0, bottom)
             ctx.moveTo(x1, yTop); ctx.lineTo(x1, bottom)
             ctx.stroke()
+            ctx.globalAlpha = 1.0
         }
 
         level.forEachHazardNear(left, right) { hz ->
@@ -477,18 +484,23 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.shadowBlur = 0.0
             // A mover gets a track line so its range is readable before it arrives.
             hz.motion?.let { m ->
+                ctx.globalAlpha = 0.26
+                ctx.strokeStyle = hazard
+                ctx.lineWidth = 1.5
+                ctx.beginPath()
+                val cx = sx(hz.x0 + 0.5)
+                val cy = sy((b.y0 + b.y1) / 2)
                 if (m.reachX > 0.0) {
-                    val cy = sy((b.y0 + b.y1) / 2)
-                    ctx.globalAlpha = 0.28
-                    ctx.strokeStyle = hazard
-                    ctx.lineWidth = 1.5
-                    ctx.beginPath()
                     ctx.moveTo(sx(hz.x0 + 0.5 - m.reachX), cy)
                     ctx.lineTo(sx(hz.x0 + 0.5 + m.reachX), cy)
-                    ctx.stroke()
-                    ctx.globalAlpha = 1.0
-                    ctx.lineWidth = 2.5
                 }
+                if (m.reachY > 0.0) {
+                    ctx.moveTo(cx, sy((hz.y0 + hz.y1) / 2 - m.reachY))
+                    ctx.lineTo(cx, sy((hz.y0 + hz.y1) / 2 + m.reachY))
+                }
+                ctx.stroke()
+                ctx.globalAlpha = 1.0
+                ctx.lineWidth = 2.5
             }
         }
 
@@ -574,8 +586,12 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     /** Highest surface under the runner, or null over a pit. */
     private fun groundUnder(g: Game): Double? {
         var best: Double? = null
+        val t = g.elapsed
         g.level.forEachSolidNear(g.x, g.x + Tuning.PLAYER_SIZE) { s ->
-            if (s.top <= g.y + 1e-6) { val b = best; if (b == null || s.top > b) best = s.top }
+            if (!s.presentAt(t)) return@forEachSolidNear
+            if (g.x + Tuning.PLAYER_SIZE <= s.x0At(t) || g.x >= s.x1At(t)) return@forEachSolidNear
+            val top = s.topAt(t)
+            if (top <= g.y + 1e-6) { val b = best; if (b == null || top > b) best = top }
         }
         return best
     }

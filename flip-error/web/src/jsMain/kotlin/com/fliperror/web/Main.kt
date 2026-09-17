@@ -8,6 +8,9 @@ import com.fliperror.core.GameState
 import com.fliperror.core.Level
 import com.fliperror.core.Level1
 import com.fliperror.core.Level2
+import com.fliperror.core.Level3
+import com.fliperror.core.Level4
+import com.fliperror.core.Level5
 import com.fliperror.core.Lang
 import com.fliperror.core.Progress
 import com.fliperror.core.Settings
@@ -86,7 +89,10 @@ fun main() {
     val levels = listOf(
         LevelDef(LevelCard(1, "FIRST STEPS HURT", 3, true)) { Level1.build() },
         LevelDef(LevelCard(2, "GAP LOGIC", 3, true)) { Level2.build() },
-        LevelDef(LevelCard(3, "NOT BUILT YET", 3, false), null),
+        LevelDef(LevelCard(3, "MOVING CHAOS", 3, true)) { Level3.build() },
+        LevelDef(LevelCard(4, "TIGHT ROOM", 3, true)) { Level4.build() },
+        LevelDef(LevelCard(5, "OVERDRIVE", 3, true)) { Level5.build() },
+        LevelDef(LevelCard(6, "NOT BUILT YET", 3, false), null),
     )
 
     var screen = Screen.MENU
@@ -163,7 +169,7 @@ fun main() {
         screen = s
         backBtn.hidden = s != Screen.PLAYING
         when (s) {
-            Screen.MENU -> ui.showMenu()
+            Screen.MENU -> ui.showHome()
             Screen.SHOP -> ui.showShop()
             Screen.PLAYING -> ui.hideAll()
             Screen.REWARD -> Unit                 // the panel puts itself up
@@ -177,6 +183,10 @@ fun main() {
         currentLevel = id
         renderer.theme = Theme.forLevel(id)
         game = Game(build())
+        // The soundtrack runs at the level's own tempo and restarts its
+        // arrangement, so every attempt opens on the same bar.
+        Audio.bpm = game.level.bpm
+        Audio.restartMusic()
         lastAttempt = game.attempts
         awarded = false
         rewardAt = -1.0
@@ -292,6 +302,7 @@ fun main() {
 
             if (game.attempts != lastAttempt) {
                 lastAttempt = game.attempts
+                Audio.restartMusic()
                 renderer.resetRun()
                 prevDoubles = game.doubleJumps
                 prevNear = game.nearMisses
@@ -311,6 +322,10 @@ fun main() {
                     nextBuilt = levels.firstOrNull { it.card.id == currentLevel + 1 }?.build != null,
                 )
             }
+
+            // The arrangement follows the run: drums, then build, then the drop
+            // at 70%, then everything for the last stretch.
+            Audio.setProgress(game.progress)
 
             renderer.update(game, dt)
             renderer.draw(game)

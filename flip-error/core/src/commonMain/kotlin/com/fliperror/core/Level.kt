@@ -41,9 +41,49 @@ data class Motion(
     val reachY get() = kotlin.math.abs(dy)
 }
 
-/** A solid block. Landable on top, lethal to run into from the side. */
-data class Solid(val x0: Double, val x1: Double, val top: Double, val bottom: Double = -40.0) {
+/**
+ * A platform that blinks out and back. Solid for [onFraction] of every [period].
+ * Like everything else that moves here, it is a function of level time.
+ */
+data class Blink(val period: Double, val onFraction: Double = 0.6, val phase: Double = 0.0) {
+    fun solidAt(t: Double): Boolean {
+        val u = ((t / period + phase) % 1.0 + 1.0) % 1.0
+        return u < onFraction
+    }
+    /** 0 at the moment it vanishes, 1 when it is firmly there. Drives the warning. */
+    fun strengthAt(t: Double): Double {
+        val u = ((t / period + phase) % 1.0 + 1.0) % 1.0
+        if (u >= onFraction) return 0.0
+        val left = (onFraction - u) / onFraction
+        return kotlin.math.min(1.0, left * 4.0)
+    }
+}
+
+/**
+ * A solid block. Landable on top, lethal to run into from the side.
+ *
+ * A vertical mover carries whoever is standing on it; a horizontal one does not.
+ * That asymmetry is deliberate and load-bearing: the runner's x must stay exactly
+ * RUN_SPEED * time, because the entire fairness proof rests on the world being a
+ * function of where the player is. A conveyor would break it. A lift does not,
+ * because y is already part of what the search tracks.
+ */
+data class Solid(
+    val x0: Double, val x1: Double, val top: Double, val bottom: Double = -40.0,
+    val motion: Motion? = null,
+    val blink: Blink? = null,
+) {
     val box get() = Box(x0, bottom, x1, top)
+    val moves get() = motion != null
+    val blinks get() = blink != null
+
+    fun offsetX(t: Double) = motion?.offsetX(t) ?: 0.0
+    fun offsetY(t: Double) = motion?.offsetY(t) ?: 0.0
+    fun topAt(t: Double) = top + offsetY(t)
+    fun bottomAt(t: Double) = bottom + offsetY(t)
+    fun x0At(t: Double) = x0 + offsetX(t)
+    fun x1At(t: Double) = x1 + offsetX(t)
+    fun presentAt(t: Double) = blink?.solidAt(t) ?: true
 }
 
 data class Hazard(
@@ -85,21 +125,34 @@ data class Level(
     /** Level length in seconds at the level's run speed. */
     val durationSeconds: Double get() = finishX / Tuning.RUN_SPEED
 
+    // Each level carries its own tempo, and its geometry is laid out on it.
+    // Tuning.BPM is the grid levels 1 and 2 were built on and cannot move
+    // without moving their spikes; later levels simply run faster.
+    val beat: Double get() = 60.0 / bpm
+    val bar: Double get() = 4.0 * beat
+    val beatUnits: Double get() = Tuning.RUN_SPEED * beat
+    val barUnits: Double get() = 4.0 * beatUnits
+
     @PublishedApi internal val solidsSorted = solids.sortedBy { it.x0 }
     @PublishedApi internal val hazardsSorted = hazards.sortedBy { it.x0 }
     /** How far any hazard can wander sideways. The near-search widens by this. */
     @PublishedApi internal val hazardReachX = hazards.maxOfOrNull { it.motion?.reachX ?: 0.0 } ?: 0.0
+    @PublishedApi internal val solidReachX = solids.maxOfOrNull { it.motion?.reachX ?: 0.0 } ?: 0.0
 
     /**
      * Visit every solid whose x-range can touch [x0,x1].
      * Callback form on purpose: this runs 240 times a second and a mobile
      * frame budget has no room for allocating a fresh list each step.
      */
+    /** Widened by [solidReachX] so a platform that has slid towards the runner is
+     *  still visited; the caller decides where it actually is right now. */
     inline fun forEachSolidNear(x0: Double, x1: Double, action: (Solid) -> Unit) {
+        val lo = x0 - solidReachX
+        val hi = x1 + solidReachX
         for (i in solidsSorted.indices) {
             val s = solidsSorted[i]
-            if (s.x0 > x1) break
-            if (s.x1 >= x0) action(s)
+            if (s.x0 > hi) break
+            if (s.x1 >= lo) action(s)
         }
     }
 

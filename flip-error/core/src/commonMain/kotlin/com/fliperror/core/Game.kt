@@ -234,17 +234,26 @@ class Game(val level: Level) {
         val hb = hitBox
         var landed = false
 
+        val t = elapsed
         level.forEachSolidNear(hb.x0, hb.x1) { s ->
-            if (vy <= 0.0 && prevBottom >= s.top - 1e-6 && y <= s.top + 1e-6) {
-                y = s.top
+            if (!s.presentAt(t)) return@forEachSolidNear
+            if (hb.x1 <= s.x0At(t) || hb.x0 >= s.x1At(t)) return@forEachSolidNear
+            val top = s.topAt(t)
+            val bottom = s.bottomAt(t)
+            // A lift carries: it may rise into the runner's feet between two
+            // frames, so landing is tested against the surface's own travel, not
+            // against a fixed line. Horizontal movers never carry - see Solid.
+            val rise = s.offsetY(t) - s.offsetY(t - Tuning.FIXED_DT)
+            if (vy <= 0.0 && prevBottom >= top - maxOf(rise, 0.0) - 1e-6 && y <= top + 1e-6) {
+                y = top
                 vy = 0.0
                 if (!grounded) rotationDeg = round(rotationDeg / 90.0) * 90.0
                 grounded = true
                 landed = true
                 doubleArmed = false
                 airTime = 0.0
-            } else if (vy > 0.0 && prevTop <= s.bottom + 1e-6 && y + Tuning.PLAYER_SIZE >= s.bottom) {
-                y = s.bottom - Tuning.PLAYER_SIZE
+            } else if (vy > 0.0 && prevTop <= bottom + 1e-6 && y + Tuning.PLAYER_SIZE >= bottom) {
+                y = bottom - Tuning.PLAYER_SIZE
                 vy = 0.0
             }
         }
@@ -253,7 +262,9 @@ class Game(val level: Level) {
         // is a missed jump, not a wall run - say the thing the player did wrong.
         val hb2 = hitBox
         level.forEachSolidNear(hb2.x0, hb2.x1) { s ->
-            if (hb2.y0 < s.top - Tuning.STEP_TOLERANCE && hb2.y1 > s.bottom) {
+            if (!s.presentAt(t)) return@forEachSolidNear
+            if (hb2.x1 <= s.x0At(t) || hb2.x0 >= s.x1At(t)) return@forEachSolidNear
+            if (hb2.y0 < s.topAt(t) - Tuning.STEP_TOLERANCE && hb2.y1 > s.bottomAt(t)) {
                 die(if (!grounded && vy < 0.0) DeathCause.PIT else DeathCause.WALL)
                 return
             }
@@ -285,8 +296,13 @@ class Game(val level: Level) {
     /** Is there a solid surface directly under the feet right now? */
     private fun hasSupport(): Boolean {
         val hb = hitBox
+        val t = elapsed
         var found = false
-        level.forEachSolidNear(hb.x0, hb.x1) { s -> if (abs(y - s.top) < 1e-4) found = true }
+        level.forEachSolidNear(hb.x0, hb.x1) { s ->
+            if (!s.presentAt(t)) return@forEachSolidNear
+            if (hb.x1 <= s.x0At(t) || hb.x0 >= s.x1At(t)) return@forEachSolidNear
+            if (abs(y - s.topAt(t)) < 1e-3) found = true
+        }
         return found
     }
 
