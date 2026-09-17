@@ -32,6 +32,10 @@ object Shop {
         Cosmetic("shape.arrow", "ARROW", Category.SHAPE, 180),
         Cosmetic("shape.ring", "RING", Category.SHAPE, 200),
         Cosmetic("shape.cross", "CROSS", Category.SHAPE, 180),
+        // --- brought back from the desert. Still cosmetics, still nothing but ---
+        Cosmetic("shape.scarab", "SCARAB", Category.SHAPE, 260),
+        Cosmetic("shape.ankh", "ANKH", Category.SHAPE, 280),
+        Cosmetic("shape.sun", "SUN DISC", Category.SHAPE, 320),
 
         Cosmetic("color.yellow", "YELLOW", Category.COLOR, 0),
         Cosmetic("color.cyan", "CYAN", Category.COLOR, 80),
@@ -45,6 +49,8 @@ object Shop {
         Cosmetic("trail.spark", "SPARK", Category.TRAIL, 180),
         Cosmetic("trail.pulse", "PULSE", Category.TRAIL, 220),
         Cosmetic("trail.rainbow", "RAINBOW", Category.TRAIL, 300),
+        Cosmetic("trail.sand", "SANDSTORM", Category.TRAIL, 260),
+        Cosmetic("trail.ember", "EMBER", Category.TRAIL, 320),
 
         Cosmetic("face.classic", "CLASSIC", Category.FACE, 0),
         Cosmetic("face.cool", "COOL", Category.FACE, 90),

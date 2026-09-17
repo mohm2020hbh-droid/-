@@ -15,6 +15,11 @@
   html,body{width:100%;height:100%;overflow:hidden;background:#05060f;
     -webkit-tap-highlight-color:transparent;touch-action:none;overscroll-behavior:none;}
   canvas{display:block;width:100%;height:100%;}
+  /* Everything the game draws lives inside one positioned box. The screens and
+     the rotate gate are absolute at inset:0, and without a positioned parent
+     they resolve against the viewport instead - which is fine in a bare page and
+     wrong inside a host that pads the root for a phone's safe areas. */
+  #stage{position:relative;width:100%;height:100%;background:#05060f;}
   /* Shown by script only, and only on a screen that really is portrait.
      A CSS media query here would measure the frame, not the device. */
   #rotate{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
@@ -39,6 +44,21 @@
   .screen button:focus-visible{outline:2px solid var(--coin);outline-offset:3px;}
 
   .cards{display:flex;gap:10px;flex-wrap:wrap;align-content:flex-start;}
+  /* A world's own banner, painted in that world's own three colours. It breaks
+     the flex row so every world starts on a fresh line, which is what makes the
+     level list read as two places rather than one long list. */
+  .world{flex:1 0 100%;display:flex;align-items:baseline;gap:12px;margin:6px 0 2px;
+    padding:9px 14px;border-radius:12px;border:2px solid var(--w1);
+    background:linear-gradient(100deg,color-mix(in srgb,var(--w1) 22%,transparent),
+      color-mix(in srgb,var(--w2) 18%,transparent) 55%,transparent);}
+  .world .wn{font:800 clamp(13px,3.4vw,17px)/1 'Chakra Petch',system-ui,sans-serif;
+    letter-spacing:.20em;color:var(--w2);}
+  .world .wt{font:700 11px/1 'Chakra Petch',system-ui,sans-serif;letter-spacing:.24em;color:var(--w3);}
+  .world.far{opacity:.45;filter:grayscale(.5);}
+  /* The same banner on the reward screen, where it is the payoff rather than a
+     heading: centred, and it glows because arriving somewhere should. */
+  .world.crossing{flex:0 0 auto;flex-direction:column;align-items:center;gap:3px;text-align:center;
+    box-shadow:0 0 26px color-mix(in srgb,var(--w2) 34%,transparent);}
   .card{flex:1 1 150px;min-width:132px;display:flex;flex-direction:column;gap:3px;align-items:flex-start;
     padding:12px 14px;background:linear-gradient(160deg,rgba(46,240,255,.10),rgba(176,123,255,.07));
     border:2px solid rgba(46,240,255,.45);color:#eef0ff;text-align:left;transition:transform .12s ease;}
@@ -138,6 +158,7 @@
 </style>
 </head>
 <body>
+<div id="stage">
 <canvas id="c"></canvas>
   <button id="back" type="button" aria-label="Back to levels" hidden>&lsaquo;</button>
   <div id="menu" class="screen"></div>
@@ -150,6 +171,7 @@
   ROTATE YOUR DEVICE
   <span>FLIP ERROR IS PLAYED IN LANDSCAPE</span>
   <button id="escape" type="button" hidden>PLAY IN PORTRAIT ANYWAY</button>
+</div>
 </div>
 <script src="flip-error.js"></script>
 </body>

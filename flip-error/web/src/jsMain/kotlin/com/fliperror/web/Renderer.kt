@@ -30,14 +30,21 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private val boost = Palette.BOOST
     private val finish = Palette.FINISH
 
-    /** What the player is wearing. Set by the shell from saved progress. */
-    class Look {
+    /**
+     * What the player is wearing. Set by the shell from saved progress.
+     *
+     * Named Skin rather than Look because the core now has a Look of its own -
+     * what a HAZARD is made of - and a nested class quietly shadowing an imported
+     * enum is the kind of collision that produces ten unresolved references and
+     * no clue which of the two names is wrong.
+     */
+    class Skin {
         var shape = "shape.square"
         var colour = "color.yellow"
         var trail = "trail.basic"
         var face = "face.classic"
     }
-    val look = Look()
+    val look = Skin()
     private val player get() = Palette.player(look.colour)
 
     /** Visible world height in units. Keeps ~2.2s of track ahead of the runner. */
@@ -82,6 +89,15 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     var coins = 0
     /** Set once by the shell; the tint and the spinner both sit this one out. */
     var reducedMotion = false
+    /**
+     * Whether the world underfoot is sand. Set from the level's own theme, and
+     * read by the parts of the renderer that should behave differently in it -
+     * dust that is heavier than neon, a trail that carries grit, a shadow lit by
+     * a sun rather than by signage. It changes how things look and move, never
+     * what they mean: danger is the same red in both worlds.
+     */
+    private val sandy get() = theme.scene == Scene.DESERT
+
     /** Player choice: drops reflections, windows and half the particles. */
     var reduceEffects = false
     /** Hazards get a white-hot core that no kind of colour vision can miss. */
@@ -204,8 +220,18 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             if (emitTimer <= 0.0) {
                 emitTimer = if (g.grounded) 0.042 else 0.075
                 val y = if (g.grounded) g.y + 0.06 else g.y + rnd(0.15, 0.8)
-                spark(g.x + rnd(0.05, 0.4), y, rnd(-6.5, -3.0), rnd(0.2, 1.9),
-                    rnd(0.22, 0.40), rnd(0.10, 0.20), if (Random.nextInt(4) == 0) 2 else 1)
+                if (sandy && g.grounded) {
+                    // A kicked-up sheet of sand: thrown higher, spread wider, and
+                    // it falls back rather than streaking away.
+                    spark(g.x + rnd(0.0, 0.5), y, rnd(-5.5, -2.0), rnd(1.4, 4.2),
+                        rnd(0.30, 0.55), rnd(0.09, 0.17), 3)
+                    if (Random.nextInt(3) == 0)
+                        spark(g.x + rnd(0.0, 0.5), y, rnd(-7.0, -4.0), rnd(0.4, 1.6),
+                            rnd(0.22, 0.38), rnd(0.07, 0.13), 3)
+                } else {
+                    spark(g.x + rnd(0.05, 0.4), y, rnd(-6.5, -3.0), rnd(0.2, 1.9),
+                        rnd(0.22, 0.40), rnd(0.10, 0.20), if (Random.nextInt(4) == 0) 2 else 1)
+                }
             }
             shardsSpawned = false
         } else if (g.state == GameState.DEAD && !shardsSpawned) {
@@ -228,7 +254,11 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             val p = parts[i]
             p[0] += p[2] * dt
             p[1] += p[3] * dt
-            p[3] -= 9.0 * dt                     // light gravity: dust settles, it does not plummet
+            // Sand has weight. Neon dust hangs in the air and drifts; grit thrown
+            // up off a dune arcs and comes back down, and making the two obey the
+            // same number was the quickest way to make the desert look like the
+            // city with a filter on it.
+            p[3] -= (if (sandy) 17.0 else 9.0) * dt
             p[2] *= 1.0 - min(1.0, dt * 2.2)
             p[4] -= dt
             if (p[4] <= 0) parts.removeAt(i) else i++
@@ -380,6 +410,165 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = grad
         ctx.fillRect(0.0, 0.0, w, h)
 
+        if (theme.scene == Scene.DESERT) drawDesert(g) else drawCity(g)
+
+        // Readability vignette behind the play line. Everything above is scenery;
+        // from here down the only things allowed to be bright are the level.
+        val v = ctx.createLinearGradient(0.0, h * 0.16, 0.0, h * 0.95)
+        v.addColorStop(0.0, "rgba(5,6,15,0)")
+        v.addColorStop(0.38, "rgba(5,6,15,0.62)")
+        v.addColorStop(0.62, "rgba(5,6,15,0.90)")
+        v.addColorStop(1.0, "rgba(5,6,15,0.97)")
+        ctx.fillStyle = v
+        ctx.fillRect(0.0, h * 0.16, w, h * 0.84)
+    }
+
+    /**
+     * A sun going down behind broken ruins, over dunes that never stop moving.
+     *
+     * Nothing about this is the city with different colours: the silhouette is
+     * curves instead of rectangles, the light comes from one huge low source
+     * instead of a thousand windows, and the air itself is full of sand. That is
+     * the point - a world the player can name from one frame.
+     */
+    private fun drawDesert(g: Game) {
+        val horizon = h * 0.645
+
+        // The sun. Low, enormous, and banded the way a heat-hazed one looks.
+        if (!reduceEffects) {
+            val cx = w * 0.66 - (g.x * 0.012 * scale) % (w * 2.2)
+            val cy = horizon - h * 0.16
+            val r = h * 0.30
+            val halo = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r * 2.1)
+            halo.addColorStop(0.0, theme.sun + "55")
+            halo.addColorStop(1.0, "rgba(0,0,0,0)")
+            ctx.fillStyle = halo
+            ctx.fillRect(0.0, 0.0, w, horizon)
+
+            ctx.save()
+            ctx.beginPath(); ctx.rect(0.0, 0.0, w, horizon); ctx.clip()
+            val disc = ctx.createLinearGradient(0.0, cy - r, 0.0, cy + r)
+            disc.addColorStop(0.0, theme.sunCore)
+            disc.addColorStop(0.55, theme.sun)
+            disc.addColorStop(1.0, theme.billboard)
+            ctx.fillStyle = disc
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0.0, PI * 2); ctx.fill()
+            // the bands: cut the lower half with sky-coloured slices
+            ctx.fillStyle = theme.skyMid
+            var band = 0
+            while (band < 7) {
+                val by = cy + r * (0.12 + band * 0.13)
+                val bh = r * (0.012 + band * 0.010)
+                ctx.globalAlpha = 0.85
+                ctx.fillRect(cx - r, by, r * 2, bh)
+                band++
+            }
+            ctx.globalAlpha = 1.0
+            ctx.restore()
+        }
+
+        // Far ruins: broken verticals, leaning, nothing square.
+        ruins(g, 0.07, 7.0, 0.10, 0.16, theme.far, 0.60, 13)
+        ruins(g, 0.15, 4.6, 0.13, 0.20, theme.mid, 0.68, 401)
+
+        // Dunes. Two layers of slow curves, the near one darker and faster.
+        dune(g, 0.10, 0.052, 1.6, theme.near, 0.55, 0.0)
+        dune(g, 0.22, 0.040, 2.7, theme.skyLow, 0.85, 1.7)
+
+        // Blowing sand: fast, low, and always moving, so the air is never still.
+        if (!reduceEffects) {
+            ctx.globalAlpha = 0.20
+            ctx.fillStyle = theme.billboard
+            val span = 9.0 * scale
+            if (span > 1.0) {
+                val shift = (g.x * 1.9 * scale) % span
+                var i = -1
+                while (i * span - shift < w + span) {
+                    val bx = i * span - shift
+                    val r0 = hash(i + 77)
+                    val by = horizon - h * (0.02 + 0.20 * r0)
+                    ctx.fillRect(bx, by, span * (0.18 + 0.30 * r0), 1.5)
+                    i++
+                }
+            }
+            ctx.globalAlpha = 1.0
+        }
+    }
+
+    /** Broken columns and arches. Leaning, snapped off, never a clean rectangle. */
+    private fun ruins(
+        g: Game, parallax: Double, spanUnits: Double, base: Double, rise: Double,
+        colour: String, alpha: Double, seed: Int,
+    ) {
+        val horizon = h * 0.645
+        val span = spanUnits * scale
+        if (span < 1.0) return
+        val shift = (g.x * parallax * scale) % span
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = colour
+        var i = -1
+        while (i * span - shift < w + span) {
+            val bx = i * span - shift
+            val r = hash(i + seed)
+            val r2 = hash(i + seed + 555)
+            val bh = h * (base + rise * r)
+            val bw = span * (0.14 + 0.16 * r2)
+            val lean = (r2 - 0.5) * bw * 0.5
+            ctx.beginPath()
+            ctx.moveTo(bx, horizon)
+            ctx.lineTo(bx + lean * 0.4, horizon - bh)
+            ctx.lineTo(bx + lean + bw * 0.62, horizon - bh * (0.72 + 0.22 * r))   // snapped top
+            ctx.lineTo(bx + bw, horizon - bh * 0.34)
+            ctx.lineTo(bx + bw, horizon)
+            ctx.closePath()
+            ctx.fill()
+            // an arch, sometimes: two legs and a broken span
+            if (r > 0.72) {
+                val ax = bx + span * 0.45
+                val aw = span * 0.30
+                val ah = h * (0.10 + 0.08 * r2)
+                ctx.beginPath()
+                ctx.moveTo(ax, horizon)
+                ctx.lineTo(ax, horizon - ah)
+                ctx.quadraticCurveTo(ax + aw / 2, horizon - ah * 1.75, ax + aw, horizon - ah)
+                ctx.lineTo(ax + aw, horizon)
+                ctx.lineTo(ax + aw - span * 0.05, horizon)
+                ctx.lineTo(ax + aw - span * 0.05, horizon - ah * 0.95)
+                ctx.quadraticCurveTo(ax + aw / 2, horizon - ah * 1.45, ax + span * 0.05, horizon - ah * 0.95)
+                ctx.lineTo(ax + span * 0.05, horizon)
+                ctx.closePath()
+                ctx.fill()
+            }
+            i++
+        }
+        ctx.globalAlpha = 1.0
+    }
+
+    /** One rolling dune line, filled down to the bottom of the screen. */
+    private fun dune(
+        g: Game, parallax: Double, amp: Double, waves: Double,
+        colour: String, alpha: Double, phase: Double,
+    ) {
+        val horizon = h * 0.645
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = colour
+        ctx.beginPath()
+        ctx.moveTo(0.0, h)
+        val shift = g.x * parallax
+        var px = 0.0
+        while (px <= w + 8.0) {
+            val u = (px / w) * waves + shift * 0.05 + phase
+            val y = horizon - h * amp * (sin(u * PI * 2) * 0.6 + sin(u * PI * 3.7 + 1.3) * 0.4)
+            ctx.lineTo(px, y)
+            px += 8.0
+        }
+        ctx.lineTo(w, h)
+        ctx.closePath()
+        ctx.fill()
+        ctx.globalAlpha = 1.0
+    }
+
+    private fun drawCity(g: Game) {
         // The ring on the horizon. One big soft light source gives the whole
         // scene somewhere for its glow to come from.
         if (!reduceEffects) {
@@ -412,21 +601,164 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             k++
         }
         ctx.globalAlpha = 1.0
-
-        // Readability vignette behind the play line. Everything above is scenery;
-        // from here down the only things allowed to be bright are the level.
-        val v = ctx.createLinearGradient(0.0, h * 0.16, 0.0, h * 0.95)
-        v.addColorStop(0.0, "rgba(5,6,15,0)")
-        v.addColorStop(0.38, "rgba(5,6,15,0.62)")
-        v.addColorStop(0.62, "rgba(5,6,15,0.90)")
-        v.addColorStop(1.0, "rgba(5,6,15,0.97)")
-        ctx.fillStyle = v
-        ctx.fillRect(0.0, h * 0.16, w, h * 0.84)
     }
 
     private var takenStars: Set<Int> = emptySet()
     /** The sim clock, so a moving hazard is drawn where the collision says it is. */
     private var levelTime = 0.0
+
+    /**
+     * A timed hazard in its quiet half: the vent a geyser will come out of, the
+     * scorch mark a beam will land on, the block of masonry still up in the air.
+     *
+     * Drawing it costs almost nothing and buys the thing world 2 promises - that
+     * nothing here arrives without having been somewhere the player could see it
+     * first. It is deliberately drawn in the SCENERY colours, never in red, so a
+     * dormant hazard never reads as a live one.
+     */
+    private fun drawDormant(hz: Hazard, b: Box) {
+        ctx.globalAlpha = 0.22
+        ctx.strokeStyle = theme.sun
+        ctx.lineWidth = 2.0
+        when (hz.look) {
+            Look.GEYSER -> {
+                ctx.beginPath()
+                ctx.moveTo(sx(b.x0), sy(b.y0)); ctx.lineTo(sx(b.x1), sy(b.y0))
+                ctx.stroke()
+                ctx.globalAlpha = 0.14
+                ctx.fillStyle = theme.sun
+                ctx.fillRect(sx(b.x0), sy(b.y0) - 3.0, sx(b.x1) - sx(b.x0), 3.0)
+            }
+            Look.LASER -> {
+                ctx.beginPath()
+                ctx.moveTo(sx(b.x0), sy(b.y1)); ctx.lineTo(sx(b.x1), sy(b.y1))
+                ctx.stroke()
+            }
+            Look.RUIN -> {
+                ctx.globalAlpha = 0.20
+                ctx.strokeStyle = theme.sunCore
+                ctx.strokeRect(sx(b.x0), sy(b.y1) - scale * 2.2,
+                    sx(b.x1) - sx(b.x0), scale * 0.5)
+            }
+            else -> {}
+        }
+        ctx.lineWidth = 2.5
+        ctx.globalAlpha = 1.0
+    }
+
+    /**
+     * Every hazard the game can draw, by what it is made of.
+     *
+     * [grow] is 0..1 while a timed hazard is charging, and the shape is built to
+     * that fraction - a geyser rises out of its vent, a beam reaches down from the
+     * sky - so the drawing IS the countdown rather than a decoration next to one.
+     */
+    private fun drawHazardShape(hz: Hazard, b: Box, grow: Double) {
+        val x0 = sx(b.x0); val x1 = sx(b.x1)
+        val mx = (x0 + x1) / 2
+        when (hz.look) {
+            // A crest of sand: a low rolling hump, not a blade. It is the one
+            // hazard in the desert that is wider than it is tall, and it should
+            // look like something the ground did rather than something built.
+            Look.SAND_WAVE -> {
+                val base = sy(b.y0); val top = sy(b.y0 + (b.y1 - b.y0) * grow)
+                ctx.beginPath()
+                ctx.moveTo(x0, base)
+                ctx.bezierCurveTo(x0 + (x1 - x0) * 0.28, top, x0 + (x1 - x0) * 0.42, top, mx, top)
+                ctx.bezierCurveTo(x0 + (x1 - x0) * 0.72, top, x0 + (x1 - x0) * 0.86, base, x1, base)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                // the lip of foam-sand it is throwing forward, which is also the
+                // direction it is travelling: the player reads it without a HUD.
+                ctx.globalAlpha *= 0.6
+                ctx.beginPath()
+                ctx.moveTo(x0, base); ctx.lineTo(x0 - (x1 - x0) * 0.22, base)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.6
+            }
+            // Masonry. A slab with a broken corner, so it never reads as a platform.
+            Look.RUIN -> {
+                val top = sy(b.y1); val base = sy(b.y0)
+                ctx.beginPath()
+                ctx.moveTo(x0, base); ctx.lineTo(x0, top + (base - top) * 0.22)
+                ctx.lineTo(x0 + (x1 - x0) * 0.26, top); ctx.lineTo(x1, top)
+                ctx.lineTo(x1, base)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.55
+                ctx.beginPath()
+                ctx.moveTo(x0 + (x1 - x0) * 0.5, top); ctx.lineTo(x0 + (x1 - x0) * 0.5, base)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.55
+            }
+            // A relic: a ring with a core, because the thing orbits and a circle
+            // drawn as a circle is the clearest promise of where it goes next.
+            Look.RELIC -> {
+                val r = (x1 - x0) / 2
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.beginPath(); ctx.arc(mx, cy, r, 0.0, PI * 2); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.7
+                ctx.beginPath(); ctx.arc(mx, cy, r * 0.45, 0.0, PI * 2); ctx.stroke()
+                ctx.beginPath()
+                for (k in 0 until 4) {
+                    val a = levelTime * 1.6 + k * PI / 2
+                    ctx.moveTo(mx + cos(a) * r * 0.5, cy + sin(a) * r * 0.5)
+                    ctx.lineTo(mx + cos(a) * r * 0.98, cy + sin(a) * r * 0.98)
+                }
+                ctx.stroke()
+                ctx.globalAlpha /= 0.7
+            }
+            // A geyser climbs out of its vent as it charges.
+            Look.GEYSER -> {
+                val base = sy(b.y0)
+                val top = sy(b.y0 + (b.y1 - b.y0) * grow)
+                ctx.beginPath()
+                ctx.moveTo(x0, base)
+                ctx.lineTo(x0 + (x1 - x0) * 0.22, top)
+                ctx.lineTo(mx, top - (base - top) * 0.18)
+                ctx.lineTo(x1 - (x1 - x0) * 0.22, top)
+                ctx.lineTo(x1, base)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+            }
+            // A beam reaches DOWN as it charges, so its tip is the countdown and
+            // the player can see exactly how low it will come.
+            //
+            // The descent starts at the TOP OF THE SCREEN, not at the beam's own
+            // y1. A beam is anchored nine units up in the sky, which is well off
+            // the top of a 600px viewport - so charging from there spent the
+            // entire warning above the player's head, where a warning is worth
+            // nothing. Clamped to the visible edge, the tip is on screen from the
+            // first frame of the charge to the last.
+            Look.LASER -> {
+                val top = max(sy(b.y1), 0.0)
+                val floor = sy(b.y0)
+                val tip = top + (floor - top) * grow
+                val inset = (x1 - x0) * 0.22
+                ctx.beginPath()
+                ctx.moveTo(x0 + inset, top); ctx.lineTo(x1 - inset, top)
+                ctx.lineTo(x1, tip); ctx.lineTo(x0, tip)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.75
+                ctx.beginPath()
+                ctx.moveTo(mx, top); ctx.lineTo(mx, tip)
+                ctx.stroke()
+                // the pool of light where it lands, which is the part the player
+                // is actually judging their jump against.
+                ctx.beginPath()
+                ctx.ellipse(mx, tip, (x1 - x0) * 0.6, 4.0, 0.0, 0.0, PI * 2)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.75
+            }
+            // The city's spike, unchanged.
+            Look.SPIKE -> {
+                ctx.beginPath()
+                if (hz.kind == HazardKind.SPIKE_UP) {
+                    ctx.moveTo(x0, sy(b.y0)); ctx.lineTo(mx, sy(b.y1)); ctx.lineTo(x1, sy(b.y0))
+                } else {
+                    ctx.moveTo(x0, sy(b.y1)); ctx.lineTo(mx, sy(b.y0)); ctx.lineTo(x1, sy(b.y1))
+                }
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+            }
+        }
+    }
 
     private fun drawLevel(level: Level) {
         val left = camX - originX / scale - 2.0
@@ -441,12 +773,38 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             // A platform about to vanish flashes, so the player is told before it
             // happens rather than after they are already falling.
             val fading = s.blink?.strengthAt(levelTime) ?: 1.0
-            ctx.globalAlpha = 0.25 + 0.75 * fading
-            ctx.fillStyle = safeFill
+            // Every surface is drawn in the same two strokes - a filled body and a
+            // bright lip - because the lip is the only line in the game the player
+            // actually lands on, and it has to mean the same thing in every world.
+            // What changes between surfaces is the SKIN, never the lip.
+            // Plain ground is lit by whatever is in THAT world's sky, so a desert
+            // level does not open on a strip of city cyan. The surface tags below
+            // separate materials WITHIN a world; the scene decides what ordinary
+            // ground is made of in the first place.
+            val edge = when (s.surface) {
+                Surface.SAND -> theme.sun
+                Surface.TEMPLE -> theme.sunCore
+                Surface.BRIDGE -> theme.accent
+                Surface.MIRAGE -> theme.accent
+                Surface.STONE -> if (sandy) theme.horizon else safe
+            }
+            val skin = when (s.surface) {
+                Surface.SAND -> "rgba(255,154,42,0.20)"
+                Surface.TEMPLE -> "rgba(255,233,168,0.16)"
+                Surface.BRIDGE -> "rgba(255,46,139,0.16)"
+                Surface.MIRAGE -> "rgba(46,240,255,0.10)"
+                Surface.STONE -> if (sandy) "rgba(184,72,31,0.26)" else safeFill
+            }
+            // A mirage shimmers rather than fades: same honest machinery, dressed
+            // as something you have to look twice at.
+            val shimmer = if (s.surface == Surface.MIRAGE && !reduceEffects)
+                0.72 + 0.28 * sin(levelTime * 9.0 + s.x0) else 1.0
+            ctx.globalAlpha = (0.25 + 0.75 * fading) * shimmer
+            ctx.fillStyle = skin
             ctx.fillRect(x0, yTop, x1 - x0, bottom - yTop)
             ctx.shadowBlur = if (reduceEffects) 0.0 else 22.0
-            ctx.shadowColor = safe
-            ctx.strokeStyle = safe
+            ctx.shadowColor = edge
+            ctx.strokeStyle = edge
             ctx.lineWidth = 3.0
             ctx.beginPath()
             ctx.moveTo(x0, yTop); ctx.lineTo(x1, yTop)
@@ -454,7 +812,41 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.stroke()                       // twice: the surface is the anchor
             ctx.lineWidth = 2.5
             ctx.shadowBlur = 0.0
-            ctx.strokeStyle = "rgba(49,212,242,0.35)"
+            // Sand gets a grain line just under its lip, temple stone gets courses
+            // of masonry: enough for the eye to name the material at a glance.
+            if (s.surface == Surface.SAND && !reduceEffects) {
+                ctx.globalAlpha = 0.34 * shimmer
+                ctx.strokeStyle = theme.sunCore
+                ctx.lineWidth = 1.4
+                ctx.beginPath()
+                var gx = x0
+                while (gx < x1) {
+                    val dy = 3.0 * sin((gx / scale + camX) * 1.4 + levelTime * 2.0)
+                    if (gx == x0) ctx.moveTo(gx, yTop + 7.0 + dy) else ctx.lineTo(gx, yTop + 7.0 + dy)
+                    gx += 6.0
+                }
+                ctx.stroke()
+                ctx.lineWidth = 2.5
+            } else if (s.surface == Surface.TEMPLE && !reduceEffects) {
+                ctx.globalAlpha = 0.28
+                ctx.strokeStyle = theme.sunCore
+                ctx.lineWidth = 1.2
+                ctx.beginPath()
+                var cy = yTop + scale * 0.5
+                var row = 0
+                while (cy < bottom && row < 6) {
+                    ctx.moveTo(x0, cy); ctx.lineTo(x1, cy)
+                    val off = if (row % 2 == 0) scale * 0.5 else 0.0
+                    var bx = x0 + off
+                    while (bx < x1) { ctx.moveTo(bx, cy); ctx.lineTo(bx, cy - scale * 0.5); bx += scale }
+                    cy += scale * 0.5; row++
+                }
+                ctx.stroke()
+                ctx.lineWidth = 2.5
+            }
+            ctx.globalAlpha = (0.25 + 0.75 * fading) * shimmer
+            ctx.shadowBlur = 0.0
+            ctx.strokeStyle = if (sandy) "rgba(255,154,42,0.30)" else "rgba(49,212,242,0.35)"
             ctx.beginPath()
             ctx.moveTo(x0, yTop); ctx.lineTo(x0, bottom)
             ctx.moveTo(x1, yTop); ctx.lineTo(x1, bottom)
@@ -462,26 +854,57 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.globalAlpha = 1.0
         }
 
+        // Columns of moving air, drawn as rising or falling motes. The player can
+        // see which way a gust pushes before they are in it.
+        for (wd in level.winds) {
+            if (wd.x1 < left || wd.x0 > right) continue
+            val wx0 = sx(wd.x0); val wx1 = sx(wd.x1)
+            val up = wd.push > 0.0
+            ctx.globalAlpha = 0.16
+            ctx.fillStyle = if (up) theme.sunCore else hazardDim
+            ctx.fillRect(wx0, 0.0, wx1 - wx0, h)
+            ctx.globalAlpha = if (reduceEffects) 0.30 else 0.55
+            ctx.strokeStyle = if (up) theme.sunCore else hazard
+            ctx.lineWidth = 2.0
+            ctx.beginPath()
+            for (k in 0 until 7) {
+                val lane = wx0 + (wx1 - wx0) * (0.12 + 0.13 * k)
+                val drift = (levelTime * 210.0 * (if (up) -1.0 else 1.0) + k * 97.0) % (h + 60.0)
+                val my = if (up) h - drift else drift - 60.0
+                ctx.moveTo(lane, my); ctx.lineTo(lane, my + 26.0)
+            }
+            ctx.stroke()
+            ctx.lineWidth = 2.5
+            ctx.globalAlpha = 1.0
+        }
+
         level.forEachHazardNear(left, right) { hz ->
             val b = hz.drawBoxAt(levelTime)
+            val live = hz.activeAt(levelTime)
+            val warm = hz.warmAt(levelTime)
+            // A hazard that is off is scenery, and it is drawn as scenery. A hazard
+            // that is ABOUT to be on is drawn charging, growing out of the floor or
+            // down from the sky as it warms. This is the whole difference between a
+            // timed hazard and a coin flip, and it is why the core exposes warmAt at
+            // all: the physics ignores the charge entirely, the player does not.
+            if (!live && warm <= 0.0) {
+                if (!reduceEffects) drawDormant(hz, b)
+                return@forEachHazardNear
+            }
+            ctx.globalAlpha = if (live) 1.0 else 0.35 + 0.5 * warm
             // Colour-blind mode does not recolour danger, it adds a second signal:
-            // a white-hot core inside the same red triangle, which reads at any
-            // kind of colour vision and still says "hot" to everyone else.
+            // a white-hot core inside the same red shape, which reads at any kind of
+            // colour vision and still says "hot" to everyone else.
             ctx.fillStyle = if (colorblind) "#fff0f4" else hazardDim
             ctx.strokeStyle = hazard
-            ctx.shadowBlur = 12.0; ctx.shadowColor = hazard
-            ctx.beginPath()
-            if (hz.kind == HazardKind.SPIKE_UP) {
-                ctx.moveTo(sx(b.x0), sy(b.y0))
-                ctx.lineTo(sx((b.x0 + b.x1) / 2), sy(b.y1))
-                ctx.lineTo(sx(b.x1), sy(b.y0))
-            } else {
-                ctx.moveTo(sx(b.x0), sy(b.y1))
-                ctx.lineTo(sx((b.x0 + b.x1) / 2), sy(b.y0))
-                ctx.lineTo(sx(b.x1), sy(b.y1))
-            }
-            ctx.closePath(); ctx.fill(); ctx.stroke()
+            ctx.shadowBlur = if (reduceEffects) 0.0 else 12.0
+            ctx.shadowColor = hazard
+            // A charging hazard is drawn at the size it has GROWN to, so the shape
+            // itself is the countdown.
+            val grow = if (live) 1.0 else warm
+            drawHazardShape(hz, b, grow)
             ctx.shadowBlur = 0.0
+            ctx.globalAlpha = 1.0
             // A mover gets a track line so its range is readable before it arrives.
             hz.motion?.let { m ->
                 ctx.globalAlpha = 0.26
@@ -558,9 +981,13 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.beginPath()
         ctx.rect(0.0, gy, w, depth)
         ctx.clip()
+        // The city bleeds its own cyan strip downward; the desert bleeds the sun,
+        // because that is the only thing lighting it. Same effect, same depth,
+        // same restraint - the light under the play line never gains an edge.
+        val lit = if (sandy) theme.sun else safe
         val bleed = ctx.createLinearGradient(0.0, gy, 0.0, gy + depth)
-        bleed.addColorStop(0.0, safe + "4d")
-        bleed.addColorStop(0.22, safe + "1f")
+        bleed.addColorStop(0.0, lit + "4d")
+        bleed.addColorStop(0.22, lit + "1f")
         bleed.addColorStop(1.0, "rgba(5,6,15,0)")
         ctx.fillStyle = bleed
         ctx.fillRect(0.0, gy, w, depth)
@@ -616,9 +1043,14 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         val near = 1.0 - t
         ctx.beginPath()
         ctx.ellipse(sx(g.x + 0.5), sy(ground) - ry * 0.5, rx, ry, 0.0, 0.0, PI * 2)
-        ctx.fillStyle = "rgba(255,201,60,${0.05 + 0.17 * near})"
+        // Lit by whatever is in that world's sky: signage in the city, the sun in
+        // the desert. The shape and the timing are identical, because this is the
+        // one cue a second jump is judged against and it must not change between
+        // worlds - only its colour does.
+        val lamp = if (sandy) "255,154,42" else "255,201,60"
+        ctx.fillStyle = "rgba($lamp,${0.05 + 0.17 * near})"
         ctx.fill()
-        ctx.strokeStyle = "rgba(255,201,60,${0.16 + 0.34 * near})"
+        ctx.strokeStyle = "rgba($lamp,${0.16 + 0.34 * near})"
         ctx.lineWidth = 1.5
         ctx.stroke()
         ctx.lineWidth = 2.5
@@ -655,9 +1087,17 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             if (px > front) continue                      // readability outranks effects
             val py = sy(p[1])
             ctx.globalAlpha = a * 0.85
-            ctx.fillStyle = if (p[7] == 1.0) boost else gold
+            ctx.fillStyle = when (p[7].toInt()) {
+                1 -> boost
+                3 -> if (a > 0.66) theme.sunCore else theme.sun     // grit, cooling as it falls
+                else -> gold
+            }
             val s = scale * p[6] * (0.4 + 0.6 * a)
             when (p[7].toInt()) {
+                3 -> {                                               // a grain of sand
+                    ctx.globalAlpha = a * a * 0.9
+                    ctx.fillRect(px - s * 0.35, py - s * 0.35, s * 0.7, s * 0.7)
+                }
                 2 -> ctx.fillRect(px, py - s * 0.18, s * 3.2, s * 0.36)   // a streak of speed
                 1 -> ctx.fillRect(px - s * 0.3, py - s * 0.3, s * 0.6, s * 0.6)
                 else -> ctx.fillRect(px - s / 2, py - s / 2, s, s)

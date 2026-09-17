@@ -16,6 +16,8 @@ object Strings {
     private val en = mapOf(
         "play" to "PLAY", "levels" to "LEVELS", "shop" to "SHOP", "settings" to "SETTINGS",
         "level" to "LEVEL", "complete" to "COMPLETE", "unlocked" to "UNLOCKED",
+        "world" to "WORLD", "world1" to "NEON CITY", "world2" to "NEON DESERT",
+        "newWorld" to "NEW WORLD",
         "locked" to "LOCKED", "soon" to "SOON", "back" to "BACK",
         "hint" to "TAP ANYWHERE TO JUMP · TAP AGAIN IN THE AIR TO BOOST",
         "buy" to "BUY", "equip" to "EQUIP", "equipped" to "EQUIPPED",
@@ -35,6 +37,8 @@ object Strings {
     private val ar = mapOf(
         "play" to "العب", "levels" to "المراحل", "shop" to "المتجر", "settings" to "الإعدادات",
         "level" to "مرحلة", "complete" to "مكتملة", "unlocked" to "مفتوحة",
+        "world" to "عالم", "world1" to "مدينة النيون", "world2" to "صحراء النيون",
+        "newWorld" to "عالم جديد",
         "locked" to "مقفلة", "soon" to "قريبًا", "back" to "رجوع",
         "hint" to "المس أي مكان للقفز · المس مرة أخرى في الهواء للاندفاع",
         "buy" to "شراء", "equip" to "تجهيز", "equipped" to "مُجهَّز",

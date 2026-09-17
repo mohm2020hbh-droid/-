@@ -11,6 +11,13 @@ import com.fliperror.core.Level2
 import com.fliperror.core.Level3
 import com.fliperror.core.Level4
 import com.fliperror.core.Level5
+import com.fliperror.core.Level6
+import com.fliperror.core.Level7
+import com.fliperror.core.Level8
+import com.fliperror.core.Level9
+import com.fliperror.core.Level10
+import com.fliperror.core.Level11
+import com.fliperror.core.Level12
 import com.fliperror.core.Lang
 import com.fliperror.core.Progress
 import com.fliperror.core.Settings
@@ -87,12 +94,20 @@ fun main() {
     val progress = Progress.parse(loadSave())
     val settings = Settings.parse(read(SETTINGS_KEY))
     val levels = listOf(
+        // WORLD 1 - NEON CITY
         LevelDef(LevelCard(1, "FIRST STEPS HURT", 3, true)) { Level1.build() },
         LevelDef(LevelCard(2, "GAP LOGIC", 3, true)) { Level2.build() },
         LevelDef(LevelCard(3, "MOVING CHAOS", 3, true)) { Level3.build() },
         LevelDef(LevelCard(4, "TIGHT ROOM", 3, true)) { Level4.build() },
         LevelDef(LevelCard(5, "OVERDRIVE", 3, true)) { Level5.build() },
-        LevelDef(LevelCard(6, "NOT BUILT YET", 3, false), null),
+        LevelDef(LevelCard(6, "SYSTEM CRASH", 3, true)) { Level6.build() },
+        // WORLD 2 - NEON DESERT
+        LevelDef(LevelCard(7, "SAND RUN", 3, true)) { Level7.build() },
+        LevelDef(LevelCard(8, "FALLING TEMPLE", 3, true)) { Level8.build() },
+        LevelDef(LevelCard(9, "SUN STRIKE", 3, true)) { Level9.build() },
+        LevelDef(LevelCard(10, "DESERT CHAOS", 3, true)) { Level10.build() },
+        LevelDef(LevelCard(11, "COLLAPSE", 3, true)) { Level11.build() },
+        LevelDef(LevelCard(12, "THE SUN CORE", 3, true)) { Level12.build() },
     )
 
     var screen = Screen.MENU
@@ -187,6 +202,7 @@ fun main() {
         // The soundtrack runs at the level's own tempo and restarts its
         // arrangement, so every attempt opens on the same bar.
         Audio.bpm = game.level.bpm
+        Audio.world = Theme.worldOf(game.level.id)
         Audio.restartMusic()
         lastAttempt = game.attempts
         awarded = false
@@ -414,6 +430,20 @@ fun main() {
     api.setLang = { code: String -> settings.lang = if (code == "AR") Lang.AR else Lang.EN; applySettings(); ui.refresh() }
     api.lang = { settings.lang.name }
     api.movers = { game.level.hazards.count { it.moves } }
+    // --- what world we are in, for the desert harness ----------------------
+    api.world = { Theme.worldOf(game.level.id) }
+    api.scene = { Theme.forLevel(game.level.id).scene.name }
+    api.bpm = { game.level.bpm }
+    api.musicTier = { Audio.intensity }
+    api.winds = { game.level.winds.size }
+    /** Every kind of obstacle this level is built out of, so a test can prove the
+     *  desert is a new playground rather than the city with a filter on it. */
+    api.looks = { game.level.hazards.map { it.look.name }.distinct().sorted().joinToString(",") }
+    api.surfaces = { game.level.solids.map { it.surface.name }.distinct().sorted().joinToString(",") }
+    /** Hazards that switch on and off, and how many are lethal this instant. */
+    api.pulsing = { game.level.hazards.count { it.pulses } }
+    api.pulsingLive = { game.level.hazards.count { it.pulses && it.activeAt(game.elapsed) } }
+    api.pulsingWarm = { game.level.hazards.count { it.warmAt(game.elapsed) > 0.0 } }
     /** Where mover [i] is this instant, so a test can prove it moves and repeats. */
     api.moverX = { i: Int ->
         val h = game.level.hazards.filter { it.moves }.getOrNull(i)

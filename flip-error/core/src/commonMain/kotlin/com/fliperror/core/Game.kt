@@ -180,6 +180,16 @@ class Game(val level: Level) {
             rotationDeg += 90.0 * dt / Tuning.AIR_TIME
         }
 
+        // 2b. Moving air. Vertical only - see Wind for why that is not a choice.
+        if (level.winds.isNotEmpty() && !grounded) {
+            val hb0 = hitBox
+            for (w in level.winds) {
+                if (w.covers(hb0.x0, hb0.x1)) {
+                    vy = max(vy + w.push * dt, -Tuning.MAX_FALL_SPEED)
+                }
+            }
+        }
+
         // 3. Auto-run. The player never controls x (GDD 3).
         x += Tuning.RUN_SPEED * dt
 
@@ -189,7 +199,7 @@ class Game(val level: Level) {
         // 5. Hazards.
         val hb = hitBox
         level.forEachHazardNear(hb.x0, hb.x1) { h ->
-            if (hb.overlaps(h.hitBoxAt(elapsed))) {
+            if (h.activeAt(elapsed) && hb.overlaps(h.hitBoxAt(elapsed))) {
                 die(if (h.kind == HazardKind.SPIKE_DOWN) DeathCause.CEILING_SPIKE else DeathCause.SPIKE)
                 return
             }
@@ -201,6 +211,7 @@ class Game(val level: Level) {
         var tightest = Double.MAX_VALUE
         var edge = Double.NaN
         level.forEachHazardNear(hb.x0, hb.x1) { h ->
+            if (!h.activeAt(elapsed)) return@forEachHazardNear
             val box = h.hitBoxAt(elapsed)
             if (hb.x1 > box.x0 && hb.x0 < box.x1) {
                 val gap = if (h.kind == HazardKind.SPIKE_UP) hb.y0 - box.y1 else box.y0 - hb.y1
@@ -233,6 +244,9 @@ class Game(val level: Level) {
     private fun resolveSolids(prevBottom: Double, prevTop: Double) {
         val hb = hitBox
         var landed = false
+        // Whether the runner was standing on something when this frame began.
+        // Only someone already standing gets carried down by sinking ground.
+        val wasStanding = grounded && vy <= 0.0
 
         val t = elapsed
         level.forEachSolidNear(hb.x0, hb.x1) { s ->
@@ -240,11 +254,20 @@ class Game(val level: Level) {
             if (hb.x1 <= s.x0At(t) || hb.x0 >= s.x1At(t)) return@forEachSolidNear
             val top = s.topAt(t)
             val bottom = s.bottomAt(t)
-            // A lift carries: it may rise into the runner's feet between two
-            // frames, so landing is tested against the surface's own travel, not
-            // against a fixed line. Horizontal movers never carry - see Solid.
+            // A lift carries, and it carries BOTH ways. Rising, it may push into
+            // the runner's feet between two frames, so landing is tested against
+            // the surface's own travel rather than a fixed line. Sinking, it used
+            // to simply leave: the floor dropped 0.006u in a frame while gravity
+            // moved the runner 0.0005u, so the feet hung in the air for the ~26
+            // frames it takes to fall as fast as the sand, and the runner spent
+            // every descending breath flickering in and out of "grounded" - no
+            // coyote time, no armed double jump, and a verifier that saw standing
+            // room chopped into five-frame slivers. Ground that sinks under you is
+            // still ground you are standing on. Horizontal movers never carry -
+            // see Solid.
             val rise = s.offsetY(t) - s.offsetY(t - Tuning.FIXED_DT)
-            if (vy <= 0.0 && prevBottom >= top - maxOf(rise, 0.0) - 1e-6 && y <= top + 1e-6) {
+            val sink = if (wasStanding) maxOf(-rise, 0.0) else 0.0
+            if (vy <= 0.0 && prevBottom >= top - maxOf(rise, 0.0) - 1e-6 && y <= top + sink + 1e-6) {
                 y = top
                 vy = 0.0
                 if (!grounded) rotationDeg = round(rotationDeg / 90.0) * 90.0

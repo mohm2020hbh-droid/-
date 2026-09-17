@@ -54,31 +54,48 @@ object Palette {
  * in; later worlds shift the environment while the two colours that carry
  * meaning - hazard red and the player's own - stay exactly where they are.
  */
+/** What kind of place a world is. The renderer draws a different scene for each. */
+enum class Scene { CITY, DESERT }
+
 class Theme(
     val skyTop: String, val skyMid: String, val skyLow: String,
     val far: String, val mid: String, val near: String,
     val horizon: String, val billboard: String,
     /** A third sign colour, so the city is not lit by two bulbs. */
     val accent: String = "#ff3ba7",
+    val scene: Scene = Scene.CITY,
+    /** The desert's sun, and the light everything in it is lit by. */
+    val sun: String = "#ffb03a",
+    val sunCore: String = "#fff1c4",
 ) {
     companion object {
         private val WORLDS = listOf(
-            // world 1: cyan + yellow
-            Theme("#0b1030", "#151a4a", "#05060f", "#20276e", "#2a3f9c", "#3a6fd0", "#2ef0ff", "#ffd329", "#ff3ba7"),
-            // world 2: blue + purple
-            Theme("#100a34", "#1d1050", "#05060f", "#2a1a6b", "#3d2496", "#6a3fd4", "#8b5cff", "#2ef0ff", "#ff6bd6"),
-            // world 3: pink + violet
-            Theme("#1a0730", "#2c0b४6".replace("४", "4"), "#05060f", "#45116b", "#6d1a96", "#a92fd4", "#ff3ba7", "#b07bff"),
-            // world 4: green + cyan
-            Theme("#04231f", "#063a33", "#05060f", "#0a5348", "#0d7a63", "#12b089", "#39ff9e", "#2ef0ff"),
-            // world 5: orange + red
-            Theme("#2a0f06", "#43180a", "#05060f", "#5e2410", "#8c3a15", "#c25a1c", "#ff9130", "#ffd329"),
-            // world 6: electric white + blue
-            Theme("#0a1230", "#122048", "#05060f", "#1d3570", "#2a53a8", "#3f84e0", "#dff4ff", "#2ef0ff"),
+            // --- WORLD 1: NEON CITY, night, cyan and yellow ------------------
+            Theme("#0b1030", "#151a4a", "#05060f", "#20276e", "#2a3f9c", "#3a6fd0",
+                "#2ef0ff", "#ffd329", "#ff3ba7", Scene.CITY),
+            // --- WORLD 2: NEON DESERT, a sun going down on broken ruins -------
+            // Burning orange through to deep purple, with electric cyan kept for
+            // the technical parts so the eye still knows what is machinery.
+            Theme("#2b0b3a", "#7a1c44", "#1a0616", "#43102f", "#7a2a2c", "#b8481f",
+                "#ff8a1f", "#ff2e8b", "#ffd166", Scene.DESERT, "#ff9a2a", "#ffe9a8"),
+            // --- WORLD 3: deeper into the waste, hotter and angrier -----------
+            Theme("#35061f", "#8c1630", "#1a0410", "#530f22", "#8f2320", "#cc4a12",
+                "#ff6a12", "#ff2e63", "#ffb03a", Scene.DESERT, "#ff5a18", "#fff0c0"),
+            // --- WORLD 4: green + cyan ----------------------------------------
+            Theme("#04231f", "#063a33", "#05060f", "#0a5348", "#0d7a63", "#12b089",
+                "#39ff9e", "#2ef0ff", "#7cffb2", Scene.CITY),
+            // --- WORLD 5: orange + red ----------------------------------------
+            Theme("#2a0f06", "#43180a", "#05060f", "#5e2410", "#8c3a15", "#c25a1c",
+                "#ff9130", "#ffd329", "#ff3ba7", Scene.CITY),
+            // --- WORLD 6: electric white + blue -------------------------------
+            Theme("#0a1230", "#122048", "#05060f", "#1d3570", "#2a53a8", "#3f84e0",
+                "#dff4ff", "#2ef0ff", "#8b5cff", Scene.CITY),
         )
 
-        /** Levels are grouped into worlds of five. */
-        fun forLevel(id: Int) = WORLDS[((id - 1) / 5).coerceIn(0, WORLDS.size - 1)]
+        /** Six levels to a world: 1-6 the city, 7-12 the desert, and on. */
+        const val LEVELS_PER_WORLD = 6
+        fun worldOf(id: Int) = ((id - 1) / LEVELS_PER_WORLD) + 1
+        fun forLevel(id: Int) = WORLDS[(worldOf(id) - 1).coerceIn(0, WORLDS.size - 1)]
     }
 }
 
@@ -168,6 +185,44 @@ object Art {
                 ctx.lineTo(-a, a); ctx.lineTo(-b, a); ctx.lineTo(-b, -a); ctx.lineTo(-a, -a)
                 ctx.closePath()
             }
+            // --- the three the desert gives back ------------------------------
+            // Each is built the same way as every other shape here: one closed
+            // path around the origin, sized so the drawn silhouette still sits in
+            // the same box the hitbox uses. A cosmetic that changed the runner's
+            // outline would change the game, and nothing in this shop does that.
+            "shape.scarab" -> {
+                ctx.moveTo(0.0, -h * 1.10)
+                ctx.quadraticCurveTo(h * 0.86, -h * 0.80, h * 0.74, 0.0)
+                ctx.quadraticCurveTo(h * 1.16, h * 0.18, h * 0.62, h * 0.52)
+                ctx.quadraticCurveTo(h * 0.42, h * 1.16, 0.0, h * 1.02)
+                ctx.quadraticCurveTo(-h * 0.42, h * 1.16, -h * 0.62, h * 0.52)
+                ctx.quadraticCurveTo(-h * 1.16, h * 0.18, -h * 0.74, 0.0)
+                ctx.quadraticCurveTo(-h * 0.86, -h * 0.80, 0.0, -h * 1.10)
+                ctx.closePath()
+            }
+            "shape.ankh" -> {
+                val r = h * 0.46
+                val stem = h * 0.22
+                ctx.arc(0.0, -h * 0.52, r, 0.0, PI * 2)
+                ctx.moveTo(-stem, -h * 0.06)
+                ctx.lineTo(-h * 1.02, -h * 0.06); ctx.lineTo(-h * 1.02, h * 0.30)
+                ctx.lineTo(-stem, h * 0.30); ctx.lineTo(-stem, h * 1.18)
+                ctx.lineTo(stem, h * 1.18); ctx.lineTo(stem, h * 0.30)
+                ctx.lineTo(h * 1.02, h * 0.30); ctx.lineTo(h * 1.02, -h * 0.06)
+                ctx.lineTo(stem, -h * 0.06)
+                ctx.closePath()
+            }
+            "shape.sun" -> {
+                val outer = h * 1.18
+                val inner = h * 0.66
+                for (k in 0 until 24) {
+                    val a = -PI / 2 + k * PI / 12
+                    val rr = if (k % 2 == 0) outer else inner
+                    val px = cos(a) * rr; val py = sin(a) * rr
+                    if (k == 0) ctx.moveTo(px, py) else ctx.lineTo(px, py)
+                }
+                ctx.closePath()
+            }
             "shape.cat" -> {
                 val r = size * 0.16
                 ctx.moveTo(-h + r, -h * 0.72)
@@ -220,6 +275,9 @@ object Art {
         "shape.cross" -> 0.66
         "shape.arrow" -> 0.72
         "shape.star" -> 0.70
+        "shape.sun" -> 0.62
+        "shape.ankh" -> 0.58
+        "shape.scarab" -> 0.82
         else -> 1.0
     }
 
@@ -313,6 +371,15 @@ object Art {
             val hue = ((i * 26) % 360)
             "hsl($hue, 100%, 62%)"
         }
+        // The desert's two. SANDSTORM goes pale and grainy as it falls behind,
+        // like grit losing the light; EMBER cools from white through orange to
+        // deep red, which is the sun going down over the whole trail at once.
+        "trail.sand" -> if (i % 3 == 0) "#ffe9a8" else "#ff9a2a"
+        "trail.ember" -> {
+            val hue = 4 + 44 * age
+            val light = 44 + 34 * age
+            "hsl($hue, 96%, $light%)"
+        }
         else -> base
     }
 
@@ -321,12 +388,16 @@ object Art {
         "trail.spark" -> age * age * 0.9
         "trail.pulse" -> (0.35 + 0.65 * sin(age * PI)) * age * 0.9
         "trail.rainbow" -> age * 0.82
+        "trail.sand" -> age * age * 0.72
+        "trail.ember" -> (0.30 + 0.70 * age) * 0.86
         else -> age * 0.64
     }
 
     fun trailScale(style: String, age: Double): Double = when (style) {
         "trail.spark" -> 0.14 + 0.42 * age
         "trail.pulse" -> 0.22 + 0.78 * age
+        "trail.sand" -> 0.10 + 0.50 * age            // it scatters rather than shrinks
+        "trail.ember" -> 0.30 + 0.70 * age
         else -> 0.26 + 0.62 * age
     }
 

@@ -125,7 +125,55 @@ object Audio {
 
     private val kickSteps = intArrayOf(0, 10)
     private val snareSteps = intArrayOf(4, 12)
-    private val bassRoots = doubleArrayOf(55.0, 55.0, 73.42, 65.41)     // A1 A1 D2 C2
+
+    /**
+     * Which world's arrangement is playing. The engine is the same drum & bass
+     * engine in both - same scheduler, same kick, same limiter - because the game
+     * should still SOUND like itself in the desert. What changes is the material:
+     * the key, the mode, the percussion, and when the arrangement opens up.
+     */
+    var world = 1
+
+    // A minor, the city's key: four-square, and it resolves.
+    private val cityRoots = doubleArrayOf(55.0, 55.0, 73.42, 65.41)     // A1 A1 D2 C2
+    // D phrygian dominant, the desert's: the flat second is the whole sound of it,
+    // and the mode never quite settles, which is the point of a horizon.
+    private val desertRoots = doubleArrayOf(36.71, 36.71, 58.27, 48.99) // D1 D1 Bb1 G1
+
+    private val cityArp = intArrayOf(0, 3, 7, 10)                       // minor 7th
+    private val desertArp = intArrayOf(0, 1, 4, 8)                      // b2, M3, b6
+
+    private val roots get() = if (world >= 2) desertRoots else cityRoots
+    private val arp get() = if (world >= 2) desertArp else cityArp
+
+    /** The last tenth, where the arrangement stops holding anything back. */
+    private var drive = false
+
+    /** Dry wood, for the desert. It sits where an open hat would and takes up far
+     *  less room, which is what makes the back half feel like heat rather than rain. */
+    private fun clave(at: Double, gain: Double) {
+        val o = ctx.createOscillator(); val g = ctx.createGain()
+        o.type = "triangle"
+        o.frequency.setValueAtTime(2100.0, at)
+        o.frequency.exponentialRampToValueAtTime(1400.0, at + 0.02)
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.exponentialRampToValueAtTime(gain, at + 0.002)
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.05)
+        o.connect(g); g.connect(musicBus); o.start(at); o.stop(at + 0.06)
+    }
+
+    /** A hand drum an octave under the snare - the desert's answer to a fill. */
+    private fun tom(at: Double, freq: Double, gain: Double) {
+        val o = ctx.createOscillator(); val g = ctx.createGain()
+        o.type = "sine"
+        o.frequency.setValueAtTime(freq, at)
+        o.frequency.exponentialRampToValueAtTime(freq * 0.55, at + 0.14)
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.exponentialRampToValueAtTime(gain, at + 0.005)
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.18)
+        o.connect(g); g.connect(musicBus); o.start(at); o.stop(at + 0.20)
+        noiseHit(at, 0.05, gain * 0.35, 3200.0, 0.9, "bandpass", musicBus)
+    }
 
     private fun kick(at: Double) {
         val o = ctx.createOscillator(); val g = ctx.createGain()
@@ -200,28 +248,45 @@ object Audio {
         val inBar = i % 16
         val bar = (i / 16) % 4
         val tier = intensity
+        val desert = world >= 2
+        val root = roots[bar]
 
         if (inBar in kickSteps) kick(at)
         if (tier >= 2 && inBar == 6) kick(at)                    // the drop's extra kick
+        if (drive && inBar == 8) kick(at)                        // the last tenth
         if (inBar in snareSteps) snare(at)
         if (tier >= 3 && inBar == 14) snare(at)
 
-        // hats: eighths, then sixteenths once the level is moving
-        if (tier >= 1 && inBar % 4 == 2) hat(at, open = false, gain = 0.20)
-        if (tier >= 2 && inBar % 2 == 1) hat(at, open = false, gain = 0.13)
-        if (tier >= 3 && inBar % 2 == 0 && inBar % 4 != 0) hat(at, open = true, gain = 0.10)
+        if (desert) {
+            // The desert's top end is dry: wood on the off-beats where the city
+            // puts hats, and a hand drum instead of a third snare. Sand does not
+            // sound like rain.
+            if (tier >= 1 && inBar % 4 == 2) clave(at, 0.17)
+            if (tier >= 2 && inBar % 4 == 3) clave(at, 0.11)
+            if (tier >= 2 && (inBar == 7 || inBar == 15)) tom(at, root * 4.0, 0.26)
+            if (tier >= 3 && inBar % 2 == 1) hat(at, open = false, gain = 0.10)
+            if (drive && inBar % 2 == 0) clave(at, 0.08)
+        } else {
+            // hats: eighths, then sixteenths once the level is moving
+            if (tier >= 1 && inBar % 4 == 2) hat(at, open = false, gain = 0.20)
+            if (tier >= 2 && inBar % 2 == 1) hat(at, open = false, gain = 0.13)
+            if (tier >= 3 && inBar % 2 == 0 && inBar % 4 != 0) hat(at, open = true, gain = 0.10)
+        }
 
-        val root = bassRoots[bar]
-        if (inBar == 0 || inBar == 10) bass(at, root, 0.30, 0.42)
+        // The desert holds its bass back until the level's own 60%, so the drop
+        // at 75% actually arrives from somewhere. Until then it is one low note
+        // to the bar and a lot of air.
+        if (inBar == 0) bass(at, root, if (desert && tier < 2) 0.44 else 0.30, 0.42)
+        if (inBar == 10 && (!desert || tier >= 2)) bass(at, root, 0.30, 0.42)
         if (tier >= 2 && inBar == 6) bass(at, root * 1.5, 0.16, 0.30)
         if (tier >= 3 && inBar == 13) bass(at, root * 2.0, 0.14, 0.26)
+        if (drive && inBar == 3) bass(at, root * 1.5, 0.12, 0.24)
 
         if (tier >= 1 && inBar % 8 == 0) lead(at, root * 4.0, 0.14)
-        if (tier >= 2) {
-            val arp = intArrayOf(0, 3, 7, 10)
-            if (inBar % 2 == 0) lead(at, root * 4.0 * 2.0.pow(arp[(inBar / 2) % 4] / 12.0), 0.11)
-        }
+        if (tier >= 2 && inBar % 2 == 0)
+            lead(at, root * 4.0 * 2.0.pow(arp[(inBar / 2) % 4] / 12.0), 0.11)
         if (tier >= 3 && inBar % 4 == 3) lead(at, root * 8.0, 0.09)
+        if (drive && inBar % 4 == 1) lead(at, root * 8.0 * 2.0.pow(arp[bar] / 12.0), 0.07)
     }
 
     /**
@@ -248,17 +313,31 @@ object Audio {
         tick()
     }
 
-    /** Called each frame with 0..1 through the level; moves the arrangement. */
+    /**
+     * Called each frame with 0..1 through the level; moves the arrangement.
+     *
+     * The two worlds are shaped differently on purpose. The city builds early and
+     * then holds, which suits a level you are meant to settle into. The desert
+     * stays sparse and dry for well over half the run, drops its bass at 60%,
+     * breaks at 75%, and opens all the way up for the last tenth - so the music
+     * arrives at the hardest part of the level at the same moment the player does.
+     */
     fun setProgress(p: Double) {
-        intensity = when {
+        intensity = if (world >= 2) when {
+            p >= 0.75 -> 3
+            p >= 0.60 -> 2
+            p >= 0.15 -> 1
+            else -> 0
+        } else when {
             p >= 0.90 -> 3
             p >= 0.70 -> 2
             p >= 0.25 -> 1
             else -> 0
         }
+        drive = p >= 0.90
     }
 
-    fun restartMusic() { step = 0; intensity = 0 }
+    fun restartMusic() { step = 0; intensity = 0; drive = false }
 
     // --- the cues ----------------------------------------------------------------
 

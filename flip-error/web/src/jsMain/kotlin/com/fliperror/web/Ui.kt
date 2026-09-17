@@ -107,7 +107,23 @@ class Ui(
     // --- level select ------------------------------------------------------
 
     private fun renderMenu() {
+        // The list is broken by world, and each world announces itself in its own
+        // colours. This IS the transition between them: crossing from LEVEL 6 to
+        // LEVEL 7 should look like arriving somewhere, not like scrolling further
+        // down one long list.
+        var lastWorld = 0
         val cards = levels.joinToString("") { lv ->
+            val world = Theme.worldOf(lv.id)
+            val banner = if (world == lastWorld) "" else {
+                lastWorld = world
+                val th = Theme.forLevel(lv.id)
+                val reached = progress.unlocked(lv.id)
+                """<div class="world${if (reached) "" else " far"}"
+                     style="--w1:${th.horizon};--w2:${th.sun};--w3:${th.billboard}">
+                  <span class="wn">${t("world")} $world</span>
+                  <span class="wt">${t("world$world")}</span>
+                </div>"""
+            }
             val unlocked = progress.unlocked(lv.id) && lv.built
             val rec = progress.record(lv.id)
             val got = progress.starsIn(lv.id).size
@@ -124,9 +140,9 @@ class Ui(
                 else -> "unlocked"
             }
             val stars = (0 until lv.coins).joinToString("") {
-                if (it < got) "<b class=on>★</b>" else "<b>★</b>"
+                if (it < got) "<b class=on>\u2605</b>" else "<b>\u2605</b>"
             }
-            """<button class="card" data-level="${lv.id}" ${if (unlocked) "" else "disabled"}>
+            banner + """<button class="card" data-level="${lv.id}" ${if (unlocked) "" else "disabled"}>
                  <span class="num">${t("level")} ${lv.id}</span>
                  <span class="nm">${if (lv.built) lv.name else t("notBuilt")}</span>
                  <span class="state s-$cls">$state</span>
@@ -423,10 +439,25 @@ class Ui(
         val next = levelId + 1
         val nextBtn = if (nextBuilt && progress.unlocked(next))
             """<button class="wide go" id="rw-next">${t("nextLevel")}</button>""" else ""
+        // Crossing out of a world is the one moment the reward screen should say
+        // something other than a number. Finishing LEVEL 6 is not just the next
+        // level unlocking - it is the end of the city, and the player should be
+        // told where they are going before they are asked to go there.
+        val crossing = nextBuilt && progress.unlocked(next) &&
+            Theme.worldOf(next) != Theme.worldOf(levelId)
+        val gate = if (!crossing) "" else {
+            val th = Theme.forLevel(next)
+            """<div class="world crossing"
+                 style="--w1:${th.horizon};--w2:${th.sun};--w3:${th.billboard}">
+              <span class="wn">${t("newWorld")}</span>
+              <span class="wt">${t("world" + Theme.worldOf(next))}</span>
+            </div>"""
+        }
         reward.innerHTML = """
             <div class="panel">
               <h2>${t("levelComplete")}</h2>
               <div class="rows">$lines</div>
+              $gate
               $nextBtn
               <button class="wide" id="rw-retry">${t("replay")}</button>
               <button class="wide ghost" id="rw-menu">${t("levels")}</button>

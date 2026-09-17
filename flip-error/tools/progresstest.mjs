@@ -100,9 +100,17 @@ const waitScreen = (s, t = 8000) =>
   check('level 1 is open and level 2 is not', st.l1 && !st.l2 && !st.l3);
   check('a fresh purse is empty', st.coins === 0, `★ ${st.coins}`);
   const cards = await page.locator('#menu .card').count();
-  check('the level select lists every level', cards === 6, `${cards} cards`);
+  check('the level select lists every level', cards === 12, `${cards} cards`);
   const locked = await page.locator('#menu .card[disabled]').count();
-  check('locked levels cannot be tapped', locked === 5, `${locked} disabled`);
+  check('locked levels cannot be tapped', locked === 11, `${locked} disabled`);
+  // the transition between worlds: the list is broken into named places, and the
+  // one you have not reached yet is visibly further away.
+  const worlds = await page.locator('#menu .world').count();
+  check('the level select is split into worlds', worlds === 2, `${worlds} banners`);
+  const names = await page.locator('#menu .world .wt').allTextContents();
+  check('and each world is named', names.join('/') === 'NEON CITY/NEON DESERT', names.join('/'));
+  const far = await page.locator('#menu .world.far').count();
+  check('the world you have not reached reads as far off', far === 1, `${far} dimmed`);
   await page.screenshot({ path: path.join(shotDir, '01-menu-fresh.png') });
 }
 

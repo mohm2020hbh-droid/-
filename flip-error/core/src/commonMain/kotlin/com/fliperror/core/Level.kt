@@ -14,6 +14,20 @@ data class Box(val x0: Double, val y0: Double, val x1: Double, val y1: Double) {
 enum class HazardKind { SPIKE_UP, SPIKE_DOWN }
 
 /**
+ * What a hazard is made of.
+ *
+ * Art only. [HazardKind] stays what the physics reads - which way the thing
+ * points, and therefore which side of it the runner has to be on - and this
+ * says what the renderer should draw there. Keeping them apart is what lets
+ * world 2 add ten new obstacles without touching a line of collision code, or
+ * changing what a death is called.
+ */
+enum class Look { SPIKE, SAND_WAVE, RUIN, RELIC, GEYSER, LASER }
+
+/** What a surface is made of. Art only, exactly as [Look] is. */
+enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE }
+
+/**
  * A hazard that will not stay still.
  *
  * Position is a pure function of level time, and level time is x / RUN_SPEED
@@ -33,10 +47,16 @@ data class Motion(
     val period: Double = 2.0,
     /** Where in the cycle this hazard starts, 0..1. */
     val phase: Double = 0.0,
+    /**
+     * Extra phase on the vertical axis only. At 0 the path is a straight line;
+     * at 0.25 the two axes are a quarter turn apart and the path is a circle,
+     * which is how a rotating relic is built out of the same two numbers.
+     */
+    val phaseY: Double = 0.0,
 ) {
-    private fun wave(t: Double) = kotlin.math.sin((t / period + phase) * 2.0 * kotlin.math.PI)
-    fun offsetX(t: Double) = if (dx == 0.0) 0.0 else dx * wave(t)
-    fun offsetY(t: Double) = if (dy == 0.0) 0.0 else dy * wave(t)
+    private fun wave(u: Double) = kotlin.math.sin(u * 2.0 * kotlin.math.PI)
+    fun offsetX(t: Double) = if (dx == 0.0) 0.0 else dx * wave(t / period + phase)
+    fun offsetY(t: Double) = if (dy == 0.0) 0.0 else dy * wave(t / period + phase + phaseY)
     val reachX get() = kotlin.math.abs(dx)
     val reachY get() = kotlin.math.abs(dy)
 }
@@ -57,6 +77,23 @@ data class Blink(val period: Double, val onFraction: Double = 0.6, val phase: Do
         val left = (onFraction - u) / onFraction
         return kotlin.math.min(1.0, left * 4.0)
     }
+
+    /**
+     * How close this is to switching ON, 0..1, in the moments before it does.
+     *
+     * This is the whole difference between a laser and an unfair death. A beam
+     * that simply appears is a coin flip; a beam that spends a quarter of a
+     * second visibly charging is a timing problem. The renderer draws this, the
+     * physics ignores it.
+     */
+    fun warmAt(t: Double): Double {
+        val u = ((t / period + phase) % 1.0 + 1.0) % 1.0
+        if (u < onFraction) return 0.0
+        val toGo = 1.0 - u
+        val warn = kotlin.math.min(0.28, (1.0 - onFraction) * 0.6)
+        if (toGo > warn) return 0.0
+        return 1.0 - toGo / warn
+    }
 }
 
 /**
@@ -72,6 +109,7 @@ data class Solid(
     val x0: Double, val x1: Double, val top: Double, val bottom: Double = -40.0,
     val motion: Motion? = null,
     val blink: Blink? = null,
+    val surface: Surface = Surface.STONE,
 ) {
     val box get() = Box(x0, bottom, x1, top)
     val moves get() = motion != null
@@ -90,6 +128,9 @@ data class Hazard(
     val kind: HazardKind,
     val x0: Double, val x1: Double, val y0: Double, val y1: Double,
     val motion: Motion? = null,
+    /** Present for part of every cycle: a geyser, a beam, a falling block. */
+    val blink: Blink? = null,
+    val look: Look = Look.SPIKE,
 ) {
     /** GDD fairness law 3: the killing box is 15% smaller than the drawing. */
     private val restingHit: Box = Box(x0, y0, x1, y1).shrink(Tuning.HAZARD_HITBOX_SCALE)
@@ -105,6 +146,27 @@ data class Hazard(
 
     fun hitBoxAt(t: Double): Box = shift(restingHit, t)
     fun drawBoxAt(t: Double): Box = shift(restingDraw, t)
+
+    val pulses get() = blink != null
+    /** Lethal right now? An off-cycle geyser is scenery. */
+    fun activeAt(t: Double) = blink?.solidAt(t) ?: true
+    /** 0..1 in the moments before it becomes lethal. Drawn, never collided with. */
+    fun warmAt(t: Double) = blink?.warmAt(t) ?: 0.0
+}
+
+/**
+ * A column of moving air. It pushes the runner UP or DOWN, never sideways.
+ *
+ * Sideways was the obvious version and it is the one that cannot exist here:
+ * the runner's x is exactly RUN_SPEED * time, and every proof this game makes
+ * about its own fairness is built on that. A horizontal gust would make x a
+ * function of the player's history instead, and the verifier could no longer
+ * say whether a level was possible. Vertical air changes how high a jump goes
+ * without touching how far it reaches, so the invariant survives and the
+ * mechanic still reads as wind.
+ */
+data class Wind(val x0: Double, val x1: Double, val push: Double) {
+    fun covers(px0: Double, px1: Double) = px1 > x0 && px0 < x1
 }
 
 data class Star(val x: Double, val y: Double) {
@@ -121,6 +183,7 @@ data class Level(
     val stars: List<Star>,
     val finishX: Double,
     val startY: Double = 0.0,
+    val winds: List<Wind> = emptyList(),
 ) {
     /** Level length in seconds at the level's run speed. */
     val durationSeconds: Double get() = finishX / Tuning.RUN_SPEED
