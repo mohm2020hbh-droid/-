@@ -22,7 +22,7 @@ const shotDir = path.join(root, 'build/soundtest');
 fs.mkdirSync(shotDir, { recursive: true });
 
 const plans = {};
-for (const id of [1, 7, 9, 11]) {
+for (const id of [1, 9, 16, 18]) {
   const f = path.join(root, `core/build/level${id}-plan.json`);
   if (fs.existsSync(f)) plans[id] = JSON.parse(fs.readFileSync(f, 'utf8'));
 }
@@ -81,130 +81,82 @@ const frames = n => page.evaluate(k => new Promise(res => {
   requestAnimationFrame(step);
 }), n);
 
-// 1 — the library is in ------------------------------------------------------
+// 1 — the library is in, and it is the gameplay half only ---------------------
 const lib = await page.evaluate(() => ({
-  ready: FLIP.samplesReady(), loaded: FLIP.samplesLoaded(), fmt: FLIP.audioFormat(),
+  ready: FLIP.samplesReady(), loaded: FLIP.samplesLoaded(),
+  fmt: FLIP.audioFormat(), want: FLIP.cueCount(),
 }));
 check('the sound pack loads and decodes', lib.ready, `${lib.loaded} cues, format ${lib.fmt}`);
-const want = await page.evaluate(() => FLIP.cueCount());
-check('every one-shot recording decoded', lib.loaded === want, `${lib.loaded} of ${want}`);
+check('every cue the map names decoded', lib.loaded === lib.want, `${lib.loaded} of ${lib.want}`);
 
-// 2 — the menus have a room, and it is not the level's --------------------------
-await page.evaluate(() => FLIP.openMenu());
-await frames(40);
-await page.screenshot({ path: path.join(shotDir, '01-menu.png') });
+// 2 — and NOTHING is looping or streaming -------------------------------------
+// The ambience decision, checked at runtime rather than in the source. An
+// <audio> element with a source, or any element playing, is the whole failure
+// mode this rule exists to prevent.
+const media = await page.evaluate(() => {
+  const els = [...document.querySelectorAll('audio')];
+  return { count: els.length, sourced: els.filter(a => a.src).length,
+           playing: els.filter(a => !a.paused).length };
+});
+check('no media element is streaming anything',
+  media.sourced === 0 && media.playing === 0,
+  `${media.count} element(s) in the page, ${media.sourced} with a source, ${media.playing} playing`);
 
-// 3 — the room is layered, and the layers move with the level -------------------
+// 3 — every gameplay and UI cue can be fired ----------------------------------
 const open = async id => {
   await page.evaluate(i => FLIP.play(i), id);
   await page.waitForFunction(() => FLIP.screen() === 'PLAYING', { timeout: 5000 });
   await frames(3);
 };
-
-const sampleBeds = async (lv, marks) => {
-  await open(lv);
-  return page.evaluate(([id, want]) => new Promise(res => {
-    const plan = window.__plans[id]?.jumps ?? [];
-    const seen = {};
-    let i = 0, owed = false, bx = 0, f = 0, next = 0;
-    const step = () => {
-      const x = FLIP.x(), p = FLIP.progress();
-      if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
-        owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
-      } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
-      while (next < want.length && p >= want[next]) {
-        seen[want[next]] = { beds: FLIP.beds(), tension: FLIP.tension() };
-        next++;
-      }
-      if (next >= want.length || FLIP.state() !== 'RUNNING' || ++f > 4000) return res(seen);
-      requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }), [lv, marks]);
-};
-
-const marks = [0.05, 0.30, 0.55, 0.75, 0.95];
-// The bands are 0-25, 25-50, 50-70, 70-90, 90-100 and each crossfades over its
-// last 6%, so a handover is only visible just BEFORE a boundary. Sampling in the
-// middle of a band and concluding there is no crossfade is the test's mistake,
-// not the engine's.
-const edges = [0.235, 0.485, 0.685, 0.885];
-const w1 = await sampleBeds(1, marks);
-const loudest = o => {
-  const g = o.beds.split(',').map(Number);
-  return g.indexOf(Math.max(...g));
-};
-const seq = marks.map(m => (w1[m] ? loudest(w1[m]) : -1));
-check('the room is five layers, not one file',
-  new Set(seq.filter(v => v >= 0)).size >= 4, `loudest layer at each mark: ${seq.join(' -> ')}`);
-check('and it climbs a layer at a time as the level does',
-  seq.every((v, i) => i === 0 || v >= seq[i - 1]) && seq[seq.length - 1] > seq[0],
-  seq.join(' -> '));
-const w1edges = await sampleBeds(1, edges);
-const mixed = edges.filter(m => w1edges[m] &&
-  w1edges[m].beds.split(',').filter(v => Number(v) > 0.05).length > 1);
-check('the layers crossfade rather than switch', mixed.length >= 3,
-  `two layers audible at ${mixed.length} of ${edges.length} boundaries: ` +
-  edges.map(m => w1edges[m] ? `[${w1edges[m].beds}]` : '-').join(' '));
-
-// 4 — the two worlds are different rooms ---------------------------------------
-await open(1);
-await frames(20);
-const cityBeds = await page.evaluate(() => FLIP.beds());
-await open(7);
-await frames(20);
-const desertBeds = await page.evaluate(() => FLIP.beds());
-const world = await page.evaluate(() => FLIP.world());
-check('world 2 plays its own room', world === 2 && cityBeds.length > 0 && desertBeds.length > 0,
-  `city [${cityBeds}] desert [${desertBeds}]`);
-const files = await page.evaluate(() =>
-  [...document.querySelectorAll('audio')].map(a => a.src.split('/').pop()));
-check('and the two worlds never share a recording',
-  files.some(f => f.startsWith('20_w1')) && files.some(f => f.startsWith('25_w2')),
-  `${files.length} beds wired`);
-
-// 5 — every cue in the map can actually be fired -------------------------------
 const cues = await page.evaluate(() => {
   const names = ['11_jump', '12_double_jump', '13_land', '14_collect_star', '15_near_miss',
     '16_hazard_hit', '08_strong_loss', '07_level_complete', '09_perfect_finish',
     '01_game_enter_hum', '03_level_start_riser', '05_ui_confirm', '10_world_transition',
     '18_speed_whoosh', '19_secret_unlock',
     '37_w2_sand_wave', '38_w2_sand_geyser', '39_w2_falling_ruin', '40_w2_laser_charge',
-    '41_w2_laser_blast', '42_w2_wind_blast', '43_w2_collapse_bridge',
-    '35_w1_neon_electric_arc', '36_w1_distant_machine_hit',
-    '30_tension_riser_1', '30_tension_riser_2', '30_tension_riser_3', '30_tension_riser_4',
-    '45_unease_low_1', '45_unease_low_2', '45_unease_low_3'];
-  return names.filter(n => !FLIP.playCue(n));
+    '41_w2_laser_blast', '42_w2_wind_blast', '43_w2_collapse_bridge'];
+  return { missing: names.filter(n => !FLIP.playCue(n)), n: names.length };
 });
-check('every cue the map names can be fired', cues.length === 0,
-  cues.length ? `missing: ${cues.join(', ')}` : '31 cues, all present');
+check('every gameplay and UI cue fires', cues.missing.length === 0,
+  cues.missing.length ? `missing: ${cues.missing.join(', ')}` : `${cues.n} cues`);
 
-// 6 — the desert's obstacles announce themselves --------------------------------
-await open(9);
-const heard = await page.evaluate(() => new Promise(res => {
-  // Count what the cue layer fires over a real run of SUN STRIKE, which is the
-  // level built out of beams and geysers.
-  const fired = {};
-  const real = FLIP.playCue;
-  window.__hook = n => { fired[n] = (fired[n] || 0) + 1; };
-  const plan = window.__plans[9].jumps;
-  let i = 0, owed = false, bx = 0, f = 0;
-  const step = () => {
-    const x = FLIP.x();
-    if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
-      owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
-    } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
-    if (FLIP.state() !== 'RUNNING' || ++f > 4000) return res({ state: FLIP.state(), f });
+// And the environmental half is not loaded at all - not merely unplayed.
+const ambient = await page.evaluate(() => {
+  const names = ['20_w1_future_ambience_L1_60s', '25_w2_desert_ambience_L1_60s',
+    '02_menu_idle_hum_loop', '30_tension_riser_1', '35_w1_neon_electric_arc',
+    '45_unease_low_1'];
+  return names.filter(n => FLIP.playCue(n));
+});
+check('and no environmental recording is even in memory',
+  ambient.length === 0, ambient.length ? `playable: ${ambient.join(', ')}` : '6 probed, none loaded');
+
+// 4 — a level of each world plays through with its cues running ----------------
+for (const [id, label] of [[1, 'world 1'], [9, 'world 2'], [18, 'world 3']]) {
+  await open(id);
+  const out = await page.evaluate(lv => new Promise(res => {
+    const plan = window.__plans[lv].jumps;
+    let i = 0, owed = false, bx = 0, f = 0;
+    const step = () => {
+      const x = FLIP.x();
+      if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
+        owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
+      } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
+      if (FLIP.state() !== 'RUNNING' || ++f > 4000) return res({ state: FLIP.state() });
+      requestAnimationFrame(step);
+    };
     requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}));
-check('a desert level plays through with its cue layer running',
-  heard.state === 'COMPLETE', `${heard.state} after ${heard.f} frames`);
-await page.screenshot({ path: path.join(shotDir, '02-level9.png') });
+  }), id);
+  check(`${label} plays through with sound on`, out.state === 'COMPLETE', out.state);
+}
+await page.screenshot({ path: path.join(shotDir, '02-level18.png') });
 
-// 7 — and none of it costs the frame budget -------------------------------------
-await open(11);
+// 5 — still nothing looping after all of that ----------------------------------
+const after = await page.evaluate(() =>
+  [...document.querySelectorAll('audio')].filter(a => a.src || !a.paused).length);
+check('and still nothing is looping after three levels', after === 0, `${after} active`);
+
+// 6 — and none of it costs the frame budget ------------------------------------
+await open(16);
 const pace = await page.evaluate(() => new Promise(res => {
   const gaps = []; let last = performance.now(); let f = 0;
   const step = t => {

@@ -100,17 +100,18 @@ const waitScreen = (s, t = 8000) =>
   check('level 1 is open and level 2 is not', st.l1 && !st.l2 && !st.l3);
   check('a fresh purse is empty', st.coins === 0, `★ ${st.coins}`);
   const cards = await page.locator('#menu .card').count();
-  check('the level select lists every level', cards === 12, `${cards} cards`);
+  check('the level select lists every level', cards === 18, `${cards} cards`);
   const locked = await page.locator('#menu .card[disabled]').count();
-  check('locked levels cannot be tapped', locked === 11, `${locked} disabled`);
+  check('locked levels cannot be tapped', locked === 17, `${locked} disabled`);
   // the transition between worlds: the list is broken into named places, and the
   // one you have not reached yet is visibly further away.
   const worlds = await page.locator('#menu .world').count();
-  check('the level select is split into worlds', worlds === 2, `${worlds} banners`);
+  check('the level select is split into worlds', worlds === 3, `${worlds} banners`);
   const names = await page.locator('#menu .world .wt').allTextContents();
-  check('and each world is named', names.join('/') === 'NEON CITY/NEON DESERT', names.join('/'));
+  check('and each world is named',
+    names.join('/') === 'NEON CITY/NEON DESERT/THE ABYSS', names.join('/'));
   const far = await page.locator('#menu .world.far').count();
-  check('the world you have not reached reads as far off', far === 1, `${far} dimmed`);
+  check('the worlds you have not reached read as far off', far === 2, `${far} dimmed`);
   await page.screenshot({ path: path.join(shotDir, '01-menu-fresh.png') });
 }
 
@@ -234,15 +235,17 @@ const waitScreen = (s, t = 8000) =>
   await page.evaluate(() => { FLIP.openMenu(); document.getElementById('h-settings').click(); });
   const rows = await page.locator('#settings .sw').count();
   check('settings offers every switch', rows === 5, `${rows} toggles`);
-  // Three volumes and no MUSIC control, because there is no music to control.
+  // Two volumes: the game has neither music nor ambience, so it offers a control
+  // for neither. A slider for a thing that does not exist tells the player there
+  // is something they failed to hear.
   const vols = await page.evaluate(() =>
     [...document.querySelectorAll('#settings input[data-vol]')].map(e => e.dataset.vol));
-  check('and three real volumes instead of a music switch',
-    vols.join(',') === 'master,sfx,ambience', vols.join(','));
+  check('and two volumes, for the two things that make sound',
+    vols.join(',') === 'master,sfx', vols.join(','));
   const labels = await page.evaluate(() =>
     [...document.querySelectorAll('#settings .row.set span')].map(e => e.textContent.trim()).join('|'));
-  check('nothing in settings claims there is music',
-    !/MUSIC|موسيق/i.test(labels), labels.slice(0, 70));
+  check('nothing in settings claims there is music or ambience',
+    !/MUSIC|AMBIENCE|موسيق|البيئة/i.test(labels), labels.slice(0, 80));
 
   // the testing switch: it opens doors and touches nothing behind them
   const unlocked = await page.evaluate(() => {

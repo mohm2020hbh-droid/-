@@ -55,7 +55,7 @@ object Palette {
  * meaning - hazard red and the player's own - stay exactly where they are.
  */
 /** What kind of place a world is. The renderer draws a different scene for each. */
-enum class Scene { CITY, DESERT }
+enum class Scene { CITY, DESERT, ABYSS }
 
 class Theme(
     val skyTop: String, val skyMid: String, val skyLow: String,
@@ -78,9 +78,13 @@ class Theme(
             // the technical parts so the eye still knows what is machinery.
             Theme("#2b0b3a", "#7a1c44", "#1a0616", "#43102f", "#7a2a2c", "#b8481f",
                 "#ff8a1f", "#ff2e8b", "#ffd166", Scene.DESERT, "#ff9a2a", "#ffe9a8"),
-            // --- WORLD 3: deeper into the waste, hotter and angrier -----------
-            Theme("#35061f", "#8c1630", "#1a0410", "#530f22", "#8f2320", "#cc4a12",
-                "#ff6a12", "#ff2e63", "#ffb03a", Scene.DESERT, "#ff5a18", "#fff0c0"),
+            // --- WORLD 3: THE ABYSS. Deep water, and something lit under it ---
+            // Cold where the desert was hot, and lit from BELOW rather than from a
+            // sun on the horizon - which is the whole reason it does not read as
+            // world 2 in blue. Electric cyan is the water, magenta is the life in
+            // it, and red is still nothing but danger.
+            Theme("#020a1e", "#062246", "#01040d", "#07305c", "#0b4a7a", "#0f6f9e",
+                "#2ef0ff", "#b07bff", "#ff2e8b", Scene.ABYSS, "#18d7ff", "#c9f7ff"),
             // --- WORLD 4: green + cyan ----------------------------------------
             Theme("#04231f", "#063a33", "#05060f", "#0a5348", "#0d7a63", "#12b089",
                 "#39ff9e", "#2ef0ff", "#7cffb2", Scene.CITY),

@@ -22,10 +22,19 @@ enum class HazardKind { SPIKE_UP, SPIKE_DOWN }
  * world 2 add ten new obstacles without touching a line of collision code, or
  * changing what a death is called.
  */
-enum class Look { SPIKE, SAND_WAVE, RUIN, RELIC, GEYSER, LASER, BOULDER }
+enum class Look {
+    SPIKE, SAND_WAVE, RUIN, RELIC, GEYSER, LASER, BOULDER,
+    // --- WORLD 3, THE ABYSS ---------------------------------------------
+    BUBBLE,      // a chasing bubble, and the small ones it leaves behind
+    ORB,         // an abyss orb on its circle, and the hunting orb
+    TENTACLE,    // an arm reaching in from the edge of the world
+    WALL,        // a slab rising from the floor or dropping from the ceiling
+    MINE,        // a floating mine holding its own little patrol
+    CURRENT,     // a burst of water, drawn as the push it is
+}
 
 /** What a surface is made of. Art only, exactly as [Look] is. */
-enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE }
+enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE, BUBBLE }
 
 /**
  * A hazard that will not stay still.

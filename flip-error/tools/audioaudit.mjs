@@ -56,6 +56,33 @@ for (const f of fs.readdirSync(src).filter(n => n.endsWith('.kt'))) {
 }
 check('and none writes raw samples of its own', handRolled.length === 0, handRolled.join(', '));
 
+// 1c — nothing may loop, stream, or play on a timer ------------------------------
+// This is the ambience ban, enforced rather than remembered. Background audio
+// gets back into a game three ways: a media element wired into the graph, an
+// element told to loop, or an element handed a source and played. All three are
+// absent by design.
+//
+// Creating an <audio> element is NOT one of them: the format probe makes one to
+// ask canPlayType and never gives it a src, so it cannot make a sound. Banning
+// the constructor rather than the three things that actually play audio was this
+// audit crying wolf about its own capability check.
+const ambient = [];
+for (const f of fs.readdirSync(src).filter(n => n.endsWith('.kt'))) {
+  const text = fs.readFileSync(path.join(src, f), 'utf8');
+  text.split('\n').forEach((line, i) => {
+    const code = line.split('//')[0];
+    if (/createMediaElementSource|\.loop\s*=\s*true|\.src\s*=|\.play\(\)/.test(code))
+      ambient.push(`${f}:${i + 1}`);
+  });
+}
+check('nothing streams or loops audio', ambient.length === 0,
+  ambient.length ? ambient.join(' | ') : 'no media sources, no loops, nothing given a src');
+
+// And the map must not name a single environmental recording. The pack's
+// ambience is 20_/25_ (the beds), 02_ (the menu loop), 30_ (tension risers),
+// 35_/36_ (city events) and 45_ (unease).
+const banned = /^(20_|25_|02_|30_|35_|36_|45_)/;
+
 // 2 — every sound the code names is in the library ------------------------------
 const mapText = fs.readFileSync(path.join(src, 'AudioMap.kt'), 'utf8');
 const named = [...new Set(
@@ -75,12 +102,24 @@ const halfEncoded = named.filter(n =>
   !fs.existsSync(path.join(lib, n + '.webm')) || !fs.existsSync(path.join(lib, n + '.mp3')));
 check('and each one in both containers', halfEncoded.length === 0, halfEncoded.join(', '));
 
+const ambientNamed = named.filter(n => banned.test(n));
+check('and the code names no environmental recording',
+  ambientNamed.length === 0,
+  ambientNamed.length ? ambientNamed.join(', ') : `${named.length} names, all gameplay or UI`);
+
 // 3 — nothing in the library is from anywhere else ------------------------------
 // The pack's own naming is NN_name; anything that does not match, or that the map
 // does not name, would be a stray asset and the whole rule's failure mode.
-const strays = [...shipped].filter(n => !/^[0-9]{2}_/.test(n) || !named.includes(n));
+// The environmental recordings stay on disk deliberately, unreferenced, so they
+// are not strays - a stray is a file from outside the pack, which is the failure
+// this rule actually guards against.
+const strays = [...shipped].filter(n => !/^[0-9]{2}_/.test(n));
 check('nothing in the library is from outside the pack',
-  strays.length === 0, strays.length ? strays.join(', ') : `${shipped.size} recordings, all mapped`);
+  strays.length === 0, strays.length ? strays.join(', ') : `${shipped.size} recordings`);
+const onDiskUnused = [...shipped].filter(n => !named.includes(n)).sort();
+check('and the unreferenced ones are exactly the environmental set',
+  onDiskUnused.every(n => banned.test(n)),
+  `${onDiskUnused.length} on disk and unused`);
 
 // 4 — and the pack itself came through encoding whole ----------------------------
 if (masters && fs.existsSync(masters)) {

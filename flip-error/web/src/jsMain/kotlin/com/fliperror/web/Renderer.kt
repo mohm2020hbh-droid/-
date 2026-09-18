@@ -98,6 +98,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
      * what they mean: danger is the same red in both worlds.
      */
     private val sandy get() = theme.scene == Scene.DESERT
+    private val deep get() = theme.scene == Scene.ABYSS
 
     /** Player choice: drops reflections, windows and half the particles. */
     var reduceEffects = false
@@ -449,7 +450,11 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillStyle = grad
         ctx.fillRect(0.0, 0.0, w, h)
 
-        if (theme.scene == Scene.DESERT) drawDesert(g) else drawCity(g)
+        when (theme.scene) {
+            Scene.DESERT -> drawDesert(g)
+            Scene.ABYSS -> drawAbyss(levelTime)
+            Scene.CITY -> drawCity(g)
+        }
 
         // Readability vignette behind the play line. Everything above is scenery;
         // from here down the only things allowed to be bright are the level.
@@ -673,6 +678,14 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.moveTo(sx(b.x0), sy(b.y1)); ctx.lineTo(sx(b.x1), sy(b.y1))
                 ctx.stroke()
             }
+            Look.WALL -> {
+                // the slot a slab will come out of, so it is never a surprise
+                val up = hz.kind == HazardKind.SPIKE_UP
+                ctx.beginPath()
+                val y = if (up) sy(b.y0) else max(sy(b.y1), 0.0)
+                ctx.moveTo(sx(b.x0), y); ctx.lineTo(sx(b.x1), y)
+                ctx.stroke()
+            }
             Look.RUIN -> {
                 ctx.globalAlpha = 0.20
                 ctx.strokeStyle = theme.sunCore
@@ -813,6 +826,75 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.globalAlpha /= 0.55
                 ctx.restore()
             }
+            // --- THE ABYSS ---------------------------------------------------
+            // A bubble: a ring with a highlight, drawn as something with a
+            // surface rather than a fill, because what makes a bubble read as a
+            // bubble is that you can see through it.
+            Look.BUBBLE -> {
+                val r = (x1 - x0) / 2
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.beginPath(); ctx.arc(mx, cy, r * grow, 0.0, PI * 2)
+                ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.7
+                ctx.beginPath()
+                ctx.arc(mx - r * 0.3, cy - r * 0.34, r * 0.26 * grow, 0.0, PI * 2)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.7
+            }
+            // An orb: a core with a halo, the biggest single thing down here.
+            Look.ORB -> {
+                val r = (x1 - x0) / 2
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.globalAlpha *= 0.4
+                ctx.beginPath(); ctx.arc(mx, cy, r * 1.35 * grow, 0.0, PI * 2); ctx.fill()
+                ctx.globalAlpha /= 0.4
+                ctx.beginPath(); ctx.arc(mx, cy, r * grow, 0.0, PI * 2); ctx.fill(); ctx.stroke()
+            }
+            // An arm reaching in: tapered, and it points the way it came from.
+            Look.TENTACLE -> {
+                val top = sy(b.y1); val base = sy(b.y0)
+                ctx.beginPath()
+                ctx.moveTo(x0, base)
+                ctx.quadraticCurveTo(x0 + (x1 - x0) * 0.2, top, mx, top + (base - top) * 0.18)
+                ctx.quadraticCurveTo(x1 - (x1 - x0) * 0.1, top, x1, base)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.5
+                ctx.beginPath()
+                ctx.moveTo(x0 + (x1 - x0) * 0.3, base); ctx.lineTo(mx, top + (base - top) * 0.4)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.5
+            }
+            // A slab. Flat, heavy, and it grows from whichever edge it belongs to,
+            // so a rising wall and a dropping one are told apart before they land.
+            Look.WALL -> {
+                val up = hz.kind == HazardKind.SPIKE_UP
+                val from = if (up) sy(b.y0) else max(sy(b.y1), 0.0)
+                val to = if (up) sy(b.y1) else sy(b.y0)
+                val edgeY = from + (to - from) * grow
+                ctx.beginPath()
+                ctx.moveTo(x0, from); ctx.lineTo(x1, from)
+                ctx.lineTo(x1 - 3.0, edgeY); ctx.lineTo(x0 + 3.0, edgeY)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.6
+                ctx.beginPath(); ctx.moveTo(x0 + 3.0, edgeY); ctx.lineTo(x1 - 3.0, edgeY)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.6
+            }
+            // A mine: small, spiked, and unmistakably not a bubble.
+            Look.MINE -> {
+                val r = (x1 - x0) / 2
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.beginPath(); ctx.arc(mx, cy, r * 0.66, 0.0, PI * 2); ctx.fill(); ctx.stroke()
+                ctx.beginPath()
+                for (k in 0 until 6) {
+                    val a = k * PI / 3 + levelTime * 0.8
+                    ctx.moveTo(mx + cos(a) * r * 0.62, cy + sin(a) * r * 0.62)
+                    ctx.lineTo(mx + cos(a) * r * 1.15, cy + sin(a) * r * 1.15)
+                }
+                ctx.stroke()
+            }
+            // Current is drawn by drawWind as a column, not as a box.
+            Look.CURRENT -> Unit
             // The city's spike, unchanged.
             Look.SPIKE -> {
                 ctx.beginPath()
@@ -840,6 +922,88 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
      * Its density comes from the runner's own x, so it has edges you can watch
      * yourself run into rather than a wall that switches on.
      */
+    /**
+     * THE ABYSS: deep water lit from BELOW.
+     *
+     * That inversion is the whole scene. The city and the desert are both lit
+     * from above - signage, a sun on the horizon - so drawing world 3 the same
+     * way and changing the palette really would have been "world 2 in blue". Here
+     * the light source is under the floor, the water above goes to black, and the
+     * shapes in it are silhouettes against the glow rather than against the sky.
+     */
+    private fun drawAbyss(g: Double) {
+        // the glow under everything, which is also the horizon
+        val floorY = h * 0.78
+        val lit = ctx.createRadialGradient(w * 0.5, floorY, 0.0, w * 0.5, floorY, w * 0.75)
+        lit.addColorStop(0.0, theme.sun + "aa")
+        lit.addColorStop(0.35, theme.near + "66")
+        lit.addColorStop(1.0, "rgba(1,4,13,0)")
+        ctx.fillStyle = lit
+        ctx.fillRect(0.0, 0.0, w, h)
+
+        // shafts of light rising out of it, slow and wide
+        if (!reduceEffects) {
+            ctx.globalAlpha = 0.16
+            ctx.fillStyle = theme.horizon
+            for (k in 0 until 7) {
+                val base = w * (0.08 + 0.14 * k) - (g * 12.0 * (0.4 + k % 3 * 0.2)) % (w * 1.2)
+                val sway = sin(g * 0.4 + k) * 18.0
+                ctx.beginPath()
+                ctx.moveTo(base + sway, floorY)
+                ctx.lineTo(base + sway - 34.0, 0.0)
+                ctx.lineTo(base + sway + 34.0, 0.0)
+                ctx.closePath()
+                ctx.fill()
+            }
+            ctx.globalAlpha = 1.0
+        }
+
+        // things in the water, far off: slabs of rock in silhouette
+        ridge(g, 0.06, 6.0, 0.10, 0.20, theme.far, 0.75, 17)
+        ridge(g, 0.14, 4.0, 0.14, 0.26, theme.mid, 0.82, 409)
+
+        // and the motes everything underwater has
+        if (!reduceEffects) {
+            ctx.globalAlpha = 0.34
+            ctx.fillStyle = theme.sunCore
+            for (k in 0 until 60) {
+                val seed = k * 131
+                val mx = (seed * 37 % w.toInt()).toDouble() - (g * (6.0 + seed % 9)) % (w + 40.0)
+                val my = ((seed * 53) % h.toInt()).toDouble() +
+                    sin(g * 0.6 + k) * 9.0
+                val r = 0.7 + (seed % 5) * 0.4
+                ctx.beginPath(); ctx.arc((mx + w) % w, my, r, 0.0, PI * 2); ctx.fill()
+            }
+            ctx.globalAlpha = 1.0
+        }
+    }
+
+    /** Rock in silhouette against the glow - flat-topped slabs, not a skyline. */
+    private fun ridge(g: Double, speed: Double, step: Double, lo: Double, hi: Double,
+                      colour: String, alpha: Double, seed: Int) {
+        val gy = h * 0.78
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = colour
+        val span = w / step
+        val shift = (g * speed * scale) % span
+        var i = -1
+        var r = seed
+        while (i * span - shift < w + span) {
+            r = (r * 1103515245 + 12345) and 0x7fffffff
+            val tall = h * (lo + (hi - lo) * ((r shr 9) % 100) / 100.0)
+            val bx = i * span - shift
+            ctx.beginPath()
+            ctx.moveTo(bx, gy)
+            ctx.lineTo(bx + span * 0.18, gy - tall)
+            ctx.lineTo(bx + span * 0.74, gy - tall * 0.82)
+            ctx.lineTo(bx + span * 0.96, gy)
+            ctx.closePath()
+            ctx.fill()
+            i++
+        }
+        ctx.globalAlpha = 1.0
+    }
+
     private fun drawStorm(level: Level, g: Game) {
         if (level.storms.isEmpty()) return
         val strength = level.storms.sumOf { it.at(g.x) }.coerceIn(0.0, 0.85)
@@ -905,14 +1069,20 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 Surface.TEMPLE -> theme.sunCore
                 Surface.BRIDGE -> theme.accent
                 Surface.MIRAGE -> theme.accent
-                Surface.STONE -> if (sandy) theme.horizon else safe
+                Surface.BUBBLE -> theme.billboard
+                Surface.STONE -> if (sandy) theme.horizon else if (deep) theme.sun else safe
             }
             val skin = when (s.surface) {
                 Surface.SAND -> "rgba(255,154,42,0.20)"
                 Surface.TEMPLE -> "rgba(255,233,168,0.16)"
                 Surface.BRIDGE -> "rgba(255,46,139,0.16)"
                 Surface.MIRAGE -> "rgba(46,240,255,0.10)"
-                Surface.STONE -> if (sandy) "rgba(184,72,31,0.26)" else safeFill
+                Surface.BUBBLE -> "rgba(176,123,255,0.18)"
+                Surface.STONE -> when {
+                    sandy -> "rgba(184,72,31,0.26)"
+                    deep -> "rgba(15,111,158,0.30)"
+                    else -> safeFill
+                }
             }
             // A mirage shimmers rather than fades: same honest machinery, dressed
             // as something you have to look twice at.

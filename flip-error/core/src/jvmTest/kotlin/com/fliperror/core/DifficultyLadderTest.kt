@@ -36,8 +36,12 @@ class DifficultyLadderTest {
         Level7.build(), Level8.build(), Level9.build(),
         Level10.build(), Level11.build(), Level12.build(),
     )
-    private val worlds = listOf(world1, world2)
-    private val levels = world1 + world2
+    private val world3 = listOf(
+        Level13.build(), Level14.build(), Level15.build(),
+        Level16.build(), Level17.build(), Level18.build(),
+    )
+    private val worlds = listOf(world1, world2, world3)
+    private val levels = world1 + world2 + world3
     private val reports by lazy { levels.associateWith { LevelVerifier(it).analyse() } }
 
     /** Everything on screen that is not standing still. */
@@ -76,6 +80,24 @@ class DifficultyLadderTest {
         }
     }
 
+    /**
+     * Each world opens tighter than the last one opened.
+     *
+     * Reflex cannot climb forever - the floor is 0.075s and worlds 1, 2 and 3 all
+     * end on it - so a rule about where a world FINISHES says nothing after the
+     * first. Where it STARTS does: world 2 hands the player a new vocabulary at
+     * 0.092s, world 3 hands them a harder one at 0.088s, and neither gets the
+     * gentle opening world 1 had.
+     */
+    @Test fun `each world opens tighter than the last`() {
+        val opens = worlds.map { reports[it.first()]!!.minWindow }
+        opens.zipWithNext().forEachIndexed { i, (a, b) ->
+            assertTrue(b < a,
+                "WORLD ${i + 2} opens at ${"%.3f".format(b)}s, no tighter than " +
+                    "WORLD ${i + 1}'s ${"%.3f".format(a)}s")
+        }
+    }
+
     @Test fun `each world asks the player to read more than the last`() {
         val counts = worlds.map { w -> w.sumOf { it.movingParts() } }
         counts.zipWithNext().forEachIndexed { i, (a, b) ->
@@ -109,8 +131,10 @@ class DifficultyLadderTest {
             }
         }
         assertTrue(world1.last().bpm >= 165.0, "world 1 should finish running hot")
-        assertTrue(world2.all { it.bpm in 165.0..190.0 },
-            "the desert's drum & bass lives between 165 and 190 BPM")
+        // BPM is pure level geometry now - the audio has no tempo at all - but
+        // each world still lays itself out on a faster grid than the last.
+        assertTrue(world3.first().bpm > world2.last().bpm,
+            "world 3 should be laid out faster than world 2 finished")
     }
 
     /**

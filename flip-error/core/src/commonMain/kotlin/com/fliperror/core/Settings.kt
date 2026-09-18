@@ -11,16 +11,14 @@ enum class Lang { EN, AR }
 class Settings private constructor(
     /** Everything, including the player's own cues. 0 is a muted game. */
     var master: Int,
-    /** Jump, land, death, coins - the sounds the player's own hands make. */
-    var sfx: Int,
     /**
-     * The room: wind, rumble, hum, and the things happening out of sight.
+     * Jump, land, death, coins, and the obstacles - every sound in the game.
      *
-     * There is no MUSIC control here because there is no music - see Audio. A
-     * switch for a thing that does not exist is worse than no switch at all: it
-     * tells the player the game has a soundtrack they failed to hear.
+     * There is no MUSIC control and no AMBIENCE control, because the game has
+     * neither. A switch for a thing that does not exist is worse than no switch
+     * at all: it tells the player there is something they failed to hear.
      */
-    var ambience: Int,
+    var sfx: Int,
     var vibration: Boolean,
     var reduceEffects: Boolean,
     var colorblind: Boolean,
@@ -32,16 +30,15 @@ class Settings private constructor(
      *  and the economy are untouched underneath - see Progress.tryOn. */
     var tryAllCosmetics: Boolean = false,
 ) {
-    constructor() : this(FULL, FULL, FULL, true, false, false, Lang.EN, false, false)
+    constructor() : this(FULL, FULL, true, false, false, Lang.EN, false, false)
 
     /** Volumes are stored in tenths: a slider a person can actually land on. */
     val masterGain get() = master / 10.0
     val sfxGain get() = sfx / 10.0
-    val ambienceGain get() = ambience / 10.0
 
     fun serialize() =
-        "s2|${b(vibration)}${b(reduceEffects)}${b(colorblind)}${b(unlockAll)}${b(tryAllCosmetics)}" +
-            "|$master,$sfx,$ambience|${lang.name}"
+        "s3|${b(vibration)}${b(reduceEffects)}${b(colorblind)}${b(unlockAll)}${b(tryAllCosmetics)}" +
+            "|$master,$sfx|${lang.name}"
 
     private fun b(v: Boolean) = if (v) "1" else "0"
 
@@ -56,7 +53,7 @@ class Settings private constructor(
             val parts = raw.split('|')
             when {
                 // The current shape.
-                parts.size >= 4 && parts[0] == "s2" -> {
+                parts.size >= 4 && (parts[0] == "s3" || parts[0] == "s2") -> {
                     val f = parts[1]
                     if (f.length >= 3) {
                         fresh.vibration = f[0] == '1'
@@ -68,7 +65,8 @@ class Settings private constructor(
                     val v = parts[2].split(',')
                     fresh.master = vol(v.getOrNull(0))
                     fresh.sfx = vol(v.getOrNull(1))
-                    fresh.ambience = vol(v.getOrNull(2))
+                    // An s2 profile carries a third number, the ambience volume.
+                    // It is read and dropped: the thing it controlled is gone.
                     fresh.lang = Lang.entries.firstOrNull { it.name == parts[3] } ?: Lang.EN
                 }
                 // What players who have already been here have saved. The old MUSIC

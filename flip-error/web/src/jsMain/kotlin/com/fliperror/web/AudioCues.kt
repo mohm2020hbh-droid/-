@@ -84,7 +84,12 @@ class AudioCues {
                 Look.SAND_WAVE, Look.BOULDER -> edge(key, ahead < earshot * 0.55) {
                     Audio.hazardCue(AudioMap.SAND_WAVE, vol * 0.8)
                 }
-                Look.SPIKE, Look.RELIC -> Unit          // these have never needed a voice
+                // The abyss has no recordings of its own - the pack predates it -
+                // and inventing sounds for it is what the pack-only rule forbids.
+                // Its obstacles are read rather than heard, which is what the world
+                // is about anyway.
+                Look.SPIKE, Look.RELIC, Look.BUBBLE, Look.ORB,
+                Look.TENTACLE, Look.WALL, Look.MINE, Look.CURRENT -> Unit
             }
         }
 

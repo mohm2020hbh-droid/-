@@ -19,7 +19,7 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dist = path.join(root, 'web/build/dist/js/productionExecutable');
 const only = process.argv.includes('--levels')
   ? process.argv[process.argv.indexOf('--levels') + 1].split(',').map(Number)
-  : [1,2,3,4,5,6,7,8,9,10,11,12];
+  : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
 const plans = {};
 for (const id of only)
   plans[id] = JSON.parse(fs.readFileSync(path.join(root, `core/build/level${id}-plan.json`), 'utf8'));

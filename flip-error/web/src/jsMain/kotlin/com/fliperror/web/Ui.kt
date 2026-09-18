@@ -393,7 +393,6 @@ class Ui(
             <div class="rows">
               ${sliderRow("master", t("master"), settings.master)}
               ${sliderRow("sfx", t("sfx"), settings.sfx)}
-              ${sliderRow("ambience", t("ambience"), settings.ambience)}
               ${toggleRow("vibration", t("vibration"), settings.vibration)}
               ${toggleRow("reduceEffects", t("reduceEffects"), settings.reduceEffects)}
               ${toggleRow("colorblind", t("colorblind"), settings.colorblind)}
@@ -419,7 +418,6 @@ class Ui(
                 when (key) {
                     "master" -> settings.master = v
                     "sfx" -> settings.sfx = v
-                    "ambience" -> settings.ambience = v
                 }
                 (document.getElementById("volv-$key") as? HTMLElement)?.textContent =
                     if (v == 0) "OFF" else "${v * 10}%"

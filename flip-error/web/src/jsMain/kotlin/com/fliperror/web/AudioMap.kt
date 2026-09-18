@@ -22,30 +22,28 @@ object AudioMap {
     /** Where the encoded library lives, relative to the page. */
     const val DIR = "audio/"
 
-    // --- the room: five layers per world, crossfaded by progress -------------
+    // --- WHAT IS DELIBERATELY NOT HERE ---------------------------------------
     //
-    // Each is a full sixty seconds. They are versions of the same place at
-    // different pressures, so they layer rather than replace - which is why the
-    // tension system can sit BETWEEN two of them instead of switching.
-
-    val world1Beds = listOf(
-        "20_w1_future_ambience_L1_60s",
-        "20_w1_future_ambience_L2_60s",
-        "20_w1_future_ambience_L3_60s",
-        "20_w1_future_ambience_L4_60s",
-        "20_w1_future_ambience_L5_60s",
-    )
-    val world2Beds = listOf(
-        "25_w2_desert_ambience_L1_60s",
-        "25_w2_desert_ambience_L2_60s",
-        "25_w2_desert_ambience_L3_60s",
-        "25_w2_desert_ambience_L4_60s",
-        "25_w2_desert_ambience_L5_60s",
-    )
-    fun bedsFor(world: Int) = if (world >= 2) world2Beds else world1Beds
-
-    /** The menus have their own room, quieter and going nowhere. */
-    const val MENU_BED = "02_menu_idle_hum_loop"
+    // The pack's environmental half is gone from the game by decision, not by
+    // accident. Twenty recordings are still on disk and nothing references them:
+    //
+    //   20_w1_future_ambience_L1..L5   the city's five-layer room
+    //   25_w2_desert_ambience_L1..L5   the desert's five-layer room
+    //   02_menu_idle_hum_loop          the menu bed
+    //   30_tension_riser_1..4          the tension transitions
+    //   35_w1_neon_electric_arc        \
+    //   36_w1_distant_machine_hit       > things happening out of sight
+    //   45_unease_low_1..3             /
+    //
+    // The whole layering and crossfade system that played them was deleted with
+    // them - the beds, the streamed <audio> elements, the ambience bus, the
+    // tension bands and the scheduler that fired events on its own clock. Left
+    // switched off but wired up, that machinery would still have been fetching,
+    // decoding and looping audio nobody asked for; the point of the decision is
+    // that none of it runs, so none of it exists in the active game.
+    //
+    // Every sound below has a CAUSE: the player did something, the UI did
+    // something, or an obstacle did something. Nothing plays because time passed.
 
     // --- moments -------------------------------------------------------------
 
@@ -69,20 +67,6 @@ object AudioMap {
     const val SPEED_WHOOSH = "18_speed_whoosh"       // 17_trail_spark is absent; this stands in,
                                                      // sparsely, so the trail has a voice at all
 
-    // --- the risers ----------------------------------------------------------
-    //
-    // One per step up in tension, used at the transition and nowhere else. The
-    // README asks for them sparingly and it is right: a riser on every bar would
-    // be a rhythm, and a rhythm is the thing this game does not have.
-
-    val risers = listOf("30_tension_riser_1", "30_tension_riser_2",
-                        "30_tension_riser_3", "30_tension_riser_4")
-
-    // --- things happening out of sight ---------------------------------------
-
-    val world1Events = listOf("35_w1_neon_electric_arc", "36_w1_distant_machine_hit")
-    val unease = listOf("45_unease_low_1", "45_unease_low_2", "45_unease_low_3")
-
     // --- world 2's obstacles, each with its own voice -------------------------
 
     const val SAND_WAVE = "37_w2_sand_wave"
@@ -93,18 +77,16 @@ object AudioMap {
     const val WIND_BLAST = "42_w2_wind_blast"
     const val COLLAPSE_BRIDGE = "43_w2_collapse_bridge"
 
-    /** Everything that is loaded as a one-shot sample, in one list. */
+    /**
+     * Every recording the game loads, and the whole of it. There is no second
+     * list: if a sound is not here it is not fetched, not decoded, not held in
+     * memory and not playable.
+     */
     val oneShots: List<String> = listOf(
         GAME_ENTER, LEVEL_START, UI_CONFIRM, LEVEL_COMPLETE, STRONG_LOSS,
         PERFECT_FINISH, WORLD_TRANSITION, SECRET_UNLOCK,
         JUMP, DOUBLE_JUMP, LAND, COLLECT, NEAR_MISS, HAZARD_HIT, SPEED_WHOOSH,
         SAND_WAVE, SAND_GEYSER, FALLING_RUIN, LASER_CHARGE, LASER_BLAST,
         WIND_BLAST, COLLAPSE_BRIDGE,
-    ) + risers + world1Events + unease
-
-    /** Everything streamed rather than decoded: the long beds. */
-    val streamed: List<String> = world1Beds + world2Beds + listOf(MENU_BED)
-
-    /** Every recording the pack shipped that this build actually plays. */
-    val all: List<String> = oneShots + streamed
+    )
 }

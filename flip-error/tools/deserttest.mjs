@@ -211,33 +211,16 @@ check('and they really do switch off again',
   warn.least < warn.live, `between ${warn.least} and ${warn.live} lethal at once`);
 await page.screenshot({ path: path.join(shotDir, '02-level9-beams.png') });
 
-// 4 — the room tightens as the level does ------------------------------------
+// 4 — the room is gone, and that is the point --------------------------------
+// World 2 used to crossfade five sixty-second beds across five tension bands.
+// That whole system was removed by decision: the game is gameplay SFX only now.
+// What is checked here is the absence - no bed, no loop, no stream - because a
+// removal nobody tests is a removal that comes back.
 await open(12);
-const tiers = await page.evaluate(() => new Promise(res => {
-  // One loop that both flies the line and samples the room, so it stops when the
-  // sampling stops. An earlier version left its driver running after the promise
-  // resolved and went on tapping into the NEXT level the harness opened - which
-  // killed LEVEL 7 at 97% and looked exactly like a real bug.
-  const plan = window.__plans[12].jumps;
-  const seen = {};
-  let i = 0, owed = false, bx = 0, f = 0;
-  const step = () => {
-    const x = FLIP.x();
-    seen[Math.round(FLIP.progress() * 100)] = FLIP.tension();
-    if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
-      owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
-    } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
-    if (FLIP.progress() > 0.97 || FLIP.state() !== 'RUNNING' || ++f > 4000) return res(seen);
-    requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}));
-const at = p => tiers[p] ?? tiers[p - 1] ?? tiers[p + 1] ?? -1;
-check('the room is calm through the first half', at(40) <= 0.30, `tension ${at(40).toFixed(2)} at 40%`);
-check('it leans in past 70%', at(75) >= 0.50, `tension ${at(75).toFixed(2)} at 75%`);
-check('and it is at its heaviest for the finish', at(96) >= 0.95, `tension ${at(96).toFixed(2)} at 96%`);
-check('and it never stops climbing on the way there',
-  at(40) < at(75) && at(75) < at(96), [40, 75, 96].map(k => at(k).toFixed(2)).join(' -> '));
+await frames(30);
+const quiet = await page.evaluate(() =>
+  [...document.querySelectorAll('audio')].filter(a => a.src || !a.paused).length);
+check('the desert has no ambience bed of any kind', quiet === 0, `${quiet} active media elements`);
 
 // 5 — every desert level can be cleared on its verified line -------------------
 const clears = [];

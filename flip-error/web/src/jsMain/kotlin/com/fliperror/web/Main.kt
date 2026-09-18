@@ -20,6 +20,12 @@ import com.fliperror.core.Level9
 import com.fliperror.core.Level10
 import com.fliperror.core.Level11
 import com.fliperror.core.Level12
+import com.fliperror.core.Level13
+import com.fliperror.core.Level14
+import com.fliperror.core.Level15
+import com.fliperror.core.Level16
+import com.fliperror.core.Level17
+import com.fliperror.core.Level18
 import com.fliperror.core.Lang
 import com.fliperror.core.Progress
 import com.fliperror.core.Settings
@@ -110,6 +116,13 @@ fun main() {
         LevelDef(LevelCard(10, "DESERT CHAOS", 3, true)) { Level10.build() },
         LevelDef(LevelCard(11, "COLLAPSE", 3, true)) { Level11.build() },
         LevelDef(LevelCard(12, "THE SUN CORE", 3, true)) { Level12.build() },
+        // WORLD 3 - THE ABYSS
+        LevelDef(LevelCard(13, "DEEP SIGNAL", 3, true)) { Level13.build() },
+        LevelDef(LevelCard(14, "SPLIT", 3, true)) { Level14.build() },
+        LevelDef(LevelCard(15, "PRESSURE", 3, true)) { Level15.build() },
+        LevelDef(LevelCard(16, "THE ARMS", 3, true)) { Level16.build() },
+        LevelDef(LevelCard(17, "MEMORY", 3, true)) { Level17.build() },
+        LevelDef(LevelCard(18, "THE SUN BELOW", 3, true)) { Level18.build() },
     )
 
     var screen = Screen.MENU
@@ -128,9 +141,7 @@ fun main() {
         write(SETTINGS_KEY, settings.serialize())
         Audio.masterVolume = settings.masterGain * 0.85
         Audio.sfxVolume = settings.sfxGain
-        Audio.ambienceVolume = settings.ambienceGain
         Audio.sfxEnabled = settings.sfx > 0
-        Audio.ambienceEnabled = settings.ambience > 0
         renderer.reduceEffects = settings.reduceEffects
         renderer.colorblind = settings.colorblind
         progress.unlockAllForTesting = settings.unlockAll
@@ -197,9 +208,6 @@ fun main() {
             Screen.PLAYING -> ui.hideAll()
             Screen.REWARD -> Unit                 // the panel puts itself up
         }
-        // Off the level, the menus have a room of their own rather than the
-        // silence of a stopped file - and the level's five layers stand down.
-        if (s != Screen.PLAYING) Audio.menuRoom()
     }
 
     fun startLevel(id: Int) {
@@ -217,7 +225,7 @@ fun main() {
         if (nextWorld != Audio.world) Audio.worldTransition()
         Audio.world = nextWorld
         cues.reset()
-        Audio.restartRoom()
+        Audio.levelStarted()
         lastAttempt = game.attempts
         awarded = false
         rewardAt = -1.0
@@ -293,7 +301,6 @@ fun main() {
         if (!greeted) {
             greeted = true
             Audio.gameEnter()
-            window.setTimeout({ if (screen != Screen.PLAYING) Audio.menuRoom() }, 500)
         }
     }
     window.addEventListener("pointerdown", { wakeAudio() })
@@ -366,7 +373,7 @@ fun main() {
 
             if (game.attempts != lastAttempt) {
                 lastAttempt = game.attempts
-                Audio.restartRoom()
+                Audio.levelStarted()
                 renderer.resetRun()
                 prevDoubles = game.doubleJumps
                 prevNear = game.nearMisses
@@ -389,7 +396,6 @@ fun main() {
 
             // The arrangement follows the run: drums, then build, then the drop
             // at 70%, then everything for the last stretch.
-            Audio.setProgress(game.progress)
 
             renderer.update(game, dt)
             renderer.draw(game)
@@ -487,7 +493,6 @@ fun main() {
     api.setting = { key: String, on: Boolean ->
         when (key) {
             "sfx" -> settings.sfx = if (on) 10 else 0
-            "ambience" -> settings.ambience = if (on) 10 else 0
             "tryAllCosmetics" -> settings.tryAllCosmetics = on
             "vibration" -> settings.vibration = on
             "reduceEffects" -> settings.reduceEffects = on
@@ -499,7 +504,6 @@ fun main() {
     api.settingOf = { key: String ->
         when (key) {
             "sfx" -> settings.sfx > 0
-            "ambience" -> settings.ambience > 0
             "tryAllCosmetics" -> settings.tryAllCosmetics
             "vibration" -> settings.vibration
             "reduceEffects" -> settings.reduceEffects
@@ -515,13 +519,11 @@ fun main() {
     api.world = { Theme.worldOf(game.level.id) }
     api.scene = { Theme.forLevel(game.level.id).scene.name }
     api.bpm = { game.level.bpm }
-    api.tension = { Audio.tension }
     // --- the sound pack, for the audio harness ------------------------------
     api.samplesReady = { Audio.samplesReady }
     api.samplesLoaded = { Audio.samplesLoaded }
     api.cueCount = { Audio.cueCount }
     api.audioFormat = { Audio.format }
-    api.beds = { Audio.bedReport() }
     api.playCue = { name: String -> Audio.play(name, 0.8) }
     api.winds = { game.level.winds.size }
     api.storms = { game.level.storms.size }

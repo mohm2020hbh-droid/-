@@ -195,7 +195,6 @@ class SettingsTest {
         val s = Settings()
         assertEquals(Settings.FULL, s.master)
         assertEquals(Settings.FULL, s.sfx)
-        assertEquals(Settings.FULL, s.ambience)
         assertTrue(s.vibration)
         assertFalse(s.reduceEffects || s.colorblind)
         assertFalse(s.unlockAll || s.tryAllCosmetics)
@@ -204,11 +203,10 @@ class SettingsTest {
 
     @Test fun `settings survive a round trip`() {
         val s = Settings()
-        s.master = 7; s.ambience = 0; s.vibration = false; s.colorblind = true; s.lang = Lang.AR
+        s.master = 7; s.sfx = 3; s.vibration = false; s.colorblind = true; s.lang = Lang.AR
         val back = Settings.parse(s.serialize())
         assertEquals(7, back.master)
-        assertEquals(Settings.FULL, back.sfx)
-        assertEquals(0, back.ambience)
+        assertEquals(3, back.sfx)
         assertFalse(back.vibration)
         assertFalse(back.reduceEffects); assertTrue(back.colorblind)
         assertEquals(Lang.AR, back.lang)
@@ -217,34 +215,39 @@ class SettingsTest {
 
     @Test fun `volumes read back as gains`() {
         val s = Settings()
-        s.master = 10; s.sfx = 5; s.ambience = 0
+        s.master = 10; s.sfx = 5
         assertEquals(1.0, s.masterGain)
         assertEquals(0.5, s.sfxGain)
-        assertEquals(0.0, s.ambienceGain)
     }
 
     /**
-     * A profile saved before the music was removed still loads, and loses only
-     * the one switch whose subject no longer exists. Someone who had turned the
-     * effects down keeps them down; someone who had turned the old MUSIC off gets
-     * an ambience they have never heard, at full volume, which is the right
-     * default for a thing that is new to them.
+     * Two older profiles still load, and each loses only the control whose
+     * subject no longer exists: s1 had a MUSIC switch, s2 had an AMBIENCE
+     * volume, and the game has neither. Everything that still means something
+     * is kept, because a player who turned the effects down should not have
+     * that undone by a change to the sound system.
      */
-    @Test fun `a profile from the version with music still loads`() {
-        // music off | sfx on | vibration off | reduce on | colourblind off | unlock on
-        val old = "s1|010101|AR"
-        val s = Settings.parse(old)
-        assertEquals(Settings.FULL, s.sfx)
-        assertFalse(s.vibration)
-        assertTrue(s.reduceEffects)
-        assertFalse(s.colorblind)
-        assertTrue(s.unlockAll)
-        assertEquals(Lang.AR, s.lang)
-        assertEquals(Settings.FULL, s.ambience, "ambience is new, so it arrives on")
+    @Test fun `older profiles still load`() {
+        // s1: music off | sfx on | vibration off | reduce on | colourblind off | unlock on
+        val one = Settings.parse("s1|010101|AR")
+        assertEquals(Settings.FULL, one.sfx)
+        assertFalse(one.vibration)
+        assertTrue(one.reduceEffects)
+        assertTrue(one.unlockAll)
+        assertEquals(Lang.AR, one.lang)
+
+        // s2 carried a third volume for the ambience; it is read and dropped.
+        val two = Settings.parse("s2|10100|6,4,9|EN")
+        assertEquals(6, two.master)
+        assertEquals(4, two.sfx)
+        assertTrue(two.vibration)
+        assertFalse(two.reduceEffects)
+        assertTrue(two.colorblind)
+        assertEquals(Lang.EN, two.lang)
     }
 
     @Test fun `a broken settings blob becomes the defaults`() {
-        for (junk in listOf(null, "", "s9|11111|EN", "s2|", "s2|xx|ZZ", "||", "s1|xx|ZZ")) {
+        for (junk in listOf(null, "", "s9|11111|EN", "s3|", "s3|xx|ZZ", "||", "s1|xx|ZZ")) {
             val s = Settings.parse(junk)
             assertEquals(Settings.FULL, s.master, "junk '$junk' turned the sound off")
             assertEquals(Settings.FULL, s.sfx, "junk '$junk' turned the sound off")
