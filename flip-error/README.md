@@ -133,7 +133,7 @@ under it, in any world. A world tightens toward that floor and stops.
 **Reading** is everything the player has to see rather than hit: movers, pulses,
 floors that leave, beams, wind, splits, openings. It has no ceiling, and it is
 what each new world escalates instead. World 1 has 41 moving parts across its
-six levels; world 2 has 90; world 3 has 141, in 223 obstacles.
+six levels; world 2 has 90; world 3 has 144, in 224 obstacles.
 
 | | L1 | L2 | L3 | L4 | L5 | L6 | opens at | moving parts |
 |---|---|---|---|---|---|---|---|---|
@@ -141,7 +141,7 @@ six levels; world 2 has 90; world 3 has 141, in 223 obstacles.
 | | L7 | L8 | L9 | L10 | L11 | L12 | | |
 | **world 2** | 0.092s | 0.088s | 0.083s | 0.079s | 0.075s | 0.075s | 0.092s | 90 |
 | | L13 | L14 | L15 | L16 | L17 | L18 | | |
-| **world 3** | 0.088s | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.088s | 141 |
+| **world 3** | 0.088s | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.088s | 144 |
 
 Each world opens tighter than the last one did and ends on the floor, and
 inside a world the number never goes back up. That is the whole shape of the
