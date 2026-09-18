@@ -51,11 +51,15 @@ object Level5 {
             Solid(-14.0, 62.0, GROUND),           // the opening floor, and the last long one
             Solid(66.4, 104.0, GROUND),           // gap 4.40u
             Solid(110.8, 140.0, GROUND),          // gap 6.80u - boost
-            // the first blinker: reachable by a plain jump, if it is there
-            blinker(144.6, 156.0, GROUND, phase = 0.0),
+            // Both blink phases are DERIVED from the x they are landed on - see
+            // blinkPhaseFor. Hand-picked, the first of them was dark at exactly
+            // the moment a plain jump would have arrived, so the only crossing
+            // left was a second tap in the last frames of its window: solvable,
+            // and indistinguishable from a broken level at 42%.
+            blinker(144.6, 156.0, GROUND, blinkPhaseFor(144.9, BAR_S * 2.0)),
             Solid(160.4, 196.0, GROUND),          // gap 4.40u
             Solid(200.6, 226.0, MID),             // gap 4.20u, step down
-            blinker(230.8, 242.0, MID, phase = 0.5),   // out of step with the first
+            blinker(230.8, 242.0, MID, blinkPhaseFor(231.1, BAR_S * 2.0)),
             Solid(246.4, 286.0, LOW),             // gap 4.40u, and down again
             Solid(293.0, 320.0, LOW),             // gap 7.00u - the second boost
             Solid(324.4, 352.0, LOW),             // gap 4.40u into the finish

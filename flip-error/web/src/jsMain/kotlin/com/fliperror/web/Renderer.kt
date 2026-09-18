@@ -77,6 +77,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private var flashMax = 0.12
     private var flashBoost = false
     private var prevStars = 0
+    private var prevNear = 0
     /** Counts down after a boost; while it runs the trail is longer and brighter. */
     private var boostGlow = 0.0
 
@@ -115,12 +116,22 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         trail.clear(); parts.clear(); rings.clear(); shards.clear()
         shardsSpawned = false
         stretch = 0.0; kickY = 0.0; boostGlow = 0.0
-        emitTimer = 0.0; trailTimer = 0.0; flash = 0.0; prevStars = 0
+        emitTimer = 0.0; trailTimer = 0.0; flash = 0.0; prevStars = 0; prevNear = 0
         prevGrounded = true; prevDoubles = 0; wasRunning = true
     }
 
     /** World units visible across the frame. Asserted by the playtest. */
     val visibleWorldWidth: Double get() = if (scale > 0.0) w / scale else 0.0
+
+    /**
+     * How far ahead of the runner the player can actually SEE, in world units.
+     *
+     * This is the number a jump has to fit inside. A take-off whose landing is
+     * past this edge is a blind jump: the player is asked to commit to geometry
+     * that is not on the screen yet, which is indistinguishable from an unfair
+     * level no matter how wide the solver says the window is.
+     */
+    val aheadUnits: Double get() = if (scale > 0.0) (w - originX) / scale else 0.0
 
     /** The height the UI is sized against. Asserted by the playtest. */
     val uiHeight: Double get() = uiH
@@ -183,6 +194,21 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         }
         if (justLanded) { stretch = -0.30; kickY = 2.2; burst(g, 8, 4.0, 0.55, 0.5) }
 
+        // A close pass throws a spark off the side the runner nearly clipped. It
+        // is the only decoration in the game that is INFORMATION: it says "that
+        // was the margin", and a player who sees it twice in a row knows they are
+        // reading the level correctly and cutting it fine, which is exactly the
+        // state this game wants them in.
+        if (g.nearMisses != prevNear) {
+            prevNear = g.nearMisses
+            repeat(10) {
+                val a = PI * (0.85 + rnd(-0.30, 0.30))
+                val sp = rnd(4.0, 9.0)
+                spark(g.x + 0.5, g.y + 0.35, cos(a) * sp, sin(a) * sp + rnd(0.5, 3.0),
+                    rnd(0.18, 0.34), rnd(0.10, 0.20), 2)
+            }
+        }
+
         if (g.starsCollected != prevStars) {
             prevStars = g.starsCollected
             rings.add(doubleArrayOf(g.x + 0.5, g.y + 0.5, 0.30, 0.30))
@@ -236,6 +262,16 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             shardsSpawned = false
         } else if (g.state == GameState.DEAD && !shardsSpawned) {
             shardsSpawned = true
+            // The trail does not fade on death, it BREAKS. Every ghost still
+            // behind the runner becomes a fragment thrown from where it was
+            // standing, so the last thing on screen is the shape of the run that
+            // just ended rather than a shape quietly evaporating.
+            trail.forEachIndexed { k, t ->
+                val a = PI * (0.7 + (k % 7) * 0.09)
+                shards.add(doubleArrayOf(t[0] + 0.5, t[1] + 0.5,
+                    cos(a) * (2.0 + k % 4), sin(a) * (2.0 + k % 3) + 2.2, 0.55))
+            }
+            trail.clear()
             for (k in 0 until 26) {
                 val a = k * 0.2417 * PI * 2
                 val sp = 3.0 + (k % 5)
@@ -293,6 +329,9 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         camX = g.x
 
         drawBackground(g)
+        // Between the scenery and the level, and nowhere else: the storm veils
+        // the world and never the play.
+        drawStorm(g.level, g)
         ctx.save()
         ctx.translate(0.0, kickY)
         drawLevel(g.level)
@@ -747,6 +786,33 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.stroke()
                 ctx.globalAlpha /= 0.75
             }
+            // A block of the mountain, rolling. Drawn as a rough polygon that
+            // TURNS with its own travel, because a boulder that slides without
+            // rotating reads as a box on a rail - and the rotation is also the
+            // clearest possible statement of which way it is going.
+            Look.BOULDER -> {
+                val r = (x1 - x0) / 2
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                val spin = -(b.x0 * 2.0 / (r / scale).coerceAtLeast(0.1))
+                ctx.save()
+                ctx.translate(mx, cy)
+                ctx.rotate(spin)
+                ctx.beginPath()
+                for (k in 0 until 9) {
+                    val a = k * PI * 2 / 9
+                    val rr = r * (0.82 + 0.18 * ((k * 7) % 5) / 4.0)
+                    if (k == 0) ctx.moveTo(cos(a) * rr, sin(a) * rr)
+                    else ctx.lineTo(cos(a) * rr, sin(a) * rr)
+                }
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.55
+                ctx.beginPath()
+                ctx.moveTo(-r * 0.45, -r * 0.2); ctx.lineTo(r * 0.1, r * 0.35)
+                ctx.moveTo(r * 0.5, -r * 0.4); ctx.lineTo(r * 0.15, -r * 0.05)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.55
+                ctx.restore()
+            }
             // The city's spike, unchanged.
             Look.SPIKE -> {
                 ctx.beginPath()
@@ -758,6 +824,59 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.closePath(); ctx.fill(); ctx.stroke()
             }
         }
+    }
+
+    /**
+     * The sandstorm, drawn AFTER the background and BEFORE anything the player
+     * has to judge.
+     *
+     * That ordering is the whole design. The storm is a veil over the sky, the
+     * dunes and the ruins; the floor, the hazards, the coins and the runner are
+     * painted on top of it at full strength. So the world closes in and becomes
+     * hostile without one unit of readability being spent on it - which is the
+     * only way "you cannot see" is allowed to exist in a game that promises the
+     * player always knows why they died.
+     *
+     * Its density comes from the runner's own x, so it has edges you can watch
+     * yourself run into rather than a wall that switches on.
+     */
+    private fun drawStorm(level: Level, g: Game) {
+        if (level.storms.isEmpty()) return
+        val strength = level.storms.sumOf { it.at(g.x) }.coerceIn(0.0, 0.85)
+        if (strength <= 0.001) return
+        val veil = if (reduceEffects) strength * 0.5 else strength
+        // the air itself, in the world's own light
+        // Sand in the air LIGHTENS what is behind it - it is lit by the same sun
+        // everything else is. Veiling with the sky's own dark colours was the
+        // first attempt and it read as nightfall rather than weather, which is a
+        // different thing entirely and a much worse one to run through.
+        ctx.globalAlpha = veil * 0.58
+        val grad = ctx.createLinearGradient(0.0, 0.0, 0.0, h)
+        grad.addColorStop(0.0, theme.sun)
+        grad.addColorStop(0.48, theme.near)
+        grad.addColorStop(1.0, theme.billboard)
+        ctx.fillStyle = grad
+        ctx.fillRect(0.0, 0.0, w, h)
+        if (!reduceEffects) {
+            // sand moving across the frame, fast and shallow-angled
+            ctx.globalAlpha = veil * 0.5
+            ctx.strokeStyle = theme.sunCore
+            ctx.lineWidth = 1.4
+            ctx.beginPath()
+            val t = levelTime
+            for (k in 0 until 46) {
+                val seed = k * 97
+                val speed = 520.0 + (seed % 340)
+                val sxp = (w + 120.0) - ((t * speed + seed * 13.0) % (w + 240.0))
+                val syp = ((seed * 31) % h.toInt()).toDouble()
+                val len = 26.0 + (seed % 40)
+                ctx.moveTo(sxp, syp)
+                ctx.lineTo(sxp + len, syp + len * 0.22)
+            }
+            ctx.stroke()
+            ctx.lineWidth = 2.5
+        }
+        ctx.globalAlpha = 1.0
     }
 
     private fun drawLevel(level: Level) {

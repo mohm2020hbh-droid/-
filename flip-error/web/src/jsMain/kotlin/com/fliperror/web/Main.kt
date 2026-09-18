@@ -7,6 +7,7 @@ import com.fliperror.core.Game
 import com.fliperror.core.GameState
 import com.fliperror.core.Level
 import com.fliperror.core.Level1
+import com.fliperror.core.Tuning
 import com.fliperror.core.Level2
 import com.fliperror.core.Level3
 import com.fliperror.core.Level4
@@ -122,8 +123,11 @@ fun main() {
     /** Push every switch to the thing it controls. Called on load and on change. */
     fun applySettings() {
         write(SETTINGS_KEY, settings.serialize())
-        Audio.sfxEnabled = settings.sfx
-        Audio.musicEnabled = settings.music
+        Audio.masterVolume = settings.masterGain * 0.85
+        Audio.sfxVolume = settings.sfxGain
+        Audio.ambienceVolume = settings.ambienceGain
+        Audio.sfxEnabled = settings.sfx > 0
+        Audio.ambienceEnabled = settings.ambience > 0
         renderer.reduceEffects = settings.reduceEffects
         renderer.colorblind = settings.colorblind
         progress.unlockAllForTesting = settings.unlockAll
@@ -203,7 +207,7 @@ fun main() {
         // arrangement, so every attempt opens on the same bar.
         Audio.bpm = game.level.bpm
         Audio.world = Theme.worldOf(game.level.id)
-        Audio.restartMusic()
+        Audio.restartRoom()
         lastAttempt = game.attempts
         awarded = false
         rewardAt = -1.0
@@ -319,7 +323,7 @@ fun main() {
 
             if (game.attempts != lastAttempt) {
                 lastAttempt = game.attempts
-                Audio.restartMusic()
+                Audio.restartRoom()
                 renderer.resetRun()
                 prevDoubles = game.doubleJumps
                 prevNear = game.nearMisses
@@ -377,6 +381,38 @@ fun main() {
     api.trailHeadX = { renderer.trailHeadX }
     api.trailTailX = { renderer.trailTailX }
     api.viewUnits = { renderer.visibleWorldWidth }
+    api.aheadUnits = { renderer.aheadUnits }
+    /**
+     * Where the ground the runner is committing to BEGINS, or -1 when they are
+     * not committing to any.
+     *
+     * Only a gap counts. Hopping a spike on the platform you are already
+     * standing on lands you back on it, and the far side of the level is not
+     * something you needed to see; reporting that as a blind jump is how a
+     * readability check turns into noise. So: find the ledge under the runner,
+     * and if it ends inside the reach of a jump, the next ledge after it is what
+     * they are being asked to aim at.
+     */
+    api.gapAheadX = {
+        val t = game.elapsed
+        val reach = Tuning.JUMP_DISTANCE * 2.0
+        var under = -1.0
+        game.level.solids.forEach { s ->
+            if (game.x + 0.5 >= s.x0At(t) && game.x + 0.5 <= s.x1At(t) &&
+                kotlin.math.abs(s.topAt(t) - game.y) < 0.2) {
+                val x1 = s.x1At(t)
+                if (x1 > under) under = x1
+            }
+        }
+        if (under < 0.0 || under > game.x + reach) -1.0 else {
+            var next = -1.0
+            game.level.solids.forEach { s ->
+                val x0 = s.x0At(t)
+                if (x0 >= under - 1e-6 && x0 > game.x && (next < 0.0 || x0 < next)) next = x0
+            }
+            next
+        }
+    }
     api.uiHeight = { renderer.uiHeight }
     api.gated = { gated }
     api.gateReason = { reason.name }
@@ -407,8 +443,9 @@ fun main() {
     }
     api.setting = { key: String, on: Boolean ->
         when (key) {
-            "music" -> settings.music = on
-            "sfx" -> settings.sfx = on
+            "sfx" -> settings.sfx = if (on) 10 else 0
+            "ambience" -> settings.ambience = if (on) 10 else 0
+            "tryAllCosmetics" -> settings.tryAllCosmetics = on
             "vibration" -> settings.vibration = on
             "reduceEffects" -> settings.reduceEffects = on
             "colorblind" -> settings.colorblind = on
@@ -418,8 +455,9 @@ fun main() {
     }
     api.settingOf = { key: String ->
         when (key) {
-            "music" -> settings.music
-            "sfx" -> settings.sfx
+            "sfx" -> settings.sfx > 0
+            "ambience" -> settings.ambience > 0
+            "tryAllCosmetics" -> settings.tryAllCosmetics
             "vibration" -> settings.vibration
             "reduceEffects" -> settings.reduceEffects
             "colorblind" -> settings.colorblind
@@ -434,8 +472,11 @@ fun main() {
     api.world = { Theme.worldOf(game.level.id) }
     api.scene = { Theme.forLevel(game.level.id).scene.name }
     api.bpm = { game.level.bpm }
-    api.musicTier = { Audio.intensity }
+    api.tension = { Audio.tension }
     api.winds = { game.level.winds.size }
+    api.storms = { game.level.storms.size }
+    /** How thick the weather is where the runner is standing, 0..1. */
+    api.storminess = { game.level.storms.sumOf { it.at(game.x) } }
     /** Every kind of obstacle this level is built out of, so a test can prove the
      *  desert is a new playground rather than the city with a filter on it. */
     api.looks = { game.level.hazards.map { it.look.name }.distinct().sorted().joinToString(",") }

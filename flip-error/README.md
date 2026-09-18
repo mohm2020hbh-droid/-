@@ -32,8 +32,27 @@ say JUMP and sun beams that say STAY DOWN, bridges that fade, mirages, and
 columns of vertical air. Built from one shared kit, `core/.../Desert.kt`.
 
 Around them: star coins that bank the instant they are touched, a shop that
-sells appearance and nothing else, six settings toggles,
-English and Arabic with real RTL, and a level select broken by world.
+sells appearance and nothing else, English and Arabic with real RTL, and a
+level select broken by world.
+
+## There is no music
+
+Not a quiet track, not a loop at low volume - none. `web/.../Audio.kt` is an
+environment rather than a soundtrack: wind, rumble, mains hum and air, plus
+things happening somewhere out of sight, on a schedule with no grid in it.
+Three rules hold it together - nothing lands at a fixed interval, because two
+sounds a fixed distance apart are a beat and a beat is a song; the room's weight
+is read from the runner's own progress, so it is heaviest where the level is
+hardest; and crossing into a tenser stretch ducks everything to near-silence for
+a beat first, because a build with no hole in front of it is a volume knob.
+
+The city hums, crackles and echoes off machinery. The desert is windier, lower
+and emptier, with sand moving, stone groaning and something older turning over
+underneath it. The player's own cues - jump, double jump, land, death, coin,
+near miss, finish - are short and bright and sit on their own bus above all of
+it. Settings has three volumes (master, SFX, ambience) and no music control,
+because a switch for a thing that does not exist tells the player they failed
+to hear it.
 
 Deliberately not built: gravity flip, dash, reverse, low gravity, shape shift,
 worlds 3-10, ads, accounts, level editor. Nothing in the shop affects play.
@@ -60,8 +79,22 @@ has 90.
 
 `DifficultyLadderTest` asserts the whole table, and every level's own gate
 (`LevelGate`) asserts that it is beatable, that its tightest moment is in its
-last tenth, that no second tap is frame perfect, and that none of its three
-star coins sit on the line a perfect player already flies.
+last tenth, that no second tap is frame perfect, that it does not open on its
+hardest moment, and that none of its three star coins sit on the line a perfect
+player already flies.
+
+### The rule that measuring width missed
+
+A boost fired late travels further than one fired early - measured, 7.68u at the
+apex against 8.63u at the last legal frame - because the first jump's height is
+kept longer before the second tap resets `vy`. So a crossing needing
+near-maximum distance is survivable only in the last frames of its window, and
+the tap at the top of the arc, the one a person actually makes, dies. The
+verifier called those windows 0.096s wide and fair; from the player's chair they
+were walls. `the second tap works when a person would actually make it` taps at
+the apex from a spread of take-offs across each window and requires most of them
+to live. It found the two levels that were reported as broken, and two more that
+had not been.
 
 ## Build and test
 
@@ -79,6 +112,8 @@ node tools/feeltest.mjs        # the second jump, the trail, the frame budget
 node tools/progresstest.mjs    # coins, shop, settings, level select
 node tools/deserttest.mjs      # world 2: all six levels, cleared on their lines
 node tools/orientation.mjs     # the portrait gate, on real viewports
+node tools/runall.mjs          # all twelve, flown at 60fps in a real browser
+node tools/blindtest.mjs       # no gap is committed to off the edge of the screen
 ```
 
 The browser harnesses replay the exact lines the solver exported to

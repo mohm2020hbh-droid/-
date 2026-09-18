@@ -228,7 +228,7 @@ class Desert(val bpm: Double) {
     fun collapsingBridge(x0: Double, x1: Double, top: Double, arriveAt: Double,
                          bars: Double = 2.0, on: Double = 0.60, spent: Double = 0.05) =
         Solid(x0, x1, top, -40.0, null,
-            Blink(barSeconds * bars, on, solveArrival(arriveAt, barSeconds * bars, spent)),
+            Blink(barSeconds * bars, on, blinkPhaseFor(arriveAt, barSeconds * bars, spent)),
             Surface.BRIDGE)
 
     /**
@@ -242,8 +242,31 @@ class Desert(val bpm: Double) {
     fun miragePlatform(x0: Double, x1: Double, top: Double, arriveAt: Double,
                        bars: Double = 2.0, on: Double = 0.45) =
         Solid(x0, x1, top, -40.0, null,
-            Blink(barSeconds * bars, on, solveArrival(arriveAt, barSeconds * bars, 0.04)),
+            Blink(barSeconds * bars, on, blinkPhaseFor(arriveAt, barSeconds * bars, 0.04)),
             Surface.MIRAGE)
+
+    // --- 11. MOVING BOULDER ----------------------------------------------
+    //
+    // A block of the mountain, rolling. It is the widest thing in the desert at
+    // 1.7u, which is as wide as anything here is allowed to be - a jump covers
+    // 4.94u and the runner is 0.9u of it, and past about two units of obstacle
+    // the manoeuvre stops existing. It is 1.5u tall, so a jump clears it by a
+    // unit rather than by a hair.
+    //
+    // Like the crest, its phase is derived so it is rolling TOWARD the runner as
+    // they meet it: coming at you it is over in half the time, and it is the half
+    // of the cycle a player can read.
+
+    fun boulder(x: Double, base: Double, reach: Double) =
+        Hazard(HazardKind.SPIKE_UP, x, x + 1.7, base, base + 1.5,
+            Motion(dx = reach, period = wavePeriod, phase = wavePhase(x)), look = Look.BOULDER)
+
+    // --- 12. SANDSTORM ----------------------------------------------------
+    //
+    // See Storm: weather, never a hazard. It dims the scenery and leaves every
+    // single thing the player has to judge at full strength.
+
+    fun sandstorm(x0: Double, x1: Double, strength: Double = 0.7) = Storm(x0, x1, strength)
 
     // --- 9. WIND BLAST ---------------------------------------------------
     //
@@ -254,13 +277,6 @@ class Desert(val bpm: Double) {
     fun windBlast(x0: Double, x1: Double, push: Double) = Wind(x0, x1, push)
 
     // --- the phase solvers -----------------------------------------------
-
-    /** Phase that has a floor switching ON [spent] of its window before the
-     *  runner reaches [x]. */
-    private fun solveArrival(x: Double, period: Double, spent: Double): Double {
-        val u = spent - timeAt(x) / period
-        return ((u % 1.0) + 1.0) % 1.0
-    }
 
     /** Phase that has a ruin already down, and staying down, as the runner
      *  reaches [x] - half of its lethal window spent, so it is unambiguously

@@ -8,6 +8,7 @@ import com.fliperror.core.Payout
 import com.fliperror.core.Progress
 import com.fliperror.core.Settings
 import com.fliperror.core.Shop
+import org.w3c.dom.HTMLInputElement
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.w3c.dom.CanvasRenderingContext2D
@@ -176,13 +177,20 @@ class Ui(
         val grid = Shop.of(shopTab).joinToString("") { item ->
             val owned = progress.owns(item.id)
             val worn = progress.equipped(item.category) == item.id
+            // Developer test mode hands you the whole wardrobe to LOOK at. It
+            // adds a second button rather than replacing the first: the price is
+            // still shown, the item is still unowned, and BUY still costs coins.
+            // A test switch that quietly rewrites the economy is a test switch
+            // that stops telling you what the real game does.
+            val tryBtn = if (!settings.tryAllCosmetics || owned || worn) "" else
+                """<button class="buy try" data-try="${item.id}">${t("tryOn")}</button>"""
             val action = when {
                 worn -> """<span class="tag worn">${t("equipped")}</span>"""
                 owned -> """<button class="buy equip" data-equip="${item.id}">${t("equip")}</button>"""
                 progress.coins >= item.price ->
                     """<button class="buy" data-ask="${item.id}">${t("buy")} ${item.price}</button>"""
                 else -> """<span class="tag short">★ ${item.price}</span>"""
-            }
+            } + tryBtn
             """<div class="item ${if (worn) "worn" else ""}">
                  <canvas class="prev" width="112" height="112" data-prev="${item.id}"></canvas>
                  <span class="nm">${item.name}</span>
@@ -206,6 +214,7 @@ class Ui(
         shopEl.each(".buy") { b ->
             b.addEventListener("click", {
                 b.dataset["equip"]?.let { id -> progress.equip(id); onSave(); Audio.uiConfirm(); renderShop() }
+                b.dataset["try"]?.let { id -> progress.tryOn(id); onSave(); Audio.uiConfirm(); renderShop() }
                 b.dataset["ask"]?.let { id -> askToBuy(id) }
             })
         }
@@ -360,17 +369,34 @@ class Ui(
                   role="switch" aria-checked="$on"><i></i></button>
         </div>"""
 
+    /**
+     * A volume, in tenths. Three of these replaced the MUSIC switch, because the
+     * thing that switch controlled no longer exists - and a real slider is what
+     * "turn the wind down but leave my jump alone" actually needs.
+     */
+    private fun sliderRow(key: String, label: String, value: Int) = """
+        <div class="row set">
+          <span>$label</span>
+          <span class="vol">
+            <input type="range" min="0" max="10" step="1" value="$value"
+                   id="vol-$key" data-vol="$key" aria-label="$label">
+            <b id="volv-$key">${if (value == 0) "OFF" else "${value * 10}%"}</b>
+          </span>
+        </div>"""
+
     private fun renderSettings() {
         settingsEl.innerHTML = """
             <div class="top"><button class="back" id="set-back">&lsaquo; ${t("back")}</button>
                  <span class="coins">${coinLine()}</span></div>
             <div class="rows">
-              ${toggleRow("music", t("music"), settings.music)}
-              ${toggleRow("sfx", t("sfx"), settings.sfx)}
+              ${sliderRow("master", t("master"), settings.master)}
+              ${sliderRow("sfx", t("sfx"), settings.sfx)}
+              ${sliderRow("ambience", t("ambience"), settings.ambience)}
               ${toggleRow("vibration", t("vibration"), settings.vibration)}
               ${toggleRow("reduceEffects", t("reduceEffects"), settings.reduceEffects)}
               ${toggleRow("colorblind", t("colorblind"), settings.colorblind)}
               ${toggleRow("unlockAll", t("unlockAll"), settings.unlockAll)}
+              ${toggleRow("tryAll", t("tryAll"), settings.tryAllCosmetics)}
               <div class="row set">
                 <span>${t("language")}</span>
                 <span class="langs">
@@ -382,15 +408,30 @@ class Ui(
             <button class="wide danger" id="set-reset">${t("reset")}</button>
         """.trimIndent()
         (document.getElementById("set-back") as HTMLElement).addEventListener("click", { showHome() })
+        settingsEl.each("input[data-vol]") { el ->
+            // 'input' rather than 'change': the room should move under the thumb,
+            // because the only way to set a volume is to hear it move.
+            el.addEventListener("input", {
+                val key = el.dataset["vol"]
+                val v = (el as HTMLInputElement).value.toIntOrNull()?.coerceIn(0, 10) ?: 10
+                when (key) {
+                    "master" -> settings.master = v
+                    "sfx" -> settings.sfx = v
+                    "ambience" -> settings.ambience = v
+                }
+                (document.getElementById("volv-$key") as? HTMLElement)?.textContent =
+                    if (v == 0) "OFF" else "${v * 10}%"
+                onSettingsChanged()
+            })
+        }
         settingsEl.each(".sw") { b ->
             b.addEventListener("click", {
                 when (val k = b.dataset["toggle"]) {
-                    "music" -> settings.music = !settings.music
-                    "sfx" -> settings.sfx = !settings.sfx
                     "vibration" -> settings.vibration = !settings.vibration
                     "reduceEffects" -> settings.reduceEffects = !settings.reduceEffects
                     "colorblind" -> settings.colorblind = !settings.colorblind
                     "unlockAll" -> settings.unlockAll = !settings.unlockAll
+                    "tryAll" -> settings.tryAllCosmetics = !settings.tryAllCosmetics
                     else -> Unit.also { println("unknown toggle $k") }
                 }
                 onSettingsChanged()

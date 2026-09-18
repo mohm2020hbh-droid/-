@@ -43,7 +43,7 @@ object Level2 {
         return out
     }
 
-    val finishX = beat(82.0)                  // 333.9 units -> 35.1 seconds
+    val finishX = beat(83.0)                  // 338.0 units -> 35.6 seconds
 
     fun build(): Level {
         val solids = listOf(
@@ -53,21 +53,36 @@ object Level2 {
             Solid(29.6, 50.0, GROUND),        // gap 3.60u - comfortable, teaches the shape
             Solid(52.4, 68.0, GROUND),        // gap 2.40u - short, and it lands you into work
             Solid(72.3, 94.0, GROUND),        // gap 4.30u - at the edge of one jump
-            Solid(100.6, 122.0, GROUND),      // gap 6.60u - past it. the boost, or nothing
+            // 6.30u, not 6.60u. At 6.60 the crossing needed a near-maximum boost,
+            // which is a LATE one - the first jump's height is kept longer before
+            // the second tap resets vy - so the tap at the top of the arc, the one
+            // a person actually makes, fell in the pit every time. The gap is
+            // still past what a single jump reaches; what changed is that the
+            // instinctive second tap now clears it.
+            Solid(100.3, 122.0, GROUND),      // gap 6.30u - past one jump. the boost, or nothing
             // --- 30-55% combine: widths alternate so no rhythm survives ----
             Solid(126.4, 142.0, GROUND),      // gap 4.40u
             Solid(144.8, 158.0, GROUND),      // gap 2.80u
-            Solid(164.9, 180.0, GROUND),      // gap 6.90u - boost
-            Solid(183.4, 208.0, GROUND),      // gap 3.40u, into the low ceiling
+            // A BOOST GAP NEEDS A RUNWAY. The second tap can be taken anywhere in
+            // its window and the distance it buys varies by almost a full unit -
+            // measured, 7.68u at the apex against 8.63u at the last legal frame -
+            // so a boosted crossing does not land on a spot, it lands in a BAND.
+            // Both of this level's boost gaps used to put their next obstacle two
+            // units past the far end of that band, which meant the tap at the top
+            // of the arc landed correctly and then ran straight into something
+            // with no room to set up. The landing platform is longer now and what
+            // is on it has moved back.
+            Solid(164.0, 186.0, GROUND),      // gap 6.00u - boost, then room to land
+            Solid(189.4, 210.0, GROUND),      // gap 3.40u, into the low ceiling
             // --- 55-70% the breath, and the coin worth stopping for --------
-            Solid(211.6, 244.0, GROUND),      // gap 3.60u into a long flat rest
+            Solid(213.6, 246.0, GROUND),      // gap 3.60u into a long flat rest
             // --- 70-90% GAUNTLET: descending, tightening -------------------
-            Solid(248.0, 258.0, STEP),        // gap 4.00u
-            Solid(262.4, 272.0, LOW),         // gap 4.40u
-            Solid(279.1, 290.0, LOW),         // gap 7.10u - boost, over the deepest pit
-            Solid(293.6, 308.0, LOW),         // gap 3.60u
+            Solid(250.0, 260.0, STEP),        // gap 4.00u
+            Solid(264.4, 274.0, LOW),         // gap 4.40u
+            Solid(280.4, 294.0, LOW),         // gap 6.40u - boost over the deepest pit, and a runway after it
+            Solid(297.6, 312.0, LOW),         // gap 3.60u
             // --- 90-100% the finish -----------------------------------------
-            Solid(312.0, 345.0, LOW),         // gap 4.00u, then the slot
+            Solid(316.0, 349.0, LOW),         // gap 4.00u, then the slot
         )
 
         val hazards = ArrayList<Hazard>()
@@ -82,27 +97,27 @@ object Level2 {
         // 30-55%: spikes guarding the landings, so a gap is never the only threat.
         hazards += slider(133.0, GROUND, 2.0)                 // slides: read where it IS
         hazards += spike(150.0, GROUND)
-        hazards += slider(171.0, GROUND, 2.4, phase = 0.5)    // the same idea, out of step
-        hazards += spike(200.0, GROUND)
+        hazards += slider(175.0, GROUND, 1.8, phase = 0.5)    // the same idea, out of step
+        hazards += spike(202.0, GROUND)
         // A low ceiling on the run-up to the rest: the one place the second tap
         // is fatal, set immediately after the gaps that demand it.
-        hazards += ceilingSpikes(186.0, 194.0, 2.3)
+        hazards += ceilingSpikes(192.0, 200.0, 2.3)
         // 70-90%: the gauntlet's spikes sit on the two longest landings.
-        hazards += spike(283.0, LOW)
-        hazards += piston(300.0, LOW - 0.9, 1.3, Tuning.BAR * 0.75)  // rises out of the floor
+        hazards += spike(288.0, LOW)
+        hazards += piston(304.0, LOW - 0.9, 1.3, Tuning.BAR * 0.75)  // rises out of the floor
         // 90-100%: clear one, then land in the slot between the last two.
-        hazards += spike(318.0, LOW)
-        hazards += spike(325.0, LOW)
-        hazards += spike(328.7, LOW)
+        hazards += spike(322.0, LOW)
+        hazards += spike(329.0, LOW)
+        hazards += spike(332.7, LOW)
 
         // The rest is short on purpose: one spike closes it before the gauntlet,
         // so level 2 never hands back as much quiet as level 1 does.
-        hazards += spike(220.0, GROUND)
-        hazards += spike(234.0, GROUND)
+        hazards += spike(222.0, GROUND)
+        hazards += spike(236.0, GROUND)
 
         // Three STAR COINS, none of them on the easy line.
         val stars = listOf(
-            Star(228.0, 2.6),        // the breath: one plain jump, if you take it
+            Star(230.0, 2.6),        // the breath: one plain jump, if you take it
             Star(144.2, 4.3),        // over the 4.40u gap, which the line crosses with one
                                      // jump: reaching this costs a boost it did not need
             Star(275.0, 3.9),        // mid-gauntlet, over the 5.80u gap and the deepest pit

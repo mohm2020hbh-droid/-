@@ -113,6 +113,98 @@ class DifficultyLadderTest {
             "the desert's drum & bass lives between 165 and 190 BPM")
     }
 
+    /**
+     * THE INSTINCTIVE SECOND TAP HAS TO BE ONE OF THE ONES THAT WORKS.
+     *
+     * The verifier measures how WIDE a boost window is. It says nothing about
+     * WHERE in the legal window it sits, and that turned out to be the thing that
+     * made two levels feel broken while measuring perfectly fine.
+     *
+     * A boost fired late travels further than one fired early - the first jump's
+     * height is kept longer before the second tap resets vy - so a crossing that
+     * needs near-maximum distance is survivable only in the last frames of the
+     * window. At LEVEL 4's 29% that was 22 workable frames after 41 identical
+     * deaths, every one on the same hazard at the same x. A player taps at the top
+     * of the jump, because that is what the top of a jump is for, and learns
+     * nothing at all from dying.
+     *
+     * So this asks the question from the player's chair: tap at the apex, when the
+     * runner is weightless, and do it from a spread of the places they could
+     * reasonably have jumped from - because on a gap people leave at the ledge and
+     * over a spike they leave early, and a rule that only tried one of those would
+     * be measuring a habit instead of a level. Most of those attempts have to
+     * live. A level where they mostly die is not hard, it is lying about which
+     * input it wants.
+     */
+    @Test fun `the second tap works when a person would actually make it`() {
+        val apexFrame = Math.round(Tuning.RISE_TIME / Tuning.FIXED_DT).toInt()
+
+        /** Fly the line to [idx], take off [offset] units late, tap at the apex. */
+        fun attempt(lv: Level, plan: List<LevelVerifier.Jump>, idx: Int, offset: Double): Boolean? {
+            val jump = plan[idx]
+            val g = Game(lv)
+            var i = 0
+            var owed = false
+            var guard = 0
+            while (g.state == GameState.RUNNING && i < idx && guard++ < 60_000) {
+                if (g.x >= plan[i].x && g.grounded) { owed = plan[i].boosted; i++; g.onTap() }
+                else if (owed && g.canDoubleJump && g.x >= plan[i - 1].boostX) { g.onTap(); owed = false }
+                g.update(Tuning.FIXED_DT)
+            }
+            while (g.state == GameState.RUNNING && g.x < jump.x + offset && guard++ < 60_000)
+                g.update(Tuning.FIXED_DT)
+            // Off the end of the ledge, or dead on the way: not a take-off a person
+            // could have made, so it is not evidence either way.
+            if (g.state != GameState.RUNNING || !g.grounded) return null
+            g.onTap()
+            i = idx + 1
+            owed = false
+            var air = 0
+            var boosted = false
+            while (g.state == GameState.RUNNING && guard++ < 60_000) {
+                if (!boosted && air >= apexFrame) {
+                    if (!g.canDoubleJump) return false
+                    g.onTap(); boosted = true
+                }
+                g.update(Tuning.FIXED_DT); air++
+                if (boosted && g.grounded) break
+            }
+            if (!boosted) return false
+            // Keep flying the line afterwards. Coasting instead - just running on
+            // with no further input - kills the runner on whatever comes next and
+            // blames it on this boost, which had the probe reporting a perfectly
+            // good crossing as broken. The question being asked is "does this
+            // second tap leave me able to carry on", so the probe has to carry on.
+            var after = 0
+            while (g.state == GameState.RUNNING && after++ < 260) {
+                if (i < plan.size && g.x >= plan[i].x && g.grounded) {
+                    owed = plan[i].boosted; i++; g.onTap()
+                } else if (owed && g.canDoubleJump && g.x >= plan[i - 1].boostX) {
+                    g.onTap(); owed = false
+                }
+                g.update(Tuning.FIXED_DT)
+            }
+            return g.state != GameState.DEAD
+        }
+
+        levels.forEach { lv ->
+            val plan = reports[lv]!!.jumps
+            plan.forEachIndexed { idx, jump ->
+                if (!jump.boosted) return@forEachIndexed
+                val span = jump.window * Tuning.RUN_SPEED
+                val tries = listOf(0.0, 0.25, 0.5, 0.75).mapNotNull { attempt(lv, plan, idx, it * span) }
+                if (tries.isEmpty()) return@forEachIndexed
+                val lived = tries.count { it }
+                assertTrue(lived * 2 >= tries.size,
+                    "LEVEL ${lv.id} at ${"%.0f".format(jump.percent)}% (x=${"%.1f".format(jump.x)}): " +
+                        "tapping at the apex - the tap a person makes - survives only " +
+                        "$lived of $tries.size take-offs across the window. The boost " +
+                        "window is ${"%.3f".format(jump.boostWindow)}s wide but it is in " +
+                        "the wrong part of the flight.")
+            }
+        }
+    }
+
     @Test fun `report the curve`() {
         println("DIFFICULTY LADDER")
         worlds.forEachIndexed { wi, world ->

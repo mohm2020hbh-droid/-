@@ -135,6 +135,11 @@
     background:#5a5a86;transition:left .14s ease,background .14s ease;}
   .sw.on{border-color:var(--safe);background:rgba(46,240,255,.16);}
   .sw.on i{left:24px;background:var(--safe);}
+  .vol{display:flex;align-items:center;gap:10px;}
+  .vol input[type=range]{width:min(190px,38vw);accent-color:var(--safe);}
+  .vol b{min-width:42px;text-align:right;font:700 11px/1 'Chakra Petch',system-ui,sans-serif;
+    color:var(--safe);font-variant-numeric:tabular-nums;}
+  .buy.try{border-color:var(--muted);background:rgba(154,143,230,.12);color:var(--muted);}
   .langs{display:flex;gap:6px;}
   .lang{padding:6px 11px;border:2px solid #2c2c4c;background:transparent;color:var(--muted);
     font-weight:700;font-size:11px;letter-spacing:.08em;border-radius:9px;cursor:pointer;}

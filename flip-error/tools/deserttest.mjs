@@ -103,18 +103,20 @@ await page.screenshot({ path: path.join(shotDir, '01-level7-sand.png') });
 // 2 — the whole vocabulary is actually on the field ---------------------------
 const seen = new Set();
 const surfaces = new Set();
-let pulsingTotal = 0, windsTotal = 0;
+let pulsingTotal = 0, windsTotal = 0, stormsTotal = 0;
 for (const id of [7, 8, 9, 10, 11, 12]) {
   await open(id);
   const lv = await page.evaluate(() => ({
-    looks: FLIP.looks(), surfaces: FLIP.surfaces(), pulsing: FLIP.pulsing(), winds: FLIP.winds(),
+    looks: FLIP.looks(), surfaces: FLIP.surfaces(), pulsing: FLIP.pulsing(),
+    winds: FLIP.winds(), storms: FLIP.storms(),
   }));
   lv.looks.split(',').forEach(k => seen.add(k));
   lv.surfaces.split(',').forEach(k => surfaces.add(k));
   pulsingTotal += lv.pulsing;
   windsTotal += lv.winds;
+  stormsTotal += lv.storms;
 }
-const wanted = ['SAND_WAVE', 'RUIN', 'RELIC', 'GEYSER', 'LASER'];
+const wanted = ['SAND_WAVE', 'RUIN', 'RELIC', 'GEYSER', 'LASER', 'BOULDER'];
 check('every new obstacle type reaches a level',
   wanted.every(k => seen.has(k)), [...seen].sort().join(','));
 const wantedSurfaces = ['SAND', 'TEMPLE', 'BRIDGE', 'MIRAGE'];
@@ -122,6 +124,56 @@ check('and every new kind of ground does too',
   wantedSurfaces.every(k => surfaces.has(k)), [...surfaces].sort().join(','));
 check('the desert has hazards that switch on and off', pulsingTotal >= 20, `${pulsingTotal} of them`);
 check('and columns of moving air', windsTotal >= 3, `${windsTotal} of them`);
+check('and weather you have to run through', stormsTotal >= 2, `${stormsTotal} storms`);
+
+// 2b — the storm is weather, never a hazard ----------------------------------
+await open(10);
+const storm = await page.evaluate(() => new Promise(res => {
+  // Stand still inside the sandstorm and see what it does. The answer has to be
+  // "nothing": a storm that can kill is a hazard you cannot see, which is the
+  // random death this game does not ship.
+  const plan = window.__plans[10].jumps;
+  let i = 0, owed = false, bx = 0, f = 0, sawStorm = 0, maxHaze = 0;
+  const step = () => {
+    const x = FLIP.x();
+    if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
+      owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
+    } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
+    const haze = FLIP.storminess();
+    if (haze > 0) sawStorm++;
+    maxHaze = Math.max(maxHaze, haze);
+    if (!window.__shot && FLIP.progress() > 0.45 && haze > 0.4) {
+      window.__shot = true;              // hold a frame deep inside the weather
+      return res({ state: FLIP.state(), sawStorm, maxHaze, cause: FLIP.cause(), held: true });
+    }
+    if (FLIP.state() !== 'RUNNING' || ++f > 4000)
+      return res({ state: FLIP.state(), sawStorm, maxHaze, cause: FLIP.cause() });
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}));
+check('the level is actually run through a storm',
+  storm.sawStorm > 120 && storm.maxHaze > 0.4,
+  `${storm.sawStorm} frames in it, thickest ${storm.maxHaze.toFixed(2)}`);
+await page.screenshot({ path: path.join(shotDir, '04-level10-storm.png') });
+// and now let the rest of it play out, to prove the weather never kills
+const stormEnd = await page.evaluate(() => new Promise(res => {
+  const plan = window.__plans[10].jumps;
+  let i = 0, owed = false, bx = 0, f = 0;
+  while (i < plan.length && FLIP.x() >= plan[i].x) i++;   // catch up to where we paused
+  const step = () => {
+    const x = FLIP.x();
+    if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
+      owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
+    } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
+    if (FLIP.state() !== 'RUNNING' || ++f > 4000)
+      return res({ state: FLIP.state(), cause: FLIP.cause(), pct: FLIP.progress() * 100 });
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}));
+check('and the storm never kills anyone', stormEnd.state === 'COMPLETE',
+  `${stormEnd.pct.toFixed(0)}% ${stormEnd.state}${stormEnd.state === 'DEAD' ? ' — ' + stormEnd.cause : ''}`);
 
 // 3 — nothing switches on without warning ------------------------------------
 // Sampled while the line is actually being flown, because "does it warn" is a
@@ -159,32 +211,33 @@ check('and they really do switch off again',
   warn.least < warn.live, `between ${warn.least} and ${warn.live} lethal at once`);
 await page.screenshot({ path: path.join(shotDir, '02-level9-beams.png') });
 
-// 4 — the arrangement arrives when the level does -----------------------------
+// 4 — the room tightens as the level does ------------------------------------
 await open(12);
 const tiers = await page.evaluate(() => new Promise(res => {
-  // One loop that both flies the line and samples the arrangement, so it stops
-  // when the sampling stops. An earlier version left its driver running after
-  // the promise resolved, and it went on tapping into the NEXT level the harness
-  // opened - which killed LEVEL 7 at 97% and looked exactly like a real bug.
+  // One loop that both flies the line and samples the room, so it stops when the
+  // sampling stops. An earlier version left its driver running after the promise
+  // resolved and went on tapping into the NEXT level the harness opened - which
+  // killed LEVEL 7 at 97% and looked exactly like a real bug.
   const plan = window.__plans[12].jumps;
-  const seenTier = {};
+  const seen = {};
   let i = 0, owed = false, bx = 0, f = 0;
   const step = () => {
     const x = FLIP.x();
-    seenTier[Math.round(FLIP.progress() * 100)] = FLIP.musicTier();
+    seen[Math.round(FLIP.progress() * 100)] = FLIP.tension();
     if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
       owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
     } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
-    if (FLIP.progress() > 0.95 || FLIP.state() !== 'RUNNING' || ++f > 4000) return res(seenTier);
+    if (FLIP.progress() > 0.97 || FLIP.state() !== 'RUNNING' || ++f > 4000) return res(seen);
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
 }));
 const at = p => tiers[p] ?? tiers[p - 1] ?? tiers[p + 1] ?? -1;
-check('the desert holds its bass back through the first half',
-  at(40) <= 1, `tier ${at(40)} at 40%`);
-check('and drops it before the level gets hard', at(70) >= 2, `tier ${at(70)} at 70%`);
-check('and opens all the way up for the finish', at(92) >= 3, `tier ${at(92)} at 92%`);
+check('the room is calm through the first half', at(40) <= 0.30, `tension ${at(40).toFixed(2)} at 40%`);
+check('it leans in past 70%', at(75) >= 0.50, `tension ${at(75).toFixed(2)} at 75%`);
+check('and it is at its heaviest for the finish', at(96) >= 0.95, `tension ${at(96).toFixed(2)} at 96%`);
+check('and it never stops climbing on the way there',
+  at(40) < at(75) && at(75) < at(96), [40, 75, 96].map(k => at(k).toFixed(2)).join(' -> '));
 
 // 5 — every desert level can be cleared on its verified line -------------------
 const clears = [];

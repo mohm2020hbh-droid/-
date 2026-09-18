@@ -110,6 +110,21 @@ class Progress private constructor(
         return true
     }
 
+    /**
+     * Developer test mode: wear anything without paying for it.
+     *
+     * Deliberately a SEPARATE door from [equip] rather than a flag inside it.
+     * Nothing about the economy moves - the item is still unowned, its price is
+     * still its price, and [buy] still takes the coins if it is ever bought for
+     * real. All this does is put the thing on the runner so it can be looked at,
+     * which is what testing a wardrobe means.
+     */
+    fun tryOn(id: String): Boolean {
+        val item = Shop.byId[id] ?: return false
+        equipped[item.category] = id
+        return true
+    }
+
     fun equipped(category: Category): String = equipped[category] ?: Shop.defaults.getValue(category)
 
     // --- storage ----------------------------------------------------------

@@ -233,7 +233,16 @@ const waitScreen = (s, t = 8000) =>
 {
   await page.evaluate(() => { FLIP.openMenu(); document.getElementById('h-settings').click(); });
   const rows = await page.locator('#settings .sw').count();
-  check('settings offers every switch', rows === 6, `${rows} toggles`);
+  check('settings offers every switch', rows === 5, `${rows} toggles`);
+  // Three volumes and no MUSIC control, because there is no music to control.
+  const vols = await page.evaluate(() =>
+    [...document.querySelectorAll('#settings input[data-vol]')].map(e => e.dataset.vol));
+  check('and three real volumes instead of a music switch',
+    vols.join(',') === 'master,sfx,ambience', vols.join(','));
+  const labels = await page.evaluate(() =>
+    [...document.querySelectorAll('#settings .row.set span')].map(e => e.textContent.trim()).join('|'));
+  check('nothing in settings claims there is music',
+    !/MUSIC|موسيق/i.test(labels), labels.slice(0, 70));
 
   // the testing switch: it opens doors and touches nothing behind them
   const unlocked = await page.evaluate(() => {
@@ -259,12 +268,13 @@ const waitScreen = (s, t = 8000) =>
         !(await page.evaluate(() => FLIP.unlocked(5))));
 
   const toggled = await page.evaluate(() => {
-    const before = FLIP.settingOf('music');
-    document.querySelector('#settings .sw[data-toggle="music"]').click();
-    return { before, after: FLIP.settingOf('music') };
+    const before = FLIP.settingOf('sfx');
+    const s = document.querySelector('#settings input[data-vol="sfx"]');
+    s.value = '0'; s.dispatchEvent(new Event('input', { bubbles: true }));
+    return { before, after: FLIP.settingOf('sfx') };
   });
-  check('a switch actually flips', toggled.after === !toggled.before,
-        `music ${toggled.before} -> ${toggled.after}`);
+  check('a volume actually moves', toggled.after === !toggled.before,
+        `sfx ${toggled.before} -> ${toggled.after}`);
 
   await page.evaluate(() => document.querySelector('#settings .lang[data-lang="AR"]').click());
   const ar = await page.evaluate(() => ({
@@ -436,6 +446,61 @@ const waitScreen = (s, t = 8000) =>
   const p99 = sorted[Math.floor(sorted.length * 0.99)];
   check('60fps holds on level 2', p50 < 20 && p99 < 40,
         `median ${p50.toFixed(1)}ms, p99 ${p99.toFixed(1)}ms over ${ft.length} frames`);
+}
+
+// 12 — the wardrobe. Every category, worn, and then actually played in.
+{
+  await page.evaluate(() => { FLIP.setting('tryAllCosmetics', true); FLIP.openShop(); });
+  const cats = ['SHAPE', 'COLOR', 'TRAIL', 'FACE'];
+  const tried = [];
+  for (const cat of cats) {
+    const picked = await page.evaluate(async c => {
+      // open that tab, take the first thing not already worn, and try it on
+      const tab = [...document.querySelectorAll('#shop .tab')]
+        .find(t => t.dataset.cat === c);
+      tab.click();
+      await new Promise(r => requestAnimationFrame(r));
+      const btn = document.querySelector('#shop .buy.try') ||
+                  document.querySelector('#shop .buy.equip');
+      if (!btn) return null;
+      const id = btn.dataset.try ?? btn.dataset.equip;
+      btn.click();
+      await new Promise(r => requestAnimationFrame(r));
+      return { id, worn: FLIP.equippedOf(c), owned: FLIP.owns(id) };
+    }, cat);
+    tried.push({ cat, ...(picked ?? {}) });
+  }
+  check('every category can be worn', tried.every(t => t.id && t.worn === t.id),
+    tried.map(t => `${t.cat}=${t.worn}`).join(' '));
+  // The whole point of the test switch: it dresses the runner, it does not
+  // quietly hand out the goods.
+  const gifted = tried.filter(t => t.owned);
+  check('and trying something on does not buy it',
+    gifted.length === 0, gifted.map(t => t.id).join(',') || 'nothing was gifted');
+  const priced = await page.evaluate(() =>
+    [...document.querySelectorAll('#shop .buy')].some(b => /\d/.test(b.textContent)) ||
+    [...document.querySelectorAll('#shop .tag.short')].length > 0);
+  check('and the prices are still on the shelf', priced);
+
+  // now play in it
+  await page.evaluate(() => FLIP.play(1));
+  await page.waitForFunction(() => FLIP.screen() === 'PLAYING', { timeout: 5000 });
+  const inPlay = await page.evaluate(() => new Promise(res => {
+    let f = 0;
+    const step = () => {
+      if (f % 9 === 0) FLIP.tap();
+      if (++f > 90) return res({ effects: FLIP.effects(), head: FLIP.trailHeadX(),
+                                 tail: FLIP.trailTailX(), state: FLIP.state() });
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }));
+  check('the worn look survives into play', inPlay.state === 'RUNNING' || inPlay.state === 'DEAD');
+  check('and its trail is a live spread behind the runner',
+    inPlay.effects > 0 && inPlay.head - inPlay.tail > 0.5,
+    `${inPlay.effects} live pieces, ${(inPlay.head - inPlay.tail).toFixed(2)}u of ghosts`);
+  await page.screenshot({ path: path.join(shotDir, '08-worn.png') });
+  await page.evaluate(() => { FLIP.setting('tryAllCosmetics', false); FLIP.openMenu(); });
 }
 
 check('no javascript errors across the meta game', errors.length === 0, errors.slice(0, 3).join(' | '));

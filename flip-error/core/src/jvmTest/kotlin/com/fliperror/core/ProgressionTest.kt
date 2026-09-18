@@ -191,27 +191,63 @@ class StarPersistenceTest {
 
 class SettingsTest {
 
-    @Test fun `a new profile plays with sound on and in english`() {
+    @Test fun `a new profile plays with sound up and in english`() {
         val s = Settings()
-        assertTrue(s.music && s.sfx && s.vibration)
+        assertEquals(Settings.FULL, s.master)
+        assertEquals(Settings.FULL, s.sfx)
+        assertEquals(Settings.FULL, s.ambience)
+        assertTrue(s.vibration)
         assertFalse(s.reduceEffects || s.colorblind)
+        assertFalse(s.unlockAll || s.tryAllCosmetics)
         assertEquals(Lang.EN, s.lang)
     }
 
     @Test fun `settings survive a round trip`() {
         val s = Settings()
-        s.music = false; s.vibration = false; s.colorblind = true; s.lang = Lang.AR
+        s.master = 7; s.ambience = 0; s.vibration = false; s.colorblind = true; s.lang = Lang.AR
         val back = Settings.parse(s.serialize())
-        assertFalse(back.music); assertTrue(back.sfx); assertFalse(back.vibration)
+        assertEquals(7, back.master)
+        assertEquals(Settings.FULL, back.sfx)
+        assertEquals(0, back.ambience)
+        assertFalse(back.vibration)
         assertFalse(back.reduceEffects); assertTrue(back.colorblind)
         assertEquals(Lang.AR, back.lang)
         assertEquals(s.serialize(), back.serialize())
     }
 
+    @Test fun `volumes read back as gains`() {
+        val s = Settings()
+        s.master = 10; s.sfx = 5; s.ambience = 0
+        assertEquals(1.0, s.masterGain)
+        assertEquals(0.5, s.sfxGain)
+        assertEquals(0.0, s.ambienceGain)
+    }
+
+    /**
+     * A profile saved before the music was removed still loads, and loses only
+     * the one switch whose subject no longer exists. Someone who had turned the
+     * effects down keeps them down; someone who had turned the old MUSIC off gets
+     * an ambience they have never heard, at full volume, which is the right
+     * default for a thing that is new to them.
+     */
+    @Test fun `a profile from the version with music still loads`() {
+        // music off | sfx on | vibration off | reduce on | colourblind off | unlock on
+        val old = "s1|010101|AR"
+        val s = Settings.parse(old)
+        assertEquals(Settings.FULL, s.sfx)
+        assertFalse(s.vibration)
+        assertTrue(s.reduceEffects)
+        assertFalse(s.colorblind)
+        assertTrue(s.unlockAll)
+        assertEquals(Lang.AR, s.lang)
+        assertEquals(Settings.FULL, s.ambience, "ambience is new, so it arrives on")
+    }
+
     @Test fun `a broken settings blob becomes the defaults`() {
-        for (junk in listOf(null, "", "s9|11111|EN", "s1|", "s1|xx|ZZ", "||")) {
+        for (junk in listOf(null, "", "s9|11111|EN", "s2|", "s2|xx|ZZ", "||", "s1|xx|ZZ")) {
             val s = Settings.parse(junk)
-            assertTrue(s.music && s.sfx, "junk '$junk' turned the sound off")
+            assertEquals(Settings.FULL, s.master, "junk '$junk' turned the sound off")
+            assertEquals(Settings.FULL, s.sfx, "junk '$junk' turned the sound off")
             assertEquals(Lang.EN, s.lang)
         }
     }

@@ -22,7 +22,7 @@ enum class HazardKind { SPIKE_UP, SPIKE_DOWN }
  * world 2 add ten new obstacles without touching a line of collision code, or
  * changing what a death is called.
  */
-enum class Look { SPIKE, SAND_WAVE, RUIN, RELIC, GEYSER, LASER }
+enum class Look { SPIKE, SAND_WAVE, RUIN, RELIC, GEYSER, LASER, BOULDER }
 
 /** What a surface is made of. Art only, exactly as [Look] is. */
 enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE }
@@ -94,6 +94,28 @@ data class Blink(val period: Double, val onFraction: Double = 0.6, val phase: Do
         if (toGo > warn) return 0.0
         return 1.0 - toGo / warn
     }
+}
+
+/**
+ * The phase that has a blinking floor switch ON just before the runner arrives
+ * at [x], with [spent] of its ON window already gone when they land.
+ *
+ * A blink phase is never a taste decision, it is arithmetic. The runner's x is
+ * exactly RUN_SPEED * time, so the instant they touch a platform is a property
+ * of where that platform IS - and a phase picked by hand is a guess at that
+ * sum. Guessing it wrong has cost this project twice: once outright, with a
+ * LEVEL 6 that no sequence of taps could finish, and once quietly, with a
+ * LEVEL 5 whose blinker happened to be dark at the arrival its geometry
+ * implied, so the only way across was a second tap in the last frames of its
+ * window - which reads from the player's chair as a wall, not as a mistake.
+ *
+ * [spent] is how much of the ON window is already gone when they get there, so
+ * a derived floor is always visibly on its way out from the moment it is landed
+ * on, and the pressure is to keep moving rather than to guess.
+ */
+fun blinkPhaseFor(x: Double, period: Double, spent: Double = 0.05): Double {
+    val u = spent - (x / Tuning.RUN_SPEED) / period
+    return ((u % 1.0) + 1.0) % 1.0
 }
 
 /**
@@ -169,6 +191,33 @@ data class Wind(val x0: Double, val x1: Double, val push: Double) {
     fun covers(px0: Double, px1: Double) = px1 > x0 && px0 < x1
 }
 
+/**
+ * A stretch of level the player sees through a sandstorm.
+ *
+ * It is WEATHER, not a hazard: it has no box, it cannot kill anyone, and the
+ * verifier does not know it exists. That is deliberate and it is the only
+ * honest way to ship reduced visibility in a game that promises you always know
+ * why you died. A storm that could kill you would be a hazard you cannot see,
+ * which is the definition of the random death this project does not do.
+ *
+ * What it dims is the SCENERY - the sky, the dunes, the ruins - and the light in
+ * the air between them. Hazards, ground and the runner are drawn after it and at
+ * full strength, because readability outranks the effect (GDD 11). The storm
+ * makes the world feel enormous and hostile without ever taking away the one
+ * thing the player needs to see.
+ */
+data class Storm(val x0: Double, val x1: Double, val strength: Double = 0.7) {
+    /** 0 outside, rising to [strength] in the middle - a storm has edges you
+     *  can watch yourself run into, rather than a wall you cross. */
+    fun at(x: Double): Double {
+        if (x <= x0 || x >= x1) return 0.0
+        val span = x1 - x0
+        val edge = kotlin.math.min(span * 0.22, 14.0)
+        val into = kotlin.math.min(x - x0, x1 - x)
+        return strength * kotlin.math.min(1.0, into / edge)
+    }
+}
+
 data class Star(val x: Double, val y: Double) {
     val box get() = Box(x - 0.45, y - 0.45, x + 0.45, y + 0.45)
 }
@@ -184,6 +233,7 @@ data class Level(
     val finishX: Double,
     val startY: Double = 0.0,
     val winds: List<Wind> = emptyList(),
+    val storms: List<Storm> = emptyList(),
 ) {
     /** Level length in seconds at the level's run speed. */
     val durationSeconds: Double get() = finishX / Tuning.RUN_SPEED

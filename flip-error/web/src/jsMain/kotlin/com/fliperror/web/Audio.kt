@@ -2,36 +2,83 @@ package com.fliperror.web
 
 import kotlinx.browser.window
 import kotlin.math.pow
+import kotlin.random.Random
 
 /**
- * Synthesised with WebAudio so the slice stays asset-free and offline.
+ * Synthesised with WebAudio so the game stays asset-free and offline.
  *
- * Two rules shape everything here. The voice is round, not metal: triangles and
- * sines with fast attacks and very short tails, so a cute square never sounds
- * like a machine tool. And the bed is a drum-and-bass engine, not a loop - a
- * 16th-note scheduler with a lookahead, so the groove stays locked while the
- * game is dropping frames, and four intensity tiers the level itself moves
- * through: it opens on drums, builds, drops at 70%, and runs flat out for the
- * last stretch. Nothing in the mix is allowed to sit in front of a retry.
+ * THERE IS NO MUSIC HERE. No track, no melody, no loop, no beat - not quietly
+ * underneath, not at low volume. What used to be a drum-and-bass engine is gone,
+ * and what replaced it is a place: wind, air, rumble, hum, and things happening
+ * somewhere out of sight. The difference is not decoration. A loop tells the
+ * player they are inside a product; an environment tells them they are somewhere,
+ * and somewhere is what a runner this hard needs, because the thing that gets
+ * someone through a fortieth attempt is atmosphere, not a chorus.
+ *
+ * Three rules hold the bed together:
+ *
+ *  NOTHING IS ON A GRID. Every event is scheduled at a randomised distance from
+ *  the last one, drawn from a range that only narrows as the level gets tense.
+ *  The moment two sounds land a fixed interval apart the ear hears a beat, and
+ *  a beat is a song.
+ *
+ *  THE ROOM ANSWERS THE LEVEL. Tension is read from the runner's own progress,
+ *  and it moves the beds, the event rate and which palette the events come from.
+ *  At the moment the level gets hardest the room is at its loudest and lowest.
+ *
+ *  SILENCE IS A SOUND. Crossing into a tenser stretch ducks everything to almost
+ *  nothing for a beat before the room comes back heavier. The drop-out is what
+ *  makes the arrival land; without it the build is just a volume knob.
+ *
+ * The player's own cues - jump, double jump, land, death, collect, near miss,
+ * finish - are untouched and stay short, bright and punchy. They sit on their
+ * own bus above the ambience, so the room can never be in front of a retry.
  */
 object Audio {
     private var ctx: dynamic = null
     private var master: dynamic = null
-    private var musicBus: dynamic = null
+    private var sfxBus: dynamic = null
+    private var ambBus: dynamic = null
+    private var echoIn: dynamic = null
     private var noise: dynamic = null
     private var started = false
     private var streak = 0
 
+    // --- what the settings screen controls -----------------------------------
+    //
+    // There is no MUSIC control, because there is no music. Three volumes and
+    // two switches, and every one of them means something audible.
+
+    var masterVolume = 0.85
+        set(v) { field = v; master?.gain?.value = v }
+    var sfxVolume = 1.0
+        set(v) { field = v; applyBuses() }
+    var ambienceVolume = 1.0
+        set(v) { field = v; applyBuses() }
     var sfxEnabled = true
-    var musicEnabled = true
-        set(v) { field = v; musicBus?.gain?.value = if (v) MUSIC_LEVEL else 0.0 }
+        set(v) { field = v; applyBuses() }
+    var ambienceEnabled = true
+        set(v) { field = v; applyBuses() }
 
-    private const val MUSIC_LEVEL = 0.62
+    private fun applyBuses() {
+        sfxBus?.gain?.value = if (sfxEnabled) sfxVolume else 0.0
+        ambBus?.gain?.value = if (ambienceEnabled) ambienceVolume * AMBIENCE_LEVEL else 0.0
+    }
 
-    /** Beats per minute of the level being played. Set before the run starts. */
+    private const val AMBIENCE_LEVEL = 0.70
+
+    /** Which world's room we are standing in. The palettes are not variations of
+     *  one another - a neon city and a buried desert share no material. */
+    var world = 1
+
+    /** The level's own tempo. Kept because the LEVELS are laid out on it; the
+     *  audio deliberately ignores it, because anything locked to a tempo is a
+     *  beat and a beat is the thing this engine exists not to have. */
     var bpm = 140.0
-    /** 0 intro, 1 build, 2 drop, 3 final drive. Driven by level progress. */
-    var intensity = 0
+
+    /** 0..1, how tense the room is. Driven by the runner's progress. */
+    var tension = 0.0
+        private set
 
     // --- graph ---------------------------------------------------------------
 
@@ -41,9 +88,9 @@ object Audio {
             if (C == null) return false
             ctx = js("new C()")
             master = ctx.createGain()
-            master.gain.value = 0.85
+            master.gain.value = masterVolume
             // A limiter, not a loudness trick: it lets the mix sit high enough for
-            // a phone speaker while a jump landing on top of a drop cannot clip.
+            // a phone speaker while a landing on top of a rumble cannot clip.
             val comp = ctx.createDynamicsCompressor()
             comp.threshold.value = -14.0
             comp.knee.value = 26.0
@@ -52,9 +99,28 @@ object Audio {
             comp.release.value = 0.14
             master.connect(comp)
             comp.connect(ctx.destination)
-            musicBus = ctx.createGain()
-            musicBus.gain.value = if (musicEnabled) MUSIC_LEVEL else 0.0
-            musicBus.connect(master)
+
+            sfxBus = ctx.createGain()
+            sfxBus.connect(master)
+            ambBus = ctx.createGain()
+            ambBus.connect(master)
+            applyBuses()
+
+            // A long, soft echo hung off the ambience bus alone. It is what makes a
+            // distant impact read as distant rather than quiet, and it is the whole
+            // reason the desert sounds like a space with walls somewhere in it.
+            val delay = ctx.createDelay(1.5)
+            delay.delayTime.value = 0.38
+            val fb = ctx.createGain()
+            fb.gain.value = 0.34
+            val tame = ctx.createBiquadFilter()
+            tame.type = "lowpass"
+            tame.frequency.value = 1800.0
+            echoIn = ctx.createGain()
+            echoIn.gain.value = 1.0
+            echoIn.connect(delay)
+            delay.connect(tame); tame.connect(fb); fb.connect(delay)
+            delay.connect(ambBus)
         }
         return ctx != null
     }
@@ -62,16 +128,21 @@ object Audio {
     fun resume() {
         if (!ensure()) return
         if (ctx.state == "suspended") ctx.resume()
-        if (!started) { started = true; runScheduler() }
+        if (!started) { started = true; startBeds(); runRoom() }
     }
 
+    /**
+     * Four seconds of noise, not one. A one-second loop under a filter is audible
+     * as a loop within about twenty seconds of listening, and a loop is the one
+     * thing the bed is not allowed to be.
+     */
     private fun noiseBuffer(): dynamic {
         if (noise == null) {
             val rate = ctx.sampleRate as Double
-            val len = (rate * 1.0).toInt()
+            val len = (rate * 4.0).toInt()
             val buf = ctx.createBuffer(1, len, rate)
             val data = buf.getChannelData(0)
-            for (i in 0 until len) data[i] = (kotlin.random.Random.nextDouble() * 2.0 - 1.0).toFloat()
+            for (i in 0 until len) data[i] = (Random.nextDouble() * 2.0 - 1.0).toFloat()
             noise = buf
         }
         return noise
@@ -117,227 +188,413 @@ object Audio {
         src.start(at); src.stop(at + dur + 0.02)
     }
 
-    // --- the bed ----------------------------------------------------------------
+    // --- the room ---------------------------------------------------------------
     //
-    // Sixteen steps to the bar. The patterns are deliberately sparse at the
-    // bottom and busy at the top, so the four tiers are a real arrangement and
-    // not just a volume knob.
+    // Four continuous beds, started once and never restarted, whose gains and
+    // filters are moved by tension. Between them they are the difference between
+    // "a quiet game" and "a place that happens to be quiet right now".
 
-    private val kickSteps = intArrayOf(0, 10)
-    private val snareSteps = intArrayOf(4, 12)
+    private var windGain: dynamic = null
+    private var windFilter: dynamic = null
+    private var rumbleGain: dynamic = null
+    private var humGain: dynamic = null
+    private var humA: dynamic = null
+    private var humB: dynamic = null
+    private var airGain: dynamic = null
+    private var airFilter: dynamic = null
 
-    /**
-     * Which world's arrangement is playing. The engine is the same drum & bass
-     * engine in both - same scheduler, same kick, same limiter - because the game
-     * should still SOUND like itself in the desert. What changes is the material:
-     * the key, the mode, the percussion, and when the arrangement opens up.
-     */
-    var world = 1
-
-    // A minor, the city's key: four-square, and it resolves.
-    private val cityRoots = doubleArrayOf(55.0, 55.0, 73.42, 65.41)     // A1 A1 D2 C2
-    // D phrygian dominant, the desert's: the flat second is the whole sound of it,
-    // and the mode never quite settles, which is the point of a horizon.
-    private val desertRoots = doubleArrayOf(36.71, 36.71, 58.27, 48.99) // D1 D1 Bb1 G1
-
-    private val cityArp = intArrayOf(0, 3, 7, 10)                       // minor 7th
-    private val desertArp = intArrayOf(0, 1, 4, 8)                      // b2, M3, b6
-
-    private val roots get() = if (world >= 2) desertRoots else cityRoots
-    private val arp get() = if (world >= 2) desertArp else cityArp
-
-    /** The last tenth, where the arrangement stops holding anything back. */
-    private var drive = false
-
-    /** Dry wood, for the desert. It sits where an open hat would and takes up far
-     *  less room, which is what makes the back half feel like heat rather than rain. */
-    private fun clave(at: Double, gain: Double) {
-        val o = ctx.createOscillator(); val g = ctx.createGain()
-        o.type = "triangle"
-        o.frequency.setValueAtTime(2100.0, at)
-        o.frequency.exponentialRampToValueAtTime(1400.0, at + 0.02)
-        g.gain.setValueAtTime(0.0001, at)
-        g.gain.exponentialRampToValueAtTime(gain, at + 0.002)
-        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.05)
-        o.connect(g); g.connect(musicBus); o.start(at); o.stop(at + 0.06)
+    private fun loopNoise(): dynamic {
+        val src = ctx.createBufferSource()
+        src.buffer = noiseBuffer()
+        src.loop = true
+        src.start(ctx.currentTime as Double)
+        return src
     }
 
-    /** A hand drum an octave under the snare - the desert's answer to a fill. */
-    private fun tom(at: Double, freq: Double, gain: Double) {
-        val o = ctx.createOscillator(); val g = ctx.createGain()
-        o.type = "sine"
-        o.frequency.setValueAtTime(freq, at)
-        o.frequency.exponentialRampToValueAtTime(freq * 0.55, at + 0.14)
-        g.gain.setValueAtTime(0.0001, at)
-        g.gain.exponentialRampToValueAtTime(gain, at + 0.005)
-        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.18)
-        o.connect(g); g.connect(musicBus); o.start(at); o.stop(at + 0.20)
-        noiseHit(at, 0.05, gain * 0.35, 3200.0, 0.9, "bandpass", musicBus)
-    }
+    private fun startBeds() {
+        if (!ensure()) return
 
-    private fun kick(at: Double) {
-        val o = ctx.createOscillator(); val g = ctx.createGain()
-        o.type = "sine"
-        o.frequency.setValueAtTime(155.0, at)
-        o.frequency.exponentialRampToValueAtTime(42.0, at + 0.10)
-        g.gain.setValueAtTime(0.0001, at)
-        g.gain.exponentialRampToValueAtTime(0.95, at + 0.004)
-        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.20)
-        o.connect(g); g.connect(musicBus); o.start(at); o.stop(at + 0.22)
-        noiseHit(at, 0.02, 0.30, 2600.0, 0.8, "highpass", musicBus)   // the click
-    }
+        // WIND. Noise under a bandpass that wanders. The wander is the whole
+        // effect: a static filter on noise is a hiss, and a moving one is weather.
+        windFilter = ctx.createBiquadFilter()
+        windFilter.type = "bandpass"
+        windFilter.frequency.value = 420.0
+        windFilter.Q.value = 0.8
+        windGain = ctx.createGain()
+        windGain.gain.value = 0.0
+        loopNoise().connect(windFilter)
+        windFilter.connect(windGain)
+        windGain.connect(ambBus)
 
-    private fun snare(at: Double) {
-        noiseHit(at, 0.13, 0.55, 1900.0, 0.9, "bandpass", musicBus, sweepTo = 900.0)
-        val o = ctx.createOscillator(); val g = ctx.createGain()
-        o.type = "triangle"
-        o.frequency.setValueAtTime(220.0, at)
-        o.frequency.exponentialRampToValueAtTime(150.0, at + 0.08)
-        g.gain.setValueAtTime(0.0001, at)
-        g.gain.exponentialRampToValueAtTime(0.32, at + 0.004)
-        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.10)
-        o.connect(g); g.connect(musicBus); o.start(at); o.stop(at + 0.12)
-    }
-
-    private fun hat(at: Double, open: Boolean, gain: Double) {
-        noiseHit(at, if (open) 0.11 else 0.030, gain, 9000.0, 0.7, "highpass", musicBus)
-    }
-
-    /** Two detuned saws under a moving low-pass: the sound the genre is built on. */
-    private fun bass(at: Double, freq: Double, dur: Double, gain: Double) {
+        // RUMBLE. Everything below 90Hz, which a phone speaker barely reproduces
+        // and a person feels anyway. It is the layer that carries dread.
         val lp = ctx.createBiquadFilter()
         lp.type = "lowpass"
-        lp.frequency.setValueAtTime(freq * 10.0, at)
-        lp.frequency.exponentialRampToValueAtTime(freq * 3.0, at + dur)
-        lp.Q.value = 6.0
-        val g = ctx.createGain()
-        g.gain.setValueAtTime(0.0001, at)
-        g.gain.exponentialRampToValueAtTime(gain, at + 0.012)
-        g.gain.exponentialRampToValueAtTime(0.0001, at + dur)
-        lp.connect(g); g.connect(musicBus)
-        for (detune in doubleArrayOf(-7.0, 7.0)) {
-            val o = ctx.createOscillator()
-            o.type = "sawtooth"
-            o.frequency.value = freq
-            o.detune.value = detune
-            o.connect(lp); o.start(at); o.stop(at + dur + 0.02)
-        }
-        // a clean sub underneath, so it still reads on a phone speaker
-        val sub = ctx.createOscillator(); val sg = ctx.createGain()
-        sub.type = "sine"; sub.frequency.value = freq / 2
-        sg.gain.setValueAtTime(0.0001, at)
-        sg.gain.exponentialRampToValueAtTime(gain * 0.8, at + 0.012)
-        sg.gain.exponentialRampToValueAtTime(0.0001, at + dur)
-        sub.connect(sg); sg.connect(musicBus); sub.start(at); sub.stop(at + dur + 0.02)
+        lp.frequency.value = 90.0
+        lp.Q.value = 0.7
+        rumbleGain = ctx.createGain()
+        rumbleGain.gain.value = 0.0
+        loopNoise().connect(lp)
+        lp.connect(rumbleGain)
+        rumbleGain.connect(ambBus)
+
+        // HUM. Two detuned oscillators - mains hum for the city, something older
+        // and slower for the desert. This is the layer that says "machinery".
+        humGain = ctx.createGain()
+        humGain.gain.value = 0.0
+        humGain.connect(ambBus)
+        humA = ctx.createOscillator()
+        humB = ctx.createOscillator()
+        humA.type = "sawtooth"; humB.type = "sine"
+        val tame = ctx.createBiquadFilter()
+        tame.type = "lowpass"
+        tame.frequency.value = 340.0
+        humA.connect(tame); humB.connect(tame); tame.connect(humGain)
+        humA.start(ctx.currentTime as Double); humB.start(ctx.currentTime as Double)
+
+        // AIR. The top end: room tone in the city, sand moving in the desert.
+        airFilter = ctx.createBiquadFilter()
+        airFilter.type = "highpass"
+        airFilter.frequency.value = 2200.0
+        airGain = ctx.createGain()
+        airGain.gain.value = 0.0
+        loopNoise().connect(airFilter)
+        airFilter.connect(airGain)
+        airGain.connect(ambBus)
+
+        applyWorldToBeds()
     }
 
-    private fun lead(at: Double, freq: Double, gain: Double) {
-        val o = ctx.createOscillator(); val g = ctx.createGain()
-        o.type = "square"
-        o.frequency.value = freq
-        g.gain.setValueAtTime(0.0001, at)
-        g.gain.exponentialRampToValueAtTime(gain, at + 0.006)
-        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.12)
-        o.connect(g); g.connect(musicBus); o.start(at); o.stop(at + 0.14)
-    }
-
-    private var step = 0
-    private var nextStepTime = 0.0
-
-    private fun playStep(i: Int, at: Double) {
-        val inBar = i % 16
-        val bar = (i / 16) % 4
-        val tier = intensity
-        val desert = world >= 2
-        val root = roots[bar]
-
-        if (inBar in kickSteps) kick(at)
-        if (tier >= 2 && inBar == 6) kick(at)                    // the drop's extra kick
-        if (drive && inBar == 8) kick(at)                        // the last tenth
-        if (inBar in snareSteps) snare(at)
-        if (tier >= 3 && inBar == 14) snare(at)
-
-        if (desert) {
-            // The desert's top end is dry: wood on the off-beats where the city
-            // puts hats, and a hand drum instead of a third snare. Sand does not
-            // sound like rain.
-            if (tier >= 1 && inBar % 4 == 2) clave(at, 0.17)
-            if (tier >= 2 && inBar % 4 == 3) clave(at, 0.11)
-            if (tier >= 2 && (inBar == 7 || inBar == 15)) tom(at, root * 4.0, 0.26)
-            if (tier >= 3 && inBar % 2 == 1) hat(at, open = false, gain = 0.10)
-            if (drive && inBar % 2 == 0) clave(at, 0.08)
+    private fun applyWorldToBeds() {
+        if (humA == null) return
+        val t = (ctx.currentTime as Double)
+        if (world >= 2) {
+            // A buried machine turning over somewhere under the sand: lower,
+            // slower, and slightly out of tune with itself.
+            humA.frequency.setTargetAtTime(41.0, t, 0.6)
+            humB.frequency.setTargetAtTime(61.5, t, 0.6)
         } else {
-            // hats: eighths, then sixteenths once the level is moving
-            if (tier >= 1 && inBar % 4 == 2) hat(at, open = false, gain = 0.20)
-            if (tier >= 2 && inBar % 2 == 1) hat(at, open = false, gain = 0.13)
-            if (tier >= 3 && inBar % 2 == 0 && inBar % 4 != 0) hat(at, open = true, gain = 0.10)
+            // Mains hum and the buzz of a sign that needs replacing.
+            humA.frequency.setTargetAtTime(50.0, t, 0.6)
+            humB.frequency.setTargetAtTime(100.0, t, 0.6)
         }
-
-        // The desert holds its bass back until the level's own 60%, so the drop
-        // at 75% actually arrives from somewhere. Until then it is one low note
-        // to the bar and a lot of air.
-        if (inBar == 0) bass(at, root, if (desert && tier < 2) 0.44 else 0.30, 0.42)
-        if (inBar == 10 && (!desert || tier >= 2)) bass(at, root, 0.30, 0.42)
-        if (tier >= 2 && inBar == 6) bass(at, root * 1.5, 0.16, 0.30)
-        if (tier >= 3 && inBar == 13) bass(at, root * 2.0, 0.14, 0.26)
-        if (drive && inBar == 3) bass(at, root * 1.5, 0.12, 0.24)
-
-        if (tier >= 1 && inBar % 8 == 0) lead(at, root * 4.0, 0.14)
-        if (tier >= 2 && inBar % 2 == 0)
-            lead(at, root * 4.0 * 2.0.pow(arp[(inBar / 2) % 4] / 12.0), 0.11)
-        if (tier >= 3 && inBar % 4 == 3) lead(at, root * 8.0, 0.09)
-        if (drive && inBar % 4 == 1) lead(at, root * 8.0 * 2.0.pow(arp[bar] / 12.0), 0.07)
     }
 
     /**
-     * Lookahead scheduler. Notes are queued into WebAudio's own clock a fraction
-     * of a second early, so a stutter in the animation loop cannot move the beat.
+     * Tension, held as a number rather than a tier, so the room breathes between
+     * the anchors instead of stepping between them. The anchors are the brief:
+     * calm to halfway, a lift at 50%, the low rumble arriving at 70%, real
+     * pressure by 85%, and everything the level has for the last twentieth.
      */
-    private fun runScheduler() {
-        if (!ensure()) return
-        nextStepTime = (ctx.currentTime as Double) + 0.08
-        fun tick() {
-            if (ctx.state != "closed") {
-                val stepDur = 60.0 / bpm / 4.0
-                val now = ctx.currentTime as Double
-                var guard = 0
-                while (nextStepTime < now + 0.12 && guard++ < 32) {
-                    if (musicEnabled) playStep(step, nextStepTime)
-                    step++
-                    nextStepTime += stepDur
-                }
-                if (nextStepTime < now) nextStepTime = now + 0.02
-            }
-            window.setTimeout({ tick() }, 25)
+    private fun tensionFor(p: Double) = when {
+        p >= 0.95 -> 1.00
+        p >= 0.85 -> 0.72 + (p - 0.85) / 0.10 * 0.28
+        p >= 0.70 -> 0.50 + (p - 0.70) / 0.15 * 0.22
+        p >= 0.50 -> 0.28 + (p - 0.50) / 0.20 * 0.22
+        else -> 0.10 + p / 0.50 * 0.18
+    }
+
+    private var tier = 0
+    private var duckUntil = 0.0
+
+    /** Where in the level the room is. Called every frame by the shell. */
+    fun setProgress(p: Double) {
+        tension = tensionFor(p)
+        val t = when {
+            p >= 0.95 -> 4
+            p >= 0.85 -> 3
+            p >= 0.70 -> 2
+            p >= 0.50 -> 1
+            else -> 0
         }
+        if (t > tier) { tier = t; duck() }
+        else if (t < tier) tier = t
+    }
+
+    /**
+     * The drop-out before a harder stretch. Everything goes to almost nothing for
+     * a third of a second, then the room comes back at its new weight. This is
+     * the only moment in the game that is deliberately near-silent, and it is
+     * what makes the stretch after it land - a build with no hole in front of it
+     * is a volume knob, not a moment.
+     */
+    private fun duck() {
+        if (!ensure()) return
+        duckUntil = (ctx.currentTime as Double) + 0.42
+        val t = ctx.currentTime as Double
+        listOf(windGain, rumbleGain, humGain, airGain).forEach { g ->
+            g?.gain?.cancelScheduledValues(t)
+            g?.gain?.setTargetAtTime(0.004, t, 0.05)
+        }
+    }
+
+    fun restartRoom() {
+        tier = 0
+        tension = 0.0
+        duckUntil = 0.0
+        applyWorldToBeds()
+    }
+
+    /**
+     * The room's own clock. It does two jobs on a slow timer: it walks the beds
+     * toward where tension says they should be, and it decides when the next
+     * thing happens somewhere out of sight.
+     *
+     * The gap between events is randomised every single time, and the range it is
+     * drawn from only narrows with tension. Nothing here can land on a grid, and
+     * nothing repeats at an interval the ear can learn.
+     */
+    private var nextEvent = 0.0
+
+    private fun runRoom() {
+        fun tick() {
+            if (ctx != null && ctx.state != "closed") {
+                val now = ctx.currentTime as Double
+                if (now > duckUntil) {
+                    val ten = tension
+                    val desert = world >= 2
+                    // The desert is a windier, emptier, lower room than the city.
+                    val wind = if (desert) 0.055 + 0.150 * ten else 0.022 + 0.055 * ten
+                    val rumble = if (desert) 0.070 + 0.320 * ten.pow(1.4) else 0.040 + 0.210 * ten.pow(1.5)
+                    val hum = if (desert) 0.014 + 0.036 * ten else 0.030 + 0.062 * ten
+                    val air = if (desert) 0.020 + 0.055 * ten else 0.010 + 0.024 * ten
+                    windGain?.gain?.setTargetAtTime(wind, now, 0.7)
+                    rumbleGain?.gain?.setTargetAtTime(rumble, now, 0.9)
+                    humGain?.gain?.setTargetAtTime(hum, now, 1.2)
+                    airGain?.gain?.setTargetAtTime(air, now, 0.8)
+                    // the wind wanders, faster and higher the tenser it gets
+                    val centre = (if (desert) 300.0 else 520.0) * (0.72 + Random.nextDouble() * 0.62) *
+                        (1.0 + 0.5 * ten)
+                    windFilter?.frequency?.setTargetAtTime(centre, now, 1.4)
+                    windFilter?.Q?.setTargetAtTime(0.6 + 1.9 * ten, now, 1.4)
+                    airFilter?.frequency?.setTargetAtTime(
+                        (if (desert) 1500.0 else 2600.0) * (0.85 + Random.nextDouble() * 0.4), now, 1.1)
+
+                    if (now >= nextEvent) {
+                        if (ambienceEnabled) event(now)
+                        // Randomised every time, and only the RANGE moves with
+                        // tension. A fixed cadence, however slow, is a pulse.
+                        val busy = 1.0 - 0.55 * tension
+                        nextEvent = now + (1.1 + Random.nextDouble() * 5.2) * busy
+                    }
+                }
+            }
+            window.setTimeout({ tick() }, 220)
+        }
+        nextEvent = (ctx.currentTime as Double) + 1.2
         tick()
     }
 
-    /**
-     * Called each frame with 0..1 through the level; moves the arrangement.
-     *
-     * The two worlds are shaped differently on purpose. The city builds early and
-     * then holds, which suits a level you are meant to settle into. The desert
-     * stays sparse and dry for well over half the run, drops its bass at 60%,
-     * breaks at 75%, and opens all the way up for the last tenth - so the music
-     * arrives at the hardest part of the level at the same moment the player does.
-     */
-    fun setProgress(p: Double) {
-        intensity = if (world >= 2) when {
-            p >= 0.75 -> 3
-            p >= 0.60 -> 2
-            p >= 0.15 -> 1
-            else -> 0
+    // --- things happening somewhere out of sight ---------------------------------
+    //
+    // Every one of these is quiet, long and unresolved. None of them is a
+    // jumpscare: a sound that makes a player flinch during a precision jump is a
+    // death the game caused, which is the one thing this project does not ship.
+    // They are here to make the place feel inhabited by something, not to startle.
+
+    private fun event(now: Double) {
+        val ten = tension
+        val desert = world >= 2
+        // Which palette a moment comes from is itself a function of tension: the
+        // strange, low, unresolved things only start turning up once the level has
+        // begun to squeeze.
+        val roll = Random.nextDouble()
+        if (desert) when {
+            roll < 0.24 -> sandGust(now, 0.6 + 0.9 * ten)
+            roll < 0.42 -> distantImpact(now, 0.5 + 1.0 * ten)
+            roll < 0.58 -> stoneGroan(now, 0.5 + 0.9 * ten)
+            roll < 0.70 -> templeEcho(now, 0.5 + 0.8 * ten)
+            roll < 0.82 -> ancientMachine(now, 0.4 + 1.0 * ten)
+            roll < 0.92 && ten > 0.45 -> unease(now, ten)
+            else -> sandGust(now, 0.4 + 0.7 * ten)
         } else when {
-            p >= 0.90 -> 3
-            p >= 0.70 -> 2
-            p >= 0.25 -> 1
-            else -> 0
+            roll < 0.26 -> electricalCrackle(now, 0.5 + 0.9 * ten)
+            roll < 0.44 -> distantMachinery(now, 0.5 + 0.9 * ten)
+            roll < 0.60 -> distantImpact(now, 0.4 + 0.9 * ten)
+            roll < 0.74 -> metallicCreak(now, 0.4 + 0.8 * ten)
+            roll < 0.86 -> airMove(now, 0.5 + 0.8 * ten)
+            roll < 0.94 && ten > 0.45 -> unease(now, ten)
+            else -> electricalCrackle(now, 0.4 + 0.6 * ten)
         }
-        drive = p >= 0.90
     }
 
-    fun restartMusic() { step = 0; intensity = 0; drive = false }
+    /** A swell of sand moving across the world, front to back. */
+    private fun sandGust(at: Double, amount: Double) {
+        val src = ctx.createBufferSource()
+        src.buffer = noiseBuffer(); src.loop = true
+        val f = ctx.createBiquadFilter()
+        f.type = "bandpass"
+        f.frequency.setValueAtTime(700.0, at)
+        f.frequency.exponentialRampToValueAtTime(2600.0, at + 1.6)
+        f.frequency.exponentialRampToValueAtTime(500.0, at + 3.2)
+        f.Q.value = 0.9
+        val g = ctx.createGain()
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(0.055 * amount, at + 1.3)
+        g.gain.linearRampToValueAtTime(0.0001, at + 3.2)
+        src.connect(f); f.connect(g); g.connect(ambBus)
+        src.start(at); src.stop(at + 3.3)
+    }
+
+    /** Something heavy landing a long way off. Sent to the echo, because distance
+     *  is reverberation and not simply quietness. */
+    private fun distantImpact(at: Double, amount: Double) {
+        val o = ctx.createOscillator(); val g = ctx.createGain()
+        o.type = "sine"
+        o.frequency.setValueAtTime(74.0, at)
+        o.frequency.exponentialRampToValueAtTime(31.0, at + 0.85)
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.exponentialRampToValueAtTime(0.16 * amount, at + 0.05)
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 1.1)
+        o.connect(g); g.connect(ambBus); g.connect(echoIn)
+        o.start(at); o.stop(at + 1.2)
+        val n = ctx.createBufferSource(); n.buffer = noiseBuffer()
+        val f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 260.0
+        val ng = ctx.createGain()
+        ng.gain.setValueAtTime(0.0001, at)
+        ng.gain.exponentialRampToValueAtTime(0.07 * amount, at + 0.03)
+        ng.gain.exponentialRampToValueAtTime(0.0001, at + 0.8)
+        n.connect(f); f.connect(ng); ng.connect(ambBus); ng.connect(echoIn)
+        n.start(at); n.stop(at + 0.9)
+    }
+
+    /** Rock shifting against rock. Slow, tonal, and it never quite resolves. */
+    private fun stoneGroan(at: Double, amount: Double) {
+        val o = ctx.createOscillator(); val g = ctx.createGain()
+        o.type = "sawtooth"
+        o.frequency.setValueAtTime(52.0, at)
+        o.frequency.linearRampToValueAtTime(44.0, at + 2.4)
+        val f = ctx.createBiquadFilter(); f.type = "lowpass"
+        f.frequency.setValueAtTime(190.0, at)
+        f.frequency.linearRampToValueAtTime(95.0, at + 2.4)
+        f.Q.value = 3.0
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(0.085 * amount, at + 0.9)
+        g.gain.linearRampToValueAtTime(0.0001, at + 2.5)
+        o.connect(f); f.connect(g); g.connect(ambBus); g.connect(echoIn)
+        o.start(at); o.stop(at + 2.6)
+    }
+
+    /** A struck stone in a big empty room. Mostly echo by the time it is heard. */
+    private fun templeEcho(at: Double, amount: Double) {
+        val o = ctx.createOscillator(); val g = ctx.createGain()
+        o.type = "triangle"
+        o.frequency.setValueAtTime(196.0, at)
+        o.frequency.exponentialRampToValueAtTime(131.0, at + 0.4)
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.exponentialRampToValueAtTime(0.045 * amount, at + 0.02)
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.55)
+        o.connect(g); g.connect(echoIn)
+        o.start(at); o.stop(at + 0.6)
+    }
+
+    /** Something older than the temple, still turning over under the sand. */
+    private fun ancientMachine(at: Double, amount: Double) {
+        val o = ctx.createOscillator(); val g = ctx.createGain()
+        o.type = "square"
+        o.frequency.setValueAtTime(29.0, at)
+        val f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 150.0
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(0.075 * amount, at + 1.1)
+        g.gain.linearRampToValueAtTime(0.0001, at + 3.0)
+        o.connect(f); f.connect(g); g.connect(ambBus)
+        o.start(at); o.stop(at + 3.1)
+        // the beat frequency of two things that were never in time with each other
+        val o2 = ctx.createOscillator()
+        o2.type = "square"; o2.frequency.setValueAtTime(30.4, at)
+        o2.connect(f); o2.start(at); o2.stop(at + 3.1)
+    }
+
+    /** A bad connection in a sign that has been on too long. */
+    private fun electricalCrackle(at: Double, amount: Double) {
+        val bursts = 2 + Random.nextInt(4)
+        var t = at
+        for (i in 0 until bursts) {
+            noiseHit(t, 0.020 + Random.nextDouble() * 0.03, 0.035 * amount,
+                3200.0 + Random.nextDouble() * 4200.0, 2.5, "bandpass", ambBus)
+            t += 0.03 + Random.nextDouble() * 0.16
+        }
+    }
+
+    /** A machine floor, several blocks away, through a wall. */
+    private fun distantMachinery(at: Double, amount: Double) {
+        val o = ctx.createOscillator(); val g = ctx.createGain()
+        o.type = "sawtooth"
+        o.frequency.setValueAtTime(63.0, at)
+        val f = ctx.createBiquadFilter(); f.type = "lowpass"
+        f.frequency.setValueAtTime(220.0, at)
+        f.Q.value = 2.0
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(0.055 * amount, at + 0.8)
+        g.gain.linearRampToValueAtTime(0.0001, at + 2.2)
+        o.connect(f); f.connect(g); g.connect(ambBus); g.connect(echoIn)
+        o.start(at); o.stop(at + 2.3)
+    }
+
+    /** Metal taking a load it was not built for. */
+    private fun metallicCreak(at: Double, amount: Double) {
+        val src = ctx.createBufferSource(); src.buffer = noiseBuffer()
+        val f = ctx.createBiquadFilter()
+        f.type = "bandpass"
+        f.frequency.setValueAtTime(900.0, at)
+        f.frequency.exponentialRampToValueAtTime(280.0, at + 1.3)
+        f.Q.value = 14.0
+        val g = ctx.createGain()
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(0.055 * amount, at + 0.35)
+        g.gain.linearRampToValueAtTime(0.0001, at + 1.4)
+        src.connect(f); f.connect(g); g.connect(ambBus); g.connect(echoIn)
+        src.start(at); src.stop(at + 1.5)
+    }
+
+    /** Air moving through somewhere it has to squeeze to get out of. */
+    private fun airMove(at: Double, amount: Double) {
+        val src = ctx.createBufferSource(); src.buffer = noiseBuffer(); src.loop = true
+        val f = ctx.createBiquadFilter()
+        f.type = "bandpass"
+        f.frequency.setValueAtTime(1100.0, at)
+        f.frequency.linearRampToValueAtTime(2400.0, at + 1.8)
+        f.Q.value = 1.6
+        val g = ctx.createGain()
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(0.030 * amount, at + 0.9)
+        g.gain.linearRampToValueAtTime(0.0001, at + 2.0)
+        src.connect(f); f.connect(g); g.connect(ambBus)
+        src.start(at); src.stop(at + 2.1)
+    }
+
+    /**
+     * The one that is meant to be unsettling.
+     *
+     * It is deliberately quiet and deliberately long: a low shape that almost
+     * resolves into a voice and then does not, a long way off, drenched in the
+     * echo. It only exists past halfway through a level, and it is never loud,
+     * because a sound that makes someone flinch mid-jump is a death the game
+     * caused - and the brief asks for unease, not for a noise.
+     */
+    private fun unease(at: Double, ten: Double) {
+        val src = ctx.createBufferSource(); src.buffer = noiseBuffer(); src.loop = true
+        val f = ctx.createBiquadFilter()
+        f.type = "bandpass"
+        f.frequency.setValueAtTime(330.0 + Random.nextDouble() * 200.0, at)
+        f.frequency.linearRampToValueAtTime(190.0, at + 2.6)
+        f.Q.value = 9.0
+        val g = ctx.createGain()
+        g.gain.setValueAtTime(0.0001, at)
+        g.gain.linearRampToValueAtTime(0.030 * ten, at + 1.3)
+        g.gain.linearRampToValueAtTime(0.0001, at + 2.8)
+        src.connect(f); f.connect(g); g.connect(echoIn); g.connect(ambBus)
+        src.start(at); src.stop(at + 2.9)
+        val o = ctx.createOscillator(); val og = ctx.createGain()
+        o.type = "sine"
+        o.frequency.setValueAtTime(38.0, at)
+        o.frequency.linearRampToValueAtTime(33.0, at + 2.6)
+        og.gain.setValueAtTime(0.0001, at)
+        og.gain.linearRampToValueAtTime(0.055 * ten, at + 1.1)
+        og.gain.linearRampToValueAtTime(0.0001, at + 2.8)
+        o.connect(og); og.connect(ambBus)
+        o.start(at); o.stop(at + 2.9)
+    }
 
     // --- the cues ----------------------------------------------------------------
 

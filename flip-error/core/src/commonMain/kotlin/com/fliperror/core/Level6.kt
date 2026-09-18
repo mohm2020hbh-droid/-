@@ -44,22 +44,8 @@ object Level6 {
     private fun blinker(x0: Double, x1: Double, top: Double, phase: Double, on: Double = 0.60) =
         Solid(x0, x1, top, -40.0, null, Blink(BAR_S * 2.0, on, phase))
 
-    /**
-     * A blinker's phase is derived, never chosen.
-     *
-     * x advances at a fixed speed, so the moment the runner lands on a platform
-     * is a property of where that platform is - which makes a hand-picked phase
-     * a guess about arithmetic. The first guess here had both blinkers dark at
-     * the exact instant the runner arrived, and the level was unbeatable.
-     *
-     * Given the x the floor is landed on, this returns the phase that switches
-     * it on [spent] of an ON window before the runner gets there, so the floor is
-     * already visibly on its way out when they land and they cannot dawdle.
-     */
-    private fun blinkPhaseAt(x: Double, spent: Double = 0.05): Double {
-        val u = spent - (x / Tuning.RUN_SPEED) / (BAR_S * 2.0)
-        return ((u % 1.0) + 1.0) % 1.0
-    }
+    /** See [blinkPhaseFor]: where the floor is decides when it must switch on. */
+    private fun blinkPhaseAt(x: Double) = blinkPhaseFor(x, BAR_S * 2.0)
 
     val finishX = beat(116.0)                    // 344.4 units -> 36.3 seconds
 

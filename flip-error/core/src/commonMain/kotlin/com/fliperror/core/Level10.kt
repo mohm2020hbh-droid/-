@@ -1,18 +1,25 @@
 package com.fliperror.core
 
 /**
- * LEVEL 10 - "DESERT CHAOS"  (WORLD 2)
+ * LEVEL 10 - "DESERT STORM"  (WORLD 2)
  *
- * Every word the desert knows, in one run. Breathing sand, rolling crests,
- * erupting geysers, hanging beams, falling masonry, a sliding temple block, and
- * the relics - the one obstacle in the game with no straight line in it, orbiting
- * on a circle because equal reach on both axes a quarter turn apart IS a circle.
+ * The storm arrives. Two thirds of this level is run through blowing sand, and
+ * with it come the two heaviest things in the desert: boulders rolling down the
+ * lane, and relics turning on their own axis.
  *
- * The circle is not decoration. Everything else here moves back and forth, which
- * means it is always either coming or going; a relic is always doing both, and
- * reading one is the skill this level is named after. It is also the most
- * legible mover in the game once you have it, because a circle tells you where
- * it goes next from any point on it.
+ * The storm is WEATHER, and it is the reason this level can exist at all without
+ * breaking the promise the game makes. It has no hitbox. It cannot kill anyone.
+ * What it takes away is the SCENERY - the dunes, the ruins, the sky - while the
+ * ground, the hazards and the runner stay at full strength on top of it. The
+ * player loses the horizon and keeps every single thing they have to judge,
+ * which is the only honest way to ship reduced visibility in a game that
+ * promises you always know why you died.
+ *
+ * The relic is the other new word: the one obstacle with no straight line in it,
+ * orbiting because equal reach on both axes a quarter turn apart IS a circle.
+ * Everything else here is always either coming or going; a relic is always doing
+ * both, and it is the most legible mover in the game once you have read one,
+ * because a circle tells you where it goes next from any point on it.
  */
 object Level10 {
 
@@ -30,6 +37,13 @@ object Level10 {
     fun build(): Level {
         val sandA = D.shiftingSand(96.2, 130.0, GROUND, 0.7, bars = 3.0)
         val sandB = D.shiftingSand(238.2, 272.0, MID, 0.8, phase = 0.5, bars = 4.0)
+
+        // The storm covers the level's middle and its finish, and leaves the
+        // opening clear so the player learns the boulder in good light first.
+        val storms = listOf(
+            D.sandstorm(96.0, 216.0, 0.58),
+            D.sandstorm(276.0, 352.0, 0.70),
+        )
 
         val solids = listOf(
             Solid(-14.0, 48.0, GROUND),        // the opening
@@ -56,8 +70,8 @@ object Level10 {
         hazards += D.rotatingRelic(21.0, 1.7, 1.3)
         hazards += spike(32.0, GROUND)
         hazards += spike(41.0, GROUND)
-        // 16-27%: crest, geyser, beam, spike - world 2's vocabulary, at speed.
-        hazards += D.sandWave(56.0, GROUND, 2.2)
+        // 16-27%: the boulder, in clear air, where it can be watched coming.
+        hazards += D.boulder(56.0, GROUND, 2.0)
         hazards += D.sandGeyser(63.0, GROUND, upAt = 63.8)
         hazards += spike(70.0, GROUND)
         hazards += D.sunLaser(80.0, 2.2, onAt = 76.0)
@@ -65,8 +79,8 @@ object Level10 {
         // 30-38%: on the breathing sand, and everything on it breathes with it.
         hazards += D.sandSpike(104.0, GROUND, sandA.motion!!)
         hazards += D.sandGeyser(116.0, GROUND, bars = 3.0, upAt = 116.8, riding = sandA.motion)
-        // 41-50%: stone, masonry coming down, and the run-up to the first boost.
-        hazards += D.sandWave(140.0, GROUND, 2.4)
+        // 41-50%: in the storm now - masonry, and a second boulder in the sand.
+        hazards += D.boulder(140.0, GROUND, 2.2)
         hazards += spike(154.0, GROUND)
         hazards += D.fallingRuin(162.0, GROUND, downAt = 162.8)
         // 55-63%: the mid shelf. A relic over the lane, then a beam after it.
@@ -92,8 +106,9 @@ object Level10 {
         )
 
         return Level(
-            id = 10, name = "DESERT CHAOS", subtitle = "ALL OF IT, MOVING",
+            id = 10, name = "DESERT STORM", subtitle = "YOU CANNOT SEE THE HORIZON",
             bpm = BPM, solids = solids, hazards = hazards, stars = stars, finishX = finishX,
+            storms = storms,
         )
     }
 }

@@ -26,10 +26,13 @@ object Strings {
         "levelComplete" to "LEVEL COMPLETE", "starCoins" to "STAR COINS",
         "new" to "NEW", "perfect" to "PERFECT RUN", "earned" to "EARNED",
         "nextLevel" to "NEXT LEVEL", "replay" to "REPLAY",
-        "music" to "MUSIC", "sfx" to "SFX", "vibration" to "VIBRATION",
+        // No MUSIC entry. There is no music - see Audio - and a label for a
+        // thing that does not exist tells the player they failed to hear it.
+        "master" to "MASTER VOLUME", "sfx" to "SFX", "ambience" to "AMBIENCE",
+        "vibration" to "VIBRATION",
         "reduceEffects" to "REDUCE EFFECTS", "colorblind" to "COLORBLIND MODE",
         "language" to "LANGUAGE", "reset" to "RESET PROGRESS", "resetGo" to "RESET",
-        "unlockAll" to "UNLOCK ALL LEVELS",
+        "unlockAll" to "UNLOCK ALL LEVELS", "tryAll" to "TRY EVERY COSMETIC", "tryOn" to "TRY ON",
         "resetAsk" to "ERASE ALL PROGRESS?", "notBuilt" to "NOT BUILT YET",
         "shapes" to "SHAPES", "colors" to "COLORS", "trails" to "TRAILS", "faces" to "FACES",
     )
@@ -47,10 +50,11 @@ object Strings {
         "levelComplete" to "اكتملت المرحلة", "starCoins" to "نجوم",
         "new" to "جديد", "perfect" to "جولة مثالية", "earned" to "المكتسب",
         "nextLevel" to "المرحلة التالية", "replay" to "إعادة",
-        "music" to "الموسيقى", "sfx" to "المؤثرات", "vibration" to "الاهتزاز",
+        "master" to "الصوت العام", "sfx" to "المؤثرات", "ambience" to "أصوات البيئة",
+        "vibration" to "الاهتزاز",
         "reduceEffects" to "تقليل المؤثرات", "colorblind" to "وضع عمى الألوان",
         "language" to "اللغة", "reset" to "مسح التقدم", "resetGo" to "مسح",
-        "unlockAll" to "فتح كل المراحل",
+        "unlockAll" to "فتح كل المراحل", "tryAll" to "تجربة كل المظاهر", "tryOn" to "جرّب",
         "resetAsk" to "مسح كل التقدم؟", "notBuilt" to "لم تُبنَ بعد",
         "shapes" to "أشكال", "colors" to "ألوان", "trails" to "آثار", "faces" to "وجوه",
     )
