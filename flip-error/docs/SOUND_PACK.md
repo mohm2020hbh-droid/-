@@ -19,8 +19,15 @@ referenced by nothing: no loader touches it, no bus exists for it, and it is
 never in memory while the game runs. The **live** column below says which side
 of that line each master is on. `web/.../AudioMap.kt` repeats the list in code.
 
-- **live (22)** — the cues the game fires: player, interface, and the world-2
-  obstacle voices, which are caused by an obstacle rather than played under one.
+- **live (22)** — the cues the game fires: player, interface, and the obstacle
+  voices, which are caused by an obstacle rather than played under one. Seven of
+  those voices serve worlds 2 AND 3: the pack predates the abyss and contains no
+  recording made for it, but a swell is a swell and something coming apart is
+  something coming apart, so `37_w2_sand_wave` is also the abyss swell,
+  `38_w2_sand_geyser` the arm out of the floor, `39_w2_falling_ruin` a bubble
+  coming apart, `40/41_w2_laser_*` the jelly's warning and its open,
+  `42_w2_wind_blast` a pressure ring and `43_w2_collapse_bridge` a crystal
+  swinging down. Nothing is renamed or re-encoded; `AudioMap.kt` holds the table.
 - **on disk, unused (20)** — the eleven sixty-second environments, the four
   tension risers, the three unease beds, the two world-1 atmosphere hits and
   the menu hum.
