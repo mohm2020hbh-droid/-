@@ -1,19 +1,20 @@
 package com.fliperror.core
 
 /**
- * LEVEL 17 - "MEMORY"  (WORLD 3)
+ * LEVEL 17 - "THE ABYSS"  (WORLD 3)
  *
- * The same phrase, twice, faster the second time.
+ * The skill check. Every word the water knows, in one level, with almost nothing
+ * between them.
  *
- * Its middle is built out of two runs of the identical sequence - bubble, no
- * tap, corridor, split, jump - laid down once with room to read it and once with
- * the room taken away. That is not a trick: a runner never stops, so the second
- * pass is genuinely the same geometry compressed, and a player who read the
- * first one already knows the answer to the second. It is the first level in the
- * game that rewards having been here before rather than reacting well.
+ * Crystal, ring, swell, wall, jelly, arm, chain, split, orb: nine shapes, and the
+ * level cycles them fast enough that the player is never answering the thing in
+ * front of them, they are answering the thing after it. That is the difference
+ * between this and LEVEL 15 - the density there was one decision a second, and
+ * here it is one decision a second made from the memory of the last three.
  *
- * Everything the abyss knows is on the field by now except the electric lanes,
- * which arrive here as the thing that punishes staying airborne.
+ * Its take-off windows sit at the floor of what this game is ever allowed to ask
+ * for, 0.075s, and they get there in the finish rather than in the middle. What
+ * makes the middle hard is the reading, and the reading has no ceiling.
  */
 object Level17 {
 
@@ -23,73 +24,70 @@ object Level17 {
     private const val GROUND = 0.0
     private const val LOW = -3.2
 
-    private fun spike(x: Double, y: Double) = Hazard(HazardKind.SPIKE_UP, x, x + 1.0, y, y + 1.0)
-
-    /** The phrase, laid down from [x] with its beats [step] apart. Twice: once
-     *  wide, once tight, and the second one is the level's whole idea. */
-    private fun phrase(x: Double, base: Double, step: Double): List<Hazard> {
-        val out = ArrayList<Hazard>()
-        out += A.chasingBubble(x, base, reach = 2.0)
-        out += A.descendingWall(x + step, base + 2.1, downAt = x + step)
-        out += A.lightCorridor(x + step * 2, x + step * 2 + 8.4, base + 2.2,
-            openAt = x + step * 2 + 2.0)
-        out += A.splitBubble(x + step * 3.2, base, at = x + step * 3.2 + 11.0, pieces = 2)
-        return out
-    }
-
     val finishX = A.beat(121.0)                  // 345.0 units -> 36.3 seconds
 
     fun build(): Level {
         val solids = listOf(
             Solid(-14.0, 50.0, GROUND),
-            Solid(54.2, 140.0, GROUND),        // gap 4.20u - the first phrase runs here
-            Solid(146.8, 232.0, GROUND),       // gap 6.60u - the boost, then the second
+            Solid(54.2, 140.0, GROUND),        // gap 4.20u - a long unbroken run
+            Solid(146.8, 232.0, GROUND),       // gap 6.60u - the boost, then another
             Solid(236.2, 280.0, LOW),          // gap 4.20u, and down
             Solid(284.2, 318.0, LOW),          // gap 4.20u
             Solid(324.4, 380.0, LOW),          // gap 6.40u - the last boost
         )
 
-        // Over FLOOR, never over a gap. A burst that changes the height of a
-        // 6.40u crossing while it is being made measured a 0.029s take-off, and
-        // the rule this level relearned is the one LEVEL 15 wrote down: water may
-        // change what a jump is worth, never whether a crossing exists.
-        val winds = listOf(A.currentBurst(292.0, 306.0, 16.0))
-
         val hazards = ArrayList<Hazard>()
-        hazards += spike(11.0, GROUND)
-        hazards += spike(23.0, GROUND)
-        hazards += spike(35.0, GROUND)
-        // 16-38%: the phrase, with room to read it.
-        hazards += phrase(60.0, GROUND, 18.0)
-        // 43-64%: the same phrase, tighter. A player who read the first one
-        // already knows this; a player who did not is meeting it at speed.
-        hazards += phrase(152.0, GROUND, 15.0)
-        hazards += A.mine(212.0, 2.0, phase = 0.25)
-        hazards += spike(224.0, GROUND)
-        // 69-78%: the low shelf, and the lanes that punish being in the air.
-        hazards += A.electricCurrent(244.0, LOW + 2.0, onAtX = 244.0)
-        hazards += A.mine(256.0, LOW + 1.9)
-        hazards += A.electricCurrent(268.0, LOW + 2.0, onAtX = 268.0)
-        // 84-94%: past the updraft. An orb, then an arm.
-        hazards += A.abyssOrb(296.0, LOW + 2.9)
-        hazards += A.chasingBubble(308.0, LOW)
-        // 96-99%: the finish. It used to sit at 348, which is PAST this level's
-        // own finish line at 344.9 - three spikes nobody ever reached, and a
-        // level whose hardest moment was therefore somewhere in its middle.
-        hazards += spike(330.0, LOW)
-        hazards += spike(334.14, LOW)
-        hazards += spike(338.28, LOW)
+        // 0-12%: four shapes in forty units, all of them the two with the widest
+        // windows in the kit. The swell belongs to this level too and it waits
+        // until 63%, because a wide thing four units from a ledge is a crossing
+        // the player has to start from inside its sweep.
+        hazards += A.crystal(10.0, GROUND, lowAt = 10.0)
+        hazards += A.pressureRing(20.0, GROUND, reach = 2.0)
+        hazards += A.crystal(30.0, GROUND, lowAt = 30.0)
+        hazards += A.pressureRing(40.0, GROUND, reach = 2.2)
+        // 17-30%: wall, jelly, crystal, chain - the long run, and nothing on it
+        // is more than ten units from the next thing.
+        hazards += A.bubbleWall(60.0, GROUND, openBottom = 1.7, openTop = 4.0)
+        hazards += A.jelly(70.0, GROUND, openAt = 70.0)
+        hazards += A.crystal(80.0, GROUND, lowAt = 80.0)
+        hazards += A.bubbleChain(90.0, GROUND, count = 3, spacing = 7.0, size = 1.15)
+        // 34-39%: the split, and then the run-up to the boost.
+        hazards += A.splitBubble(116.0, GROUND, at = 126.0, pieces = 2)
+        hazards += A.crystal(134.0, GROUND, lowAt = 134.0)
+        // 45-63%: the second long run. Arm, orb, crystal, ring, jelly, wall,
+        // swell: seven shapes in sixty units, which is the densest stretch in
+        // the game that is not a finish.
+        hazards += A.tentacle(156.0, GROUND, upAt = 156.0)
+        hazards += A.abyssOrb(166.0, 2.8, radius = 2.0)
+        hazards += A.crystal(178.0, GROUND, lowAt = 178.0)
+        hazards += A.pressureRing(188.0, GROUND, reach = 2.4)
+        hazards += A.jelly(198.0, GROUND, openAt = 198.0)
+        hazards += A.bubbleWall(208.0, GROUND, openBottom = 1.7, openTop = 4.0)
+        hazards += A.risingWave(218.0, GROUND, reach = 2.2)
+        // 71-79%: the low shelf. Crystal, arm, a short chain.
+        hazards += A.crystal(246.0, LOW, lowAt = 246.0)
+        hazards += A.tentacle(256.0, LOW, upAt = 256.0)
+        hazards += A.bubbleChain(266.0, LOW, count = 2, spacing = 7.0, size = 1.2)
+        // 85-90%: jelly and crystal into the last boost. A ring belongs here too
+        // and is not here: at 310 its sweep reached 313.2 and the take-off for a
+        // 6.40u crossing is at 316.6, which is two units of strip to land, stand
+        // and leave from. Density is not worth a crossing nobody can start.
+        hazards += A.jelly(292.0, LOW, openAt = 292.0)
+        hazards += A.crystal(302.0, LOW, lowAt = 302.0)
+        // 96-98%: the slot.
+        hazards += A.stillBubble(330.0, LOW)
+        hazards += A.stillBubble(334.14, LOW)
+        hazards += A.stillBubble(338.28, LOW)
 
         val stars = listOf(
-            Star(17.0, 2.5),
-            Star(228.0, 4.4),        // on floor, not on the arc the line already flies
-            Star(312.0, LOW + 4.4),  // on floor, past the crossing rather than over it
+            Star(48.0, 4.4),
+            Star(226.0, 4.4),
+            Star(322.0, LOW + 4.4),
         )
 
         return Level(
-            id = 17, name = "MEMORY", subtitle = "YOU HAVE SEEN THIS BEFORE",
-            bpm = BPM, solids = solids, hazards = hazards, stars = stars,
-            finishX = finishX, winds = winds,
+            id = 17, name = "THE ABYSS", subtitle = "READ THE ONE AFTER NEXT",
+            bpm = BPM, solids = solids, hazards = hazards, stars = stars, finishX = finishX,
         )
     }
 }

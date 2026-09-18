@@ -77,6 +77,36 @@ object AudioMap {
     const val WIND_BLAST = "42_w2_wind_blast"
     const val COLLAPSE_BRIDGE = "43_w2_collapse_bridge"
 
+    // --- world 3's obstacles, on the same seven recordings ---------------------
+    //
+    // The pack predates the abyss and contains no recording made for it. The rule
+    // is that the pack is the only source, so world 3 gets no sound of its own
+    // invention - and it does not have to: seven of these files are short,
+    // abstract hazard SFX whose names describe where they were first USED, not
+    // what they sound like. A swell is a swell; a burst from below is a burst
+    // from below; something coming apart is something coming apart.
+    //
+    // So this is a deliberate reuse and it is written down here rather than left
+    // for someone to discover:
+    //
+    //   37_w2_sand_wave        -> the swell rolling down the lane
+    //   38_w2_sand_geyser      -> an arm coming up out of the floor
+    //   39_w2_falling_ruin     -> a bubble coming apart
+    //   40_w2_laser_charge     -> a jelly swelling, while it is still safe
+    //   41_w2_laser_blast      -> the instant that jelly is lethal
+    //   42_w2_wind_blast       -> a ring of pressure passing
+    //   43_w2_collapse_bridge  -> a crystal swinging down into the lane
+    //
+    // Nothing is renamed on disk and nothing is re-encoded. These are aliases.
+
+    const val ABYSS_SWELL = SAND_WAVE
+    const val ABYSS_ARM = SAND_GEYSER
+    const val ABYSS_SPLIT = FALLING_RUIN
+    const val ABYSS_JELLY_WARN = LASER_CHARGE
+    const val ABYSS_JELLY_OPEN = LASER_BLAST
+    const val ABYSS_RING = WIND_BLAST
+    const val ABYSS_CRYSTAL = COLLAPSE_BRIDGE
+
     /**
      * Every recording the game loads, and the whole of it. There is no second
      * list: if a sound is not here it is not fetched, not decoded, not held in

@@ -3,15 +3,16 @@
  *
  * The deserttest proves world 2 is a different PLACE. This one has a harder job,
  * because world 3's claim is not that it looks different - it is that it asks a
- * different QUESTION. Worlds 1 and 2 answer every obstacle with a tap at the
- * right moment; the abyss has obstacles whose answer is to NOT tap, and if that
- * is not true in the running game then world 3 really is world 2 in blue.
+ * different QUESTION. Worlds 1 and 2 answer every obstacle by being in the air
+ * or not being in the air; the bubble wall is answered by being at a PARTICULAR
+ * HEIGHT, and if that is not true in the running game then world 3 really is
+ * world 2 in blue.
  *
- * So this harness asks, in order: is it somewhere else, is its whole vocabulary
- * actually on the field, does a descending wall genuinely punish the jump and
- * genuinely spare the run, does every level clear on the line the verifier
- * proved, is there still no ambience anywhere in it, and does it hold 60fps with
- * 153 moving parts.
+ * So this harness asks, in order: is it somewhere else, is there a single spike
+ * left in it, is its whole vocabulary actually on the field, does the bubble
+ * wall genuinely spare the jump and genuinely punish the second tap, does every
+ * level clear on the line the verifier proved, is there any quiet floor in the
+ * finale, is there still no ambience anywhere in it, and does it hold 60fps.
  *
  *   node tools/abysstest.mjs [--headed] [--shots DIR]
  */
@@ -120,71 +121,85 @@ await page.screenshot({ path: path.join(shotDir, '01-level13-abyss.png') });
 // 2 — the whole vocabulary is actually on the field ---------------------------
 const seen = new Set();
 const surfaces = new Set();
-let pulsingTotal = 0, windsTotal = 0;
+let pulsingTotal = 0;
 for (const id of IDS) {
   await open(id);
   const lv = await page.evaluate(() => ({
     looks: FLIP.looks(), surfaces: FLIP.surfaces(),
-    pulsing: FLIP.pulsing(), winds: FLIP.winds(),
+    pulsing: FLIP.pulsing(),
   }));
   lv.looks.split(',').forEach(k => seen.add(k));
   lv.surfaces.split(',').forEach(k => surfaces.add(k));
   pulsingTotal += lv.pulsing;
-  windsTotal += lv.winds;
 }
-// Bubbles, orbs, arms, walls, mines and the lit lanes. Every one of these is a
-// shape world 1 and world 2 do not contain.
-const wanted = ['BUBBLE', 'ORB', 'TENTACLE', 'WALL', 'MINE', 'LASER'];
+// Bubbles, orbs, arms, crystals, jellies, rings and swells. Every one of these
+// is a shape worlds 1 and 2 do not contain.
+const wanted = ['BUBBLE', 'ORB', 'TENTACLE', 'CRYSTAL', 'JELLY', 'RING', 'WAVE'];
 check('every abyss obstacle type reaches a level',
   wanted.every(k => seen.has(k)), [...seen].sort().join(','));
-check('and the floor itself is made of bubbles somewhere',
+// The world's flattest claim, and the easiest one to break by accident: there is
+// not one spike in it. A spike in the abyss is world 2 with a filter on.
+check('and there is not a single spike in the whole world',
+  !seen.has('SPIKE'), [...seen].sort().join(','));
+check('the floor itself is made of bubbles somewhere',
   surfaces.has('BUBBLE'), [...surfaces].sort().join(','));
 check('the abyss is full of things that switch on and off',
   pulsingTotal >= 40, `${pulsingTotal} of them`);
-check('and of water that shoves', windsTotal >= 4, `${windsTotal} currents`);
-// Nothing from world 2 leaked in: a desert shape in the abyss is the exact
-// failure this world is meant to avoid.
-const desertOnly = ['SAND_WAVE', 'RUIN', 'RELIC', 'GEYSER', 'BOULDER'];
+// Nothing from world 2 leaked in either.
+const desertOnly = ['SAND_WAVE', 'RUIN', 'RELIC', 'GEYSER', 'BOULDER', 'LASER'];
 check('and nothing from the desert came with it',
   desertOnly.every(k => !seen.has(k)), [...seen].sort().join(','));
 
-// 3 — the new question: an obstacle answered by NOT tapping -------------------
-// LEVEL 13's walls hang at 2.0 over open floor with nothing else on the stretch.
-// A runner who keeps running passes under them. A runner who jumps does not.
-// Both halves are checked, because only the pair proves the mechanic: a wall
-// that never kills is scenery, and one that always kills is a locked door.
-await open(13);
-const ran = await page.evaluate(() => new Promise(res => {
-  let f = 0;
-  const step = () => {                      // no taps at all through the walls
-    if (FLIP.x() > 92 || FLIP.state() !== 'RUNNING' || ++f > 2000)
+// 3 — the new question: an obstacle answered by a PARTICULAR HEIGHT ----------
+// LEVEL 16's first bubble wall stands at x=64 with an opening from 1.7 to 4.2,
+// which is head height for a single jump and under the floor of a double one.
+// Both halves are checked here, because only the pair proves the mechanic: a
+// wall the verified line sails through is not an obstacle, and a wall a second
+// tap also sails through is not the obstacle this world was built around.
+const WALL_X = 64;
+await open(16);
+const through = await page.evaluate(() => new Promise(res => {
+  const plan = window.__plans[16].jumps;
+  let i = 0, owed = false, bx = 0, f = 0;
+  const step = () => {
+    const x = FLIP.x();
+    if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
+      owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
+    } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
+    if (x > 72 || FLIP.state() !== 'RUNNING' || ++f > 2000)
       return res({ state: FLIP.state(), x: FLIP.x(), cause: FLIP.cause() });
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
 }));
-check('a descending wall can be run under by not pressing anything',
-  ran.state === 'RUNNING' && ran.x > 92,
-  `reached x=${ran.x.toFixed(1)}${ran.state === 'DEAD' ? ' — ' + ran.cause : ''}`);
-await page.screenshot({ path: path.join(shotDir, '02-level13-wall.png') });
+check('the opening in a bubble wall can be flown through',
+  through.state === 'RUNNING' && through.x > 72,
+  `reached x=${through.x.toFixed(1)}${through.state === 'DEAD' ? ' — ' + through.cause : ''}`);
+await page.screenshot({ path: path.join(shotDir, '02-level16-wall.png') });
 
-await open(13);
-const jumped = await page.evaluate(() => new Promise(res => {
-  let f = 0, tapped = 0;
+await open(16);
+const doubled = await page.evaluate(wallX => new Promise(res => {
+  const plan = window.__plans[16].jumps;
+  let i = 0, owed = false, bx = 0, f = 0, extra = 0;
   const step = () => {
     const x = FLIP.x();
-    // Jump on the spot, repeatedly, from under the first wall onward. This is
-    // the player who has learned worlds 1 and 2 and answers everything with a tap.
-    if (x > 64 && x < 90 && FLIP.grounded()) { FLIP.tap(); tapped++; }
-    if (FLIP.x() > 92 || FLIP.state() !== 'RUNNING' || ++f > 2000)
-      return res({ state: FLIP.state(), x: FLIP.x(), cause: FLIP.cause(), tapped });
+    if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
+      owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
+    } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
+    // The one difference: a second tap on the way INTO the wall. This is the
+    // player who has learned that when in doubt you go higher.
+    else if (!extra && x > wallX - 4 && x < wallX && !FLIP.grounded() && FLIP.canDouble()) {
+      FLIP.tap(); extra++;
+    }
+    if (x > 72 || FLIP.state() !== 'RUNNING' || ++f > 2000)
+      return res({ state: FLIP.state(), x: FLIP.x(), cause: FLIP.cause(), extra });
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
-}));
-check('and jumping into it is what kills you',
-  jumped.state === 'DEAD' && jumped.tapped > 0,
-  `${jumped.tapped} taps, ${jumped.state} at x=${jumped.x.toFixed(1)}`);
+}), WALL_X);
+check('and going higher through the same opening is what kills you',
+  doubled.state === 'DEAD' && doubled.extra > 0,
+  `${doubled.extra} extra tap(s), ${doubled.state} at x=${doubled.x.toFixed(1)}`);
 
 // 4 — every abyss level clears on its verified line ---------------------------
 for (const id of IDS) {

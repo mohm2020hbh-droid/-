@@ -678,12 +678,21 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.moveTo(sx(b.x0), sy(b.y1)); ctx.lineTo(sx(b.x1), sy(b.y1))
                 ctx.stroke()
             }
-            Look.WALL -> {
-                // the slot a slab will come out of, so it is never a surprise
-                val up = hz.kind == HazardKind.SPIKE_UP
+            Look.TENTACLE -> {
+                // the seam in the floor an arm will come up through, so its
+                // arrival is somewhere the player has already been looking
                 ctx.beginPath()
-                val y = if (up) sy(b.y0) else max(sy(b.y1), 0.0)
-                ctx.moveTo(sx(b.x0), y); ctx.lineTo(sx(b.x1), y)
+                ctx.moveTo(sx(b.x0), sy(b.y0)); ctx.lineTo(sx(b.x1), sy(b.y0))
+                ctx.stroke()
+                ctx.globalAlpha = 0.12
+                ctx.fillStyle = theme.sun
+                ctx.fillRect(sx(b.x0), sy(b.y0) - 3.0, sx(b.x1) - sx(b.x0), 3.0)
+            }
+            Look.JELLY -> {
+                // a shut jelly is drawn small and dim, sitting where it will swell
+                val r = (sx(b.x1) - sx(b.x0)) * 0.30
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.beginPath(); ctx.arc((sx(b.x0) + sx(b.x1)) / 2, cy, r, 0.0, PI * 2)
                 ctx.stroke()
             }
             Look.RUIN -> {
@@ -864,37 +873,93 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.stroke()
                 ctx.globalAlpha /= 0.5
             }
-            // A slab. Flat, heavy, and it grows from whichever edge it belongs to,
-            // so a rising wall and a dropping one are told apart before they land.
-            Look.WALL -> {
-                val up = hz.kind == HazardKind.SPIKE_UP
-                val from = if (up) sy(b.y0) else max(sy(b.y1), 0.0)
-                val to = if (up) sy(b.y1) else sy(b.y0)
-                val edgeY = from + (to - from) * grow
+            // A crystal: a faceted shard hanging point-down, with a stem going up
+            // into the dark so the eye reads it as SUSPENDED rather than floating.
+            // Every other abyss shape is round; this one is all angles, which is
+            // what tells the player at a glance that it is the one that swings.
+            Look.CRYSTAL -> {
+                val top = sy(b.y1); val base = sy(b.y0)
+                val w = (x1 - x0) / 2
                 ctx.beginPath()
-                ctx.moveTo(x0, from); ctx.lineTo(x1, from)
-                ctx.lineTo(x1 - 3.0, edgeY); ctx.lineTo(x0 + 3.0, edgeY)
+                ctx.moveTo(mx, base)
+                ctx.lineTo(x0, top + (base - top) * 0.62)
+                ctx.lineTo(mx - w * 0.45, top)
+                ctx.lineTo(mx + w * 0.45, top)
+                ctx.lineTo(x1, top + (base - top) * 0.62)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.55
+                ctx.beginPath()
+                ctx.moveTo(mx, base); ctx.lineTo(mx, top)
+                ctx.moveTo(x0, top + (base - top) * 0.62); ctx.lineTo(x1, top + (base - top) * 0.62)
+                ctx.moveTo(mx, top); ctx.lineTo(mx, 0.0)          // the stem into the dark
+                ctx.stroke()
+                ctx.globalAlpha /= 0.55
+            }
+            // A jelly: a dome that BREATHES. Its size is driven by [grow], which
+            // the caller has already filled from the warm-up, so the swell the
+            // player is asked to read is the same number the physics switches on.
+            Look.JELLY -> {
+                val top = sy(b.y1); val base = sy(b.y0)
+                val w = (x1 - x0) / 2 * (0.7 + 0.3 * grow)
+                val cy = top + (base - top) * 0.42
+                ctx.beginPath()
+                ctx.moveTo(mx - w, cy)
+                ctx.quadraticCurveTo(mx - w, top, mx, top)
+                ctx.quadraticCurveTo(mx + w, top, mx + w, cy)
                 ctx.closePath(); ctx.fill(); ctx.stroke()
                 ctx.globalAlpha *= 0.6
-                ctx.beginPath(); ctx.moveTo(x0 + 3.0, edgeY); ctx.lineTo(x1 - 3.0, edgeY)
+                ctx.beginPath()
+                for (k in 0 until 4) {
+                    val tx = mx - w * 0.7 + k * (w * 1.4 / 3)
+                    ctx.moveTo(tx, cy)
+                    ctx.quadraticCurveTo(tx + sin(levelTime * 3.0 + k) * w * 0.25,
+                        (cy + base) / 2, tx, base)
+                }
                 ctx.stroke()
                 ctx.globalAlpha /= 0.6
             }
-            // A mine: small, spiked, and unmistakably not a bubble.
-            Look.MINE -> {
-                val r = (x1 - x0) / 2
+            // A ring of pressure: two concentric ellipses, open in the middle, so
+            // it reads as something travelling THROUGH the water rather than in it.
+            Look.RING -> {
                 val cy = (sy(b.y0) + sy(b.y1)) / 2
-                ctx.beginPath(); ctx.arc(mx, cy, r * 0.66, 0.0, PI * 2); ctx.fill(); ctx.stroke()
+                val rx = (x1 - x0) / 2 * grow
+                val ry = (sy(b.y0) - sy(b.y1)) / 2 * grow
+                ctx.beginPath(); ctx.ellipse(mx, cy, rx, ry, 0.0, 0.0, PI * 2); ctx.stroke()
+                ctx.globalAlpha *= 0.65
                 ctx.beginPath()
-                for (k in 0 until 6) {
-                    val a = k * PI / 3 + levelTime * 0.8
-                    ctx.moveTo(mx + cos(a) * r * 0.62, cy + sin(a) * r * 0.62)
-                    ctx.lineTo(mx + cos(a) * r * 1.15, cy + sin(a) * r * 1.15)
-                }
-                ctx.stroke()
+                ctx.ellipse(mx, cy, rx * 0.55, ry * 0.55, 0.0, 0.0, PI * 2); ctx.stroke()
+                ctx.globalAlpha /= 0.65
             }
-            // Current is drawn by drawWind as a column, not as a box.
-            Look.CURRENT -> Unit
+            // A swell: a crest with its own surface line, low and wide.
+            Look.WAVE -> {
+                val top = sy(b.y1); val base = sy(b.y0)
+                ctx.beginPath()
+                ctx.moveTo(x0, base)
+                ctx.quadraticCurveTo(mx - (x1 - x0) * 0.2, top, mx, top)
+                ctx.quadraticCurveTo(mx + (x1 - x0) * 0.2, top, x1, base)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.5
+                ctx.beginPath()
+                ctx.moveTo(x0, base + (top - base) * 0.35)
+                ctx.quadraticCurveTo(mx, top + (base - top) * 0.25, x1, base + (top - base) * 0.35)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.5
+            }
+            // Drift: a small angular thing turning slowly, with nothing familiar
+            // about its outline. It is the only shape here that is not symmetric.
+            Look.SHARD -> {
+                val r = (x1 - x0) / 2 * grow
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.save(); ctx.translate(mx, cy); ctx.rotate(levelTime * 0.9 + b.x0)
+                ctx.beginPath()
+                ctx.moveTo(0.0, -r)
+                ctx.lineTo(r * 0.75, -r * 0.15)
+                ctx.lineTo(r * 0.35, r)
+                ctx.lineTo(-r * 0.6, r * 0.5)
+                ctx.lineTo(-r * 0.8, -r * 0.45)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.restore()
+            }
             // The city's spike, unchanged.
             Look.SPIKE -> {
                 ctx.beginPath()
@@ -958,9 +1023,38 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             ctx.globalAlpha = 1.0
         }
 
-        // things in the water, far off: slabs of rock in silhouette
+        // things in the water, far off: slabs of rock in silhouette, and growing
+        // out of them the formations this world is named for - crystal, lit from
+        // the same glow underneath, so they read as part of the floor rather than
+        // as scenery stuck on top of it.
         ridge(g, 0.06, 6.0, 0.10, 0.20, theme.far, 0.75, 17)
+        crystalField(g, 0.10, 3.4, 0.12, 0.30, 0.34, 733)
         ridge(g, 0.14, 4.0, 0.14, 0.26, theme.mid, 0.82, 409)
+        crystalField(g, 0.20, 2.2, 0.08, 0.18, 0.22, 91)
+
+        // Bubbles rising out of the dark - the one thing that says WATER faster
+        // than any amount of blue. They drift up rather than across, so they read
+        // against the runner's own direction instead of adding to it.
+        if (!reduceEffects) {
+            ctx.strokeStyle = theme.horizon
+            ctx.lineWidth = 1.4
+            for (k in 0 until 26) {
+                val seed = k * 197 + 11
+                val speed = 26.0 + seed % 34
+                val bx = ((seed * 61) % w.toInt()).toDouble() -
+                    (g * (2.0 + seed % 4)) % (w + 60.0)
+                val rise = (g * speed + seed * 7) % (h * 1.15)
+                val by = floorY + 30.0 - rise
+                if (by < -10.0) continue
+                val r = 1.6 + (seed % 7) * 0.8
+                ctx.globalAlpha = 0.34 * (1.0 - rise / (h * 1.15)).coerceIn(0.0, 1.0) + 0.08
+                ctx.beginPath()
+                ctx.arc((bx + w * 2) % w, by + sin(g * 1.6 + k) * 4.0, r, 0.0, PI * 2)
+                ctx.stroke()
+            }
+            ctx.globalAlpha = 1.0
+            ctx.lineWidth = 2.5
+        }
 
         // and the motes everything underwater has
         if (!reduceEffects) {
@@ -976,6 +1070,46 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             }
             ctx.globalAlpha = 1.0
         }
+    }
+
+    /**
+     * Crystal growing out of the rock: narrow, pointed, and drawn twice - a body
+     * in silhouette and a brighter core inside it - so a formation a hundred
+     * units away still reads as something with light in it rather than as a
+     * black triangle. [alpha] is how much of the glow it keeps.
+     */
+    private fun crystalField(g: Double, speed: Double, step: Double, lo: Double, hi: Double,
+                             alpha: Double, seed: Int) {
+        val gy = h * 0.78
+        val span = w / step
+        val shift = (g * speed * scale) % span
+        var i = -1
+        var r = seed
+        while (i * span - shift < w + span) {
+            r = (r * 1103515245 + 12345) and 0x7fffffff
+            val tall = h * (lo + (hi - lo) * ((r shr 9) % 100) / 100.0)
+            val lean = (((r shr 5) % 40) - 20) / 100.0
+            val bx = i * span - shift + span * 0.5
+            val halfW = span * 0.10
+            ctx.globalAlpha = alpha
+            ctx.fillStyle = theme.billboard
+            ctx.beginPath()
+            ctx.moveTo(bx - halfW, gy)
+            ctx.lineTo(bx + halfW * lean * 2.0, gy - tall)
+            ctx.lineTo(bx + halfW, gy)
+            ctx.closePath()
+            ctx.fill()
+            ctx.globalAlpha = alpha * 0.8
+            ctx.fillStyle = theme.sun
+            ctx.beginPath()
+            ctx.moveTo(bx - halfW * 0.3, gy)
+            ctx.lineTo(bx + halfW * lean * 2.0, gy - tall * 0.86)
+            ctx.lineTo(bx + halfW * 0.3, gy)
+            ctx.closePath()
+            ctx.fill()
+            i++
+        }
+        ctx.globalAlpha = 1.0
     }
 
     /** Rock in silhouette against the glow - flat-topped slabs, not a skyline. */

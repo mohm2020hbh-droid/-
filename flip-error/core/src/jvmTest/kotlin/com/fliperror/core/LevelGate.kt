@@ -25,6 +25,25 @@ abstract class LevelGate(protected val level: Level) {
     /** How many second taps this level must force out of a perfect player. */
     protected open val minBoosts = 1
 
+    /**
+     * The longest the level may go without asking for anything, in seconds.
+     *
+     * World 3's own promise, and the reason it reads as a harder place rather
+     * than a bluer one. Its levels measured take-off windows barely tighter than
+     * world 2's while leaving the player alone for five and six seconds at a
+     * stretch, which is a level that is difficult in a report and idle in the
+     * hand. Worlds 1 and 2 are laid out with room in them on purpose and are not
+     * held to this, so it defaults to no limit.
+     */
+    protected open val maxRest = Double.MAX_VALUE
+
+    @Test fun `it does not leave the player alone`() {
+        val rest = report.longestRest(level.durationSeconds)
+        assertTrue(rest <= maxRest,
+            "${level.name}: ${"%.2f".format(rest)}s of level with nothing asked of the " +
+                "player, against a limit of ${"%.2f".format(maxRest)}s")
+    }
+
     @Test fun `it can be beaten`() {
         assertTrue(report.solvable,
             "no sequence of taps clears ${level.name}; the furthest any line reaches is " +

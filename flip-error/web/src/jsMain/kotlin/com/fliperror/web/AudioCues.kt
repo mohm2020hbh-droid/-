@@ -84,12 +84,61 @@ class AudioCues {
                 Look.SAND_WAVE, Look.BOULDER -> edge(key, ahead < earshot * 0.55) {
                     Audio.hazardCue(AudioMap.SAND_WAVE, vol * 0.8)
                 }
-                // The abyss has no recordings of its own - the pack predates it -
-                // and inventing sounds for it is what the pack-only rule forbids.
-                // Its obstacles are read rather than heard, which is what the world
-                // is about anyway.
-                Look.SPIKE, Look.RELIC, Look.BUBBLE, Look.ORB,
-                Look.TENTACLE, Look.WALL, Look.MINE, Look.CURRENT -> Unit
+                // --- THE ABYSS ----------------------------------------------
+                //
+                // World 3 has no recordings of its own: the pack predates it, and
+                // inventing sounds is what the pack-only rule exists to stop. What
+                // it has instead is seven short hazard SFX whose names say where
+                // they were first used rather than what they sound like - see the
+                // alias table in AudioMap, which is the whole of the reuse.
+                //
+                // An arm coming up out of the floor, on the edge, not the state.
+                Look.TENTACLE -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.ABYSS_JELLY_WARN, vol * 0.55)
+                    }
+                    edge(key + "/up", hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.ABYSS_ARM, vol)
+                    }
+                }
+                // A jelly has the same two moments a beam has, and for the same
+                // reason: the swell is a warning and the open is a fact.
+                Look.JELLY -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.ABYSS_JELLY_WARN, vol * 0.8)
+                    }
+                    edge(key + "/open", hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.ABYSS_JELLY_OPEN, vol)
+                    }
+                }
+                // A split bubble is the one abyss event with a moment in the
+                // middle of it: the parent stops being there, and that is when it
+                // is heard. activeAt is false from the split onward, so the edge
+                // is taken on the way DOWN - hence the negation.
+                Look.BUBBLE -> if (hz.pulses) {
+                    edge(key + "/split", !hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.ABYSS_SPLIT, vol)
+                    }
+                } else {
+                    // A still or chasing bubble does not switch; the edge is the
+                    // runner coming within earshot of it, said once per pass.
+                    edge(key, ahead < earshot * 0.5) {
+                        Audio.hazardCue(AudioMap.ABYSS_SWELL, vol * 0.5)
+                    }
+                }
+                // The three that travel or swing: announced on approach, once.
+                Look.WAVE -> edge(key, ahead < earshot * 0.55) {
+                    Audio.hazardCue(AudioMap.ABYSS_SWELL, vol * 0.85)
+                }
+                Look.RING -> edge(key, ahead < earshot * 0.5) {
+                    Audio.hazardCue(AudioMap.ABYSS_RING, vol * 0.8)
+                }
+                Look.CRYSTAL -> edge(key, ahead < earshot * 0.45) {
+                    Audio.hazardCue(AudioMap.ABYSS_CRYSTAL, vol * 0.6)
+                }
+                // An orb and a drifting shard are quiet. Everything in front of
+                // the runner having a voice is the same as nothing having one.
+                Look.SPIKE, Look.RELIC, Look.ORB, Look.SHARD -> Unit
             }
         }
 

@@ -25,12 +25,19 @@ enum class HazardKind { SPIKE_UP, SPIKE_DOWN }
 enum class Look {
     SPIKE, SAND_WAVE, RUIN, RELIC, GEYSER, LASER, BOULDER,
     // --- WORLD 3, THE ABYSS ---------------------------------------------
-    BUBBLE,      // a chasing bubble, and the small ones it leaves behind
-    ORB,         // an abyss orb on its circle, and the hunting orb
-    TENTACLE,    // an arm reaching in from the edge of the world
-    WALL,        // a slab rising from the floor or dropping from the ceiling
-    MINE,        // a floating mine holding its own little patrol
-    CURRENT,     // a burst of water, drawn as the push it is
+    //
+    // Not one of these is a spike, and that is the world's whole claim. The
+    // abyss is made of things that are alive or nearly so, and the renderer has
+    // a different drawing for each - a shape the player learns once and then
+    // recognises at a glance for the rest of the world.
+    BUBBLE,      // a chasing bubble, the ones it splits into, and the walls they build
+    ORB,         // the biggest thing in the water, on its circle, column or diagonal
+    TENTACLE,    // an arm coming up out of the floor
+    CRYSTAL,     // a shard swinging down into the lane and back out
+    JELLY,       // a geometric organism that opens and shuts on the bar
+    RING,        // a ring of pressure travelling the lane at the runner
+    WAVE,        // a swell of water rolling toward them
+    SHARD,       // small alien drift, on a path that is neither circle nor line
 }
 
 /** What a surface is made of. Art only, exactly as [Look] is. */

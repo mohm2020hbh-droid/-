@@ -83,8 +83,8 @@ class Theme(
             // sun on the horizon - which is the whole reason it does not read as
             // world 2 in blue. Electric cyan is the water, magenta is the life in
             // it, and red is still nothing but danger.
-            Theme("#020a1e", "#062246", "#01040d", "#07305c", "#0b4a7a", "#0f6f9e",
-                "#2ef0ff", "#b07bff", "#ff2e8b", Scene.ABYSS, "#18d7ff", "#c9f7ff"),
+            Theme("#020a1e", "#052a4e", "#01040d", "#06365f", "#0a5c86", "#0d8fa6",
+                "#2ef0ff", "#b07bff", "#39ffb0", Scene.ABYSS, "#18d7ff", "#eaffff"),
             // --- WORLD 4: green + cyan ----------------------------------------
             Theme("#04231f", "#063a33", "#05060f", "#0a5348", "#0d7a63", "#12b089",
                 "#39ff9e", "#2ef0ff", "#7cffb2", Scene.CITY),
