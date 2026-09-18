@@ -60,9 +60,10 @@ object Level15 {
         hazards += A.crystal(166.0, GROUND, lowAt = 166.0)
         hazards += A.pressureRing(176.0, GROUND, reach = 2.4)
         hazards += A.jelly(186.0, GROUND, openAt = 186.0)
-        // Drift overhead, where the floor is clear and the temptation to reach
-        // for the second tap is not.
-        hazards += A.floaters(166.0, GROUND, count = 3, spacing = 3.0)
+        // Drift over the last of that stretch, hanging at 4.8 where a single jump
+        // cannot reach it and a second tap can. The gap at 200 is 4.20u and takes
+        // one tap, so the drift costs the crossing nothing - it costs the habit.
+        hazards += A.floaters(192.0, GROUND, count = 3, spacing = 3.0)
         // 62-68%: the low shelf.
         hazards += A.chasingBubble(214.0, LOW, size = 1.4, reach = 2.0)
         hazards += A.crystal(226.0, LOW, lowAt = 226.0)

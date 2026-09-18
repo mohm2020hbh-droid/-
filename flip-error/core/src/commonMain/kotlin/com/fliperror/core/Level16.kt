@@ -75,7 +75,7 @@ object Level16 {
         hazards += A.bubbleWall(258.0, LOW, openBottom = 1.7, openTop = 4.2)
         hazards += A.risingWave(268.0, LOW, reach = 2.2)
         hazards += A.tentacle(280.0, LOW, upAt = 280.0)
-        // 88-98%: an arm out of the floor, an orb over the run-in, and the slot.
+        // 90-98%: an arm out of the floor, an orb over the run-in, and the slot.
         // The arm is here because without it this level had thirty-seven units
         // between its last boost and its finish with nothing in them - 3.90s of
         // holding a button down, in the world whose whole claim is that it never

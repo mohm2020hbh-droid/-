@@ -51,7 +51,7 @@ object Level17 {
         hazards += A.jelly(70.0, GROUND, openAt = 70.0)
         hazards += A.crystal(80.0, GROUND, lowAt = 80.0)
         hazards += A.bubbleChain(90.0, GROUND, count = 3, spacing = 7.0, size = 1.15)
-        // 34-39%: the split, and then the run-up to the boost.
+        // 31-39%: drift overhead, then the split, then the run-up to the boost.
         hazards += A.floaters(108.0, GROUND, count = 2, spacing = 3.0)
         hazards += A.splitBubble(116.0, GROUND, at = 126.0, pieces = 2)
         hazards += A.crystal(134.0, GROUND, lowAt = 134.0)
