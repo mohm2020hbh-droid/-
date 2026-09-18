@@ -92,6 +92,13 @@ object Level18 {
         // the game, with no quiet floor anywhere in it.
         hazards += A.jelly(312.0, LOW, openAt = 312.0)
         hazards += A.crystal(322.0, LOW, lowAt = 322.0)
+        // One shard over the run-in to the slot. Without it there are thirteen
+        // units between the crystal and the first bubble with nothing in them -
+        // which the world 3 harness caught, thirteen frames of a gauntlet that is
+        // supposed not to have any. It hangs at 4.8 and the take-off for the slot
+        // tops out at 3.55, so it cannot touch the crossing; what it does is stop
+        // the last second and a half of the game from being empty.
+        hazards += A.floater(329.0, LOW)
         hazards += A.stillBubble(336.0, LOW)
         hazards += A.stillBubble(340.14, LOW)
         hazards += A.stillBubble(344.28, LOW)

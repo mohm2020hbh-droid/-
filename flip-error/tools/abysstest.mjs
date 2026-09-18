@@ -227,7 +227,10 @@ const gauntlet = await page.evaluate(() => new Promise(res => {
     if (i < plan.length && x >= plan[i].x && FLIP.grounded()) {
       owed = plan[i].boosted; bx = plan[i].boostX; i++; FLIP.tap();
     } else if (owed && FLIP.canDouble() && x >= bx) { FLIP.tap(); owed = false; }
-    if (FLIP.progress() > 0.88) { sampled++; if (FLIP.crowdAhead(12) === 0) empty++; }
+    // Up to 99% and not to the line: the last two units are the run-out past
+    // the final bubble, and nothing is supposed to be in them.
+    const p = FLIP.progress();
+    if (p > 0.88 && p < 0.99) { sampled++; if (FLIP.crowdAhead(12) === 0) empty++; }
     if (FLIP.state() !== 'RUNNING' || ++f > 4000)
       return res({ state: FLIP.state(), sampled, empty });
     requestAnimationFrame(step);
@@ -235,8 +238,8 @@ const gauntlet = await page.evaluate(() => new Promise(res => {
   requestAnimationFrame(step);
 }));
 check('the final gauntlet never gives the player empty floor',
-  gauntlet.sampled > 60 && gauntlet.empty === 0,
-  `${gauntlet.sampled} frames past 88%, ${gauntlet.empty} with nothing in the next 12u`);
+  gauntlet.sampled > 50 && gauntlet.empty === 0,
+  `${gauntlet.sampled} frames from 88% to 99%, ${gauntlet.empty} with nothing in the next 12u`);
 
 // 6 — still no ambience, in this world either ---------------------------------
 await open(18);
