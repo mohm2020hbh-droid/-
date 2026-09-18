@@ -56,21 +56,26 @@ object Level16 {
         hazards += A.tentacle(88.0, GROUND, upAt = 88.0)
         // 31-39%: the chain, over water that is also the floor.
         hazards += A.bubbleChain(108.0, GROUND, count = 3, spacing = 7.4, size = 1.2)
-        hazards += A.abyssOrb(134.0, 2.8, radius = 2.2)
+        hazards += A.orbDiagonal(134.0, 2.0, reach = 2.0, nearAt = 134.0)
         // 47-54%: past the boost. Arm, wall, swell - and now the wall has company.
         hazards += A.tentacle(164.0, GROUND, upAt = 164.0)
         hazards += A.bubbleWall(174.0, GROUND, openBottom = 1.7, openTop = 4.2)
         hazards += A.risingWave(186.0, GROUND, reach = 2.2)
         // 61-69%: the low shelf. An orb on its circle, an arm, a short chain.
-        hazards += A.abyssOrb(210.0, LOW + 2.8, radius = 2.0)
+        hazards += A.abyssOrb(210.0, LOW, radius = 2.0)
         hazards += A.tentacle(222.0, LOW, upAt = 222.0)
         hazards += A.bubbleChain(232.0, LOW, count = 2, spacing = 7.2, size = 1.2)
         // 75-81%: wall, swell, arm across the bubble floor.
         hazards += A.bubbleWall(258.0, LOW, openBottom = 1.7, openTop = 4.2)
         hazards += A.risingWave(268.0, LOW, reach = 2.2)
         hazards += A.tentacle(280.0, LOW, upAt = 280.0)
-        // 90-98%: an orb over the run-in, and the slot.
-        hazards += A.abyssOrb(312.0, LOW + 2.8, radius = 2.0)
+        // 88-98%: an arm out of the floor, an orb over the run-in, and the slot.
+        // The arm is here because without it this level had thirty-seven units
+        // between its last boost and its finish with nothing in them - 3.90s of
+        // holding a button down, in the world whose whole claim is that it never
+        // lets go.
+        hazards += A.tentacle(310.0, LOW, upAt = 310.0)
+        hazards += A.abyssOrb(318.0, LOW, radius = 2.0)
         hazards += A.stillBubble(330.0, LOW)
         hazards += A.stillBubble(334.15, LOW)
         hazards += A.stillBubble(338.3, LOW)

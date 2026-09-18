@@ -55,7 +55,10 @@ object Level14 {
         // 26-29%: the orb, on its column: down into the lane exactly as they
         // arrive, and clear over their head a bar later.
         hazards += A.orbColumn(90.0, GROUND, lowAt = 90.0)
-        hazards += A.crystal(102.0, GROUND, lowAt = 102.0)
+        // 96 and not 102. At 102 the crystal stood two units short of the ledge at
+        // 104, so one take-off had to clear the crystal AND a 4.20u gap: two
+        // consecutive 0.033s windows, which is not a hard level, it is a typo.
+        hazards += A.crystal(96.0, GROUND, lowAt = 96.0)
         // 34-42%: the chain. Three bubbles, each a little bigger and a little
         // slower than the last, close enough to be one phrase.
         hazards += A.bubbleChain(118.0, GROUND, count = 3, spacing = 7.6, size = 1.15)
@@ -64,7 +67,7 @@ object Level14 {
         hazards += A.splitBubble(170.0, GROUND, at = 182.0, pieces = 2)
         hazards += A.crystal(194.0, GROUND, lowAt = 194.0)
         // 62-69%: the low shelf. An orb on a real circle, then a short chain.
-        hazards += A.abyssOrb(216.0, LOW + 2.6, radius = 2.0)
+        hazards += A.abyssOrb(216.0, LOW, radius = 2.0)
         hazards += A.bubbleChain(228.0, LOW, count = 2, spacing = 7.0, size = 1.2)
         // 76-83%: crystal, ring, crystal into the second boost.
         hazards += A.crystal(264.0, LOW, lowAt = 264.0)

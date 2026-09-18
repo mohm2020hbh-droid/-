@@ -31,16 +31,22 @@ blocks that slide and lift, masonry that drops, relics that orbit, geysers that
 say JUMP and sun beams that say STAY DOWN, bridges that fade, mirages, and
 columns of vertical air. Built from one shared kit, `core/.../Desert.kt`.
 
-**WORLD 3 — THE ABYSS** (levels 13-18). A third question, not a third palette.
-World 1 asked WHEN to jump; world 2 asked WHERE THE GROUND WOULD BE; world 3
-asks WHETHER TO JUMP AT ALL. Bubbles that chase and bubbles that split the
-moment you commit, orbs that hunt the lane, walls that rise out of the floor and
-drop from the ceiling, currents that shove, tentacles that reach in and
-withdraw, floors made of bubbles that burst, drifting mines, and corridors of
-light that say the only safe thing here is the ground. Built from one shared
-kit, `core/.../Abyss.kt`, and every one of its obstacles is assembled from the
-three verbs the solver already understands — move, blink, push — so nothing in
+**WORLD 3 — THE ABYSS** (levels 13-18). Water, and there is not one spike in
+it. Bubbles that come at you, bubbles that split the moment you commit, chains
+of them to find a rhythm in, and walls of them with a single drawn opening at
+head height; swells rolling down the lane; orbs the size of the screen on a
+circle, a column or a diagonal; crystals swinging down out of the dark; jellies
+that open on the bar and shut again; rings of pressure; arms coming up through
+the floor; and drift hanging where a second tap would reach it. Built from one
+shared kit, `core/.../Abyss.kt`, and assembled from the same three verbs the
+solver already understands — move, blink, and where the floor is — so nothing in
 this world is outside what can be proved fair.
+
+The bubble wall is why the world exists. Every obstacle in worlds 1 and 2 is
+answered by being in the air or not being in the air; a wall with a gap at head
+height is answered by being at a PARTICULAR HEIGHT, so the jump has to start in
+the right place and not merely at the right moment. It is also the first
+obstacle in the game where the second tap is what kills you.
 
 Around them: star coins that bank the instant they are touched, a shop that
 sells appearance and nothing else, English and Arabic with real RTL, and a
@@ -75,12 +81,18 @@ Settings has **two** volumes, MASTER and SFX, and no music control and no
 ambience control, because a switch for a thing that does not exist tells the
 player they failed to hear it.
 
-`AudioCues.kt` still gives every world-2 obstacle its own voice, fired on the
-transition rather than the state — a beam's charge and its strike are two
+`AudioCues.kt` gives every obstacle in worlds 2 and 3 its own voice, fired on
+the transition rather than the state — a beam's charge and its strike are two
 different sounds — and only within earshot. That is a gameplay cue, not
-ambience: it is caused by an obstacle the player is running at. World 3's
-obstacles map to silence, because the pack contains no abyss recordings and
-inventing one is exactly what the rule below forbids.
+ambience: it is caused by an obstacle the player is running at.
+
+The pack predates the abyss and contains no recording made for it, and the rule
+is that the pack is the only source. What it does contain is seven short,
+abstract hazard SFX named for where they were first USED rather than for what
+they sound like, so world 3 speaks through those: the swell, the arm coming out
+of the floor, the bubble coming apart, the jelly's warning and its open, the
+ring, the crystal. The alias table is written down in `AudioMap.kt` rather than
+left to be discovered, and nothing on disk is renamed or re-encoded.
 
 ### The pack is the only source
 
@@ -119,9 +131,9 @@ of **0.075s** — about four and a half frames at 60Hz — and the game never go
 under it, in any world. A world tightens toward that floor and stops.
 
 **Reading** is everything the player has to see rather than hit: movers, pulses,
-floors that leave, beams, wind, currents, splits. It has no ceiling, and it is
+floors that leave, beams, wind, splits, openings. It has no ceiling, and it is
 what each new world escalates instead. World 1 has 41 moving parts across its
-six levels; world 2 has 90; world 3 has 153.
+six levels; world 2 has 90; world 3 has 141, in 223 obstacles.
 
 | | L1 | L2 | L3 | L4 | L5 | L6 | opens at | moving parts |
 |---|---|---|---|---|---|---|---|---|
@@ -129,11 +141,34 @@ six levels; world 2 has 90; world 3 has 153.
 | | L7 | L8 | L9 | L10 | L11 | L12 | | |
 | **world 2** | 0.092s | 0.088s | 0.083s | 0.079s | 0.075s | 0.075s | 0.092s | 90 |
 | | L13 | L14 | L15 | L16 | L17 | L18 | | |
-| **world 3** | 0.088s | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.088s | 153 |
+| **world 3** | 0.088s | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.088s | 141 |
 
 Each world opens tighter than the last one did and ends on the floor, and
 inside a world the number never goes back up. That is the whole shape of the
 ladder, and `DifficultyLadderTest` asserts every cell of it.
+
+**And a third number, which is what actually makes world 3 harder.** Reflex has
+a floor at 0.075s and every world reaches it, so by world 3 "tighter" has
+nowhere left to go. What the abyss spends instead is the player's REST: the
+longest stretch of a level that asks for nothing. The first draft of world 3
+measured windows barely tighter than world 2's while leaving the player alone
+for 6.11 seconds at a time, which is a level that is difficult in a report and
+idle in the hand. `LevelGate.maxRest` holds it now, and the six levels measure
+1.98s, 2.71s, 2.00s, 2.73s, 2.30s and 2.14s — against 3.47s at world 1's
+quietest and 3.48s at world 2's. Those two are laid out with room in them on
+purpose and are not held to it; the abyss is.
+
+### Every size in world 3 is solved, not chosen
+
+A jump apexes at 2.6u and covers 4.94u, of which the runner is 0.9u, so the
+take-off window over a thing W wide and H tall is (the time the arc spends above
+H) minus (W + 0.9) / 9.5. A 1.0 x 1.0 spike measures 0.239s that way and 0.238s
+in the verifier, which is what makes the arithmetic worth trusting — and what
+caught the first draft of the abyss kit, where an arm 1.4 wide and 2.0 tall came
+out at **0.068s**, an inch off frame perfect, and looked perfectly reasonable
+written down. Nothing in this world is wide AND tall any more: arm 1.0 x 1.5 and
+0.177s, crystal 1.0 x 1.3 and 0.203s, jelly 0.204s, ring 0.216s. The same sum
+sets the clearance the orbs and the drift keep over a running player's head.
 
 Every level's own gate (`LevelGate`) asserts that it is beatable, that its
 tightest moment is in its last tenth, that no second tap is frame perfect, that
@@ -169,7 +204,7 @@ node tools/playtest.mjs        # level 1, end to end
 node tools/feeltest.mjs        # the second jump, the trail, the frame budget
 node tools/progresstest.mjs    # coins, shop, settings, level select
 node tools/deserttest.mjs      # world 2: all six levels, cleared on their lines
-node tools/abysstest.mjs       # world 3: its vocabulary, its do-not-tap wall, its six levels
+node tools/abysstest.mjs       # world 3: its vocabulary, its bubble wall, its six levels
 node tools/orientation.mjs     # the portrait gate, on real viewports
 node tools/runall.mjs          # all eighteen, flown at 60fps in a real browser
 node tools/blindtest.mjs       # no gap is committed to off the edge of the screen

@@ -71,8 +71,13 @@ object Level18 {
         // the lane, so it and the ring ten units later are not two landings, they
         // are one stretch with a roof on part of it.
         hazards += A.bubbleWall(214.0, MID, openBottom = 1.7, openTop = 3.9)
-        hazards += A.abyssOrb(224.0, MID + 2.8, radius = 2.0)
-        hazards += A.pressureRing(234.0, MID, reach = 2.4)
+        // The orb is at 222 and not 224 on purpose: at its lowest it forbids the
+        // air directly under it, and 224 put that exactly where the first ring's
+        // take-off has to be. An obstacle that says do not jump and one that says
+        // jump, in the same instant, is not a difficulty - it is a contradiction,
+        // and the solver would be right to call the level unsolvable.
+        hazards += A.abyssOrb(222.0, MID, radius = 2.0)
+        hazards += A.ringChain(230.0, MID, count = 2, spacing = 8.0, reach = 2.0)
         // 73-84%: down to the bottom. Crystal on the bubbles, an arm, a split.
         hazards += A.crystal(252.0, LOW, lowAt = 252.0)
         hazards += A.tentacle(270.0, LOW, upAt = 270.0)

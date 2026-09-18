@@ -60,13 +60,16 @@ object Level15 {
         hazards += A.crystal(166.0, GROUND, lowAt = 166.0)
         hazards += A.pressureRing(176.0, GROUND, reach = 2.4)
         hazards += A.jelly(186.0, GROUND, openAt = 186.0)
+        // Drift overhead, where the floor is clear and the temptation to reach
+        // for the second tap is not.
+        hazards += A.floaters(166.0, GROUND, count = 3, spacing = 3.0)
         // 62-68%: the low shelf.
         hazards += A.chasingBubble(214.0, LOW, size = 1.4, reach = 2.0)
         hazards += A.crystal(226.0, LOW, lowAt = 226.0)
         hazards += A.jelly(236.0, LOW, openAt = 236.0)
         // 75-83%: ring, crystal, and a split that lands them on the ledge.
         hazards += A.pressureRing(260.0, LOW, reach = 2.6)
-        hazards += A.crystal(270.0, LOW, lowAt = 270.0)
+        hazards += A.crystalSlider(270.0, LOW, reach = 1.8, nearAt = 270.0)
         hazards += A.splitBubble(276.0, LOW, at = 285.0, pieces = 2)
         // 91-97%: the slot.
         hazards += A.stillBubble(316.0, LOW)

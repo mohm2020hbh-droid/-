@@ -129,10 +129,22 @@ class Abyss(val bpm: Double) {
         // read well and played badly: the top one needed a second tap to clear,
         // which turns a reading obstacle into a boost obstacle, and the split is
         // meant to be the former.
+        //
+        // And they arrive as ONE OBJECT. The gaps between children are smaller
+        // than the runner, so a spread-out split is not three obstacles, it is a
+        // single wide one - and its width is the whole crossing. Three children
+        // 1.9u apart covered 3.9 units of floor, 4.8 with the runner's own width,
+        // against a 4.94u jump: 0.033s, a boost obstacle pretending to be a
+        // reading one. Even 1.3u apart measured 0.079s. At 0.95u the group is
+        // 2.25u wide and the take-off window is 0.188s.
+        //
+        // They do not STAY one object: each child moves at its own speed, so the
+        // group opens out over the next second. That is the split the player
+        // sees. It is simply not what they have to jump.
         for (k in 0 until pieces) {
-            val spread = (k - (pieces - 1) / 2.0) * 1.9
-            out += Hazard(HazardKind.SPIKE_UP, at + spread, at + spread + 0.9, base, base + 0.9,
-                motion = Motion(dx = 1.1 + 0.4 * k, dy = 0.5, period = period * 0.5,
+            val spread = (k - (pieces - 1) / 2.0) * 0.95
+            out += Hazard(HazardKind.SPIKE_UP, at + spread, at + spread + 0.85, base, base + 0.9,
+                motion = Motion(dx = 0.5 + 0.25 * k, dy = 0.5, period = period * 0.5,
                     phase = phaseAt(at, 0.75, bars * 0.5), phaseY = 0.25),
                 blink = Blink(period, 1.0 - on, on), look = Look.BUBBLE)
         }
@@ -247,11 +259,26 @@ class Abyss(val bpm: Double) {
     // and they are here because a world whose orbs all orbit teaches the player
     // one pattern and then repeats it.
 
-    fun abyssOrb(x: Double, y: Double, radius: Double = 2.2, bars: Double = 3.0,
-                 phase: Double = 0.0) =
-        Hazard(HazardKind.SPIKE_UP, x, x + 1.8, y, y + 1.8,
-            Motion(dx = radius, dy = radius, period = barSeconds * bars,
-                phase = phase, phaseY = 0.25), look = Look.ORB)
+    fun abyssOrb(x: Double, base: Double, radius: Double = 2.0, bars: Double = 3.0,
+                 lowAt: Double = Double.NaN): Hazard {
+        val period = barSeconds * bars
+        // Anchored so the BOTTOM of the circle is 1.2u over the floor: a running
+        // runner is 0.95u tall and always passes under it, a jumping one never
+        // does. That clearance is the difference between an obstacle and an
+        // ambush - at 0.8u the orb's underside cleared a standing runner's head
+        // by fifteen thousandths of a unit, which is a death with no cause the
+        // player can see.
+        //
+        // And the phase is DERIVED, like everything else here. Hand-set to zero
+        // it was wherever the clock happened to leave it, which is how a hazard
+        // ends up sitting in the lane on one level and nowhere near it on the
+        // next. offsetY is a quarter turn behind offsetX, so asking for the
+        // bottom of the circle at [lowAt] also puts it directly overhead there.
+        val at = if (lowAt.isNaN()) x else lowAt
+        return Hazard(HazardKind.SPIKE_UP, x, x + 1.8, base + 1.2 + radius, base + 3.0 + radius,
+            Motion(dx = radius, dy = radius, period = period,
+                phase = phaseAt(at, 0.5, bars), phaseY = 0.25), look = Look.ORB)
+    }
 
     /**
      * Straight up and down its own shaft. Anchored the way the crystal is: the
@@ -261,7 +288,7 @@ class Abyss(val bpm: Double) {
      */
     fun orbColumn(x: Double, base: Double, rise: Double = 2.2, bars: Double = 2.0,
                   lowAt: Double = Double.NaN) =
-        Hazard(HazardKind.SPIKE_UP, x, x + 1.5, base + rise, base + rise + 1.5,
+        Hazard(HazardKind.SPIKE_UP, x, x + 1.3, base + rise, base + rise + 1.3,
             Motion(dy = rise, period = barSeconds * bars,
                 phase = if (lowAt.isNaN()) 0.75 else phaseAt(lowAt, 0.75, bars)),
             look = Look.ORB)
@@ -388,17 +415,27 @@ class Abyss(val bpm: Double) {
     // which is the job: they are here to make a timing awkward rather than to
     // be the obstacle the section is about.
 
-    fun floater(x: Double, y: Double, drift: Double = 1.5, rise: Double = 1.0,
+    fun floater(x: Double, base: Double, drift: Double = 1.5, rise: Double = 1.0,
                 bars: Double = 3.0, phase: Double = 0.0) =
-        Hazard(HazardKind.SPIKE_UP, x, x + 0.9, y, y + 0.9,
+        Hazard(HazardKind.SPIKE_UP, x, x + 0.9, base + 4.8, base + 5.7,
             Motion(dx = drift, dy = rise, period = barSeconds * bars,
                 phase = phase, phaseY = 0.125), look = Look.SHARD)
 
-    /** A drift of them, each a little out of step with the last. */
-    fun floaters(x: Double, y: Double, count: Int = 3, spacing: Double = 2.6,
+    /**
+     * A drift of them, each a little out of step with the last.
+     *
+     * They hang at 4.8u and dip to 3.8. A jump apexes at 2.6 and puts the top of
+     * the runner at 3.55, so a single jump passes under a drift every time; a
+     * SECOND tap reaches 4.6 and 5.55, and does not. So what a drift takes away
+     * is not the floor and not the air - it is the second tap, over a stretch
+     * where the player does not need it and might reach for it anyway. That is a
+     * different kind of obstacle from everything else in the kit, and it is the
+     * only one that costs the level nothing to place: it is not in the lane.
+     */
+    fun floaters(x: Double, base: Double, count: Int = 3, spacing: Double = 2.6,
                  bars: Double = 3.0): List<Hazard> =
         (0 until count).map { k ->
-            floater(x + k * spacing, y + (k % 2) * 0.8, bars = bars, phase = 0.21 * k)
+            floater(x + k * spacing, base + (k % 2) * 0.8, bars = bars, phase = 0.21 * k)
         }
 
     /**

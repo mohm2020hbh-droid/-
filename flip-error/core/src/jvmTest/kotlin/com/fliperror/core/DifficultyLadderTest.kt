@@ -19,10 +19,20 @@ import kotlin.test.assertTrue
  * difficulty the player has to SEE. It has no such ceiling, and it is what world
  * 2 escalates instead.
  *
+ * REST is the third, and it is the one world 3 is built on. By the time reflex
+ * has reached its floor twice over, "tighter" has nowhere left to go, so what
+ * the abyss spends is the longest stretch of a level that asks the player for
+ * nothing. World 3's first draft measured take-off windows barely tighter than
+ * world 2's while leaving the player alone for 6.11 seconds at a time, which is
+ * a level that is difficult in a report and idle in the hand. Each level's own
+ * gate holds its rest now (LevelGate.maxRest); what is asserted here is that the
+ * world as a whole never lets go for as long as the one before it did.
+ *
  * So the rule is per world: inside a world reflex tightens to the floor and
  * stops, and a new world may open looser than the last one closed because it is
  * teaching a new vocabulary. What is never allowed to slip is the floor itself,
- * and the fact that each world asks the player to read more than the last.
+ * the fact that each world asks the player to read more than the last, and the
+ * fact that each world leaves them alone less.
  */
 class DifficultyLadderTest {
 
@@ -105,6 +115,29 @@ class DifficultyLadderTest {
                 "WORLD ${i + 2} has $b moving parts against WORLD ${i + 1}'s $a; a new world " +
                     "that does not tighten has to be the one that reads harder")
         }
+    }
+
+    /**
+     * THE ABYSS NEVER LETS GO, AND THAT IS WHAT MAKES IT THE HARD ONE.
+     *
+     * This is deliberately not a chain rule. Worlds 1 and 2 are laid out with
+     * room in them on purpose and are within a hundredth of a second of each
+     * other at their quietest - 3.47s in LEVEL 4, 3.48s in LEVEL 8 - so
+     * asserting that each world rests less than the last would be asserting a
+     * coin flip. What is real is the step at world 3: it has run out of reflex
+     * to spend, the floor being 0.075s and worlds 1 and 2 both reaching it, so
+     * the thing it spends instead is the player's rest. Its quietest level is
+     * quieter than the quietest level of either world before it, by most of a
+     * second.
+     */
+    @Test fun `the abyss never lets go of the player as long as the others do`() {
+        val rests = worlds.map { w -> w.maxOf { reports[it]!!.longestRest(it.durationSeconds) } }
+        val abyss = rests[2]
+        assertTrue(abyss < rests[0] && abyss < rests[1],
+            "WORLD 3 leaves the player alone for ${"%.2f".format(abyss)}s at its quietest, " +
+                "against ${"%.2f".format(rests[0])}s in world 1 and " +
+                "${"%.2f".format(rests[1])}s in world 2. A world that can no longer tighten " +
+                "and is not denser to read has to be the one that stops letting go.")
     }
 
     @Test fun `the second jump becomes compulsory and stays that way`() {

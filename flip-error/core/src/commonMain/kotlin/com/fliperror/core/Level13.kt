@@ -56,6 +56,11 @@ object Level13 {
         // 48-55%: past the boost, the same three in a tighter rotation.
         hazards += A.crystal(164.0, GROUND, lowAt = 164.0)
         hazards += A.chasingBubble(176.0, GROUND, size = 1.5, reach = 2.2)
+        // 53%: bubbles across the ceiling with the floor left clear. It is the
+        // same formation LEVEL 16 hangs at head height, and meeting it this way
+        // round first means the player learns "there is a way through it" before
+        // they have to find one that is not simply the ground.
+        hazards += A.bubbleCeiling(182.0, GROUND + 2.0)
         hazards += A.crystal(188.0, GROUND, lowAt = 188.0)
         // 61-67%: the low shelf.
         hazards += A.pressureRing(210.0, LOW, reach = 2.4)
