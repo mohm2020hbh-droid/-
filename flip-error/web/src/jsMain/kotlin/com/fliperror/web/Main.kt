@@ -3,6 +3,7 @@ package com.fliperror.web
 import com.fliperror.core.Category
 import com.fliperror.core.DeviceOrientation
 import com.fliperror.core.GateReason
+import com.fliperror.core.DeathCause
 import com.fliperror.core.Game
 import com.fliperror.core.GameState
 import com.fliperror.core.Level
@@ -113,6 +114,7 @@ fun main() {
 
     var screen = Screen.MENU
     var game = Game(Level1.build())
+    val cues = AudioCues()
     var currentLevel = 1
     var awarded = false
     var rewardAt = -1.0
@@ -194,6 +196,9 @@ fun main() {
             Screen.PLAYING -> ui.hideAll()
             Screen.REWARD -> Unit                 // the panel puts itself up
         }
+        // Off the level, the menus have a room of their own rather than the
+        // silence of a stopped file - and the level's five layers stand down.
+        if (s != Screen.PLAYING) Audio.menuRoom()
     }
 
     fun startLevel(id: Int) {
@@ -206,7 +211,11 @@ fun main() {
         // The soundtrack runs at the level's own tempo and restarts its
         // arrangement, so every attempt opens on the same bar.
         Audio.bpm = game.level.bpm
-        Audio.world = Theme.worldOf(game.level.id)
+        val nextWorld = Theme.worldOf(game.level.id)
+        // Arriving in a world you were not in a moment ago is worth a sound.
+        if (nextWorld != Audio.world) Audio.worldTransition()
+        Audio.world = nextWorld
+        cues.reset()
         Audio.restartRoom()
         lastAttempt = game.attempts
         awarded = false
@@ -216,6 +225,7 @@ fun main() {
         last = 0.0
         showScreen(Screen.PLAYING)
         Audio.resume()
+        Audio.loadPack()
     }
 
     ui = Ui(
@@ -273,6 +283,21 @@ fun main() {
     backBtn.addEventListener("pointerdown", { e -> e.stopPropagation() })
 
     // --- input: one handler, every pointer, no delay and no gesture recognition
+    // Browsers will not start audio before a gesture, so the library is fetched
+    // on the first one - along with the hum that gives the game its first second.
+    var greeted = false
+    fun wakeAudio() {
+        Audio.resume()
+        Audio.loadPack()
+        if (!greeted) {
+            greeted = true
+            Audio.gameEnter()
+            window.setTimeout({ if (screen != Screen.PLAYING) Audio.menuRoom() }, 500)
+        }
+    }
+    window.addEventListener("pointerdown", { wakeAudio() })
+    window.addEventListener("keydown", { wakeAudio() })
+
     fun tapped() {
         if (gated || screen != Screen.PLAYING) return
         if (game.state == GameState.COMPLETE) return       // the reward panel owns this moment
@@ -314,11 +339,18 @@ fun main() {
                 game.takenStarIndices().forEach { progress.collectStar(currentLevel, it) }
                 save(); applyLook()
             }
-            if (prevState == GameState.RUNNING && game.state == GameState.DEAD) { Audio.death(); buzz(45) }
+            if (prevState == GameState.RUNNING && game.state == GameState.DEAD) {
+                // Pit and wall are the level taking you; a spike is something
+                // hitting you, and only that one gets the impact under the loss.
+                Audio.death(byHazard = game.deathCause == DeathCause.SPIKE ||
+                    game.deathCause == DeathCause.CEILING_SPIKE)
+                buzz(45)
+            }
             if (prevState == GameState.RUNNING && game.state == GameState.COMPLETE) {
-                Audio.finish()
+                Audio.finish(perfect = game.starsCollected >= game.level.stars.size)
                 rewardAt = now + 900.0
             }
+            if (running) cues.frame(game)
             prevState = game.state
 
             if (game.attempts != lastAttempt) {
@@ -473,6 +505,13 @@ fun main() {
     api.scene = { Theme.forLevel(game.level.id).scene.name }
     api.bpm = { game.level.bpm }
     api.tension = { Audio.tension }
+    // --- the sound pack, for the audio harness ------------------------------
+    api.samplesReady = { Audio.samplesReady }
+    api.samplesLoaded = { Audio.samplesLoaded }
+    api.cueCount = { Audio.cueCount }
+    api.audioFormat = { Audio.format }
+    api.beds = { Audio.bedReport() }
+    api.playCue = { name: String -> Audio.play(name, 0.8) }
     api.winds = { game.level.winds.size }
     api.storms = { game.level.storms.size }
     /** How thick the weather is where the runner is standing, 0..1. */

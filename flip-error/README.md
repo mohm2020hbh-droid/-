@@ -37,22 +37,45 @@ level select broken by world.
 
 ## There is no music
 
-Not a quiet track, not a loop at low volume - none. `web/.../Audio.kt` is an
-environment rather than a soundtrack: wind, rumble, mains hum and air, plus
-things happening somewhere out of sight, on a schedule with no grid in it.
-Three rules hold it together - nothing lands at a fixed interval, because two
-sounds a fixed distance apart are a beat and a beat is a song; the room's weight
-is read from the runner's own progress, so it is heaviest where the level is
-hardest; and crossing into a tenser stretch ducks everything to near-silence for
-a beat first, because a build with no hole in front of it is a volume knob.
+The game ships the FLIP ERROR sound pack: 42 recordings, five sixty-second
+environments per world plus every cue the game fires. `web/.../AudioMap.kt` is
+the single place that says what each file is for. The masters are 112MB of
+44.1kHz stereo WAV and are not in git - `docs/SOUND_PACK.md` records every one
+of them with its checksum - while what ships is 10.6MB, each file encoded as
+both Opus/WebM and MP3 so the browser picks whichever it can decode.
 
-The city hums, crackles and echoes off machinery. The desert is windier, lower
-and emptier, with sand moving, stone groaning and something older turning over
-underneath it. The player's own cues - jump, double jump, land, death, coin,
-near miss, finish - are short and bright and sit on their own bus above all of
-it. Settings has three volumes (master, SFX, ambience) and no music control,
-because a switch for a thing that does not exist tells the player they failed
-to hear it.
+The long beds STREAM through `<audio>` elements and the short cues are decoded
+into buffers. That split is not a detail: eleven sixty-second stereo beds
+decoded into memory is over two hundred megabytes, and a phone will not thank
+you for it.
+
+None of it is a track.
+
+### The tension system
+
+Five bands, which is what the pack was cut for: 0-25%, 25-50%, 50-70%, 70-90%,
+90-100%. Each band is its own bed at full weight for most of its length and then
+crossfades, equal-power, over its last 6% into the next - so the room sits
+between two layers at a handover instead of switching, and nothing ever stops.
+Stepping up a band also ducks everything to near-silence for a beat and fires
+one of the four risers, because a build with no hole in front of it is a volume
+knob rather than a moment.
+
+Each world has its own five beds and they share nothing. The city hums, crackles
+and echoes off machinery; the desert is windier, lower and emptier, with sand
+moving, stone groaning and something older turning over underneath it. Every
+World 2 obstacle has a voice of its own in `AudioCues.kt`, fired on the
+transition rather than the state - a beam's charge and its strike are two
+different sounds - and only within earshot, so the ear is told about what is
+being run at rather than about the whole level.
+
+The player's own cues sit on their own bus above all of it. Settings has three
+volumes (master, SFX, ambience) and no music control, because a switch for a
+thing that does not exist tells the player they failed to hear it.
+
+If the library cannot be fetched or decoded, the synthesised room built before
+it takes over whole. A game that goes silent because a download failed is worse
+than one that falls back to the engine it already had.
 
 Deliberately not built: gravity flip, dash, reverse, low gravity, shape shift,
 worlds 3-10, ads, accounts, level editor. Nothing in the shop affects play.
@@ -114,6 +137,7 @@ node tools/deserttest.mjs      # world 2: all six levels, cleared on their lines
 node tools/orientation.mjs     # the portrait gate, on real viewports
 node tools/runall.mjs          # all twelve, flown at 60fps in a real browser
 node tools/blindtest.mjs       # no gap is committed to off the edge of the screen
+node tools/soundtest.mjs       # the pack loads, layers, crossfades and stays at 60fps
 ```
 
 The browser harnesses replay the exact lines the solver exported to

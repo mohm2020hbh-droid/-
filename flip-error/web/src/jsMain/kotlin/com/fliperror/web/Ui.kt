@@ -248,7 +248,9 @@ class Ui(
             modal.hidden = true
         })
         (document.getElementById("m-buy") as HTMLElement).addEventListener("click", {
-            if (progress.buy(id)) { progress.equip(id); Audio.uiConfirm() } else Audio.uiDenied()
+            // The pack calls it a secret unlock, and that is exactly what buying
+            // something with coins earned over forty attempts should sound like.
+            if (progress.buy(id)) { progress.equip(id); Audio.unlocked() } else Audio.uiDenied()
             onSave()
             modal.hidden = true
             renderShop()
