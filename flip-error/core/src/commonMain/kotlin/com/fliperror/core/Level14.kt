@@ -35,7 +35,10 @@ object Level14 {
             Solid(108.2, 152.0, GROUND),       // gap 4.20u
             Solid(158.8, 202.0, GROUND),       // gap 6.60u - the boost
             Solid(206.2, 250.0, LOW),          // gap 4.20u, and down
-            Solid(254.2, 298.0, LOW),          // gap 4.20u
+            // A floor made of bubbles. These ones hold, and it is here so that
+            // LEVEL 16's bridge, which does not, is a change to something the
+            // player has already stood on rather than a new object.
+            A.bubbleFloor(254.2, 298.0, LOW),  // gap 4.20u
             Solid(304.6, 356.0, LOW),          // gap 6.60u - the second boost
         )
 

@@ -1132,6 +1132,26 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 }
                 ctx.stroke()
                 ctx.lineWidth = 2.5
+            } else if (s.surface == Surface.BUBBLE && !reduceEffects) {
+                // A floor of bubbles has to LOOK like one, or the bridge that
+                // bursts later is just a platform that vanished. Domes along the
+                // lip, breathing slightly, on a phase taken from the span's own x
+                // so two bridges never pulse in unison.
+                ctx.globalAlpha = 0.34 * shimmer
+                ctx.strokeStyle = theme.billboard
+                ctx.lineWidth = 1.6
+                ctx.beginPath()
+                var bx = x0 + scale * 0.35
+                var k = 0
+                while (bx < x1) {
+                    val puff = 1.0 + 0.10 * sin(levelTime * 2.6 + s.x0 * 0.7 + k * 1.1)
+                    val r = scale * 0.30 * puff
+                    ctx.moveTo(bx + r, yTop + r * 0.35)
+                    ctx.arc(bx, yTop + r * 0.35, r, 0.0, 6.2832)
+                    bx += scale * 0.72; k++
+                }
+                ctx.stroke()
+                ctx.lineWidth = 2.5
             }
             ctx.globalAlpha = (0.25 + 0.75 * fading) * shimmer
             ctx.shadowBlur = 0.0

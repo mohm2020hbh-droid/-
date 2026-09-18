@@ -9,13 +9,13 @@ package com.fliperror.web
  * grep and not a hunt through an engine.
  *
  * Three of the names its own README lists are not in the pack: 04_button_click,
- * 06_ui_cancel and 17_trail_spark. Where they would have gone is marked below,
- * and the synthesised voice covers those three jobs instead - see Audio.
+ * 06_ui_cancel and 17_trail_spark. Where they would have gone is marked below.
+ * Nothing is invented to replace them: 05_ui_confirm covers confirmation, a
+ * refused purchase makes no sound at all, and the trail borrows 18_speed_whoosh.
  *
- * NOTHING HERE IS MUSIC. The five ambience beds per world are sixty-second
- * environments meant to be layered and crossfaded, which is what the tension
- * system does with them. They are never sequenced, never put on a grid, and
- * never treated as a track.
+ * THERE IS NO MUSIC AND NO AMBIENCE. The pack's eleven sixty-second environments
+ * and everything cut to sit under them are listed below as what this game does
+ * NOT load. Every name in [oneShots] is a cue with a cause behind it.
  */
 object AudioMap {
 

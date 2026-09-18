@@ -68,7 +68,11 @@ object Level15 {
         hazards += A.abyssOrb(182.0, 2.8, phase = 0.5)
         // 60-72%: the low shelf, with the downdraft over the middle of it.
         hazards += A.chasingBubble(212.0, LOW)
-        hazards += spike(238.0, LOW)
+        // LEVEL 13's wall came down and had to be run under. This one comes UP out
+        // of the floor and has to be jumped, on its own cycle - the same object
+        // asking the opposite question, which is the only reason it can arrive
+        // this late without being a new word.
+        hazards += A.risingWall(238.0, LOW, upAt = 238.0)
         // 75-86%: mines and a corridor.
         hazards += A.mine(258.0, LOW + 1.8)
         hazards += A.mine(266.0, LOW + 2.3, phase = 0.5)

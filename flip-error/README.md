@@ -11,7 +11,7 @@ repository root and does not participate in that build.
 |---|---|
 | `core/` | The whole game: physics, level data, collision, state. Pure Kotlin, no platform types. Targets JVM (tests) and JS (web build), and is what the Android app will render. |
 | `web/`  | Browser playtest shell: canvas renderer, touch input, WebAudio. Lets the slice be played and automatically tested today. |
-| `tools/`| Automated playthroughs in a real browser: `playtest.mjs` (LEVEL 1 end to end), `feeltest.mjs` (the second jump and the trail), `progresstest.mjs` (the meta game), `deserttest.mjs` (world 2), `orientation.mjs` (the gate), `runall.mjs` (all eighteen levels). |
+| `tools/`| Automated playthroughs in a real browser: `playtest.mjs` (LEVEL 1 end to end), `feeltest.mjs` (the second jump and the trail), `progresstest.mjs` (the meta game), `deserttest.mjs` and `abysstest.mjs` (worlds 2 and 3), `orientation.mjs` (the gate), `runall.mjs` (all eighteen levels). |
 
 `core` is the single source of truth. No gameplay rule is implemented twice.
 
@@ -169,6 +169,7 @@ node tools/playtest.mjs        # level 1, end to end
 node tools/feeltest.mjs        # the second jump, the trail, the frame budget
 node tools/progresstest.mjs    # coins, shop, settings, level select
 node tools/deserttest.mjs      # world 2: all six levels, cleared on their lines
+node tools/abysstest.mjs       # world 3: its vocabulary, its do-not-tap wall, its six levels
 node tools/orientation.mjs     # the portrait gate, on real viewports
 node tools/runall.mjs          # all eighteen, flown at 60fps in a real browser
 node tools/blindtest.mjs       # no gap is committed to off the edge of the screen

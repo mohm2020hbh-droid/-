@@ -58,10 +58,14 @@ object Level16 {
         // 50-60%: the run-up to the boost, with an orb over it.
         hazards += A.abyssOrb(176.0, 2.8)
         hazards += spike(196.0, GROUND)
-        // 63-74%: the low shelf. Arm, mines, corridor.
+        // 63-74%: the low shelf. Arm, mine, and a corridor that turns.
         hazards += A.tentacle(224.0, LOW)
         hazards += A.mine(240.0, LOW + 1.9)
-        hazards += A.lightCorridor(246.0, 256.0, LOW + 2.2, openAt = 250.0)
+        // The corridor, turning: the same slabs with the phase walking along its
+        // length, so the opening travels rather than sitting still. The turn is
+        // 0.04 a slab and not the kit's 0.06 - over seven slabs that is 0.42 of a
+        // cycle against a 0.36 duty, which closes the far end in the runner's face.
+        hazards += A.rotatingTunnel(246.0, 256.0, LOW + 2.2, openAt = 250.0, turn = 0.04)
         // 82-92%: the second bridge is behind them; a bubble and an arm are not.
         hazards += A.chasingBubble(286.0, LOW)
         hazards += A.tentacle(302.0, LOW)

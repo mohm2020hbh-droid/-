@@ -4,9 +4,9 @@
  * The playtest proves LEVEL 1 can be played and the feeltest proves it can be
  * felt. This one proves the desert is a different PLACE: that it is built out of
  * obstacles world 1 does not have, that its timed hazards warn before they kill,
- * that its music arranges itself on its own schedule - and, the part that
- * matters most, that every one of its six levels can actually be cleared by a
- * human-rate player flying the line the verifier proved.
+ * that no ambience bed survived the audio decision - and, the part that matters
+ * most, that every one of its six levels can actually be cleared by a human-rate
+ * player flying the line the verifier proved.
  *
  *   node tools/deserttest.mjs [--headed] [--shots DIR]
  */

@@ -4,8 +4,10 @@ package com.fliperror.core
  * LEVEL 18 - "THE SUN BELOW"  (WORLD 3, FINALE)
  *
  * The last level of the abyss, and the densest thing in the game. Every word all
- * three worlds know is spoken here and nothing is introduced - a finale that
- * teaches is a finale that stalls.
+ * three worlds know is spoken here and no new one is - a finale that teaches is a
+ * finale that stalls. The one thing here the player has not met is the orb's
+ * second form, hunting: the same shape, smaller and twice as quick, and it is a
+ * sentence in a language they already read rather than a new word.
  *
  * Its last fifteen per cent is the FINAL GAUNTLET: bubble, split, arm, current,
  * corridor, and a three-spike slot, one after another with no quiet floor in
@@ -60,9 +62,13 @@ object Level18 {
         // 33-44%: across the bursting bridge, then a split and a corridor.
         hazards += A.splitBubble(118.0, GROUND, at = 130.0, pieces = 2)
         hazards += A.lightCorridor(140.0, 150.0, 2.2, openAt = 144.0)
-        // 48-58%: the mid shelf. Orb, mines, lane.
+        // 48-58%: the mid shelf. Orb, its hunting form, then the lane.
         hazards += A.abyssOrb(170.0, MID + 2.9)
-        hazards += A.mine(188.0, MID + 1.9)
+        // The hunting orb: the orb at 170 again, smaller and twice as quick, sitting
+        // at head height for a JUMPING runner and clear above a running one. With
+        // the lane at 196 saying the same thing eight units later, this stretch is
+        // the finale restating the world's own question - whether to jump at all.
+        hazards += A.huntingOrb(188.0, MID + 2.4)
         hazards += A.electricCurrent(196.0, MID + 2.0, onAtX = 196.0)
         // 61-70%: arm and bubble before the second bridge.
         hazards += A.tentacle(224.0, MID)

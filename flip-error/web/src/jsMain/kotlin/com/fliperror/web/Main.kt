@@ -537,6 +537,20 @@ fun main() {
     api.pulsing = { game.level.hazards.count { it.pulses } }
     api.pulsingLive = { game.level.hazards.count { it.pulses && it.activeAt(game.elapsed) } }
     api.pulsingWarm = { game.level.hazards.count { it.warmAt(game.elapsed) > 0.0 } }
+    /**
+     * How many hazards are inside the next [units] of world the runner is about
+     * to enter, counted where they ACTUALLY are this instant rather than where
+     * they were authored. It answers one question the abyss harness has to be
+     * able to ask: is there any quiet floor left in the final gauntlet.
+     */
+    api.crowdAhead = { units: Double ->
+        val from = game.x
+        val to = game.x + units
+        game.level.hazards.count { hz ->
+            val b = hz.drawBoxAt(game.elapsed)
+            b.x1 >= from && b.x0 <= to
+        }
+    }
     /** Where mover [i] is this instant, so a test can prove it moves and repeats. */
     api.moverX = { i: Int ->
         val h = game.level.hazards.filter { it.moves }.getOrNull(i)
