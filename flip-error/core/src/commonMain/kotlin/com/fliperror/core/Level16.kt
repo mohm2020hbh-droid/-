@@ -18,6 +18,12 @@ package com.fliperror.core
  * The arms come up out of the floor alongside it, the swells roll down the lane,
  * and the ground itself turns to bubbles for a stretch. Nothing in this level is
  * a spike, a ledge or a beam.
+ *
+ * The current in the name is the swells, not moving air. A horizontal current is
+ * the one mechanic this game cannot have: the runner's x is exactly RUN_SPEED *
+ * time and every proof the project makes about its own fairness is built on
+ * that, so a current that carried the player would make x a function of their
+ * history and the solver could no longer say whether a level was possible.
  */
 object Level16 {
 

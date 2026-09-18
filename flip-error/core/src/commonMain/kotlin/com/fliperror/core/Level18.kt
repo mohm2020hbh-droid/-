@@ -82,6 +82,12 @@ object Level18 {
         hazards += A.crystal(252.0, LOW, lowAt = 252.0)
         hazards += A.tentacle(270.0, LOW, upAt = 270.0)
         hazards += A.splitBubble(280.0, LOW, at = 289.0, pieces = 2)
+        // Drift over the run-in to the last boost. It hangs at 4.8 and dips to
+        // 3.8, so it cannot touch the crossing itself - a take-off at 298.6 is
+        // barely off the floor by the time it is under the last of them - but it
+        // does take the second tap away from the stretch before it, which is
+        // where a player who has been holding on for thirty seconds reaches.
+        hazards += A.floaters(292.0, LOW, count = 2, spacing = 3.0)
         // 88-100%: THE FINAL GAUNTLET. Jelly, crystal, and the tightest slot in
         // the game, with no quiet floor anywhere in it.
         hazards += A.jelly(312.0, LOW, openAt = 312.0)

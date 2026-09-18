@@ -17,6 +17,17 @@ class Game(val level: Level) {
 
     var state = GameState.RUNNING; private set
     var deathCause = DeathCause.NONE; private set
+    /**
+     * WHAT killed you, as opposed to which way it pointed.
+     *
+     * [DeathCause] is about the physics - something above you, something below
+     * you, a pit, a wall - and it is all the simulation needs. It is not all the
+     * PLAYER needs: "YOU HIT A SPIKE" is a lie in a desert of rolling sand and a
+     * bigger one in a world made of bubbles and jellyfish, and a death screen
+     * that names the wrong thing teaches the wrong lesson. Nothing in the
+     * simulation reads this; only the words on the death screen do.
+     */
+    var deathLook: Look? = null; private set
 
     // Player state -------------------------------------------------------
     var x = 0.0; private set          // left edge of the drawn square
@@ -99,6 +110,7 @@ class Game(val level: Level) {
         doubleJumps = 0
         state = GameState.RUNNING
         deathCause = DeathCause.NONE
+        deathLook = null
         elapsed = 0.0
         stateTime = 0.0
         accumulator = 0.0
@@ -200,7 +212,8 @@ class Game(val level: Level) {
         val hb = hitBox
         level.forEachHazardNear(hb.x0, hb.x1) { h ->
             if (h.activeAt(elapsed) && hb.overlaps(h.hitBoxAt(elapsed))) {
-                die(if (h.kind == HazardKind.SPIKE_DOWN) DeathCause.CEILING_SPIKE else DeathCause.SPIKE)
+                die(if (h.kind == HazardKind.SPIKE_DOWN) DeathCause.CEILING_SPIKE else DeathCause.SPIKE,
+                    h.look)
                 return
             }
         }
@@ -355,16 +368,18 @@ class Game(val level: Level) {
         doubleFaceTimer = s.doubleFaceTimer; doubleJumps = s.doubleJumps
         nearMisses = s.nearMisses; passEdge = s.passEdge; passGap = s.passGap
         deathCause = DeathCause.NONE
+        deathLook = null
         stateTime = 0.0
     }
 
     /** One fixed physics step, for deterministic offline analysis. */
     fun stepFixed() { if (state == GameState.RUNNING) step(Tuning.FIXED_DT) }
 
-    private fun die(cause: DeathCause) {
+    private fun die(cause: DeathCause, look: Look? = null) {
         if (state != GameState.RUNNING) return
         state = GameState.DEAD
         deathCause = cause
+        deathLook = look
         deathX = x
         deathY = y
         stateTime = 0.0

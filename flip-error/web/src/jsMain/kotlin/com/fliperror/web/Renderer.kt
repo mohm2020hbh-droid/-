@@ -1733,12 +1733,38 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillText("★ $carried", w - pad, pad + uiH * 0.088)
     }
 
-    private fun reason(c: DeathCause) = when (c) {
-        DeathCause.SPIKE -> "YOU HIT A SPIKE"
-        DeathCause.CEILING_SPIKE -> "YOU JUMPED INTO THE CEILING"
+    /**
+     * What the death screen says, and it says what actually hit you.
+     *
+     * "YOU HIT A SPIKE" was true for six levels and wrong for twelve: the desert
+     * kills you with sand and masonry and the abyss with bubbles and jellyfish,
+     * and a player told the wrong noun goes looking for the wrong thing on the
+     * retry. The physics still only knows up from down; the words come from the
+     * hazard's own [Look].
+     */
+    private fun reason(g: Game) = when (g.deathCause) {
         DeathCause.PIT -> "YOU MISSED THE JUMP"
         DeathCause.WALL -> "YOU RAN INTO THE WALL"
         DeathCause.NONE -> ""
+        DeathCause.SPIKE, DeathCause.CEILING_SPIKE -> when (g.deathLook) {
+            Look.SAND_WAVE -> "THE SAND ROLLED OVER YOU"
+            Look.RUIN -> "THE TEMPLE CAME DOWN ON YOU"
+            Look.RELIC -> "THE RELIC CAUGHT YOU"
+            Look.GEYSER -> "THE GEYSER CAUGHT YOU"
+            Look.LASER -> "YOU JUMPED INTO THE BEAM"
+            Look.BOULDER -> "THE BOULDER CAUGHT YOU"
+            Look.BUBBLE -> "THE BUBBLE CAUGHT YOU"
+            Look.ORB -> "THE ORB CAUGHT YOU"
+            Look.TENTACLE -> "SOMETHING CAME UP THROUGH THE FLOOR"
+            Look.CRYSTAL -> "THE CRYSTAL SWUNG INTO YOU"
+            Look.JELLY -> "IT OPENED WHILE YOU WERE THERE"
+            Look.RING -> "THE PRESSURE RING CAUGHT YOU"
+            Look.WAVE -> "THE SWELL ROLLED OVER YOU"
+            Look.SHARD -> "YOU WENT UP INTO THE DRIFT"
+            // A spike, or a hazard that died before it said what it was.
+            else -> if (g.deathCause == DeathCause.CEILING_SPIKE)
+                "YOU JUMPED INTO THE CEILING" else "YOU HIT A SPIKE"
+        }
     }
 
     private fun drawDeath(g: Game) {
@@ -1751,7 +1777,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.fillText("GAME OVER", w / 2, h * 0.36)
         ctx.fillStyle = "#e8e8ff"
         ctx.font = "700 ${uiH * 0.042}px 'Chakra Petch', system-ui, sans-serif"
-        ctx.fillText(reason(g.deathCause), w / 2, h * 0.47)
+        ctx.fillText(reason(g), w / 2, h * 0.47)
         ctx.fillStyle = "#8a7fd6"
         ctx.font = "600 ${uiH * 0.034}px 'Chakra Petch', system-ui, sans-serif"
         ctx.fillText("${(g.progress * 100).toInt()}%  ·  BEST ${(g.bestProgress * 100).toInt()}%", w / 2, h * 0.55)
