@@ -166,6 +166,98 @@ abstract class LevelGate(protected val level: Level) {
                 } + " on its way past")
     }
 
+    /**
+     * AND EVERY COIN CAN ACTUALLY BE PAID FOR.
+     *
+     * "None of them free" is only half a contract. A coin nobody can reach is
+     * worse than a free one: the level advertises three and hands out two, and
+     * the player spends their attempts looking for a line that is not there.
+     *
+     * This flies the verified line and, for each coin, tries taking off from
+     * every grounded moment in the twelve units before it, with the second tap
+     * at every legal frame of the flight, and asks whether any of those both
+     * collects the coin and leaves the runner alive to carry on. One deviation
+     * from the line, which is what a coin is supposed to cost.
+     *
+     * It is a new rule and world 3 is built to it. Worlds 1 and 2 are not held
+     * to it because three of their coins predate it and fail - LEVEL 2's at
+     * (275.0, 3.9), LEVEL 5's at (289.5, 4.1) and LEVEL 6's at (277.4, 4.1),
+     * each the third coin of a level whose layout is frozen. Naming them here
+     * is the honest version of exempting them.
+     */
+    protected open val starsMustBePayable = false
+
+    @Test fun `every coin can actually be paid for`() {
+        if (!starsMustBePayable) return
+        level.stars.forEachIndexed { s, star ->
+            assertTrue(payable(s, star),
+                "${level.name}: coin #$s at (${star.x}, ${star.y}) cannot be collected by any " +
+                    "single jump-and-boost from the twelve units before it that the runner " +
+                    "survives. A coin that cannot be paid for is a coin that is not there.")
+        }
+    }
+
+    private fun payable(index: Int, star: Star): Boolean {
+        val firstBoost = kotlin.math.ceil(Tuning.DOUBLE_LOCKOUT / Tuning.FIXED_DT).toInt()
+        val lastBoost = (Tuning.DOUBLE_WINDOW_END / Tuning.FIXED_DT).toInt()
+        var back = 0.5
+        while (back <= 12.0) {
+            val from = star.x - back
+            back += 0.25
+            var g = fly(from) ?: continue
+            val snap = g.snapshot()
+            var air = firstBoost
+            while (air <= lastBoost) {
+                val before = g.starsCollected
+                if (attempt(g, air, index)) return true
+                // A restore does not give back the coins already taken, so an
+                // attempt that grabbed one and then died leaves the game dirty
+                // for the next. Cheap to notice, cheap to start again.
+                if (g.starsCollected != before) g = fly(from) ?: break else g.restore(snap)
+                air += 2
+            }
+        }
+        return false
+    }
+
+    /** The line, up to [x], stopping short if it cannot be reached on the ground. */
+    private fun fly(x: Double): Game? {
+        val g = Game(level)
+        var i = 0
+        var owed = false
+        var guard = 0
+        while (g.state == GameState.RUNNING && g.x < x && guard++ < 60_000) {
+            if (i < report.jumps.size && g.x >= report.jumps[i].x && g.grounded) {
+                owed = report.jumps[i].boosted; i++; g.onTap()
+            } else if (owed && g.canDoubleJump && g.x >= report.jumps[i - 1].boostX) {
+                g.onTap(); owed = false
+            }
+            g.update(Tuning.FIXED_DT)
+        }
+        return if (g.state == GameState.RUNNING && g.grounded) g else null
+    }
+
+    /** Jump here, boost [air] frames later, pick the line back up, and live. */
+    private fun attempt(g: Game, air: Int, index: Int): Boolean {
+        g.onTap()
+        repeat(air) { if (g.state == GameState.RUNNING) g.update(Tuning.FIXED_DT) }
+        if (!g.canDoubleJump) return false
+        g.onTap()
+        var i = report.jumps.indexOfFirst { it.x >= g.x }
+        if (i < 0) i = report.jumps.size
+        var owed = false
+        var after = 0
+        while (g.state == GameState.RUNNING && after++ < 900) {
+            if (i < report.jumps.size && g.x >= report.jumps[i].x && g.grounded) {
+                owed = report.jumps[i].boosted; i++; g.onTap()
+            } else if (owed && g.canDoubleJump && g.x >= report.jumps[i - 1].boostX) {
+                g.onTap(); owed = false
+            }
+            g.update(Tuning.FIXED_DT)
+        }
+        return g.state != GameState.DEAD && g.takenStarIndices().contains(index)
+    }
+
     @Test fun `export the plan`() {
         val f = java.io.File("build/level${level.id}-plan.json")
         f.parentFile.mkdirs()

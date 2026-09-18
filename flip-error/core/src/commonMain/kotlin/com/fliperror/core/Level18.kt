@@ -106,7 +106,11 @@ object Level18 {
         val stars = listOf(
             Star(46.0, 4.4),
             Star(141.0, 4.4),
-            Star(304.0, LOW + 4.4),
+            // 218 and not 304: 304 is inside the last 6.60u gap, where the line
+            // is already airborne on a boost it had to spend anyway. This one is
+            // over floor, between the wall and the orb, where the runner is
+            // standing and the tap costs them something.
+            Star(218.0, MID + 4.4),
         )
 
         return Level(

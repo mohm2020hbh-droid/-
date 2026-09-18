@@ -83,7 +83,10 @@ object Level17 {
         val stars = listOf(
             Star(48.0, 4.4),
             Star(226.0, 4.4),
-            Star(322.0, LOW + 4.4),
+            // 310 and not 322: 322 is inside the 6.40u gap, where the line is
+            // already in the air with a second tap spent on the crossing. A coin
+            // there is not a choice, it is change handed back.
+            Star(310.0, LOW + 4.4),
         )
 
         return Level(
