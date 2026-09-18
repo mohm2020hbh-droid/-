@@ -115,6 +115,7 @@ fun main() {
     var screen = Screen.MENU
     var game = Game(Level1.build())
     val cues = AudioCues()
+    var trailTick = 0.0
     var currentLevel = 1
     var awarded = false
     var rewardAt = -1.0
@@ -208,9 +209,9 @@ fun main() {
         currentLevel = id
         renderer.theme = Theme.forLevel(id)
         game = Game(build())
-        // The soundtrack runs at the level's own tempo and restarts its
-        // arrangement, so every attempt opens on the same bar.
-        Audio.bpm = game.level.bpm
+        // Audio no longer knows or cares about the level's tempo: there is no
+        // arrangement to keep in time with, only a room. The bpm lives on in the
+        // LEVEL, where it lays out the geometry, and nowhere else.
         val nextWorld = Theme.worldOf(game.level.id)
         // Arriving in a world you were not in a moment ago is worth a sound.
         if (nextWorld != Audio.world) Audio.worldTransition()
@@ -351,6 +352,16 @@ fun main() {
                 rewardAt = now + 900.0
             }
             if (running) cues.frame(game)
+            // The trail's own voice, and the pack's SPEED sound: on the ground,
+            // roughly twice a second, and never on a fixed interval. Under every
+            // stride it would be a metronome; this is texture.
+            if (running && game.grounded) {
+                trailTick -= dt
+                if (trailTick <= 0.0) {
+                    trailTick = 0.42 + kotlin.random.Random.nextDouble() * 0.5
+                    Audio.trailSpark(game.progress)
+                }
+            }
             prevState = game.state
 
             if (game.attempts != lastAttempt) {

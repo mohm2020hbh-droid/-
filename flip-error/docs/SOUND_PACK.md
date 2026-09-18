@@ -11,7 +11,12 @@ history forever and is paid for on every clone. This file is the record of them
 back to what shipped.
 
 Three files this pack's own README lists are absent from it: `04_button_click`,
-`06_ui_cancel` and `17_trail_spark`. See AudioMap for what covers those jobs.
+`06_ui_cancel` and `17_trail_spark`. Nothing is synthesised to replace them:
+`05_ui_confirm` covers confirmation, a refused purchase makes no sound at all,
+and the trail borrows `18_speed_whoosh`, which the pack does ship and which the
+brief lists under SPEED. See AudioMap.
+
+The pack is the game's only audio source. `tools/audioaudit.mjs` proves it.
 
 | master | duration | WAV | Opus | MP3 | md5 |
 |---|---:|---:|---:|---:|---|

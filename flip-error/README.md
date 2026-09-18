@@ -73,9 +73,24 @@ The player's own cues sit on their own bus above all of it. Settings has three
 volumes (master, SFX, ambience) and no music control, because a switch for a
 thing that does not exist tells the player they failed to hear it.
 
-If the library cannot be fetched or decoded, the synthesised room built before
-it takes over whole. A game that goes silent because a download failed is worse
-than one that falls back to the engine it already had.
+### The pack is the only source
+
+There is no oscillator in this project, no noise buffer, no filter sweep, no
+synthesised voice of any kind. The engine that generated all of that was
+deleted rather than demoted: a fallback that quietly makes its own sounds is
+exactly what a "these files only" rule exists to stop, and one nobody can hear
+firing is worse than none at all.
+
+If the pack cannot be fetched, the game is silent and completely playable.
+That is the honest consequence of the rule.
+
+`tools/audioaudit.mjs` holds the line. It reads the sources and the library off
+disk and answers four questions: does any file still generate a sound, does
+every sound the code names exist in the library, does everything in the library
+come from the pack, and did all 42 recordings survive encoding in both
+containers. Two sounds the pack's README lists are not in it - `06_ui_cancel`
+and `17_trail_spark` - so a refused purchase makes no sound at all and the trail
+borrows the pack's own `18_speed_whoosh`.
 
 Deliberately not built: gravity flip, dash, reverse, low gravity, shape shift,
 worlds 3-10, ads, accounts, level editor. Nothing in the shop affects play.
@@ -138,6 +153,7 @@ node tools/orientation.mjs     # the portrait gate, on real viewports
 node tools/runall.mjs          # all twelve, flown at 60fps in a real browser
 node tools/blindtest.mjs       # no gap is committed to off the edge of the screen
 node tools/soundtest.mjs       # the pack loads, layers, crossfades and stays at 60fps
+node tools/audioaudit.mjs      # nothing synthesised, nothing outside the pack
 ```
 
 The browser harnesses replay the exact lines the solver exported to
