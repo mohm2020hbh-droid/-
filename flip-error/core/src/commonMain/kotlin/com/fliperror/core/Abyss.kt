@@ -17,7 +17,8 @@ package com.fliperror.core
  * possible at all. That is not a limitation the design works around; it is the
  * reason this world can be as dense as it is and still be honest.
  *
- * Four rules hold the kit together, and three of them were paid for in world 2:
+ * Four rules hold the kit together, and every one of them was paid for - three
+ * in world 2, and the second one here:
  *
  *  1. NOTHING ARRIVES WITHOUT WARNING. Everything that switches on - tentacles,
  *     jellies - spends the moments before it is lethal visibly charging
@@ -40,11 +41,11 @@ package com.fliperror.core
  *     hand-picked phase in this project made a level literally unbeatable.
  *
  *  4. DENSITY COMES FROM THE CHEAP THINGS. A hazard costs the lane its own
- *     width plus its whole sweep: a bubble occupies 6.3u of the level, a
- *     crystal 1.2u. So the crowded stretches this world is built on are made of
- *     crystals, jellies, walls and arms, and the sweepers get room. Packing
- *     sweepers is how you write a level that measures dense and plays like a
- *     wall.
+ *     width plus its whole sweep: a bubble 1.4u across sweeping 2.4u each way
+ *     occupies 6.2 units of level, and a crystal occupies 1.0. So the crowded
+ *     stretches this world is built on are made of crystals, jellies, walls and
+ *     arms, and the sweepers get room. Packing sweepers is how you write a
+ *     level that measures dense and plays like a wall.
  */
 class Abyss(val bpm: Double) {
 
