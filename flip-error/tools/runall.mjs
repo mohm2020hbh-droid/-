@@ -18,7 +18,10 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dist = path.join(root, 'web/build/dist/js/productionExecutable');
 const only = process.argv.includes('--levels')
   ? process.argv[process.argv.indexOf('--levels') + 1].split(',').map(Number)
-  : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+  // Every level there is. Spelled out rather than generated, so adding a
+  // world means touching this line - a harness that quietly tests eighteen
+  // of twenty-four levels and reports 18/18 is worse than no harness.
+  : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24];
 const shotDir = path.join(root, 'build/runall');
 fs.mkdirSync(shotDir, { recursive: true });
 
