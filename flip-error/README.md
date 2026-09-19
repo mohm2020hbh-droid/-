@@ -17,7 +17,7 @@ repository root and does not participate in that build.
 
 ## Current state
 
-Eighteen levels across three worlds, every one of them proved beatable by the
+Twenty-four levels across four worlds, every one of them proved beatable by the
 solver before it ships.
 
 **WORLD 1 — NEON CITY** (levels 1-6). Spikes, gaps, ceiling corridors, sliding
@@ -48,9 +48,22 @@ height is answered by being at a PARTICULAR HEIGHT, so the jump has to start in
 the right place and not merely at the right moment. It is also the first
 obstacle in the game where the second tap is what kills you.
 
+**WORLD 4 — CLOCKWORK** (levels 19-24). The inside of something enormous, and
+the first world whose obstacles are MECHANISMS rather than things that happen to
+you. Gears whose teeth come round, rams that drop on a stroke, gates that shut
+across the lane, chains on a swing, vents in the deck, drums with arms, presses
+that take the floor and the ceiling in turn, live rails, dropping bolts, plates
+on shafts and belts that carry the deck instead of the runner. A mechanism tells
+you what it is going to do next if you know what it is, which is why this world
+can be the densest in the game and still be learnable — and why nothing in it is
+allowed to be random. Built from one shared kit, `core/.../Clockwork.kt`, and
+still only Motion and Blink underneath, so the solver proves it without being
+extended.
+
 Around them: star coins that bank the instant they are touched, a shop that
 sells appearance and nothing else, English and Arabic with real RTL, and a
-level select broken by world.
+level select broken by world whose card names are taken from the levels
+themselves — they used to be typed alongside and had quietly drifted.
 
 ## There is no music, and there is no ambience
 
@@ -133,7 +146,7 @@ under it, in any world. A world tightens toward that floor and stops.
 **Reading** is everything the player has to see rather than hit: movers, pulses,
 floors that leave, beams, wind, splits, openings. It has no ceiling, and it is
 what each new world escalates instead. World 1 has 41 moving parts across its
-six levels; world 2 has 90; world 3 has 144, in 224 obstacles.
+six levels; world 2 has 90; world 3 has 144; world 4 has 198.
 
 | | L1 | L2 | L3 | L4 | L5 | L6 | opens at | moving parts |
 |---|---|---|---|---|---|---|---|---|
@@ -142,6 +155,8 @@ six levels; world 2 has 90; world 3 has 144, in 224 obstacles.
 | **world 2** | 0.092s | 0.088s | 0.083s | 0.079s | 0.075s | 0.075s | 0.092s | 90 |
 | | L13 | L14 | L15 | L16 | L17 | L18 | | |
 | **world 3** | 0.088s | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.088s | 144 |
+| | L19 | L20 | L21 | L22 | L23 | L24 | | |
+| **world 4** | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.075s | 0.083s | 198 |
 
 Each world opens tighter than the last one did and ends on the floor, and
 inside a world the number never goes back up. That is the whole shape of the
@@ -156,7 +171,8 @@ for 6.11 seconds at a time, which is a level that is difficult in a report and
 idle in the hand. `LevelGate.maxRest` holds it now, and the six levels measure
 1.98s, 2.71s, 2.00s, 2.73s, 2.30s and 2.14s — against 3.47s at world 1's
 quietest and 3.48s at world 2's. Those two are laid out with room in them on
-purpose and are not held to it; the abyss is.
+purpose and are not held to it; the abyss is, and so is the machine (2.57s,
+2.33s, 1.82s, 2.55s, 2.48s, 2.55s).
 
 ### Every size in world 3 is solved, not chosen
 
@@ -205,6 +221,7 @@ node tools/feeltest.mjs        # the second jump, the trail, the frame budget
 node tools/progresstest.mjs    # coins, shop, settings, level select
 node tools/deserttest.mjs      # world 2: all six levels, cleared on their lines
 node tools/abysstest.mjs       # world 3: its vocabulary, its bubble wall, its six levels
+node tools/clockworktest.mjs   # world 4: its parts, its gate, its gauntlet, its six levels
 node tools/orientation.mjs     # the portrait gate, on real viewports
 node tools/runall.mjs          # all eighteen, flown at 60fps in a real browser
 node tools/blindtest.mjs       # no gap is committed to off the edge of the screen
