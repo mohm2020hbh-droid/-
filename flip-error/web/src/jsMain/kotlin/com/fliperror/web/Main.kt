@@ -26,6 +26,12 @@ import com.fliperror.core.Level15
 import com.fliperror.core.Level16
 import com.fliperror.core.Level17
 import com.fliperror.core.Level18
+import com.fliperror.core.Level19
+import com.fliperror.core.Level20
+import com.fliperror.core.Level21
+import com.fliperror.core.Level22
+import com.fliperror.core.Level23
+import com.fliperror.core.Level24
 import com.fliperror.core.Lang
 import com.fliperror.core.Progress
 import com.fliperror.core.Settings
@@ -52,6 +58,23 @@ private const val SETTINGS_KEY = "flip-error.settings.v1"
 private enum class Screen { MENU, PLAYING, SHOP, REWARD }
 
 private class LevelDef(val card: LevelCard, val build: (() -> Level)?)
+
+/**
+ * A level and the card the menu shows for it, with the card's text taken FROM
+ * the level instead of typed next to it.
+ *
+ * The two used to be written out separately, and they drifted: after world 3 was
+ * rebuilt the level select still offered THE ARMS, MEMORY and THE SUN BELOW for
+ * levels that had been called CURRENT, THE ABYSS and ABYSS CORE for a week, and
+ * LEVEL 10 had been advertised as DESERT CHAOS since the day DESERT STORM
+ * shipped. Building the level to ask its name costs a few thousand allocations
+ * once, at startup, and makes that particular bug impossible rather than
+ * unlikely.
+ */
+private fun def(build: () -> Level): LevelDef {
+    val lv = build()
+    return LevelDef(LevelCard(lv.id, lv.name, lv.stars.size, true), build)
+}
 
 /**
  * Ask the device what it is, and settle for UNKNOWN rather than guessing.
@@ -103,26 +126,17 @@ fun main() {
     val settings = Settings.parse(read(SETTINGS_KEY))
     val levels = listOf(
         // WORLD 1 - NEON CITY
-        LevelDef(LevelCard(1, "FIRST STEPS HURT", 3, true)) { Level1.build() },
-        LevelDef(LevelCard(2, "GAP LOGIC", 3, true)) { Level2.build() },
-        LevelDef(LevelCard(3, "MOVING CHAOS", 3, true)) { Level3.build() },
-        LevelDef(LevelCard(4, "TIGHT ROOM", 3, true)) { Level4.build() },
-        LevelDef(LevelCard(5, "OVERDRIVE", 3, true)) { Level5.build() },
-        LevelDef(LevelCard(6, "SYSTEM CRASH", 3, true)) { Level6.build() },
+        def { Level1.build() }, def { Level2.build() }, def { Level3.build() },
+        def { Level4.build() }, def { Level5.build() }, def { Level6.build() },
         // WORLD 2 - NEON DESERT
-        LevelDef(LevelCard(7, "SAND RUN", 3, true)) { Level7.build() },
-        LevelDef(LevelCard(8, "FALLING TEMPLE", 3, true)) { Level8.build() },
-        LevelDef(LevelCard(9, "SUN STRIKE", 3, true)) { Level9.build() },
-        LevelDef(LevelCard(10, "DESERT CHAOS", 3, true)) { Level10.build() },
-        LevelDef(LevelCard(11, "COLLAPSE", 3, true)) { Level11.build() },
-        LevelDef(LevelCard(12, "THE SUN CORE", 3, true)) { Level12.build() },
+        def { Level7.build() }, def { Level8.build() }, def { Level9.build() },
+        def { Level10.build() }, def { Level11.build() }, def { Level12.build() },
         // WORLD 3 - THE ABYSS
-        LevelDef(LevelCard(13, "DEEP SIGNAL", 3, true)) { Level13.build() },
-        LevelDef(LevelCard(14, "SPLIT", 3, true)) { Level14.build() },
-        LevelDef(LevelCard(15, "PRESSURE", 3, true)) { Level15.build() },
-        LevelDef(LevelCard(16, "THE ARMS", 3, true)) { Level16.build() },
-        LevelDef(LevelCard(17, "MEMORY", 3, true)) { Level17.build() },
-        LevelDef(LevelCard(18, "THE SUN BELOW", 3, true)) { Level18.build() },
+        def { Level13.build() }, def { Level14.build() }, def { Level15.build() },
+        def { Level16.build() }, def { Level17.build() }, def { Level18.build() },
+        // WORLD 4 - CLOCKWORK
+        def { Level19.build() }, def { Level20.build() }, def { Level21.build() },
+        def { Level22.build() }, def { Level23.build() }, def { Level24.build() },
     )
 
     var screen = Screen.MENU

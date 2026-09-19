@@ -38,10 +38,26 @@ enum class Look {
     RING,        // a ring of pressure travelling the lane at the runner
     WAVE,        // a swell of water rolling toward them
     SHARD,       // small alien drift, on a path that is neither circle nor line
+    // --- WORLD 4, CLOCKWORK ----------------------------------------------
+    //
+    // The machine's parts. Every one of them is a shape with a JOB the player
+    // can name - a thing that turns, a thing that comes down, a thing that
+    // shuts - because the whole world is asking them to learn what each part
+    // does and when it does it.
+    GEAR,        // a tooth on the rim of something enormous and turning
+    PISTON,      // a ram on a shaft, coming down
+    SHUTTER,     // a gate panel closing across the lane from above
+    CHAIN,       // a weight on the end of a swing
+    STEAM,       // a vent firing up out of the deck
+    CYLINDER,    // an arm on a drum, the gear's long cousin
+    CRUSHER,     // a press plate, top or bottom
+    RAIL,        // a live electrical bar across the floor
+    BOLT,        // a component dropping out of the works
 }
 
 /** What a surface is made of. Art only, exactly as [Look] is. */
-enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE, BUBBLE }
+
+enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE, BUBBLE, PLATE, CONVEYOR }
 
 /**
  * A hazard that will not stay still.

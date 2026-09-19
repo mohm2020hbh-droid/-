@@ -99,6 +99,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
      */
     private val sandy get() = theme.scene == Scene.DESERT
     private val deep get() = theme.scene == Scene.ABYSS
+    private val machine get() = theme.scene == Scene.CLOCKWORK
 
     /** Player choice: drops reflections, windows and half the particles. */
     var reduceEffects = false
@@ -453,6 +454,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         when (theme.scene) {
             Scene.DESERT -> drawDesert(g)
             Scene.ABYSS -> drawAbyss(levelTime)
+            Scene.CLOCKWORK -> drawClockwork(levelTime)
             Scene.CITY -> drawCity(g)
         }
 
@@ -960,6 +962,177 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.closePath(); ctx.fill(); ctx.stroke()
                 ctx.restore()
             }
+            // --- CLOCKWORK ----------------------------------------------------
+            // A gear TOOTH, and the wheel it belongs to drawn behind it.
+            //
+            // The wheel is not a hazard and it is not drawn as one: the hub and
+            // the orbit come straight out of this tooth's own resting box and
+            // its motion reach, so what the player sees turning is exactly the
+            // circle the collision runs on. What kills is the tooth, and the
+            // tooth is what is drawn solid.
+            Look.GEAR, Look.CYLINDER -> {
+                val m = hz.motion
+                if (m != null && !reduceEffects) {
+                    val hubX = sx(hz.x0 + (hz.x1 - hz.x0) / 2)
+                    val hubY = sy(hz.y0)
+                    val rad = m.reachX * scale
+                    ctx.globalAlpha *= 0.30
+                    ctx.lineWidth = 2.0
+                    ctx.beginPath(); ctx.arc(hubX, hubY, rad, 0.0, PI * 2); ctx.stroke()
+                    ctx.beginPath(); ctx.arc(hubX, hubY, rad * 0.16, 0.0, PI * 2); ctx.stroke()
+                    ctx.moveTo(hubX, hubY); ctx.lineTo(mx, (sy(b.y0) + sy(b.y1)) / 2)
+                    ctx.stroke()
+                    ctx.globalAlpha /= 0.30
+                    ctx.lineWidth = 2.5
+                }
+                // the tooth itself: a blunt metal block, wider at the rim
+                val top = sy(b.y1); val bot = sy(b.y0)
+                val nx = (x1 - x0) * 0.22
+                ctx.beginPath()
+                ctx.moveTo(x0, bot); ctx.lineTo(x0 + nx, top)
+                ctx.lineTo(x1 - nx, top); ctx.lineTo(x1, bot)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+            }
+            // A ram: a heavy head on a shaft that runs up out of the room, and a
+            // lamp on the head that comes on while it is on its way down.
+            Look.PISTON -> {
+                val top = sy(b.y1); val bot = sy(b.y0)
+                ctx.globalAlpha *= 0.45
+                ctx.lineWidth = 3.0
+                ctx.beginPath(); ctx.moveTo(mx, top); ctx.lineTo(mx, 0.0); ctx.stroke()
+                ctx.globalAlpha /= 0.45
+                ctx.lineWidth = 2.5
+                ctx.fillRect(x0, top, x1 - x0, bot - top)
+                ctx.strokeRect(x0, top, x1 - x0, bot - top)
+                // the head's leading edge, heavier than the rest of it
+                ctx.lineWidth = 4.0
+                ctx.beginPath(); ctx.moveTo(x0, bot); ctx.lineTo(x1, bot); ctx.stroke()
+                ctx.lineWidth = 2.5
+                val falling = (hz.motion?.let {
+                    it.offsetY(levelTime) - it.offsetY(levelTime - 0.05)
+                } ?: 0.0) < 0.0
+                if (falling) {
+                    ctx.globalAlpha *= 0.9
+                    ctx.beginPath()
+                    ctx.arc(mx, top + (bot - top) * 0.34, 3.2, 0.0, PI * 2)
+                    ctx.fill()
+                    ctx.globalAlpha /= 0.9
+                }
+            }
+            // A gate panel. Ribbed, with a heavy bottom rail, and the shaft it
+            // rides going up past the top of the room.
+            Look.SHUTTER -> {
+                val tip = sy(b.y0)
+                val topEdge = maxOf(sy(b.y1), -20.0)
+                ctx.fillRect(x0, topEdge, x1 - x0, tip - topEdge)
+                ctx.strokeRect(x0, topEdge, x1 - x0, tip - topEdge)
+                ctx.globalAlpha *= 0.5
+                ctx.beginPath()
+                var rib = x0 + (x1 - x0) * 0.25
+                while (rib < x1) { ctx.moveTo(rib, topEdge); ctx.lineTo(rib, tip); rib += (x1 - x0) * 0.25 }
+                ctx.stroke()
+                ctx.globalAlpha /= 0.5
+                ctx.lineWidth = 4.0
+                ctx.beginPath(); ctx.moveTo(x0, tip); ctx.lineTo(x1, tip); ctx.stroke()
+                ctx.lineWidth = 2.5
+            }
+            // A weight on a chain, and the chain goes up to where it is hung.
+            Look.CHAIN -> {
+                val top = sy(b.y1); val bot = sy(b.y0)
+                ctx.globalAlpha *= 0.5
+                ctx.lineWidth = 2.0
+                ctx.beginPath()
+                var ly = top
+                while (ly > 0.0) { ctx.moveTo(mx - 3.0, ly); ctx.lineTo(mx + 3.0, ly - 7.0); ly -= 7.0 }
+                ctx.stroke()
+                ctx.globalAlpha /= 0.5
+                ctx.lineWidth = 2.5
+                ctx.beginPath()
+                ctx.moveTo(mx, top)
+                ctx.lineTo(x1, top + (bot - top) * 0.3)
+                ctx.lineTo(x1 - (x1 - x0) * 0.2, bot)
+                ctx.lineTo(x0 + (x1 - x0) * 0.2, bot)
+                ctx.lineTo(x0, top + (bot - top) * 0.3)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+            }
+            // A vent: the grille in the deck, and the column out of it, whose
+            // height IS the warm-up the physics reads.
+            Look.STEAM -> {
+                val bot = sy(b.y0)
+                val top = sy(b.y0 + (b.y1 - b.y0) * grow)
+                ctx.lineWidth = 4.0
+                ctx.beginPath(); ctx.moveTo(x0, bot); ctx.lineTo(x1, bot); ctx.stroke()
+                ctx.lineWidth = 2.5
+                if (grow > 0.02) {
+                    ctx.beginPath()
+                    ctx.moveTo(x0, bot)
+                    ctx.quadraticCurveTo(x0 - (x1 - x0) * 0.2, (bot + top) / 2, mx - (x1 - x0) * 0.1, top)
+                    ctx.lineTo(mx + (x1 - x0) * 0.1, top)
+                    ctx.quadraticCurveTo(x1 + (x1 - x0) * 0.2, (bot + top) / 2, x1, bot)
+                    ctx.closePath(); ctx.fill(); ctx.stroke()
+                    ctx.globalAlpha *= 0.5
+                    for (k in 0 until 3) {
+                        val py = top + (bot - top) * (0.15 + 0.3 * k) + sin(levelTime * 7.0 + k) * 3.0
+                        ctx.beginPath(); ctx.arc(mx, py, 3.0 + k, 0.0, PI * 2); ctx.stroke()
+                    }
+                    ctx.globalAlpha /= 0.5
+                }
+            }
+            // A press plate: a slab with bolts, and the ram behind it going back
+            // into the wall it came out of.
+            Look.CRUSHER -> {
+                val up = hz.kind == HazardKind.SPIKE_UP
+                val top = sy(b.y1); val bot = sy(b.y0)
+                ctx.fillRect(x0, top, x1 - x0, bot - top)
+                ctx.strokeRect(x0, top, x1 - x0, bot - top)
+                ctx.lineWidth = 4.0
+                ctx.beginPath()
+                val face = if (up) top else bot
+                ctx.moveTo(x0, face); ctx.lineTo(x1, face); ctx.stroke()
+                ctx.lineWidth = 2.5
+                ctx.globalAlpha *= 0.55
+                ctx.beginPath()
+                ctx.arc(mx, (top + bot) / 2, 3.0, 0.0, PI * 2)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.55
+            }
+            // A live rail: a bar on the deck with the arc running along it. The
+            // arc's amplitude is the warm-up, so a charging rail visibly hums
+            // before it bites.
+            Look.RAIL -> {
+                val bot = sy(b.y0); val top = sy(b.y1)
+                ctx.lineWidth = 3.0
+                ctx.beginPath(); ctx.moveTo(x0, bot); ctx.lineTo(x1, bot); ctx.stroke()
+                ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x1, top); ctx.stroke()
+                ctx.lineWidth = 2.0
+                val amp = (bot - top) * 0.32 * (0.35 + 0.65 * grow)
+                ctx.beginPath()
+                var ax = x0
+                var k = 0
+                ctx.moveTo(x0, (top + bot) / 2)
+                while (ax < x1) {
+                    ax += (x1 - x0) / 6.0; k++
+                    ctx.lineTo(ax, (top + bot) / 2 + (if (k % 2 == 0) amp else -amp))
+                }
+                ctx.stroke()
+                ctx.lineWidth = 2.5
+            }
+            // A bolt: a hex nut, which is the one shape in here nobody mistakes
+            // for anything else.
+            Look.BOLT -> {
+                val r = (x1 - x0) / 2 * (0.6 + 0.4 * grow)
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.beginPath()
+                for (k in 0 until 6) {
+                    val a = k * PI / 3 + PI / 6
+                    if (k == 0) ctx.moveTo(mx + cos(a) * r, cy + sin(a) * r)
+                    else ctx.lineTo(mx + cos(a) * r, cy + sin(a) * r)
+                }
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.6
+                ctx.beginPath(); ctx.arc(mx, cy, r * 0.42, 0.0, PI * 2); ctx.stroke()
+                ctx.globalAlpha /= 0.6
+            }
             // The city's spike, unchanged.
             Look.SPIKE -> {
                 ctx.beginPath()
@@ -1112,6 +1285,114 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.globalAlpha = 1.0
     }
 
+    /**
+     * CLOCKWORK: the inside of something enormous, lit by its own workings.
+     *
+     * The city and the desert are lit from a sky and the abyss from under the
+     * floor. This room has no sky at all - what light there is comes off metal,
+     * out of vents and along power runs, and the deeper layers are darker rather
+     * than hazier. That is the whole reason it does not read as world 1 in
+     * orange: there is nothing above the machine, only more machine.
+     *
+     * Everything back here turns. Two layers of gears at different depths and
+     * different speeds, pipes running the length of the room, and the glow of
+     * the works behind them - all of it dark, because the background of the
+     * busiest world in the game has to lose to the hazards in front of it.
+     */
+    private fun drawClockwork(g: Double) {
+        // the works, glowing somewhere behind everything
+        val glow = ctx.createLinearGradient(0.0, h * 0.30, 0.0, h)
+        glow.addColorStop(0.0, "rgba(255,176,58,0.00)")
+        glow.addColorStop(0.62, "rgba(255,176,58,0.10)")
+        glow.addColorStop(1.0, "rgba(255,138,31,0.05)")
+        ctx.fillStyle = glow
+        ctx.fillRect(0.0, 0.0, w, h)
+
+        // Two gear layers. The far one is big, slow and nearly black; the near
+        // one is smaller, quicker and picks up the amber.
+        machineGears(g, 0.05, 0.62, h * 0.30, theme.mid, 0.55, 12)
+        pipes(g, 0.09, h * 0.24, theme.far, 0.7)
+        machineGears(g, 0.13, -1.05, h * 0.20, theme.near, 0.7, 9)
+        pipes(g, 0.17, h * 0.60, theme.mid, 0.55)
+
+        // Sparks off the works. Few, short, and they fall - a machine throws
+        // sparks down, and a world with a hundred drifting motes is the abyss.
+        if (!reduceEffects) {
+            ctx.strokeStyle = theme.horizon
+            ctx.lineWidth = 1.6
+            for (k in 0 until 14) {
+                val seed = k * 173 + 7
+                val cycle = 1.4 + (seed % 7) * 0.3
+                val u = ((levelTime + seed) % cycle) / cycle
+                val sxp = ((seed * 53) % w.toInt()).toDouble() - (g * (3.0 + seed % 5)) % (w + 40.0)
+                val syp = h * 0.30 + (seed % 5) * 22.0 + u * u * h * 0.5
+                ctx.globalAlpha = 0.55 * (1.0 - u)
+                ctx.beginPath()
+                ctx.moveTo((sxp + w * 2) % w, syp)
+                ctx.lineTo((sxp + w * 2) % w - 3.0, syp - 9.0)
+                ctx.stroke()
+            }
+            ctx.globalAlpha = 1.0
+            ctx.lineWidth = 2.5
+        }
+    }
+
+    /** A row of gears at one depth, turning at [spin] radians a second. Rims and
+     *  teeth only - a filled disc at this size reads as a hole, not a wheel. */
+    private fun machineGears(g: Double, speed: Double, spin: Double, cy: Double,
+                             colour: String, alpha: Double, teeth: Int) {
+        val span = w / 1.7
+        val shift = (g * speed * scale) % span
+        var i = -1
+        var r = 31 + teeth
+        while (i * span - shift < w + span) {
+            r = (r * 1103515245 + 12345) and 0x7fffffff
+            val rad = span * (0.22 + ((r shr 9) % 100) / 100.0 * 0.16)
+            val cx = i * span - shift + span * 0.5
+            val turn = g * spin * 0.05
+            ctx.globalAlpha = alpha
+            ctx.strokeStyle = colour
+            ctx.lineWidth = maxOf(2.0, rad * 0.14)
+            ctx.beginPath(); ctx.arc(cx, cy, rad, 0.0, PI * 2); ctx.stroke()
+            ctx.lineWidth = maxOf(1.5, rad * 0.07)
+            ctx.beginPath(); ctx.arc(cx, cy, rad * 0.32, 0.0, PI * 2); ctx.stroke()
+            ctx.beginPath()
+            for (k in 0 until teeth) {
+                val a = turn + k * PI * 2 / teeth
+                ctx.moveTo(cx + cos(a) * rad, cy + sin(a) * rad)
+                ctx.lineTo(cx + cos(a) * rad * 1.17, cy + sin(a) * rad * 1.17)
+                // spokes, so the rotation is visible from across the room
+                ctx.moveTo(cx + cos(a) * rad * 0.34, cy + sin(a) * rad * 0.34)
+                ctx.lineTo(cx + cos(a) * rad * 0.92, cy + sin(a) * rad * 0.92)
+            }
+            ctx.stroke()
+            i++
+        }
+        ctx.globalAlpha = 1.0
+        ctx.lineWidth = 2.5
+    }
+
+    /** Pipe runs across the room, with their joints. */
+    private fun pipes(g: Double, speed: Double, y: Double, colour: String, alpha: Double) {
+        ctx.globalAlpha = alpha
+        ctx.strokeStyle = colour
+        ctx.lineWidth = 7.0
+        ctx.beginPath(); ctx.moveTo(0.0, y); ctx.lineTo(w, y); ctx.stroke()
+        ctx.lineWidth = 2.0
+        ctx.globalAlpha = alpha * 0.8
+        val span = w / 5.0
+        val shift = (g * speed * scale) % span
+        var jx = -shift
+        ctx.beginPath()
+        while (jx < w + span) {
+            ctx.moveTo(jx, y - 9.0); ctx.lineTo(jx, y + 9.0)
+            jx += span
+        }
+        ctx.stroke()
+        ctx.globalAlpha = 1.0
+        ctx.lineWidth = 2.5
+    }
+
     /** Rock in silhouette against the glow - flat-topped slabs, not a skyline. */
     private fun ridge(g: Double, speed: Double, step: Double, lo: Double, hi: Double,
                       colour: String, alpha: Double, seed: Int) {
@@ -1204,7 +1485,10 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 Surface.BRIDGE -> theme.accent
                 Surface.MIRAGE -> theme.accent
                 Surface.BUBBLE -> theme.billboard
-                Surface.STONE -> if (sandy) theme.horizon else if (deep) theme.sun else safe
+                Surface.PLATE -> theme.horizon
+                Surface.CONVEYOR -> theme.billboard   // the one lit part of the deck
+                Surface.STONE -> if (sandy) theme.horizon
+                    else if (deep) theme.sun else if (machine) theme.horizon else safe
             }
             val skin = when (s.surface) {
                 Surface.SAND -> "rgba(255,154,42,0.20)"
@@ -1212,6 +1496,8 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 Surface.BRIDGE -> "rgba(255,46,139,0.16)"
                 Surface.MIRAGE -> "rgba(46,240,255,0.10)"
                 Surface.BUBBLE -> "rgba(176,123,255,0.18)"
+                Surface.PLATE -> "rgba(70,62,52,0.55)"
+                Surface.CONVEYOR -> "rgba(52,58,66,0.55)"
                 Surface.STONE -> when {
                     sandy -> "rgba(184,72,31,0.26)"
                     deep -> "rgba(15,111,158,0.30)"
@@ -1263,6 +1549,48 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                     var bx = x0 + off
                     while (bx < x1) { ctx.moveTo(bx, cy); ctx.lineTo(bx, cy - scale * 0.5); bx += scale }
                     cy += scale * 0.5; row++
+                }
+                ctx.stroke()
+                ctx.lineWidth = 2.5
+            } else if (s.surface == Surface.PLATE && !reduceEffects) {
+                // Deck plate: a line of rivets under the lip, and the seams
+                // between one plate and the next. Nothing moves, which is how a
+                // still deck says so in a world where most of the floor does not.
+                ctx.globalAlpha = 0.30
+                ctx.fillStyle = theme.horizon
+                var rx = x0 + scale * 0.4
+                while (rx < x1) {
+                    ctx.beginPath(); ctx.arc(rx, yTop + 7.0, 1.8, 0.0, PI * 2); ctx.fill()
+                    rx += scale * 0.8
+                }
+                ctx.globalAlpha = 0.18
+                ctx.strokeStyle = theme.sunCore
+                ctx.lineWidth = 1.2
+                ctx.beginPath()
+                var seam = x0
+                while (seam < x1) {
+                    ctx.moveTo(seam, yTop); ctx.lineTo(seam, yTop + scale * 0.55)
+                    seam += scale * 2.4
+                }
+                ctx.stroke()
+                ctx.lineWidth = 2.5
+            } else if (s.surface == Surface.CONVEYOR && !reduceEffects) {
+                // The belt: chevrons running along it. They travel with the
+                // SPAN, which is the honest thing to draw - the deck is what
+                // moves here, and the runner is not carried by it.
+                ctx.globalAlpha = 0.42
+                ctx.strokeStyle = theme.billboard
+                ctx.lineWidth = 2.0
+                val march = (levelTime * 46.0) % (scale * 0.9)
+                ctx.beginPath()
+                var cx2 = x0 - scale * 0.9 + march
+                while (cx2 < x1) {
+                    val a = maxOf(cx2, x0); val bx2 = minOf(cx2 + scale * 0.34, x1)
+                    if (bx2 > a) {
+                        ctx.moveTo(a, yTop + 13.0)
+                        ctx.lineTo(bx2, yTop + 6.0)
+                    }
+                    cx2 += scale * 0.9
                 }
                 ctx.stroke()
                 ctx.lineWidth = 2.5
@@ -1425,9 +1753,12 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         ctx.rect(0.0, gy, w, depth)
         ctx.clip()
         // The city bleeds its own cyan strip downward; the desert bleeds the sun,
-        // because that is the only thing lighting it. Same effect, same depth,
-        // same restraint - the light under the play line never gains an edge.
-        val lit = if (sandy) theme.sun else safe
+        // because that is the only thing lighting it; the machine bleeds amber,
+        // because the only light in that room comes off its own metal. Each one
+        // takes the colour of whatever is actually lighting it, which is the
+        // difference between a reflection and a tint - the machine deck was
+        // bleeding city cyan and reading as wet stone in a world with no water.
+        val lit = if (sandy) theme.sun else if (deep || machine) theme.horizon else safe
         val bleed = ctx.createLinearGradient(0.0, gy, 0.0, gy + depth)
         bleed.addColorStop(0.0, lit + "4d")
         bleed.addColorStop(0.22, lit + "1f")

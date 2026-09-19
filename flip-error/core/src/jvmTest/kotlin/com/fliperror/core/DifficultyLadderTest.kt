@@ -50,8 +50,12 @@ class DifficultyLadderTest {
         Level13.build(), Level14.build(), Level15.build(),
         Level16.build(), Level17.build(), Level18.build(),
     )
-    private val worlds = listOf(world1, world2, world3)
-    private val levels = world1 + world2 + world3
+    private val world4 = listOf(
+        Level19.build(), Level20.build(), Level21.build(),
+        Level22.build(), Level23.build(), Level24.build(),
+    )
+    private val worlds = listOf(world1, world2, world3, world4)
+    private val levels = world1 + world2 + world3 + world4
     private val reports by lazy { levels.associateWith { LevelVerifier(it).analyse() } }
 
     /** Everything on screen that is not standing still. */
@@ -130,14 +134,15 @@ class DifficultyLadderTest {
      * quieter than the quietest level of either world before it, by most of a
      * second.
      */
-    @Test fun `the abyss never lets go of the player as long as the others do`() {
+    @Test fun `the late worlds never let go as long as the early ones do`() {
         val rests = worlds.map { w -> w.maxOf { reports[it]!!.longestRest(it.durationSeconds) } }
-        val abyss = rests[2]
-        assertTrue(abyss < rests[0] && abyss < rests[1],
-            "WORLD 3 leaves the player alone for ${"%.2f".format(abyss)}s at its quietest, " +
-                "against ${"%.2f".format(rests[0])}s in world 1 and " +
-                "${"%.2f".format(rests[1])}s in world 2. A world that can no longer tighten " +
-                "and is not denser to read has to be the one that stops letting go.")
+        val early = maxOf(rests[0], rests[1])
+        listOf(2, 3).forEach { w ->
+            assertTrue(rests[w] < early,
+                "WORLD ${w + 1} leaves the player alone for ${"%.2f".format(rests[w])}s at its " +
+                    "quietest, against ${"%.2f".format(early)}s in worlds 1 and 2. A world that " +
+                    "can no longer tighten has to be the one that stops letting go.")
+        }
     }
 
     @Test fun `the second jump becomes compulsory and stays that way`() {
@@ -168,6 +173,8 @@ class DifficultyLadderTest {
         // each world still lays itself out on a faster grid than the last.
         assertTrue(world3.first().bpm > world2.last().bpm,
             "world 3 should be laid out faster than world 2 finished")
+        assertTrue(world4.first().bpm > world3.last().bpm,
+            "world 4 should be laid out faster than world 3 finished")
     }
 
     /**

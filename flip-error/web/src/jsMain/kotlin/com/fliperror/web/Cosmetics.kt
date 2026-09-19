@@ -55,7 +55,7 @@ object Palette {
  * meaning - hazard red and the player's own - stay exactly where they are.
  */
 /** What kind of place a world is. The renderer draws a different scene for each. */
-enum class Scene { CITY, DESERT, ABYSS }
+enum class Scene { CITY, DESERT, ABYSS, CLOCKWORK }
 
 class Theme(
     val skyTop: String, val skyMid: String, val skyLow: String,
@@ -85,9 +85,15 @@ class Theme(
             // it, and red is still nothing but danger.
             Theme("#020a1e", "#052a4e", "#01040d", "#06365f", "#0a5c86", "#0d8fa6",
                 "#2ef0ff", "#b07bff", "#39ffb0", Scene.ABYSS, "#18d7ff", "#eaffff"),
-            // --- WORLD 4: green + cyan ----------------------------------------
-            Theme("#04231f", "#063a33", "#05060f", "#0a5348", "#0d7a63", "#12b089",
-                "#39ff9e", "#2ef0ff", "#7cffb2", Scene.CITY),
+            // --- WORLD 4: CLOCKWORK. Black metal, and the light is the machine -
+            // Where the abyss is lit from below and the desert from a sun on the
+            // horizon, this room is lit by its own workings: gold and amber off
+            // the metal, electric blue where the power runs. The environment is
+            // the darkest in the game on purpose, because it is the busiest, and
+            // a busy background that is also bright is a background the player
+            // reads instead of the hazards.
+            Theme("#0a0a0d", "#161318", "#050506", "#1c1a20", "#2a2630", "#3b3540",
+                "#ffb03a", "#2ef0ff", "#ff8a1f", Scene.CLOCKWORK, "#ffc861", "#fff0cf"),
             // --- WORLD 5: orange + red ----------------------------------------
             Theme("#2a0f06", "#43180a", "#05060f", "#5e2410", "#8c3a15", "#c25a1c",
                 "#ff9130", "#ffd329", "#ff3ba7", Scene.CITY),

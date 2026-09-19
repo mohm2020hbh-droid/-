@@ -107,6 +107,30 @@ object AudioMap {
     const val ABYSS_RING = WIND_BLAST
     const val ABYSS_CRYSTAL = COLLAPSE_BRIDGE
 
+    // --- world 4's machine, on the same seven recordings -----------------------
+    //
+    // Same reasoning, and it fits this world better than either of the others:
+    // these files are short mechanical noises to begin with. A vent firing is a
+    // burst from below, a ram landing is an impact, a rail charging is a charge.
+    // The one that needed thought is the gear, and 43 - which is a heavy thing
+    // cracking - is the closest the pack comes to a tooth coming round.
+    //
+    //   37_w2_sand_wave        -> a chain sweeping past
+    //   38_w2_sand_geyser      -> a steam vent firing
+    //   39_w2_falling_ruin     -> a ram landing, a press closing, a bolt dropping
+    //   40_w2_laser_charge     -> anything winding up: ram, rail, vent
+    //   41_w2_laser_blast      -> a rail going live
+    //   42_w2_wind_blast       -> a gate panel moving
+    //   43_w2_collapse_bridge  -> a gear tooth coming round
+
+    const val MACHINE_CHAIN = SAND_WAVE
+    const val MACHINE_STEAM = SAND_GEYSER
+    const val MACHINE_IMPACT = FALLING_RUIN
+    const val MACHINE_WARN = LASER_CHARGE
+    const val MACHINE_LIVE = LASER_BLAST
+    const val MACHINE_GATE = WIND_BLAST
+    const val MACHINE_GEAR = COLLAPSE_BRIDGE
+
     /**
      * Every recording the game loads, and the whole of it. There is no second
      * list: if a sound is not here it is not fetched, not decoded, not held in

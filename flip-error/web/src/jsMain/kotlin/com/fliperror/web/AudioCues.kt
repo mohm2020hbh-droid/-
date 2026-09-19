@@ -136,6 +136,54 @@ class AudioCues {
                 Look.CRYSTAL -> edge(key, ahead < earshot * 0.45) {
                     Audio.hazardCue(AudioMap.ABYSS_CRYSTAL, vol * 0.6)
                 }
+                // --- CLOCKWORK ------------------------------------------------
+                //
+                // The machine's parts are mostly MOTION rather than blink, so
+                // there is no activeAt to take an edge from. What there is
+                // instead is a stroke: a ram, a gate and a press are near the
+                // end of their travel or they are not, and that is the moment
+                // worth a sound. [atStroke] answers it from the hazard's own
+                // resting box and reach, so a part that is moved or resized in a
+                // level file keeps its cue without anybody remembering to.
+                Look.PISTON, Look.CRUSHER -> {
+                    edge(key + "/warn", atStroke(hz, t, 0.55)) {
+                        Audio.hazardCue(AudioMap.MACHINE_WARN, vol * 0.55)
+                    }
+                    edge(key + "/hit", atStroke(hz, t, 0.92)) {
+                        Audio.hazardCue(AudioMap.MACHINE_IMPACT, vol)
+                    }
+                }
+                Look.SHUTTER -> edge(key + "/shut", atStroke(hz, t, 0.85)) {
+                    Audio.hazardCue(AudioMap.MACHINE_GATE, vol * 0.85)
+                }
+                // A vent has the two moments a beam has, for the same reason.
+                Look.STEAM -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.MACHINE_WARN, vol * 0.6)
+                    }
+                    edge(key + "/up", hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.MACHINE_STEAM, vol)
+                    }
+                }
+                Look.RAIL -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.MACHINE_WARN, vol * 0.7)
+                    }
+                    edge(key + "/live", hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.MACHINE_LIVE, vol * 0.9)
+                    }
+                }
+                Look.BOLT -> if (hz.pulses) {
+                    edge(key, hz.activeAt(t)) { Audio.hazardCue(AudioMap.MACHINE_IMPACT, vol) }
+                } else Unit
+                // Teeth and weights do not switch; the edge is the runner coming
+                // within earshot, said once per pass.
+                Look.GEAR, Look.CYLINDER -> edge(key, ahead < earshot * 0.45) {
+                    Audio.hazardCue(AudioMap.MACHINE_GEAR, vol * 0.7)
+                }
+                Look.CHAIN -> edge(key, ahead < earshot * 0.5) {
+                    Audio.hazardCue(AudioMap.MACHINE_CHAIN, vol * 0.8)
+                }
                 // An orb and a drifting shard are quiet. Everything in front of
                 // the runner having a voice is the same as nothing having one.
                 Look.SPIKE, Look.RELIC, Look.ORB, Look.SHARD -> Unit
@@ -163,6 +211,28 @@ class AudioCues {
             lastWindZone = zone
             if (zone >= 0) Audio.hazardCue(AudioMap.WIND_BLAST, 0.7)
         }
+    }
+
+    /**
+     * Is this part [how] of the way to the end of its stroke, and heading there?
+     *
+     * A ram, a gate and a press are pure motion - there is no on/off to watch -
+     * so the sound has to come off the travel itself. The reach is the hazard's
+     * own, and the direction matters: a part on its way back up is not an
+     * impact, and firing on both halves of the cycle is how a machine ends up
+     * clattering twice per stroke.
+     */
+    private fun atStroke(hz: com.fliperror.core.Hazard, t: Double, how: Double): Boolean {
+        val m = hz.motion ?: return false
+        if (m.reachY <= 0.0) return false
+        val now = m.offsetY(t)
+        val was = m.offsetY(t - 1.0 / 60.0)
+        val down = hz.kind == com.fliperror.core.HazardKind.SPIKE_DOWN
+        // Down-hanging parts travel to -reach; floor parts travel to +reach.
+        val toward = if (down) -m.reachY else m.reachY
+        val progress = now / toward
+        val closing = if (down) now < was else now > was
+        return closing && progress >= how
     }
 
     /** Fire [onRise] the first frame [now] becomes true, and not again until it
