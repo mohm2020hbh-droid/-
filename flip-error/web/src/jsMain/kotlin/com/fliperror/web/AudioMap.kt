@@ -131,6 +131,31 @@ object AudioMap {
     const val MACHINE_GATE = WIND_BLAST
     const val MACHINE_GEAR = COLLAPSE_BRIDGE
 
+    // --- world 5's forest, on the same seven recordings ------------------------
+    //
+    // Third world to borrow them, and the reasoning has not changed: these are
+    // short abstract hazard SFX named for where they were first used. A flower
+    // shutting is a thing snapping closed; a vine passing is a sweep; a root
+    // coming up is a burst from below; a seed landing is an impact. The pack was
+    // cut before any of these worlds existed and it still fits them, because
+    // what it actually contains is not a desert - it is seven shapes of noise.
+    //
+    //   37_w2_sand_wave        -> a vine sweeping past, a drift crossing
+    //   38_w2_sand_geyser      -> a root coming up out of the ground
+    //   39_w2_falling_ruin     -> a seed landing, a pod bursting
+    //   40_w2_laser_charge     -> anything swelling: flower, root, pod, pulse
+    //   41_w2_laser_blast      -> the instant a flower shuts or a plant pulses
+    //   42_w2_wind_blast       -> a bloom opening out of the ground
+    //   43_w2_collapse_bridge  -> roots braiding into a wall
+
+    const val FOREST_SWEEP = SAND_WAVE
+    const val FOREST_ROOT = SAND_GEYSER
+    const val FOREST_IMPACT = FALLING_RUIN
+    const val FOREST_WARN = LASER_CHARGE
+    const val FOREST_SNAP = LASER_BLAST
+    const val FOREST_BLOOM = WIND_BLAST
+    const val FOREST_WALL = COLLAPSE_BRIDGE
+
     /**
      * Every recording the game loads, and the whole of it. There is no second
      * list: if a sound is not here it is not fetched, not decoded, not held in

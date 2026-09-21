@@ -55,7 +55,7 @@ object Palette {
  * meaning - hazard red and the player's own - stay exactly where they are.
  */
 /** What kind of place a world is. The renderer draws a different scene for each. */
-enum class Scene { CITY, DESERT, ABYSS, CLOCKWORK }
+enum class Scene { CITY, DESERT, ABYSS, CLOCKWORK, FOREST }
 
 class Theme(
     val skyTop: String, val skyMid: String, val skyLow: String,
@@ -94,9 +94,14 @@ class Theme(
             // reads instead of the hazards.
             Theme("#0a0a0d", "#161318", "#050506", "#1c1a20", "#2a2630", "#3b3540",
                 "#ffb03a", "#2ef0ff", "#ff8a1f", Scene.CLOCKWORK, "#ffc861", "#fff0cf"),
-            // --- WORLD 5: orange + red ----------------------------------------
-            Theme("#2a0f06", "#43180a", "#05060f", "#5e2410", "#8c3a15", "#c25a1c",
-                "#ff9130", "#ffd329", "#ff3ba7", Scene.CITY),
+            // --- WORLD 5: OVERGROWTH. A living world, lit by itself ------------
+            // Almost black at the top and deep teal at the floor, with everything
+            // that glows doing it from inside a plant: lime along the moss,
+            // violet in the canopy, magenta only where something is about to
+            // eat you. The darkest ground in the game after the machine, for the
+            // same reason - the busiest worlds need the quietest backgrounds.
+            Theme("#04100c", "#072019", "#020806", "#0a2b22", "#0f4436", "#146b4e",
+                "#7cff4f", "#b07bff", "#ff2e8b", Scene.FOREST, "#39ffb0", "#e8ffe0"),
             // --- WORLD 6: electric white + blue -------------------------------
             Theme("#0a1230", "#122048", "#05060f", "#1d3570", "#2a53a8", "#3f84e0",
                 "#dff4ff", "#2ef0ff", "#8b5cff", Scene.CITY),

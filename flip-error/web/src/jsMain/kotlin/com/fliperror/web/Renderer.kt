@@ -100,6 +100,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
     private val sandy get() = theme.scene == Scene.DESERT
     private val deep get() = theme.scene == Scene.ABYSS
     private val machine get() = theme.scene == Scene.CLOCKWORK
+    private val forest get() = theme.scene == Scene.FOREST
 
     /** Player choice: drops reflections, windows and half the particles. */
     var reduceEffects = false
@@ -455,6 +456,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             Scene.DESERT -> drawDesert(g)
             Scene.ABYSS -> drawAbyss(levelTime)
             Scene.CLOCKWORK -> drawClockwork(levelTime)
+            Scene.FOREST -> drawForest(levelTime)
             Scene.CITY -> drawCity(g)
         }
 
@@ -702,6 +704,38 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.strokeStyle = theme.sunCore
                 ctx.strokeRect(sx(b.x0), sy(b.y1) - scale * 2.2,
                     sx(b.x1) - sx(b.x0), scale * 0.5)
+            }
+            // The forest at rest. A plant that only exists in the half second it
+            // is lethal is a jump scare; a plant that has been standing there all
+            // along, and then MOVES, is a timing problem. So every organic hazard
+            // with an off state is drawn in its off state - the bud before it
+            // opens, the seam the root will come through, the mouth in the moss,
+            // the core between beats - in the world's own green rather than in
+            // the danger colour, because none of it can hurt anyone yet.
+            Look.FLOWER -> {
+                val cx = (sx(b.x0) + sx(b.x1)) / 2
+                val half = (sx(b.x1) - sx(b.x0)) / 2
+                ctx.beginPath()
+                ctx.moveTo(cx, sy(b.y0))
+                ctx.quadraticCurveTo(sx(b.x0) - half * 0.6, sy((b.y0 + b.y1) / 2), cx, sy(b.y1))
+                ctx.quadraticCurveTo(sx(b.x1) + half * 0.6, sy((b.y0 + b.y1) / 2), cx, sy(b.y0))
+                ctx.stroke()
+            }
+            Look.ROOT, Look.BLOOM -> {
+                ctx.beginPath()
+                ctx.moveTo(sx(b.x0), sy(b.y0)); ctx.lineTo(sx(b.x1), sy(b.y0))
+                ctx.stroke()
+                ctx.globalAlpha = 0.12
+                ctx.fillStyle = theme.sun
+                ctx.fillRect(sx(b.x0), sy(b.y0) - 3.0, sx(b.x1) - sx(b.x0), 3.0)
+            }
+            Look.THORN, Look.PULSE -> {
+                val cx = (sx(b.x0) + sx(b.x1)) / 2
+                val cy = (sy(b.y0) + sy(b.y1)) / 2
+                ctx.beginPath()
+                ctx.ellipse(cx, cy, (sx(b.x1) - sx(b.x0)) * 0.22,
+                    (sy(b.y0) - sy(b.y1)) * 0.22, 0.0, 0.0, PI * 2)
+                ctx.stroke()
             }
             else -> {}
         }
@@ -1133,6 +1167,180 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 ctx.beginPath(); ctx.arc(mx, cy, r * 0.42, 0.0, PI * 2); ctx.stroke()
                 ctx.globalAlpha /= 0.6
             }
+            // --- OVERGROWTH ---------------------------------------------------
+            // A mouth. Petals wide when it is quiet, shut into a beak when it is
+            // not, and [grow] carries the swelling the physics reads - so the
+            // thing closing on screen and the thing that kills are one event.
+            Look.FLOWER -> {
+                val bot = sy(b.y0); val top = sy(b.y1)
+                val half = (x1 - x0) / 2
+                val open = 1.0 - grow                 // 1 = petals wide, 0 = shut
+                ctx.beginPath()
+                ctx.moveTo(mx, bot)
+                ctx.quadraticCurveTo(x0 - half * open, (bot + top) / 2, mx - half * (0.25 + open), top)
+                ctx.lineTo(mx + half * (0.25 + open), top)
+                ctx.quadraticCurveTo(x1 + half * open, (bot + top) / 2, mx, bot)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                // the throat, which is what brightens before it shuts
+                ctx.globalAlpha *= 0.4 + 0.6 * grow
+                ctx.beginPath()
+                ctx.ellipse(mx, top + (bot - top) * 0.32, half * 0.42, (bot - top) * 0.18,
+                    0.0, 0.0, PI * 2)
+                ctx.fill()
+                ctx.globalAlpha /= 0.4 + 0.6 * grow
+            }
+            // A vine: a stem going up out of frame and a leaf on the end of it.
+            Look.VINE -> {
+                val top = sy(b.y1); val bot = sy(b.y0)
+                val down = hz.kind == HazardKind.SPIKE_DOWN
+                ctx.globalAlpha *= 0.55
+                ctx.lineWidth = 2.2
+                ctx.beginPath()
+                if (down) { ctx.moveTo(mx, top); ctx.lineTo(mx, -10.0) }
+                else { ctx.moveTo(mx, top); ctx.lineTo(mx + 6.0, -10.0) }
+                ctx.stroke()
+                ctx.globalAlpha /= 0.55
+                ctx.lineWidth = 2.5
+                val leafTop = if (down) bot else top
+                val leafBot = if (down) top else bot
+                ctx.beginPath()
+                ctx.moveTo(mx, leafBot)
+                ctx.quadraticCurveTo(x0, (leafTop + leafBot) / 2, mx, leafTop)
+                ctx.quadraticCurveTo(x1, (leafTop + leafBot) / 2, mx, leafBot)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+            }
+            // A root out of the floor: a bent, knuckled finger with rootlets at
+            // its base and a second root braiding round it, growing to [grow] of
+            // its height as the ground pulses.
+            //
+            // It LEANS, and that is not decoration. A tapered shape with its tip
+            // in the middle and straight-ish sides is a triangle, and a triangle
+            // in this game means SPIKE - draw a short root that way and world 5
+            // is world 1 with a green floor, which is the one thing it was not
+            // allowed to be. So the tip sits a fifth of the width off centre,
+            // the sides carry a knuckle rather than a straight run, and which
+            // way a root leans is fixed by where it stands, so neighbours lean
+            // against each other and no two read as the same object.
+            Look.ROOT -> {
+                val bot = sy(b.y0)
+                val top = sy(b.y0 + (b.y1 - b.y0) * (if (hz.pulses) grow else 1.0))
+                val down = hz.kind == HazardKind.SPIKE_DOWN
+                val from = if (down) sy(b.y1) else bot
+                val to = if (down) sy(b.y0 + (b.y1 - b.y0) * grow) else top
+                val wd = x1 - x0
+                val rise = to - from
+                val dir = if ((hz.x0 * 3.0).toInt() % 2 == 0) 1.0 else -1.0
+                val tipX = mx + wd * 0.20 * dir
+                val tipW = wd * 0.16
+                ctx.beginPath()
+                ctx.moveTo(x0, from)
+                ctx.bezierCurveTo(x0 + wd * 0.04, from + rise * 0.30,
+                    tipX - wd * 0.40 * dir - tipW, from + rise * 0.62,
+                    tipX - tipW, to)
+                ctx.quadraticCurveTo(tipX, to + rise * 0.10, tipX + tipW, to)
+                ctx.bezierCurveTo(tipX + wd * 0.02 + tipW, from + rise * 0.60,
+                    x1 - wd * 0.06, from + rise * 0.28, x1, from)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                // the braid, and two rootlets going back into the moss
+                ctx.globalAlpha *= 0.5
+                ctx.beginPath()
+                ctx.moveTo(x0 + wd * 0.34, from)
+                ctx.quadraticCurveTo(tipX + wd * 0.26 * dir, from + rise * 0.55,
+                    tipX - wd * 0.08 * dir, to + rise * 0.06)
+                ctx.moveTo(x0 + wd * 0.12, from)
+                ctx.quadraticCurveTo(x0 - wd * 0.12, from + rise * 0.10, x0 - wd * 0.34, from)
+                ctx.moveTo(x1 - wd * 0.12, from)
+                ctx.quadraticCurveTo(x1 + wd * 0.12, from + rise * 0.10, x1 + wd * 0.34, from)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.5
+            }
+            // A pod: closed it is a bud, open it is the whole thorn structure,
+            // and [grow] is the swell in between.
+            Look.THORN -> {
+                val bot = sy(b.y0); val top = sy(b.y1)
+                val cy = (bot + top) / 2
+                val r = (x1 - x0) / 2 * (0.42 + 0.58 * grow)
+                ctx.beginPath(); ctx.ellipse(mx, cy, r * 0.8, (bot - top) / 2 * (0.5 + 0.5 * grow),
+                    0.0, 0.0, PI * 2)
+                ctx.fill(); ctx.stroke()
+                if (grow > 0.15) {
+                    ctx.globalAlpha *= grow
+                    ctx.beginPath()
+                    for (k in 0 until 8) {
+                        val a = k * PI / 4 + levelTime * 0.6
+                        ctx.moveTo(mx + cos(a) * r * 0.7, cy + sin(a) * r * 0.7)
+                        ctx.lineTo(mx + cos(a) * r * 1.6, cy + sin(a) * r * 1.6)
+                    }
+                    ctx.stroke()
+                    ctx.globalAlpha /= grow
+                }
+            }
+            // A drift: a cloud of small circles rather than an outline, because
+            // a spore cloud with a hard edge is not a spore cloud.
+            Look.SPORE -> {
+                val bot = sy(b.y0); val top = sy(b.y1)
+                ctx.globalAlpha *= 0.8
+                for (k in 0 until 9) {
+                    val u = k / 8.0
+                    val px = x0 + (x1 - x0) * u
+                    val py = (bot + top) / 2 + sin(levelTime * 2.4 + k * 1.3) * (bot - top) * 0.28
+                    ctx.beginPath()
+                    ctx.arc(px, py, (bot - top) * (0.20 + 0.10 * sin(k + levelTime)), 0.0, PI * 2)
+                    ctx.fill()
+                }
+                ctx.globalAlpha /= 0.8
+            }
+            // A seed: a pod with a husk seam, and it turns as it rolls.
+            Look.SEED -> {
+                val bot = sy(b.y0); val top = sy(b.y1)
+                val cy = (bot + top) / 2
+                val rx = (x1 - x0) / 2 * (if (hz.pulses) 0.4 + 0.6 * grow else 1.0)
+                val ry = (bot - top) / 2 * (if (hz.pulses) 0.4 + 0.6 * grow else 1.0)
+                ctx.save(); ctx.translate(mx, cy)
+                if (hz.moves) ctx.rotate(-levelTime * 2.2)
+                ctx.beginPath(); ctx.ellipse(0.0, 0.0, rx, ry, 0.0, 0.0, PI * 2)
+                ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.55
+                ctx.beginPath(); ctx.moveTo(-rx * 0.7, 0.0); ctx.lineTo(rx * 0.7, 0.0); ctx.stroke()
+                ctx.globalAlpha /= 0.55
+                ctx.restore()
+            }
+            // A bloom growing up out of the ground: petals opening outward, and
+            // the height it has reached is the height that kills.
+            Look.BLOOM -> {
+                val bot = sy(b.y0); val top = sy(b.y1)
+                val half = (x1 - x0) / 2
+                ctx.beginPath()
+                ctx.moveTo(mx, bot)
+                ctx.quadraticCurveTo(mx - half * 1.5, (bot + top) / 2, mx - half * 0.9, top)
+                ctx.quadraticCurveTo(mx, top + (bot - top) * 0.18, mx + half * 0.9, top)
+                ctx.quadraticCurveTo(mx + half * 1.5, (bot + top) / 2, mx, bot)
+                ctx.closePath(); ctx.fill(); ctx.stroke()
+                ctx.globalAlpha *= 0.6
+                ctx.beginPath()
+                ctx.moveTo(mx, bot); ctx.lineTo(mx, top + (bot - top) * 0.25)
+                ctx.stroke()
+                ctx.globalAlpha /= 0.6
+            }
+            // A pulse: a core with a ring going out from it, and the ring's size
+            // IS the lethal radius, so what is drawn is exactly what is armed.
+            Look.PULSE -> {
+                val bot = sy(b.y0); val top = sy(b.y1)
+                val cy = (bot + top) / 2
+                ctx.beginPath()
+                ctx.ellipse(mx, bot, (x1 - x0) * 0.18, (bot - top) * 0.34, 0.0, 0.0, PI * 2)
+                ctx.fill(); ctx.stroke()
+                if (grow > 0.02) {
+                    ctx.globalAlpha *= 0.35 + 0.65 * grow
+                    ctx.lineWidth = 2.0 + 2.0 * grow
+                    ctx.beginPath()
+                    ctx.ellipse(mx, cy, (x1 - x0) / 2 * grow, (bot - top) / 2 * grow,
+                        0.0, 0.0, PI * 2)
+                    ctx.stroke()
+                    ctx.lineWidth = 2.5
+                    ctx.globalAlpha /= 0.35 + 0.65 * grow
+                }
+            }
             // The city's spike, unchanged.
             Look.SPIKE -> {
                 ctx.beginPath()
@@ -1337,6 +1545,117 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         }
     }
 
+    /**
+     * OVERGROWTH: a forest that is lit from inside itself.
+     *
+     * Nothing here is a silhouette against a sky, because there is no sky -
+     * there is canopy, and under it the light comes out of the plants. Three
+     * depths of growth, each darker and slower than the one in front of it, with
+     * spores drifting up through all of them and the whole thing breathing on a
+     * cycle slow enough that the eye reads it as alive rather than as animation.
+     *
+     * Every shape back here is drawn with curves. That is the one hard rule of
+     * this world's art: the machine was all angles and the forest is the answer
+     * to it, so there is not a straight line in the background if a quadratic
+     * will do instead.
+     */
+    private fun drawForest(g: Double) {
+        // the glow of the undergrowth, strongest at the floor
+        val under = ctx.createLinearGradient(0.0, h * 0.25, 0.0, h)
+        under.addColorStop(0.0, "rgba(124,255,79,0.00)")
+        under.addColorStop(0.60, "rgba(20,107,78,0.16)")
+        under.addColorStop(1.0, "rgba(124,255,79,0.07)")
+        ctx.fillStyle = under
+        ctx.fillRect(0.0, 0.0, w, h)
+
+        // Three depths of growth. The far one is nearly black and barely moves;
+        // the near one sways enough to be read as breathing.
+        canopy(g, 0.05, 3.6, 0.30, theme.far, 0.85, 0.5)
+        growth(g, 0.08, 2.6, 0.18, 0.34, theme.mid, 0.75, 311)
+        canopy(g, 0.12, 2.4, 0.22, theme.mid, 0.55, 1.1)
+        growth(g, 0.17, 1.8, 0.10, 0.22, theme.near, 0.60, 907)
+
+        // Spores going UP through all of it, which is the one motion in this
+        // game that runs against the runner - everything else in five worlds
+        // travels with them or at them.
+        if (!reduceEffects) {
+            ctx.fillStyle = theme.horizon
+            for (k in 0 until 34) {
+                val seed = k * 149 + 13
+                val speed = 16.0 + seed % 26
+                val sxp = ((seed * 71) % w.toInt()).toDouble() - (g * (2.0 + seed % 5)) % (w + 60.0)
+                val rise = (g * speed + seed * 11) % (h * 1.2)
+                val py = h - rise
+                if (py < -10.0) continue
+                val r = 0.9 + (seed % 5) * 0.5
+                ctx.globalAlpha = 0.40 * (1.0 - rise / (h * 1.2)).coerceIn(0.0, 1.0) + 0.06
+                ctx.beginPath()
+                ctx.arc((sxp + w * 2) % w + sin(g * 0.9 + k) * 7.0, py, r, 0.0, PI * 2)
+                ctx.fill()
+            }
+            ctx.globalAlpha = 1.0
+        }
+    }
+
+    /** Fronds hanging from above, swaying on a slow cycle. */
+    private fun canopy(g: Double, speed: Double, step: Double, drop: Double,
+                       colour: String, alpha: Double, sway: Double) {
+        val span = w / step
+        val shift = (g * speed * scale) % span
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = colour
+        var i = -1
+        var r = 97
+        while (i * span - shift < w + span) {
+            r = (r * 1103515245 + 12345) and 0x7fffffff
+            val cx = i * span - shift + span * 0.5
+            val len = h * (drop * (0.6 + ((r shr 9) % 100) / 200.0))
+            val bend = sin(g * 0.35 + i) * span * 0.10 * sway
+            ctx.beginPath()
+            ctx.moveTo(cx - span * 0.22, 0.0)
+            ctx.quadraticCurveTo(cx - span * 0.10 + bend, len * 0.7, cx + bend, len)
+            ctx.quadraticCurveTo(cx + span * 0.10 + bend, len * 0.7, cx + span * 0.22, 0.0)
+            ctx.closePath()
+            ctx.fill()
+            i++
+        }
+        ctx.globalAlpha = 1.0
+    }
+
+    /** Growth coming up off the floor: trunks, and the bulbs that glow on them. */
+    private fun growth(g: Double, speed: Double, step: Double, lo: Double, hi: Double,
+                       colour: String, alpha: Double, seed: Int) {
+        val gy = h * 0.80
+        val span = w / step
+        val shift = (g * speed * scale) % span
+        var i = -1
+        var r = seed
+        while (i * span - shift < w + span) {
+            r = (r * 1103515245 + 12345) and 0x7fffffff
+            val tall = h * (lo + (hi - lo) * ((r shr 9) % 100) / 100.0)
+            val cx = i * span - shift + span * 0.5
+            val lean = sin(g * 0.3 + i * 1.7) * span * 0.05
+            ctx.globalAlpha = alpha
+            ctx.fillStyle = colour
+            ctx.beginPath()
+            ctx.moveTo(cx - span * 0.13, gy)
+            ctx.quadraticCurveTo(cx - span * 0.05 + lean, gy - tall * 0.6, cx + lean, gy - tall)
+            ctx.quadraticCurveTo(cx + span * 0.05 + lean, gy - tall * 0.6, cx + span * 0.13, gy)
+            ctx.closePath()
+            ctx.fill()
+            // a bulb near the top, the only bright thing this far back
+            if (!reduceEffects) {
+                ctx.globalAlpha = alpha * 0.5
+                ctx.fillStyle = theme.billboard
+                ctx.beginPath()
+                ctx.arc(cx + lean, gy - tall * 0.92, span * 0.035, 0.0, PI * 2)
+                ctx.fill()
+            }
+            i++
+        }
+        ctx.globalAlpha = 1.0
+    }
+
     /** A row of gears at one depth, turning at [spin] radians a second. Rims and
      *  teeth only - a filled disc at this size reads as a hole, not a wheel. */
     private fun machineGears(g: Double, speed: Double, spin: Double, cy: Double,
@@ -1487,8 +1806,9 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 Surface.BUBBLE -> theme.billboard
                 Surface.PLATE -> theme.horizon
                 Surface.CONVEYOR -> theme.billboard   // the one lit part of the deck
+                Surface.MOSS -> theme.horizon
                 Surface.STONE -> if (sandy) theme.horizon
-                    else if (deep) theme.sun else if (machine) theme.horizon else safe
+                    else if (deep) theme.sun else if (machine || forest) theme.horizon else safe
             }
             val skin = when (s.surface) {
                 Surface.SAND -> "rgba(255,154,42,0.20)"
@@ -1498,6 +1818,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
                 Surface.BUBBLE -> "rgba(176,123,255,0.18)"
                 Surface.PLATE -> "rgba(70,62,52,0.55)"
                 Surface.CONVEYOR -> "rgba(52,58,66,0.55)"
+                Surface.MOSS -> "rgba(18,74,52,0.50)"
                 Surface.STONE -> when {
                     sandy -> "rgba(184,72,31,0.26)"
                     deep -> "rgba(15,111,158,0.30)"
@@ -1758,7 +2079,7 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
         // takes the colour of whatever is actually lighting it, which is the
         // difference between a reflection and a tint - the machine deck was
         // bleeding city cyan and reading as wet stone in a world with no water.
-        val lit = if (sandy) theme.sun else if (deep || machine) theme.horizon else safe
+        val lit = if (sandy) theme.sun else if (deep || machine || forest) theme.horizon else safe
         val bleed = ctx.createLinearGradient(0.0, gy, 0.0, gy + depth)
         bleed.addColorStop(0.0, lit + "4d")
         bleed.addColorStop(0.22, lit + "1f")
@@ -2092,6 +2413,23 @@ class Renderer(private val ctx: CanvasRenderingContext2D) {
             Look.RING -> "THE PRESSURE RING CAUGHT YOU"
             Look.WAVE -> "THE SWELL ROLLED OVER YOU"
             Look.SHARD -> "YOU WENT UP INTO THE DRIFT"
+            Look.GEAR -> "THE TOOTH CAME ROUND"
+            Look.PISTON -> "THE RAM CAME DOWN ON YOU"
+            Look.SHUTTER -> "THE GATE SHUT ON YOU"
+            Look.CHAIN -> "THE CHAIN SWUNG INTO YOU"
+            Look.STEAM -> "THE VENT BLEW UNDER YOU"
+            Look.CYLINDER -> "THE DRUM CAUGHT YOU"
+            Look.CRUSHER -> "THE PRESS CLOSED ON YOU"
+            Look.RAIL -> "YOU TOUCHED THE LIVE RAIL"
+            Look.BOLT -> "THE BOLT DROPPED ON YOU"
+            Look.FLOWER -> "THE FLOWER SNAPPED SHUT"
+            Look.VINE -> "THE VINE SWEPT THROUGH YOU"
+            Look.ROOT -> "A ROOT CAME UP UNDER YOU"
+            Look.THORN -> "THE POD BURST ON YOU"
+            Look.SPORE -> "YOU RAN INTO THE SPORES"
+            Look.SEED -> "THE SEED CAUGHT YOU"
+            Look.BLOOM -> "IT OPENED WHERE YOU LANDED"
+            Look.PULSE -> "THE PLANT PULSED THROUGH YOU"
             // A spike, or a hazard that died before it said what it was.
             else -> if (g.deathCause == DeathCause.CEILING_SPIKE)
                 "YOU JUMPED INTO THE CEILING" else "YOU HIT A SPIKE"

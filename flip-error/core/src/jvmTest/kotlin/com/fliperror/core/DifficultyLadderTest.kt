@@ -54,8 +54,12 @@ class DifficultyLadderTest {
         Level19.build(), Level20.build(), Level21.build(),
         Level22.build(), Level23.build(), Level24.build(),
     )
-    private val worlds = listOf(world1, world2, world3, world4)
-    private val levels = world1 + world2 + world3 + world4
+    private val world5 = listOf(
+        Level25.build(), Level26.build(), Level27.build(),
+        Level28.build(), Level29.build(), Level30.build(),
+    )
+    private val worlds = listOf(world1, world2, world3, world4, world5)
+    private val levels = world1 + world2 + world3 + world4 + world5
     private val reports by lazy { levels.associateWith { LevelVerifier(it).analyse() } }
 
     /** Everything on screen that is not standing still. */
@@ -137,7 +141,7 @@ class DifficultyLadderTest {
     @Test fun `the late worlds never let go as long as the early ones do`() {
         val rests = worlds.map { w -> w.maxOf { reports[it]!!.longestRest(it.durationSeconds) } }
         val early = maxOf(rests[0], rests[1])
-        listOf(2, 3).forEach { w ->
+        listOf(2, 3, 4).forEach { w ->
             assertTrue(rests[w] < early,
                 "WORLD ${w + 1} leaves the player alone for ${"%.2f".format(rests[w])}s at its " +
                     "quietest, against ${"%.2f".format(early)}s in worlds 1 and 2. A world that " +
@@ -175,6 +179,8 @@ class DifficultyLadderTest {
             "world 3 should be laid out faster than world 2 finished")
         assertTrue(world4.first().bpm > world3.last().bpm,
             "world 4 should be laid out faster than world 3 finished")
+        assertTrue(world5.first().bpm > world4.last().bpm,
+            "world 5 should be laid out faster than world 4 finished")
     }
 
     /**

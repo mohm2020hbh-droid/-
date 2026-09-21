@@ -184,6 +184,68 @@ class AudioCues {
                 Look.CHAIN -> edge(key, ahead < earshot * 0.5) {
                     Audio.hazardCue(AudioMap.MACHINE_CHAIN, vol * 0.8)
                 }
+                // --- OVERGROWTH ----------------------------------------------
+                //
+                // The forest's parts mostly switch rather than travel, so their
+                // edges are the ones a blink gives: swelling, then open. A
+                // flower gets both because both are moments the player reads -
+                // the throat brightening is the warning and the snap is the
+                // fact - and the rest get the one that matters.
+                Look.FLOWER -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.FOREST_WARN, vol * 0.75)
+                    }
+                    edge(key + "/snap", hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.FOREST_SNAP, vol)
+                    }
+                }
+                Look.ROOT -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.FOREST_WARN, vol * 0.5)
+                    }
+                    // A wall of roots is many boxes on one blink, so its voice is
+                    // the wall's rather than each root's - keyed on the blink's
+                    // own phase, which every box in it shares.
+                    edge(key + "/up", hz.activeAt(t)) {
+                        Audio.hazardCue(
+                            if (hz.kind == com.fliperror.core.HazardKind.SPIKE_DOWN)
+                                AudioMap.FOREST_WALL else AudioMap.FOREST_ROOT, vol * 0.85)
+                    }
+                }
+                Look.THORN -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.FOREST_WARN, vol * 0.6)
+                    }
+                    edge(key + "/burst", hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.FOREST_IMPACT, vol * 0.9)
+                    }
+                }
+                Look.PULSE -> {
+                    edge(key + "/warm", hz.warmAt(t) > 0.0) {
+                        Audio.hazardCue(AudioMap.FOREST_WARN, vol * 0.5)
+                    }
+                    edge(key + "/beat", hz.activeAt(t)) {
+                        Audio.hazardCue(AudioMap.FOREST_SNAP, vol * 0.7)
+                    }
+                }
+                Look.SEED -> if (hz.pulses) {
+                    edge(key, hz.activeAt(t)) { Audio.hazardCue(AudioMap.FOREST_IMPACT, vol) }
+                } else if (hz.moves) {
+                    edge(key, ahead < earshot * 0.5) {
+                        Audio.hazardCue(AudioMap.FOREST_SWEEP, vol * 0.7)
+                    }
+                } else Unit
+                // A bloom grows rather than switching, so there is no edge to
+                // take from a blink - the runner coming within earshot is it.
+                Look.BLOOM -> edge(key, ahead < earshot * 0.5) {
+                    Audio.hazardCue(AudioMap.FOREST_BLOOM, vol * 0.8)
+                }
+                Look.VINE -> edge(key, ahead < earshot * 0.45) {
+                    Audio.hazardCue(AudioMap.FOREST_SWEEP, vol * 0.6)
+                }
+                Look.SPORE -> edge(key, ahead < earshot * 0.5) {
+                    Audio.hazardCue(AudioMap.FOREST_SWEEP, vol * 0.45)
+                }
                 // An orb and a drifting shard are quiet. Everything in front of
                 // the runner having a voice is the same as nothing having one.
                 Look.SPIKE, Look.RELIC, Look.ORB, Look.SHARD -> Unit

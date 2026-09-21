@@ -32,6 +32,12 @@ import com.fliperror.core.Level21
 import com.fliperror.core.Level22
 import com.fliperror.core.Level23
 import com.fliperror.core.Level24
+import com.fliperror.core.Level25
+import com.fliperror.core.Level26
+import com.fliperror.core.Level27
+import com.fliperror.core.Level28
+import com.fliperror.core.Level29
+import com.fliperror.core.Level30
 import com.fliperror.core.Lang
 import com.fliperror.core.Progress
 import com.fliperror.core.Settings
@@ -137,6 +143,9 @@ fun main() {
         // WORLD 4 - CLOCKWORK
         def { Level19.build() }, def { Level20.build() }, def { Level21.build() },
         def { Level22.build() }, def { Level23.build() }, def { Level24.build() },
+        // WORLD 5 - OVERGROWTH
+        def { Level25.build() }, def { Level26.build() }, def { Level27.build() },
+        def { Level28.build() }, def { Level29.build() }, def { Level30.build() },
     )
 
     var screen = Screen.MENU

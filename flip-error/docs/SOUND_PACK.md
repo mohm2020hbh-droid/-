@@ -21,13 +21,19 @@ of that line each master is on. `web/.../AudioMap.kt` repeats the list in code.
 
 - **live (22)** — the cues the game fires: player, interface, and the obstacle
   voices, which are caused by an obstacle rather than played under one. Seven of
-  those voices serve worlds 2 AND 3: the pack predates the abyss and contains no
-  recording made for it, but a swell is a swell and something coming apart is
-  something coming apart, so `37_w2_sand_wave` is also the abyss swell,
-  `38_w2_sand_geyser` the arm out of the floor, `39_w2_falling_ruin` a bubble
-  coming apart, `40/41_w2_laser_*` the jelly's warning and its open,
-  `42_w2_wind_blast` a pressure ring and `43_w2_collapse_bridge` a crystal
-  swinging down. Nothing is renamed or re-encoded; `AudioMap.kt` holds the table.
+  those voices serve worlds 2, 3, 4 AND 5: the pack predates the abyss and
+  contains no recording made for it or for the two worlds after it, but a swell
+  is a swell and something coming apart is something coming apart, so
+  `37_w2_sand_wave` is also the abyss swell, a chain on its swing and a vine
+  sweeping past; `38_w2_sand_geyser` the arm out of the floor, a steam vent and
+  a root coming up; `39_w2_falling_ruin` a bubble coming apart, a ram landing
+  and a seed hitting the moss; `40/41_w2_laser_*` anything winding up and the
+  instant it goes live, which is the jelly, the rail and the flower alike;
+  `42_w2_wind_blast` a pressure ring, a gate panel and a bloom opening; and
+  `43_w2_collapse_bridge` a crystal swinging down, a gear tooth coming round and
+  root braiding into a wall. What the pack actually contains is not a desert —
+  it is seven shapes of noise. Nothing is renamed or re-encoded; `AudioMap.kt`
+  holds the table.
 - **on disk, unused (20)** — the eleven sixty-second environments, the four
   tension risers, the three unease beds, the two world-1 atmosphere hits and
   the menu hum.

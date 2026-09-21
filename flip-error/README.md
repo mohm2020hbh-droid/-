@@ -11,13 +11,13 @@ repository root and does not participate in that build.
 |---|---|
 | `core/` | The whole game: physics, level data, collision, state. Pure Kotlin, no platform types. Targets JVM (tests) and JS (web build), and is what the Android app will render. |
 | `web/`  | Browser playtest shell: canvas renderer, touch input, WebAudio. Lets the slice be played and automatically tested today. |
-| `tools/`| Automated playthroughs in a real browser: `playtest.mjs` (LEVEL 1 end to end), `feeltest.mjs` (the second jump and the trail), `progresstest.mjs` (the meta game), `deserttest.mjs` and `abysstest.mjs` (worlds 2 and 3), `orientation.mjs` (the gate), `runall.mjs` (all eighteen levels). |
+| `tools/`| Automated playthroughs in a real browser: `playtest.mjs` (LEVEL 1 end to end), `feeltest.mjs` (the second jump and the trail), `progresstest.mjs` (the meta game), `deserttest.mjs` and `abysstest.mjs` (worlds 2 and 3), `orientation.mjs` (the gate), `runall.mjs` (all thirty levels). |
 
 `core` is the single source of truth. No gameplay rule is implemented twice.
 
 ## Current state
 
-Twenty-four levels across four worlds, every one of them proved beatable by the
+Thirty levels across five worlds, every one of them proved beatable by the
 solver before it ships.
 
 **WORLD 1 — NEON CITY** (levels 1-6). Spikes, gaps, ceiling corridors, sliding
@@ -59,6 +59,27 @@ can be the densest in the game and still be learnable — and why nothing in it 
 allowed to be random. Built from one shared kit, `core/.../Clockwork.kt`, and
 still only Motion and Blink underneath, so the solver proves it without being
 extended.
+
+**WORLD 5 — OVERGROWTH** (levels 25-30). A forest the size of a continent, and
+the first world whose obstacles are ALIVE. Flowers the size of a door that snap
+shut on a cycle, vines that sweep the lane and curtains of them hanging too low
+to jump, roots that come up through the moss, pods that swell and burst into
+thorns, spore streams drifting across the run, seeds that fall and seeds that
+roll, blooms that open out of the ground where the player was about to land,
+walls of braided root with one opening, and plants that beat. Built from one
+shared kit, `core/.../Overgrowth.kt`.
+
+What makes it readable is the one thing a machine never needed: everything in
+this world SWELLS before it strikes. A gear tooth is legible because it turns at
+a rate; a carnivorous bloom is legible only because it visibly gathers first.
+`foresttest.mjs` flies LEVEL 29 and watches every plant that switches on and
+off — 242 strikes over one run, and not one of them without a warning first.
+
+It is also the hardest world in the game, and the last level is the only one
+built to stop. From 78% LEVEL 30 never leaves the player empty floor, and then
+at 96% the forest goes completely still and the Heart is ahead of them with
+nothing in the way. A game that ends on its tightest input ends on a reflex;
+this one ends on arriving somewhere.
 
 Around them: star coins that bank the instant they are touched, a shop that
 sells appearance and nothing else, English and Arabic with real RTL, and a
@@ -146,7 +167,7 @@ under it, in any world. A world tightens toward that floor and stops.
 **Reading** is everything the player has to see rather than hit: movers, pulses,
 floors that leave, beams, wind, splits, openings. It has no ceiling, and it is
 what each new world escalates instead. World 1 has 41 moving parts across its
-six levels; world 2 has 90; world 3 has 144; world 4 has 198.
+six levels; world 2 has 90; world 3 has 144; world 4 has 198; world 5 has 211.
 
 | | L1 | L2 | L3 | L4 | L5 | L6 | opens at | moving parts |
 |---|---|---|---|---|---|---|---|---|
@@ -157,6 +178,8 @@ six levels; world 2 has 90; world 3 has 144; world 4 has 198.
 | **world 3** | 0.088s | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.088s | 144 |
 | | L19 | L20 | L21 | L22 | L23 | L24 | | |
 | **world 4** | 0.083s | 0.079s | 0.079s | 0.075s | 0.075s | 0.075s | 0.083s | 198 |
+| | L25 | L26 | L27 | L28 | L29 | L30 | | |
+| **world 5** | 0.079s | 0.079s | 0.079s | 0.075s | 0.075s | 0.075s | 0.079s | 211 |
 
 Each world opens tighter than the last one did and ends on the floor, and
 inside a world the number never goes back up. That is the whole shape of the
@@ -172,7 +195,8 @@ idle in the hand. `LevelGate.maxRest` holds it now, and the six levels measure
 1.98s, 2.71s, 2.00s, 2.73s, 2.30s and 2.14s — against 3.47s at world 1's
 quietest and 3.48s at world 2's. Those two are laid out with room in them on
 purpose and are not held to it; the abyss is, and so is the machine (2.57s,
-2.33s, 1.82s, 2.55s, 2.48s, 2.55s).
+2.33s, 1.82s, 2.55s, 2.48s, 2.55s) and the forest, which is the least
+forgiving of the three: 1.83s, 1.88s, 1.72s, 2.30s, 2.43s and 1.81s.
 
 ### Every size in world 3 is solved, not chosen
 
@@ -208,7 +232,11 @@ had not been.
 ## Build and test
 
 ```bash
-# every gameplay rule, plus the level solver
+# every gameplay rule, plus the level solver: 453 tests, and on 30 levels it
+# takes about two and three quarter hours, because the solver searches each
+# level exhaustively rather than sampling it. Run it to the end anyway - the
+# three world-4 gates that were wrong were wrong precisely because a run of it
+# had been cut short.
 gradle :core:jvmTest
 
 # the playable build -> web/build/dist/js/productionExecutable
@@ -222,8 +250,9 @@ node tools/progresstest.mjs    # coins, shop, settings, level select
 node tools/deserttest.mjs      # world 2: all six levels, cleared on their lines
 node tools/abysstest.mjs       # world 3: its vocabulary, its bubble wall, its six levels
 node tools/clockworktest.mjs   # world 4: its parts, its gate, its gauntlet, its six levels
+node tools/foresttest.mjs      # world 5: its telegraph, its overgrowth, its quiet ending
 node tools/orientation.mjs     # the portrait gate, on real viewports
-node tools/runall.mjs          # all eighteen, flown at 60fps in a real browser
+node tools/runall.mjs          # all thirty, flown at 60fps in a real browser
 node tools/blindtest.mjs       # no gap is committed to off the edge of the screen
 node tools/soundtest.mjs       # cues only: nothing streams, nothing loops, no ambience in memory
 node tools/audioaudit.mjs      # nothing synthesised, nothing outside the pack

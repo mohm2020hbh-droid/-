@@ -53,11 +53,25 @@ enum class Look {
     CRUSHER,     // a press plate, top or bottom
     RAIL,        // a live electrical bar across the floor
     BOLT,        // a component dropping out of the works
+    // --- WORLD 5, OVERGROWTH ---------------------------------------------
+    //
+    // Living things, and every one of them is a BEHAVIOUR the player learns
+    // rather than a position they read: it opens, it waits, it shuts, it opens
+    // again. None of these shapes has a straight edge in it if the renderer can
+    // help it - the forest is the one world with no manufactured geometry.
+    FLOWER,      // a mouth in the floor that snaps
+    VINE,        // a vine on an arc, or hanging in a curtain
+    ROOT,        // a root out of the ground, alone or braided into a wall
+    THORN,       // a pod that swells and bursts
+    SPORE,       // a drift crossing the lane
+    SEED,        // one out of the canopy, one rolling, one lying still
+    BLOOM,       // petals growing up out of the ground
+    PULSE,       // a plant beating, and the air around it on the beat
 }
 
 /** What a surface is made of. Art only, exactly as [Look] is. */
 
-enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE, BUBBLE, PLATE, CONVEYOR }
+enum class Surface { STONE, SAND, TEMPLE, BRIDGE, MIRAGE, BUBBLE, PLATE, CONVEYOR, MOSS }
 
 /**
  * A hazard that will not stay still.
