@@ -497,6 +497,9 @@ fun main() {
     api.owns = { id: String -> progress.owns(id) }
     api.equippedOf = { cat: String -> progress.equipped(Category.valueOf(cat)) }
     api.play = { id: Int -> startLevel(id) }
+    /** What the level being played calls itself, so a harness can check that the
+     *  card the menu drew for it says the same thing. */
+    api.levelName = { game.level.name }
     api.openShop = { showScreen(Screen.SHOP) }
     api.openMenu = { showScreen(Screen.MENU) }
     api.grant = { n: Int -> progress.coins += n; save(); applyLook() }

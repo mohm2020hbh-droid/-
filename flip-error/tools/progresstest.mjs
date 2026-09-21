@@ -100,18 +100,42 @@ const waitScreen = (s, t = 8000) =>
   check('level 1 is open and level 2 is not', st.l1 && !st.l2 && !st.l3);
   check('a fresh purse is empty', st.coins === 0, `★ ${st.coins}`);
   const cards = await page.locator('#menu .card').count();
-  check('the level select lists every level', cards === 18, `${cards} cards`);
+  check('the level select lists every level', cards === 24, `${cards} cards`);
   const locked = await page.locator('#menu .card[disabled]').count();
-  check('locked levels cannot be tapped', locked === 17, `${locked} disabled`);
+  check('locked levels cannot be tapped', locked === 23, `${locked} disabled`);
   // the transition between worlds: the list is broken into named places, and the
   // one you have not reached yet is visibly further away.
   const worlds = await page.locator('#menu .world').count();
-  check('the level select is split into worlds', worlds === 3, `${worlds} banners`);
+  check('the level select is split into worlds', worlds === 4, `${worlds} banners`);
   const names = await page.locator('#menu .world .wt').allTextContents();
   check('and each world is named',
-    names.join('/') === 'NEON CITY/NEON DESERT/THE ABYSS', names.join('/'));
+    names.join('/') === 'NEON CITY/NEON DESERT/THE ABYSS/CLOCKWORK', names.join('/'));
   const far = await page.locator('#menu .world.far').count();
-  check('the worlds you have not reached read as far off', far === 2, `${far} dimmed`);
+  check('the worlds you have not reached read as far off', far === 3, `${far} dimmed`);
+  // And every card says what the level is actually called. The names used to be
+  // typed next to the level list rather than taken from it, and they drifted:
+  // the menu offered THE ARMS, MEMORY and THE SUN BELOW for levels that had been
+  // renamed, and DESERT CHAOS for DESERT STORM. This is the check that would
+  // have caught it.
+  await page.evaluate(() => FLIP.setting('unlockAll', true));
+  const cardNames = await page.locator('#menu .card .nm').allTextContents();
+  const realNames = [];
+  for (let id = 1; id <= 24; id++) {
+    await page.evaluate(i => FLIP.play(i), id);
+    await page.waitForFunction(() => FLIP.screen() === 'PLAYING', { timeout: 5000 });
+    realNames.push(await page.evaluate(() => FLIP.levelName()));
+    await page.evaluate(() => FLIP.openMenu());
+  }
+  const wrong = realNames.filter((n, i) => n !== cardNames[i]);
+  check('every card is named after the level it opens', wrong.length === 0,
+    wrong.length ? `first mismatch: card "${cardNames[realNames.indexOf(wrong[0])]}" vs level "${wrong[0]}"`
+                 : `${realNames.length} cards`);
+  // Put the save back the way this section found it. The checks after this one
+  // are about a FRESH progression - what is locked, what refuses to start - and
+  // leaving the testing switch on quietly turned four of them into failures that
+  // had nothing to do with what they were testing.
+  await page.evaluate(() => { FLIP.setting('unlockAll', false); FLIP.openMenu(); });
+  await page.waitForFunction(() => FLIP.screen() === 'MENU', { timeout: 5000 });
   await page.screenshot({ path: path.join(shotDir, '01-menu-fresh.png') });
 }
 
