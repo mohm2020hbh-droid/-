@@ -52,3 +52,4 @@ custom_minimum_size = Vector2(0, 76)
 layout_mode = 2
 focus_mode = 0
 text = "RESTART"
+

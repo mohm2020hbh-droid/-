@@ -26,7 +26,7 @@ func _count_jumps() -> Array[int]:
 	return jumps
 
 
-func _touch(index: int, position := Vector2(640, 400)) -> void:
+func _touch(index: int, position := Vector2(1000, 200)) -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.index = index
 	touch.pressed = true
@@ -34,7 +34,7 @@ func _touch(index: int, position := Vector2(640, 400)) -> void:
 	h.game.get_viewport().push_input(touch)
 
 
-func _emulated_click(position := Vector2(640, 400)) -> void:
+func _emulated_click(position := Vector2(1000, 200)) -> void:
 	var click := InputEventMouseButton.new()
 	click.device = InputEvent.DEVICE_ID_EMULATION
 	click.button_index = MOUSE_BUTTON_LEFT

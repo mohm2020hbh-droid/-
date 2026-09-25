@@ -91,7 +91,9 @@ func _survives(j: int, shift: int) -> bool:
 	var goal := _horizon(j)
 	await h.run_until(func() -> bool:
 		return not h.deaths.is_empty() or h.player_x() >= goal or h.game.state == GameSession.State.COMPLETE, 60 * 120)
-	var ok := h.deaths.is_empty()
+	# Alive at the horizon, and not already falling through a pit (a fall is
+	# only detected well below the ground).
+	var ok := h.deaths.is_empty() and h.game.player.global_position.y < GameConst.TILE
 	h.free_game()
 	await get_tree().physics_frame
 	return ok

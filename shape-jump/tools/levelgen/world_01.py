@@ -309,17 +309,21 @@ def level_03():
     lv.group("Shuttle")
     lv.block(105.5, 112, 0)
     lv.tap(90.9)
-    shuttle = lv.mover(95.5, 2.5, 0.0, (4.0, 0.0), 2.2)
+    shuttle = lv.mover(95.5, 1.6, 0.0, (4.5, 0.0), 1.7)
     lv.tap(99.4)
-    lv.tune(shuttle, [90.9, 99.4], 180, osc=True)
+    lv.tune(shuttle, [90.9, 99.4], 170, osc=True)
+    # A low beam across the far end of the shuttle's run.
+    lv.tune(lv.prism(102.2, 0.6, 1.6, 2.2, 1.6), 99.4, 170, osc=True)
     lv.shards_along(92, 104, 3.0)
 
     lv.group("ElevatorUp")
     lv.block(122.5, 127.5, 3.5)
     lv.tap(110.6)
-    lift = lv.mover(115.5, 3.0, -1.0, (0.0, 3.5), 2.4)
+    lift = lv.mover(116.3, 1.8, -1.0, (0.0, 3.5), 1.9)
     lv.tap(118.4)
-    lv.tune(lift, [110.6, 118.4], 180, osc=True)
+    lv.tune(lift, [110.6, 118.4], 170, osc=True)
+    # An energy field between the lift and the high tier: leave on its beat.
+    lv.tune(lv.field(119.6, 1.0, 1.2, 4.2, 1.3, 0.76), 118.4, 160)
     lv.shards_along(111, 122, 3.0)
 
     lv.group("ShiftingHeights")
@@ -332,9 +336,14 @@ def level_03():
         taps.append(px + 1.5)
     lv.block(lv.land_x(taps[-1], 0.0) - 1.0, 160, 3.5)
     lv.tap(*taps)
+    lv.window_gate(taps[-1] + 3.0, 0.4)
     for i, px in enumerate(xs):
-        plat = lv.mover(px, 2.2, 3.0, (0.0, 1.5), 1.6, wave="steps", hold_ratio=0.6)
-        lv.tune(plat, [taps[i], taps[i + 1]], 170, osc=True, recenter=False)
+        plat = lv.mover(px + 0.3, 1.6, 2.8, (0.0, 2.0), 1.3, wave="steps", hold_ratio=0.5)
+        lv.tune(plat, [taps[i], taps[i + 1]], 160, osc=True)
+    for i in range(2):
+        # Energy between the shifting platforms: hop through on its beat.
+        gap = (xs[i] + 1.9 + xs[i + 1] + 0.3) / 2.0
+        lv.tune(lv.field(gap - 0.5, 1.0, 3.2, 3.5, 1.2, 0.7), taps[i + 1], 170)
     lv.shards_along(127, 158, 3.5)
 
     lv.group("Drop")
@@ -367,6 +376,7 @@ def level_03():
     e = d + 4.9
     lv.dj(e)  # Over the prism and still airborne: the double jump carries you across.
     land = lv.land_x(d, -2.0, air=(e - d) / tps)
+    lv.window_gate(e + 3.6, 0.35)
     cp = land + 5.0
     lv.block(land - 1.5, cp + 16.0, 1.0)
     lv.shards_along(path_x + 1, land, 3.0)
@@ -381,7 +391,7 @@ def level_03():
 
     lv.group("FinalShiftingStep")
     px = lv.land_x(f1, 0.0) - 1.1
-    step = lv.mover(px, 2.0, 0.6, (0.0, 1.4), 1.4, wave="steps", hold_ratio=0.55)
+    step = lv.mover(px + 0.3, 1.4, 0.6, (0.0, 1.6), 1.2, wave="steps", hold_ratio=0.5)
     f2 = px + 1.5
     lv.tap(f2)
     lv.tune(step, [f1, f2], 150, osc=True)
@@ -397,6 +407,7 @@ def level_03():
     lv.group("FinalChase")
     f4 = ledge + 1.0
     lv.tap(f4)
+    lv.window_gate(f4 + 3.6, 0.35)
     chase = lv.land_x(f4, -2.0) - 0.8
     lv.collapsing(chase, 9, 1.5, lv.clock(chase) + 0.25, 1.0 / (1.3 * tps))
     f5 = chase + 3.2
@@ -405,6 +416,7 @@ def level_03():
     f6 = chase + 8.3
     lv.dj(f6)
     end = lv.land_x(f5, -1.5, air=(f6 - f5) / tps)
+    lv.window_gate(f6 + 2.4, 0.35)
     lv.block(end - 1.5, end + 20, 0)
     lv.shards_along(f4, end, 3.0)
 
@@ -419,6 +431,7 @@ def level_04():
     openings and long aerial chains. Short windows, no visual noise."""
     lv = Level("level_04", "w01_l04", "Sequence", "Extremely hard", 1.17)
     tps = lv.tiles_per_second()
+    from levelgen import Osc
 
     lv.group("Runway")
     lv.block(-12, 50, 0)
@@ -464,14 +477,21 @@ def level_04():
     lv.tune(lv.arm(r1 + 3.2, 0.5, 1.6, speed=2.8), r1, 170)
     lv.tune(lv.arm(r1 + 10.1, 0.5, 1.6, speed=-2.8), r1 + 6.9, 160)
 
+    lv.group("SlidingPanel")
+    # A wall panel that rises to let you run under it, then drops to the
+    # floor where only a jump at the right moment clears it.
+    wp = r1 + 14.4
+    lv.tap(wp)
+    lv.tune(lv.panel(wp + 3.0, 0.75, 0.0, 1.7, osc=Osc((0.0, -2.9 * 64), 1.4, wave="steps", hold_ratio=0.5)),
+            wp, 160, osc=True)
+
     lv.group("RotorOverGap")
-    g0 = r1 + 15.4
+    g0 = r1 + 23.6
     lv.block(floor + 24, g0, 0) if g0 > floor + 24 else None
     g1 = g0 + 4.6
     lv.block(g1, g1 + 7.0, 0)
     r2 = g0 - 1.3
     lv.tap(r2)
-    from levelgen import Osc
     rotor = lv.rotor(g0 + 2.3, 0.4, radius=40.0, points=3, spin=4.0,
                      osc=Osc((0.0, -2.8 * 64), 1.5))
     lv.tune(rotor, r2, 160, osc=True)
@@ -529,7 +549,9 @@ def level_04():
     lv.dj(w1 + 6.0)
     far = lv.land_x(w1, 1.0, air=6.0 / tps) - 0.5
     lv.block(far, far + 1.4, 1.0)
-    lv.tune(lv.gate(far - 1.5, [(2.4, 2.1), (3.6, 2.1)], hold=0.5, move=0.2), w1 + 6.0, 150)
+    # A timed opening: the window shuts on a beat; the late double jump
+    # has to meet it open.
+    lv.tune(lv.timed_gate(far - 1.5, 0.35, hold=0.45, move=0.15), w1 + 6.0, 150)
     w2 = far + 1.1
     lv.tap(w2)
     down = lv.land_x(w2, -1.0)
@@ -636,6 +658,7 @@ def level_05():
     lv.tune(lv.pulse_gate(s3 + 3.0, 1.3, hold=0.45, move=0.18), s3, 140)
     s4 = top + 5.0
     lv.tap(s4)
+    lv.tune(lv.field(s4 + 2.4, 1.0, 3.6, 3.2, 1.1, 0.62), s4, 140)
     lv.dj(s4 + 4.2)
     f2 = lv.land_x(s4, -3.0, air=4.2 / tps)
     cp2 = f2 + 5.0

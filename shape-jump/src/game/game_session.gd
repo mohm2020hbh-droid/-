@@ -45,6 +45,8 @@ var state: State = State.READY
 var level: Level
 var level_index := 0
 var score := ScoreTracker.new()
+## Tries at the current level since it was loaded (1 + deaths).
+var attempts := 1
 
 var _state_before_pause: State = State.PLAYING
 var _respawn: RespawnPoint
@@ -56,6 +58,7 @@ var _sequence: Tween
 @onready var start_overlay: StartOverlay = %StartOverlay
 @onready var pause_menu: PauseMenu = %PauseMenu
 @onready var complete_panel: LevelCompletePanel = %LevelCompletePanel
+@onready var death_banner: DeathBanner = %DeathBanner
 @onready var fade: ScreenFade = %ScreenFade
 @onready var _level_slot: Node2D = %LevelSlot
 @onready var _tap_input: TapInput = %TapInput
@@ -70,7 +73,9 @@ func _ready() -> void:
 	hud.pause_pressed.connect(pause)
 	pause_menu.resume_pressed.connect(resume)
 	pause_menu.restart_pressed.connect(restart_level)
-	complete_panel.play_again_pressed.connect(restart_level)
+	complete_panel.next_pressed.connect(func() -> void: play_level(level_index + 1))
+	complete_panel.retry_pressed.connect(restart_level)
+	start_overlay.level_chosen.connect(_on_level_chosen)
 	_tap_input.tapped.connect(press_jump)
 	_tap_input.pause_requested.connect(pause)
 	load_level(start_level if start_level >= 0 else Progression.furthest_unlocked(world))
@@ -109,6 +114,8 @@ func load_level(index: int = level_index) -> void:
 		_level_slot.remove_child(level)
 		level.queue_free()
 	level_index = index
+	attempts = 1
+	death_banner.hide()
 	level = (load(data.scene_path) as PackedScene).instantiate()
 	_level_slot.add_child(level)
 	level.shard_collected.connect(_on_shard_collected)
@@ -125,7 +132,7 @@ func load_level(index: int = level_index) -> void:
 	player.respawn_at(spawn, false)
 	camera.snap_to_target()
 	_set_state(State.READY)
-	start_overlay.open(level.data.display_name, SaveSystem.get_record(level.data.id).best_score)
+	start_overlay.open(world, level_index)
 	Events.level_started.emit(level.data.id)
 
 
@@ -162,12 +169,22 @@ func resume() -> void:
 	Events.ui_pressed.emit()
 
 
+## Back to the start of this level, waiting for the first tap (that screen
+## also lists the world's levels).
 func restart_level() -> void:
+	play_level(level_index)
+
+
+## Loads level [param index] (a fresh start, waiting for the first tap) behind
+## a quick fade: from the pause menu, the results panel or the level select.
+func play_level(index: int) -> void:
+	if not Progression.is_unlocked(world, index):
+		return
 	Events.ui_pressed.emit()
 	get_tree().paused = false
 	pause_menu.close()
 	complete_panel.close()
-	load_level()
+	load_level(index)
 	fade.color.a = 1.0
 	_sequence = _new_sequence()
 	fade.tween_to(_sequence, 0.0, fade_in_time)
@@ -239,11 +256,19 @@ func _on_player_died(cause: StringName) -> void:
 	_set_state(State.DYING)
 	camera.shake(death_shake)
 	Events.player_died.emit(player.global_position, cause)
+	death_banner.show_death(attempts, score.get_score(), SaveSystem.get_record(level.data.id).best_score)
+	attempts += 1
 	_sequence = _new_sequence()
 	_sequence.tween_interval(death_pause)
 	fade.tween_to(_sequence, 1.0, fade_out_time)
 	_sequence.tween_callback(_respawn_player)
+	_sequence.tween_callback(death_banner.hide_banner)
 	fade.tween_to(_sequence, 0.0, fade_in_time)
+
+
+func _on_level_chosen(index: int) -> void:
+	if state == State.READY and index != level_index:
+		play_level(index)
 
 
 func _on_shard_collected(shard: Shard) -> void:
@@ -290,14 +315,24 @@ func _on_finish_reached() -> void:
 	if state != State.PLAYING:
 		return
 	_set_state(State.COMPLETE)  # Also makes the player invulnerable.
-	var final_score := score.get_score()
-	var is_new_best := SaveSystem.record_result(level.data.id, final_score, score.shards, true)
-	var best: int = SaveSystem.get_record(level.data.id).best_score
-	Events.level_completed.emit(level.data.id, final_score, score.shards)
+	var result := LevelCompletePanel.Result.new()
+	result.score = score.get_score()
+	result.is_new_best = SaveSystem.record_result(level.data.id, result.score, score.shards, true)
+	result.best = SaveSystem.get_record(level.data.id).best_score
+	result.shards = score.shards
+	result.total_shards = level.get_shard_count()
+	result.attempts = attempts
+	var next := world.get_level(level_index + 1)
+	result.has_next = next != null
+	if next:
+		result.unlocked = "%s UNLOCKED" % next.display_name.to_upper()
+	else:
+		result.title = "WORLD %02d COMPLETE" % world.number
+		result.unlocked = "%s UNLOCKED" % world.next_world_name.to_upper()
+	Events.level_completed.emit(level.data.id, result.score, score.shards)
 	_sequence = _new_sequence()
 	_sequence.tween_method(player.set_speed_scale, level.data.speed_scale, 0.0, finish_brake_time) \
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_sequence.tween_callback(player.set_running.bind(false))
 	_sequence.tween_interval(maxf(results_delay - finish_brake_time, 0.0))
-	_sequence.tween_callback(complete_panel.open.bind(
-		final_score, best, is_new_best, score.shards, level.get_shard_count()))
+	_sequence.tween_callback(complete_panel.open.bind(result))

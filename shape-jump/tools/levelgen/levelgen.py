@@ -32,6 +32,7 @@ HALF = 24.0          # Half size of the player's body.
 HURT_HALF = 18.0     # Half size of the hurtbox.
 LEDGE_ASSIST = 10.0
 INSET = 4.0          # Hazard.HITBOX_INSET
+SAFETY = 2.0         # Closer than this to a hitbox counts as a hit.
 
 GAME_SRC = "res://src/level/elements/"
 
@@ -586,6 +587,18 @@ class Level:
         self._steps.append(("place", gate, place))
         return gate
 
+    def timed_gate(self, x, margin=0.35, width=40.0, **kw):
+        """TIMED OPENING: a window that fits the route at x (as window_gate)
+        and shuts completely for part of its cycle. Tune it."""
+        gate = self.gate(x, [(0.0, 0.0), (0.0, 0.0)], width=width, **kw)
+
+        def place():
+            low, high = self._route_band(x, width)
+            centre = (low + high) / 2
+            gate.stops = [(-centre, high - low + 2 * margin * T), (-centre, 0.0)]
+        self._steps.append(("place", gate, place))
+        return gate
+
     def arm(self, x, height, length, speed, phase=0.0, arms=2, thickness=22.0, hub=24.0):
         return self.add(Arm(x * T, -height * T, arms, length * T, thickness, speed, phase, hub))
 
@@ -750,7 +763,10 @@ class Level:
                 sx0, sx1, stop, sbottom = s.rect(t)
                 if nx + HALF <= sx0 or nx - HALF >= sx1:
                     continue
-                if vy >= 0 and y <= stop + 1.0 and ny >= stop:
+                # Where its top was a tick ago: a platform rising into falling
+                # feet lands the player on it (the engine pushes the body up).
+                prev_top = s.rect(t - DT)[2] if s.osc else stop
+                if vy >= 0 and y <= max(stop, prev_top) + 1.0 and ny >= stop:
                     ny, landed, new_support = stop, True, s
                 elif x + HALF <= sx0 + 0.5 and ny > stop and ny - 2 * HALF < sbottom:
                     if ny - stop <= LEDGE_ASSIST:
@@ -780,7 +796,9 @@ class Level:
                     sep = separation(poly, box)
                     if sep < clearance:
                         clearance, hit = sep, h
-            if death is None and clearance < 0.0:
+            # A little stricter than the engine (which counts touching as a
+            # hit): a route that only grazes a hazard is not a route.
+            if death is None and clearance < SAFETY:
                 death = "hazard"
             if death is None and y > self.kill_y:
                 death = "fall"

@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://src/ui/level_complete_panel.tscn" id="9_complete"]
 [ext_resource type="Script" path="res://src/ui/screen_fade.gd" id="10_fade"]
 [ext_resource type="Script" path="res://src/game/tap_input.gd" id="11_tap"]
+[ext_resource type="PackedScene" path="res://src/ui/death_banner.tscn" id="12_banner"]
 
 [sub_resource type="Gradient" id="Gradient_embers"]
 offsets = PackedFloat32Array(0, 0.2, 0.8, 1)
@@ -83,3 +84,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("10_fade")
+
+[node name="DeathBanner" parent="Overlays" instance=ExtResource("12_banner")]
+unique_name_in_owner = true

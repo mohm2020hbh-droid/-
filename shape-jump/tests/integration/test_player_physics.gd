@@ -142,6 +142,21 @@ func test_moving_platform_carries_vertically_but_not_horizontally() -> void:
 	assert_near(y0 - player.global_position.y, 60.0, 3.0, "lifted by the platform")
 
 
+func test_an_accelerating_platform_never_shifts_the_run() -> void:
+	# A shuttle speeding up and slowing down under the player: the run must
+	# stay exactly on its line, or every obstacle after it is out of time.
+	_block(Vector2(-T * 4, 0), Vector2(T * 4, T * 4))
+	var shuttle := _block(Vector2(0, 0), Vector2(T * 40, 32), true)
+	_spawn_player(Vector2(T, 0))
+	await _ticks(3)
+	var x0 := player.global_position.x
+	for i in 90:
+		shuttle.position.x = 120.0 * sin(i * 0.12)
+		await _ticks(1)
+	assert_true(player.is_on_floor(), "still riding")
+	assert_near(player.global_position.x - x0, 90 * TICK_DISTANCE, 0.5, "x advanced exactly at run speed")
+
+
 func test_phase_block_does_not_solidify_inside_player() -> void:
 	_block(Vector2(-T * 4, 0), Vector2(T * 40, T * 4))
 	var phase := PhaseBlock.new()

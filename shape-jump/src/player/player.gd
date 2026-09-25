@@ -120,7 +120,7 @@ func _physics_process(delta: float) -> void:
 		# Platforms may carry the player vertically, but never change its run
 		# speed: x(t) stays linear, so every x maps to one fixed level time and
 		# obstacle timing is identical on every attempt.
-		velocity.x -= get_platform_velocity().x
+		velocity.x -= _floor_velocity().x
 	_apply_ledge_assist(delta)
 	var incoming_fall_speed := velocity.y
 	move_and_slide()
@@ -148,6 +148,22 @@ func _physics_process(delta: float) -> void:
 		die(&"fall")
 		return
 	_update_state()
+
+
+## The velocity move_and_slide is about to carry us by: that of the floor
+## body under us, read now, the way the engine reads it at the start of the
+## move. (get_platform_velocity() is last tick's value; while a platform
+## accelerates, cancelling that one would let x drift off its exact line.)
+func _floor_velocity() -> Vector2:
+	for i in get_slide_collision_count():
+		var collision := get_slide_collision(i)
+		if collision.get_normal().y > -0.7:
+			continue
+		var state := PhysicsServer2D.body_get_direct_state(collision.get_collider_rid())
+		if state == null:
+			return Vector2.ZERO
+		return state.get_velocity_at_local_position(global_position - state.transform.origin)
+	return get_platform_velocity()
 
 
 ## Forgives near misses on corners. If this tick's move would hit a face

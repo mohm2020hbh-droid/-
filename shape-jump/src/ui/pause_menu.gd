@@ -1,6 +1,7 @@
 class_name PauseMenu
 extends Control
-## Pause overlay: Resume / Restart. Runs while the tree is paused.
+## Pause overlay: Resume / Restart (back to the level's start screen, where
+## any level can be picked). Runs while the tree is paused.
 
 signal resume_pressed
 signal restart_pressed

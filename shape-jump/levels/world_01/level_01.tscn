@@ -276,13 +276,13 @@ position = Vector2(3334, -169)
 position = Vector2(3430, -191)
 
 [node name="Shard" parent="Elevator" instance=ExtResource("shard")]
-position = Vector2(5344, -157)
+position = Vector2(5344, -94)
 
 [node name="Shard2" parent="Elevator" instance=ExtResource("shard")]
 position = Vector2(5472, -189)
 
 [node name="Shard3" parent="Elevator" instance=ExtResource("shard")]
-position = Vector2(5600, -53)
+position = Vector2(5600, -140)
 
 [node name="Shard4" parent="Elevator" instance=ExtResource("shard")]
 position = Vector2(5728, -30)
