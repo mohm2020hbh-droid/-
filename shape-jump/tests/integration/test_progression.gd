@@ -49,6 +49,16 @@ func test_unlock_rules_follow_completions() -> void:
 	assert_false(Progression.is_unlocked(WORLD, WORLD.levels.size()), "no level past the end")
 
 
+func test_unlock_all_opens_every_level_for_playtests() -> void:
+	Progression.unlock_all = true
+	for i in WORLD.levels.size():
+		assert_true(Progression.is_unlocked(WORLD, i), "level %d open in test mode" % (i + 1))
+	assert_false(Progression.is_unlocked(WORLD, WORLD.levels.size()), "still no level past the end")
+	assert_false(Progression.is_world_completed(WORLD), "opening levels completes nothing")
+	Progression.unlock_all = false
+	assert_false(Progression.is_unlocked(WORLD, 1), "back to the normal rules")
+
+
 func test_level_select_ignores_locked_levels() -> void:
 	h = GameHarness.new(self)
 	await h.start(0)

@@ -23,6 +23,16 @@ World 01 "The Red Void": خمسة مستويات صعبة جدًا وعادلة�
 
 **لتجربة مستوى مغلق أثناء التطوير:** في `src/game/game.tscn` اضبط `start_level` على رقم المستوى (0–4)، أو امسح الحفظ من `user://save.cfg`.
 
+## نسخة الويب للتجربة (Playtest)
+
+```bash
+python3 tools/web/build_playtest.py --godot=/path/to/godot   # يحتاج قوالب Web لـGodot 4.7.2
+cd export/playtest && python3 -m http.server 8000           # ثم افتح http://127.0.0.1:8000/play.html
+```
+
+- يصدّر إعداد **Web** (بدون Threads، فلا يحتاج أي Headers خاصة من السيرفر) ويجمع صفحة واحدة في `export/playtest/`: المحرك مضغوطًا (≈ 10MB)، وبيانات اللعبة مضمّنة في الصفحة.
+- الصفحة تعرض زرّين: **PLAY** (التقدّم العادي) و**TEST MODE** (كل المراحل مفتوحة). وضع الاختبار يمرّر `-- --unlock-all` للعبة؛ نفس الخيار يعمل على الكمبيوتر: `godot --path shape-jump -- --unlock-all`.
+
 ## التصدير إلى Android
 
 الإعداد جاهز في `export_presets.cfg` (Landscape، Immersive، arm64 + armv7، يستثني `tests/` و`docs/`؛ و`tools/` لا يستورده Godot أصلًا).
@@ -42,7 +52,7 @@ godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn -
 godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --level=5 --windows --exploits
 ```
 
-129 اختبارًا في ~19 ثانية (بنفس النتائج على 20 و30 و60 و144 FPS)، منها:
+130 اختبارًا في ~20 ثانية (بنفس النتائج على 20 و30 و60 و144 FPS)، منها:
 - قواعد الـDouble Jump: الارتفاع المزدوج، لا قفزة ثالثة أبدًا، لمستان في إطار واحد، الـCoyote يُبقي الـDJ، الاستعادة عند الهبوط.
 - كل نوع من العوائق الـ12 على الفيزياء الفعلية: متى يقتل، متى يسمح بالمرور، الإنذار، والـHitbox لا يتجاوز الرسم.
 - **لاعب آلي ينهي كل مستوى من الخمسة بدون موت**، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت، والحتمية.

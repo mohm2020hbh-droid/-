@@ -1,0 +1,324 @@
+<title>Shape Jump World 01</title>
+<meta name="theme-color" content="#07040a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap">
+<style>
+  /* One deliberate look: the game's own void-black and neon red, in any host theme. */
+  :root {
+    color-scheme: dark;
+    --void: #07040a;
+    --panel: #120a0f;
+    --line: #3a1a24;
+    --neon: #ff2340;
+    --hot: #fff0f2;
+    --muted: #b89aa2;
+    --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--void);
+    color: var(--hot);
+    font-family: var(--body);
+    overflow: hidden;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #canvas { position: fixed; inset: 0; display: block; background: var(--void); }
+  #canvas:focus { outline: none; }
+
+  #launcher {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 38%, #3a0d18 0%, transparent 70%),
+      linear-gradient(#07040a, #150710 60%, #07040a);
+  }
+  #launcher[hidden] { display: none; }
+  .card {
+    width: min(560px, 100%);
+    display: grid;
+    gap: 22px;
+    padding-block: 8px;
+  }
+  .eyebrow {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    color: var(--neon);
+    margin: 0;
+  }
+  .wordmark {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(48px, 13vw, 84px);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    text-wrap: balance;
+  }
+  .wordmark span { display: block; }
+  .wordmark .red { color: var(--neon); text-shadow: 0 0 18px rgba(255, 35, 64, 0.45); }
+
+  .status { display: grid; gap: 8px; }
+  .meter {
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .meter i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--neon);
+    box-shadow: 0 0 12px var(--neon);
+    transition: width 0.15s linear;
+  }
+  .status p { margin: 0; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .status p.error { color: var(--hot); background: #3a0d18; border: 1px solid var(--neon); padding: 12px 14px; border-radius: 6px; line-height: 1.6; }
+
+  .actions { display: grid; gap: 10px; }
+  .actions[hidden] { display: none; }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 14px 18px;
+    display: grid;
+    gap: 2px;
+    text-align: start;
+    color: var(--hot);
+    background: var(--panel);
+    border: 1px solid var(--line);
+  }
+  button b { font-family: var(--display); font-size: 20px; letter-spacing: 0.06em; justify-self: start; }
+  button small { font-size: 13px; color: var(--muted); }
+  button.primary { border-color: var(--neon); box-shadow: 0 0 0 1px var(--neon) inset, 0 0 22px rgba(255, 35, 64, 0.25); }
+  button:hover { border-color: var(--neon); }
+  button:focus-visible { outline: 2px solid var(--hot); outline-offset: 3px; }
+
+  .controls {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .controls kbd {
+    font-family: var(--display);
+    font-size: 12px;
+    color: var(--hot);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 6px;
+    background: var(--panel);
+  }
+  .foot { margin: 0; font-size: 12px; color: var(--muted); opacity: 0.8; line-height: 1.6; }
+  [lang="en"] { direction: ltr; unicode-bidi: isolate; }
+  @media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+</style>
+
+<canvas id="canvas" tabindex="0">This browser cannot draw the game (canvas missing).</canvas>
+
+<div id="launcher">
+  <div class="card" dir="rtl">
+    <div>
+      <p class="eyebrow">WORLD 01 · THE RED VOID</p>
+      <h1 class="wordmark"><span>SHAPE</span><span class="red">JUMP</span></h1>
+    </div>
+
+    <div class="status" aria-live="polite">
+      <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+      <p id="status">جارٍ تحميل اللعبة…</p>
+    </div>
+
+    <div class="actions" id="actions" hidden>
+      <button type="button" class="primary" id="play-normal">
+        <b lang="en">PLAY</b>
+        <small>التقدّم العادي: المرحلة الأولى مفتوحة، وكل مرحلة تفتح التي بعدها</small>
+      </button>
+      <button type="button" id="play-test">
+        <b lang="en">TEST MODE</b>
+        <small>كل المراحل الخمس مفتوحة لتجربتها بأي ترتيب</small>
+      </button>
+    </div>
+
+    <ul class="controls">
+      <li><kbd lang="en">Tap</kbd> أو <kbd lang="en">Click</kbd> أو <kbd lang="en">Space</kbd>: قفزة (وبدء الجري من شاشة البداية)</li>
+      <li>لمسة ثانية وأنت في الهواء: <span lang="en">Double Jump</span> (مرة واحدة حتى تهبط)</li>
+      <li><kbd lang="en">Esc</kbd> أو <kbd lang="en">P</kbd> أو زر ❚❚: إيقاف مؤقت</li>
+      <li>في شاشة البداية: المس بطاقة المرحلة لاختيارها</li>
+    </ul>
+    <p class="foot">5 مراحل · 12 نوعًا من العوائق · فيزياء 60 Hz. التقدّم وأفضل النتائج تُحفظ في هذا المتصفح. على الهاتف: أدِر الشاشة أفقيًا.</p>
+  </div>
+</div>
+
+<script>
+/*__GODOT_ENGINE_JS__*/
+</script>
+<script>
+(function () {
+  'use strict';
+  // Filled in by tools/web/build_playtest.py: file sizes, and the game data
+  // (index.pck, a few hundred KB) embedded here as base64.
+  const FILES = /*__FILE_SIZES__*/;
+  const PCK_BASE64 = "/*__PCK_BASE64__*/";
+  const $ = (id) => document.getElementById(id);
+  const meter = $('meter');
+  const status = $('status');
+  const actions = $('actions');
+  const launcher = $('launcher');
+
+  function fail(err) {
+    console.error(err);
+    const msg = err && err.message ? err.message : String(err);
+    status.className = 'error';
+    status.textContent = 'تعذّر تشغيل اللعبة في هذا المتصفح: ' + msg +
+      '. جرّب نسخة حديثة من Chrome أو Edge أو Firefox أو Safari 16.4 فما فوق.';
+    actions.hidden = true;
+  }
+
+  // Download progress: the compressed engine is the only real download.
+  const ENGINE_FILE = 'engine.gz.wasm';
+  const loaded = { [ENGINE_FILE]: 0 };
+  const total = FILES[ENGINE_FILE];
+  function paint() {
+    const done = loaded[ENGINE_FILE];
+    meter.style.width = Math.min(100, (100 * done) / total).toFixed(1) + '%';
+    status.textContent = 'جارٍ تحميل اللعبة… ' + (done / 1048576).toFixed(1) + ' / ' +
+      (total / 1048576).toFixed(1) + ' MB';
+  }
+
+  const nativeFetch = window.fetch.bind(window);
+  async function download(url) {
+    const res = await nativeFetch(url);
+    if (!res.ok) {
+      throw new Error('failed to load ' + url + ' (' + res.status + ')');
+    }
+    if (!res.body || !res.body.getReader) {
+      const buf = await res.arrayBuffer();
+      loaded[url] = buf.byteLength;
+      paint();
+      return new Blob([buf]);
+    }
+    const reader = res.body.getReader();
+    const chunks = [];
+    let n = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      chunks.push(value);
+      n += value.length;
+      loaded[url] = n;
+      paint();
+    }
+    return new Blob(chunks);
+  }
+
+  // The engine is published gzip-compressed (a single file must stay under 15 MB)
+  // under a .wasm name; hand Godot's loader the decompressed module as if it had
+  // fetched index.wasm. The magic bytes decide, so a transparently decoded copy works too.
+  async function engineResponse() {
+    const blob = await download(ENGINE_FILE);
+    const magic = new Uint8Array(await blob.slice(0, 2).arrayBuffer());
+    let body = blob.stream();
+    if (magic[0] === 0x1f && magic[1] === 0x8b) {
+      if (typeof DecompressionStream === 'undefined') {
+        throw new Error('DecompressionStream is not supported');
+      }
+      body = body.pipeThrough(new DecompressionStream('gzip'));
+    }
+    const bytes = await new Response(body).arrayBuffer();
+    status.textContent = 'تجهيز المحرك…';
+    return new Response(bytes, { headers: { 'Content-Type': 'application/wasm' } });
+  }
+
+  function packResponse() {
+    const text = atob(PCK_BASE64);
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) {
+      bytes[i] = text.charCodeAt(i);
+    }
+    return Promise.resolve(new Response(bytes, { headers: { 'Content-Type': 'application/octet-stream' } }));
+  }
+
+  window.fetch = function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (/(^|\/)index\.wasm$/.test(url)) {
+      return engineResponse();
+    }
+    if (/(^|\/)index\.pck$/.test(url)) {
+      return packResponse();
+    }
+    return nativeFetch(input, init);
+  };
+
+  if (typeof Engine === 'undefined') {
+    fail(new Error('engine script missing'));
+    return;
+  }
+  const missing = Engine.getMissingFeatures({ threads: false });
+  if (missing.length) {
+    fail(new Error(missing.join(', ')));
+    return;
+  }
+
+  const engine = new Engine({
+    executable: 'index',
+    mainPack: 'index.pck',
+    canvas: $('canvas'),
+    canvasResizePolicy: 2,
+    focusCanvas: true,
+    experimentalVK: false,
+    ensureCrossOriginIsolationHeaders: false,
+    fileSizes: { 'index.wasm': FILES['index.wasm'], 'index.pck': FILES['index.pck'] },
+    godotPoolSize: 4,
+    emscriptenPoolSize: 8,
+    gdextensionLibs: [],
+    args: [],
+  });
+
+  paint();
+  Promise.all([engine.init('index'), engine.preloadFile('index.pck', 'index.pck')]).then(function () {
+    meter.style.width = '100%';
+    status.textContent = 'جاهزة. اختر طريقة اللعب:';
+    actions.hidden = false;
+    $('play-normal').focus();
+  }, fail);
+
+  let started = false;
+  function start(testMode) {
+    if (started) {
+      return;
+    }
+    started = true;
+    const args = ['--main-pack', 'index.pck'];
+    if (testMode) {
+      args.push('--', '--unlock-all');
+    }
+    engine.start({ args: args }).then(function () {
+      launcher.hidden = true;
+      $('canvas').focus();
+    }, function (err) {
+      started = false;
+      fail(err);
+    });
+  }
+  $('play-normal').addEventListener('click', function () { start(false); });
+  $('play-test').addEventListener('click', function () { start(true); });
+}());
+</script>

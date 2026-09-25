@@ -64,7 +64,8 @@ shape-jump/
 ├── assets/audio/                 sfx/*.wav · ambient/void_drone.ogg · sound_library.tres
 ├── tools/                        (.gdignore — لا يستورده Godot)
 │   ├── levelgen/                 levelgen.py · world_01.py · README.md
-│   └── audio/gen_sfx.py          توليد الأصوات
+│   ├── audio/gen_sfx.py          توليد الأصوات
+│   └── web/                      build_playtest.py + playtest_page.html (نسخة الويب للتجربة)
 └── tests/
     ├── test_runner.* · test_case.gd
     ├── support/                  GameHarness · PhysicsArena · SaveSandbox · World01Routes (مُولَّد)
@@ -195,7 +196,7 @@ completed=true
 
 ## 10. الاختبار
 
-129 اختبارًا (≈ 19 ثانية)، تنجح بنفس النتائج على 20 و30 و60 و144 FPS.
+130 اختبارًا (≈ 20 ثانية)، تنجح بنفس النتائج على 20 و30 و60 و144 FPS.
 
 | الملف | ماذا يثبت |
 |---|---|
@@ -206,7 +207,7 @@ completed=true
 | integration/test_obstacles (16) | خط زمن كل نوع، القتل والمرور على الفيزياء الفعلية، الإنذارات، الأصوات داخل اللعب فقط، Hitbox ≤ الرسم دائمًا |
 | integration/test_player_physics (29) | الاستجابة، الارتفاع، الحواف، الفجوات، السقف، Ledge Assist، السحق، المصاعد، منصة متسارعة لا تزيح اللاعب أفقيًا |
 | integration/test_world_01_playthrough | **كل مستوى يُنهى بمساره بلا موت**، الحتمية، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت |
-| integration/test_progression (5) | قواعد الفتح، رفض المستوى المغلق، NEXT LEVEL، WORLD 01 COMPLETE، لوحة الموت وعدّاد المحاولات |
+| integration/test_progression (6) | قواعد الفتح، وضع الاختبار `--unlock-all`، رفض المستوى المغلق، NEXT LEVEL، WORLD 01 COMPLETE، لوحة الموت وعدّاد المحاولات |
 | integration: camera، game flow، review probes | الكاميرا، تدفق اللعب واللمس، عوائق تُنشأ/تُحذف أثناء اللعب، تسلسل حالات سريع |
 
 أي خطأ يسجله المحرك أثناء اختبار يُفشله.

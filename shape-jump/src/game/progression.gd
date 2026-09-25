@@ -5,12 +5,18 @@ class_name Progression
 ## derived from the saved completion records, so there is no second source
 ## of truth to fall out of sync.
 
+## Playtest switch: running with `-- --unlock-all` (the web build's test mode
+## passes it) opens every level. Results are still saved as usual.
+static var unlock_all := "--unlock-all" in OS.get_cmdline_user_args()
+
 
 static func is_completed(level: LevelData) -> bool:
 	return SaveSystem.get_record(level.id).completed
 
 
 static func is_unlocked(world: WorldData, index: int) -> bool:
+	if unlock_all:
+		return index >= 0 and index < world.levels.size()
 	if index <= 0:
 		return index == 0
 	return index < world.levels.size() and is_completed(world.levels[index - 1])
