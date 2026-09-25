@@ -59,10 +59,10 @@ func run_until(condition: Callable, max_ticks: int = 60 * 120) -> bool:
 
 ## Starts the run already at [param feet] (e.g. a checkpoint): the level clock
 ## is where it would be when the player gets there, and the route resumes.
-func start_run_at(feet: Vector2) -> void:
+func start_run_at(marker: Vector2) -> void:
 	game.press_jump()  # READY -> PLAYING.
-	var spawn := game.level.get_spawn_feet_position()
-	game.level.rewind_to((feet.x - spawn.x) / game.player.get_run_speed())
+	var feet := game.respawn_feet_at(marker)
+	game.level.rewind_to(game.time_at(feet.x))
 	game.player.respawn_at(feet, true)
 	game.camera.snap_to_target()
 	seek(player_x())

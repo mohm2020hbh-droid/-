@@ -75,6 +75,13 @@ def separation(poly, box):
     """SAT separation (px) between a convex polygon and an AABB (x0, y0, x1, y1):
     positive = apart by at least that much, negative = overlapping."""
     bx0, by0, bx1, by1 = box
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    # Box-axis gaps first: when the bounding boxes are clearly apart this is
+    # the answer's lower bound and all the precision anyone needs.
+    gap = max(bx0 - max(xs), min(xs) - bx1, by0 - max(ys), min(ys) - by1)
+    if gap > 16.0:
+        return gap
     box_pts = [(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1)]
     axes = [(1.0, 0.0), (0.0, 1.0)]
     n = len(poly)
@@ -396,13 +403,21 @@ class Spikes(Element):
 
 
 class Plain(Element):
-    """Any other node: fixed props, no hitbox."""
+    """Any other node: fixed props, no hitbox. `span` (px) is its x extent."""
 
-    def __init__(self, base, type_, script, props, instance=None):
+    def __init__(self, base, type_, script, props, instance=None, span=(0.0, 0.0)):
         self.base, self.type_, self.script, self._props, self.instance = base, type_, script, props, instance
+        self.span = span
 
     def props(self):
         return self._props
+
+    def x_range(self):
+        lo, hi = self.span
+        if self.osc:
+            a, b = self.osc.reach()
+            return (lo + a, hi + b)
+        return (lo, hi)
 
 
 class Surface:
@@ -414,6 +429,11 @@ class Surface:
 
     def alive(self, t):
         return self.drop is None or t < self.drop
+
+    def bounds(self):
+        """Every x (px) it can ever cover."""
+        lo, hi = self.osc.reach() if self.osc else (0.0, 0.0)
+        return self.x0 + lo, self.x1 + hi
 
     def rect(self, t):
         dx, dy = _offset(self.osc, t)
@@ -439,6 +459,12 @@ class Level:
         self.group_name = "."
         self.groups = []
         self.notes = []
+        self.kinds = {}          # tap x -> intended kind
+        self._steps = []         # deferred placements and tunes, in order
+        self._post = []          # shard runs, placed on the final route
+        self._pending = set()    # ids of hazards not tuned yet
+        self._moved = {}         # tap x -> where tuning moved it
+        self.last_kinds = {}     # tap x -> kind it had in the last simulation
         self._names = {}
         self._sim = None
         self._path = None
@@ -450,6 +476,22 @@ class Level:
 
     def tiles_per_tick(self):
         return self.speed * DT / T
+
+    def tiles_per_second(self):
+        return self.speed / T
+
+    def land_x(self, x_takeoff, rise=0.0, air=None):
+        """Where a jump taken at x lands on a surface `rise` tiles higher (negative:
+        lower), optionally with a double jump `air` seconds after take-off."""
+        if air is None:
+            drop = JUMP_H - rise * T
+            t = APEX_T + math.sqrt(max(2.0 * drop / G_DOWN, 0.0))
+        else:
+            h = V_JUMP * air - 0.5 * G_UP * air * air if air <= APEX_T else \
+                JUMP_H - 0.5 * G_DOWN * (air - APEX_T) ** 2
+            drop = h + JUMP_H - rise * T
+            t = air + APEX_T + math.sqrt(max(2.0 * drop / G_DOWN, 0.0))
+        return x_takeoff + self.speed * t / T + 0.07
 
     # --------------------------------------------------------------- nodes --
     def group(self, name):
@@ -484,13 +526,14 @@ class Level:
         """Moving platform (AnimatableBody2D + Oscillator); travel in tiles (dx, up)."""
         osc = Osc((travel[0] * T, -travel[1] * T), period, phase, wave, hold_ratio)
         el = Plain("MovingPlatform", "AnimatableBody2D", "block",
-                   {"position": v2(x0 * T, -top * T), "size": v2(width * T, thickness * T)})
+                   {"position": v2(x0 * T, -top * T), "size": v2(width * T, thickness * T)},
+                   span=(x0 * T, (x0 + width) * T))
         el.osc = osc
         self.add(el)
         surface = Surface(x0 * T, (x0 + width) * T, -top * T, -(top - thickness) * T, osc=osc)
         self.surfaces.append(surface)
         self._path = None
-        return osc
+        return el
 
     def collapsing(self, x0, tiles, top, collapse_time, interval, warning=0.35, tile_w=1.0, thickness=0.5):
         self.add(Plain("CollapsingPath", "StaticBody2D", "collapsing_path",
@@ -507,6 +550,41 @@ class Level:
     def gate(self, x, stops, hold=0.9, move=0.25, phase=0.0, warning=0.35, width=40.0, reach=1200.0):
         """stops: [(centre height, opening height)] in tiles above the ground line."""
         return self.add(Gate(x * T, [(-c * T, h * T) for c, h in stops], hold, move, phase, warning, width, reach))
+
+    def _route_band(self, x, width):
+        """Hurtbox band (px above the ground line, with the slab inset) the
+        intended route sweeps while crossing a gate of `width` at x."""
+        reach = (width / 2 + HURT_HALF) / T
+        feet = [s["h"] for s in self.path() if x - reach <= s["x"] <= x + reach]
+        if not feet:
+            raise SystemExit(f"{self.key}: the route never reaches the gate at x={x:.1f}")
+        return min(feet) + (HALF - HURT_HALF) - INSET, max(feet) + (HALF + HURT_HALF) + INSET
+
+    def window_gate(self, x, margin=0.35, bias=0.0, width=40.0, **kw):
+        """A fixed gate whose window fits the intended route where it crosses x:
+        the window covers the height the hurtbox sweeps during the crossing,
+        plus `margin` tiles above and below (the difficulty: a smaller margin
+        pins the taps that lead into it harder). Placed in done(), in order."""
+        gate = self.gate(x, [(0.0, 0.0)], width=width, **kw)
+
+        def place():
+            low, high = self._route_band(x, width)
+            gate.stops = [(-((low + high) / 2 + bias * T), high - low + 2 * margin * T)]
+        self._steps.append(("place", gate, place))
+        return gate
+
+    def pulse_gate(self, x, shift=1.4, margin=0.3, width=40.0, **kw):
+        """A pulse gate whose first opening fits the intended route at x (as in
+        window_gate) and whose second sits `shift` tiles higher (negative: lower).
+        Tune it to decide when the route meets the right opening."""
+        gate = self.gate(x, [(0.0, 0.0), (0.0, 0.0)], width=width, **kw)
+
+        def place():
+            low, high = self._route_band(x, width)
+            centre, opening = (low + high) / 2, high - low + 2 * margin * T
+            gate.stops = [(-centre, opening), (-(centre + shift * T), opening)]
+        self._steps.append(("place", gate, place))
+        return gate
 
     def arm(self, x, height, length, speed, phase=0.0, arms=2, thickness=22.0, hub=24.0):
         return self.add(Arm(x * T, -height * T, arms, length * T, thickness, speed, phase, hub))
@@ -550,11 +628,18 @@ class Level:
         self.add(Plain("Shard", None, None, {"position": v2(round(x * T), round(-height * T))}, instance="shard"))
 
     def shards_along(self, x_from, x_to, step=1.5, lift=0.3):
-        """Shards on the simulated path of the route, `lift` tiles above the body."""
-        x = x_from
-        while x <= x_to + 1e-6:
-            self.shard(x, self.at(x)["h"] / T + 0.375 + lift)
-            x += step
+        """Shards on the path of the final route, `lift` tiles above the body.
+        Placed by done(), once tuning has settled the route."""
+        self._post.append((self.group_name, x_from, x_to, step, lift))
+
+    def _place_shards(self):
+        for group, x_from, x_to, step, lift in self._post:
+            self.group_name = group
+            x = x_from
+            while x <= x_to + 1e-6:
+                self.shard(x, self.at(x)["h"] / T + 0.375 + lift)
+                x += step
+        self._post = []
 
     def checkpoint(self, x, height=0.0):
         self.checkpoints.append((x, height))
@@ -565,11 +650,23 @@ class Level:
         self.add(Plain("FinishGate", "Area2D", "finish_gate", {"position": v2(x * T, -height * T)}))
 
     # --------------------------------------------------------------- route --
-    def tap(self, *xs):
+    def tap(self, *xs, kind="ground"):
+        """Adds taps (player-centre x, tiles). `kind` is what each tap must be on
+        the intended route: "ground" (a jump), "air" (the double jump) or None."""
         for x in xs:
             self.route.append(round(x, 3))
+            self.kinds[round(x, 3)] = kind
         self._sim = None
         self._path = None
+
+    def dj(self, *xs):
+        self.tap(*xs, kind="air")
+
+    def _move_tap(self, old, new):
+        old, new = round(old, 3), round(new, 3)
+        self.route[self.route.index(old)] = new
+        self.kinds[new] = self.kinds.pop(old, None)
+        self._moved[old] = new
 
     # ---------------------------------------------------------- simulation --
     def simulate(self, route=None, start=None, stop_x=None, hazards=True):
@@ -582,24 +679,32 @@ class Level:
         else:
             x, y = start[0] * T, -start[1] * T
         t0 = (x - self.spawn_px) / self.speed
-        vy, grounded, coyote, air_jumps, queued, buffer = 0.0, True, 0.0, 1, 0, 0.0
+        vy, grounded, coyote, air_jumps, buffer = 0.0, True, 0.0, 1, 0.0
+        queued = []          # taps waiting to jump, oldest first
+        buffered = None      # the tap in the jump buffer
+        made = {}            # tap x -> "ground" / "air"
         support = None
         next_tap = 0
-        while next_tap < len(route) and route[next_tap] < x / T:
+        # Taps registered before the start (the finger checks the position
+        # before each tick, so a tap within the last tick is still to come).
+        seen = x / T - self.speed * DT / T + 1e-6 if start is not None else x / T
+        while next_tap < len(route) and route[next_tap] < seen:
             next_tap += 1
         end_x = ((self.finish_x if self.finish_x is not None else 1e9) + 1.0) * T
         if stop_x is not None:
             end_x = min(end_x, stop_x * T)
-        hz = sorted(self.hazards, key=lambda h: h.x_range()[0]) if hazards else []
+        hz = sorted((h for h in self.hazards if id(h) not in self._pending),
+                    key=lambda h: h.x_range()[0]) if hazards else []
+        surfaces = sorted(((s.bounds(), s) for s in self.surfaces), key=lambda b: b[0][0])
         out = []
         tick = 0
         while x < end_x and tick < 60 * 300:
             if next_tap < len(route) and x / T >= route[next_tap]:
                 available = 2 if grounded else ((1 if coyote > 0 else 0) + air_jumps)
-                if queued < available:
-                    queued += 1
+                if len(queued) < available:
+                    queued.append(route[next_tap])
                 else:
-                    buffer = BUFFER
+                    buffer, buffered = BUFFER, route[next_tap]
                 next_tap += 1
             t = t0 + (tick + 1) * DT
             # begin_tick
@@ -608,16 +713,19 @@ class Level:
                 coyote, air_jumps = COYOTE, 1
             can_ground = on_floor or coyote > 0
             jump = None
-            if queued > 0:
-                queued -= 1
+            if queued:
+                who = queued.pop(0)
                 if can_ground:
                     jump = "ground"
                 elif air_jumps > 0:
                     jump = "air"
                 else:
-                    buffer = BUFFER
+                    buffer, buffered = BUFFER, who
+                if jump:
+                    made[who] = jump
             elif buffer > 0 and can_ground:
                 jump, buffer = "ground", 0.0
+                made[buffered] = "ground"
             if jump == "ground":
                 vy, coyote = -V_JUMP, 0.0
             elif jump == "air":
@@ -634,8 +742,10 @@ class Level:
                 sx0, sx1, stop, _ = support.rect(t)
                 if nx + HALF > sx0 and nx - HALF < sx1 and abs(ny - stop) <= 12.0:
                     ny, vy, landed, new_support = stop, 0.0, True, support
-            for s in self.surfaces:
-                if landed or not s.alive(t):
+            for (blo, bhi), s in surfaces:
+                if blo > nx + 64.0:
+                    break
+                if bhi < nx - 64.0 or landed or not s.alive(t):
                     continue
                 sx0, sx1, stop, sbottom = s.rect(t)
                 if nx + HALF <= sx0 or nx - HALF >= sx1:
@@ -675,9 +785,12 @@ class Level:
             if death is None and y > self.kill_y:
                 death = "fall"
             out.append({"tick": tick, "t": t, "x": x / T, "y": y, "h": -y, "vy": vy, "grounded": grounded,
-                        "jump": jump, "air_jumps": air_jumps, "clearance": clearance, "near": hit})
+                        "jump": jump, "air_jumps": air_jumps, "clearance": clearance, "near": hit,
+                        "static": grounded and support is not None and support.osc is None})
             if death:
+                self.last_kinds = made
                 return out, (death, x / T, hit)
+        self.last_kinds = made
         return out, None
 
     def run(self):
@@ -717,7 +830,12 @@ class Level:
         runs into it. Returns the clearance of the intended route (px)."""
         target = element.osc if osc else element
         ticks, _ = self.simulate(hazards=False)
-        others = [self.simulate(route=r, hazards=False)[0] for r in lazy]
+        horizon = element.x_range()[1] / T + 8.0
+        others = []
+        for r in lazy:
+            o_ticks, o_death = self.simulate(route=r, hazards=False, stop_x=horizon)
+            if o_death is None:  # Otherwise it dies anyway (a gap, a wall).
+                others.append(o_ticks)
         best, best_value = -1e9, None
         for i in range(steps):
             target.phase = i / steps
@@ -735,6 +853,126 @@ class Level:
             self.notes.append(f"{element.base} x={element.x_range()[0] / T:.1f}: clearance {best:.1f} px")
         return best
 
+    def _survival_window(self, route, j, start, stop_x, limit=24):
+        """Contiguous tick shifts of tap j around 0 that survive from `start` to stop_x."""
+        step = self.tiles_per_tick()
+
+        intended = self.kinds.get(round(route[j], 3))
+
+        def ok(k):
+            r = list(route)
+            r[j] = route[j] + k * step
+            if not self._lives(self.simulate(route=sorted(r), start=start, stop_x=stop_x)):
+                return False
+            # A shift only counts while the tap still makes its intended jump.
+            return not intended or self.last_kinds.get(r[j]) == intended
+        if not ok(0) or not self._as_designed(route, start[0] if start else 0.0, stop_x):
+            return None
+        lo = hi = 0
+        while lo > -limit and ok(lo - 1):
+            lo -= 1
+        while hi < limit and ok(hi + 1):
+            hi += 1
+        return lo, hi
+
+    def tune(self, element, tap, target_ms, **options):
+        """Asks for `element`'s phase to be tuned against `tap` (see _tune_now).
+        Tuning waits for done(): only then does the level have all its geometry
+        and taps, so every obstacle is fitted against the real level."""
+        self._steps.append(("tune", element, (tap, target_ms, options)))
+        return tap
+
+    def done(self):
+        """Places route-fitted gates and runs the tunes front to back, then
+        centres the route in its windows."""
+        # Hazards still waiting for their turn are left out of the simulation:
+        # their phase or shape is arbitrary until then.
+        self._pending = {id(e) for _, e, _ in self._steps}
+        for kind, element, payload in self._steps:
+            if kind == "place":
+                self._pending.discard(id(element))
+                payload()
+                self._sim = None
+                continue
+            tap, target_ms, options = payload
+            self._pending.discard(id(element))
+            taps = [self._resolve(x) for x in (tap if isinstance(tap, (list, tuple)) else [tap])]
+            self._tune_now(element, taps if len(taps) > 1 else taps[0], target_ms, **options)
+        self._steps = []
+        self._pending = set()
+        self._sim = None
+        self._path = None
+        self.recenter_route()
+        self._place_shards()
+
+    def _resolve(self, x):
+        x = round(x, 3)
+        while x in self._moved:
+            x = self._moved[x]
+        return x
+
+    def _tune_now(self, element, tap, target_ms, osc=False, steps=120, recenter=True, stop_after=4.0, forced=True):
+        """Chooses the phase of `element` (or its oscillator) so that the window of
+        `tap` (all other taps fixed) is as close as possible to `target_ms`, then
+        moves the tap to the middle of its window. This is the difficulty dial:
+        the obstacle is placed so it really constrains the tap, by a known amount.
+        `tap` may be a list (e.g. landing on a platform and leaving it): the phase
+        then balances all their windows. With `forced`, skipping any of the taps
+        must die: the obstacle really asks for them."""
+        taps = list(tap) if isinstance(tap, (list, tuple)) else [tap]
+        target = element.osc if osc else element
+        route = sorted(self.route)
+        js = [route.index(round(x, 3)) for x in taps]
+        path, _ = self.simulate(hazards=False, stop_x=min(taps) + 0.5)
+        start = self._ground_before(route, min(js), path)
+        stop_x = max(element.x_range()[1] / T + stop_after, max(taps) + 2.0)
+        lazy = [sorted(route[:j] + route[j + 1:]) for j in js] if forced else []
+        best = None
+        reasons = {}
+        for i in range(steps):
+            target.phase = i / steps
+            # (A longer horizon for them: a fall only shows well below the ground.)
+            if any(self._lives(self.simulate(route=r, start=start, stop_x=stop_x + 8.0)) for r in lazy):
+                reasons["skipping a tap survives"] = reasons.get("skipping a tap survives", 0) + 1
+                continue
+            windows = [self._survival_window(route, j, start, stop_x) for j in js]
+            if any(w is None for w in windows):
+                _, death = self.simulate(route=route, start=start, stop_x=stop_x)
+                if death:
+                    why = f"dies ({death[0]} at x={death[1]:.1f}{' ' + death[2].base if death[2] else ''})"
+                else:
+                    wrong = {x: self.last_kinds.get(x) for x in route if self.kinds.get(x) and
+                             start[0] <= x <= stop_x - 0.3 and self.last_kinds.get(x) != self.kinds.get(x)}
+                    why = f"wrong jumps {wrong}"
+                reasons[why] = reasons.get(why, 0) + 1
+                continue
+            score = 0.0
+            for w in windows:
+                size_ms = (w[1] - w[0] + 1) * 1000.0 / 60.0
+                score = max(score, abs(size_ms - target_ms) + 4.0 * abs((w[0] + w[1]) / 2.0))
+            if best is None or score < best[0]:
+                best = (score, i / steps, windows)
+        if best is None:
+            top = sorted(reasons.items(), key=lambda kv: -kv[1])[:3]
+            raise SystemExit(f"{self.key}: no phase of {element.base} at x={element.x_range()[0] / T:.1f} "
+                             f"lets taps {taps} through: {top}")
+        target.phase = best[1]
+        # Taps are not moved here: moving one can change what the next taps do.
+        # The score above already prefers phases that centre the window on the
+        # tap, and recenter_route() centres the rest one at a time, checked.
+        recenter = False
+        for x, (lo, hi) in zip(taps, best[2]):
+            shift = (lo + hi) // 2 if recenter else 0
+            if shift:
+                new = round(x + shift * self.tiles_per_tick(), 3)
+                self._move_tap(x, new)
+                x, lo, hi = new, lo - shift, hi - shift
+            self.notes.append(f"{element.base} x={element.x_range()[0] / T:.1f}: tap {x:.2f} window "
+                              f"[{lo:+d},{hi:+d}] {int((hi - lo + 1) * 1000 / 60)} ms")
+        self._sim = None
+        self._path = None
+        return taps[0] if len(taps) == 1 else taps
+
     def osc_phase(self, x_tiles, period, progress, rising=True, lead=0.0):
         """Phase of a SINE oscillator that is at `progress` (0..1 of its travel), rising
         or falling, when the player's centre is at x (optionally `lead` s earlier)."""
@@ -742,6 +980,46 @@ class Level:
         if not rising:
             c = 1.0 - c
         return (c - (self.clock(x_tiles) - lead) / period) % 1.0
+
+    def shifted(self, tap, ticks):
+        """The route with one tap moved by `ticks` physics ticks (for fit_phase)."""
+        r = list(self.route)
+        r[r.index(round(tap, 3))] = tap + ticks * self.tiles_per_tick()
+        return r
+
+    def squeeze(self, tap, early, late):
+        """Lazy routes that pin a tap's timing: skipping it, or moving it `early`
+        ticks sooner or `late` ticks later, must all die on the obstacle."""
+        return [self.without(tap), self.shifted(tap, -early), self.shifted(tap, late)]
+
+    def recenter_route(self, passes=2):
+        """Moves every tap to the middle of its window (the shifts that still make
+        the intended jump), in route order, so the intended solution never sits
+        on the edge of a window."""
+        step = self.tiles_per_tick()
+        for _ in range(passes):
+            base = sorted(self.route)
+            path = self.path()
+            for j in range(len(base)):
+                start = self._ground_before(base, j, path)
+                w = self._survival_window(base, j, start, self._horizon(j, base))
+                if w is None:
+                    raise SystemExit(f"{self.key}: route dies or changes around tap {j + 1} at x={base[j]:.2f}")
+                shift = (w[0] + w[1]) // 2
+                if not shift:
+                    continue
+                moved = list(base)
+                moved[j] = round(base[j] + shift * step, 3)
+                kinds = dict(self.kinds)
+                kinds[moved[j]] = kinds.pop(base[j], None)
+                # Keep the move only if the rest of the level still works as designed.
+                _, death = self.simulate(route=sorted(moved), start=start)
+                if death is None and self._as_designed(sorted(moved), start[0] if start else 0.0, 1e9, kinds):
+                    self._move_tap(base[j], moved[j])
+                    base = sorted(self.route)
+                    self._sim = None
+                    self._path = None
+                    path = self.path()
 
     def without(self, *taps):
         """The route minus the given taps (for fit_phase's lazy routes)."""
@@ -772,34 +1050,74 @@ class Level:
                 return min(x, cx - 0.5)
         return x
 
-    def survives(self, route, j):
-        start = self._start_before(route[j])
-        _, death = self.simulate(route=route, start=start, stop_x=self._horizon(j, route))
-        return death is None
+    def _ground_before(self, route, j, path=None):
+        """A grounded state of the intended path before taps j and j-1 (a fast,
+        exact starting point: the path before it does not depend on tap j)."""
+        path = path if path is not None else self.path()
+        earliest = route[j] - 24 * self.tiles_per_tick()  # The furthest a window search shifts it.
+        limit = min(earliest, route[j - 1]) - 0.3 if j > 0 else earliest - 0.3
+        start = None
+        step = self.tiles_per_tick()
+        for s in path:
+            if s["x"] >= limit:
+                break
+            # Grounded, and no tap anywhere near: nothing queued, buffered (the
+            # buffer holds a tap for 8 ticks) or about to be.
+            # Static ground only: a start cannot know it is being carried.
+            if s["grounded"] and s["static"] and s["jump"] is None and \
+                    not any(s["x"] - 10 * step <= r <= s["x"] + 2 * step for r in route):
+                start = (s["x"], s["h"] / T)
+        return start
+
+    def _as_designed(self, route, x_from, x_to, kinds=None):
+        """True when every tap of `route` between x_from and x_to that has an
+        intended kind made exactly that jump in the last simulation."""
+        kinds = self.kinds if kinds is None else kinds
+        for x in route:
+            if x < x_from or x > x_to - 0.3:
+                continue
+            kind = kinds.get(round(x, 3))
+            if kind and self.last_kinds.get(x) != kind:
+                return False
+        return True
+
+    @staticmethod
+    def _lives(result):
+        """A run cut at a horizon survived if it did not die and is not already
+        falling through a pit (a fall is only detected well below the ground)."""
+        ticks, death = result
+        return death is None and (not ticks or ticks[-1]["y"] < 1.0 * T)
+
+    def survives(self, route, j, start="checkpoint"):
+        if start == "checkpoint":
+            start = self._start_before(route[j])
+        return self._lives(self.simulate(route=route, start=start, stop_x=self._horizon(j, route)))
 
     def windows(self, max_shift=24, only=None):
         """Per tap: (lo, hi) tick shifts that still survive to the horizon."""
         out = []
         step = self.tiles_per_tick()
         base = sorted(self.route)
+        path = self.path()
         for j in range(len(base)):
             if only and j + 1 not in only:
                 out.append(None)
                 continue
-            if not self.survives(base, j):
+            start = self._ground_before(base, j, path)
+            if not self.survives(base, j, start):
                 out.append(None)
                 continue
             lo = hi = 0
             for k in range(1, max_shift + 1):
                 r = list(base)
                 r[j] -= k * step
-                if not self.survives(sorted(r), j):
+                if not self.survives(sorted(r), j, start):
                     break
                 lo = -k
             for k in range(1, max_shift + 1):
                 r = list(base)
                 r[j] += k * step
-                if not self.survives(sorted(r), j):
+                if not self.survives(sorted(r), j, start):
                     break
                 hi = k
             out.append((lo, hi))
@@ -822,6 +1140,7 @@ class Level:
         base = sorted(self.route)
         jumps = sum(1 for s in ticks if s["jump"] == "ground")
         doubles = sum(1 for s in ticks if s["jump"] == "air")
+        kinds = [("J" if s["jump"] == "ground" else "D") for s in ticks if s["jump"]]
         print(f"{self.key}: {len(ticks) / 60:.1f} s, {len(base)} taps ({jumps} jumps, {doubles} double), "
               f"{self.shards} shards, finish x={self.finish_x}")
         spare = [] if only else self.necessity()
@@ -837,7 +1156,8 @@ class Level:
                     continue
                 ms = (w[1] - w[0] + 1) * 1000 / 60
                 sizes.append(ms)
-                print(f"  T{j + 1:02d} x={base[j]:7.2f}  [{w[0]:+3d},{w[1]:+3d}] {ms:4.0f} ms")
+                kind = kinds[j] if j < len(kinds) else "?"
+                print(f"  T{j + 1:02d} {kind} x={base[j]:7.2f}  [{w[0]:+3d},{w[1]:+3d}] {ms:4.0f} ms")
             if sizes:
                 srt = sorted(sizes)
                 print(f"  windows: min {srt[0]:.0f} ms, median {srt[len(srt) // 2]:.0f} ms")

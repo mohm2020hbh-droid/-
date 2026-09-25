@@ -3,11 +3,15 @@
 [ext_resource type="Script" path="res://src/level/world_data.gd" id="1_world"]
 [ext_resource type="Script" path="res://src/level/level_data.gd" id="2_level"]
 [ext_resource type="Resource" path="res://levels/world_01/level_01.tres" id="level_01"]
+[ext_resource type="Resource" path="res://levels/world_01/level_02.tres" id="level_02"]
+[ext_resource type="Resource" path="res://levels/world_01/level_03.tres" id="level_03"]
+[ext_resource type="Resource" path="res://levels/world_01/level_04.tres" id="level_04"]
+[ext_resource type="Resource" path="res://levels/world_01/level_05.tres" id="level_05"]
 
 [resource]
 script = ExtResource("1_world")
 id = &"world_01"
 number = 1
 display_name = "The Red Void"
-levels = Array[ExtResource("2_level")]([ExtResource("level_01")])
+levels = Array[ExtResource("2_level")]([ExtResource("level_01"), ExtResource("level_02"), ExtResource("level_03"), ExtResource("level_04"), ExtResource("level_05")])
 next_world_name = "World 02"

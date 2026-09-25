@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelData" format=3]
+
+[ext_resource type="Script" path="res://src/level/level_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"w01_l04"
+display_name = "Sequence"
+tagline = "Extremely hard"
+scene_path = "res://levels/world_01/level_04.tscn"
+speed_scale = 1.17

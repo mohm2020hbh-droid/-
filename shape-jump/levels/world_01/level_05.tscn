@@ -1,0 +1,585 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_01/level_05.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/block.gd" id="block"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/collapsing_path.gd" id="collapsing_path"]
+[ext_resource type="Script" path="res://src/level/elements/crush_block.gd" id="crush_block"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/gate.gd" id="gate"]
+[ext_resource type="Script" path="res://src/level/elements/oscillator.gd" id="oscillator"]
+[ext_resource type="Script" path="res://src/level/elements/rotating_arm.gd" id="rotating_arm"]
+[ext_resource type="Script" path="res://src/level/elements/rotor.gd" id="rotor"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level05" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 480
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Runway" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Runway"]
+position = Vector2(-768, 0)
+script = ExtResource("block")
+size = Vector2(2304, 640)
+
+[node name="Shard" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard2" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Shard3" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(832, -32)
+
+[node name="S1_Rhythm" type="Node2D" parent="."]
+
+[node name="RotatingArm" type="Area2D" parent="S1_Rhythm"]
+position = Vector2(1510.4, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 115.2
+speed = 3
+phase = 0.35
+
+[node name="CrushBlock" type="Area2D" parent="S1_Rhythm"]
+position = Vector2(1958.4, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 137.6)
+travel = Vector2(0, -134.4)
+period = 1.1
+phase = 0.05
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.25
+return_time = 0.35
+
+[node name="Block" type="StaticBody2D" parent="S1_Rhythm"]
+position = Vector2(1536, 0)
+script = ExtResource("block")
+size = Vector2(748.8, 640)
+
+[node name="Block2" type="StaticBody2D" parent="S1_Rhythm"]
+position = Vector2(2564.2521, -32)
+script = ExtResource("block")
+size = Vector2(76.8, 672)
+
+[node name="Block3" type="StaticBody2D" parent="S1_Rhythm"]
+position = Vector2(2984.5042, -64)
+script = ExtResource("block")
+size = Vector2(76.8, 704)
+
+[node name="RotatingArm2" type="Area2D" parent="S1_Rhythm"]
+position = Vector2(2833.0521, -294.4)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 166.4
+speed = -2.4
+phase = 0
+
+[node name="Gate" type="Area2D" parent="S1_Rhythm"]
+position = Vector2(3266.1042, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-234.5728, 95.5515)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Block4" type="StaticBody2D" parent="S1_Rhythm"]
+position = Vector2(3460.4531, 0)
+script = ExtResource("block")
+size = Vector2(1472, 640)
+
+[node name="Checkpoint" type="Area2D" parent="S1_Rhythm"]
+position = Vector2(3844.4531, -0)
+script = ExtResource("checkpoint")
+
+[node name="S2_Shuttle" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="S2_Shuttle"]
+position = Vector2(5199.1052, -32)
+script = ExtResource("block")
+size = Vector2(140.8, 32)
+
+[node name="Oscillator" type="Node2D" parent="S2_Shuttle/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(179.2, -0)
+period = 1.5
+phase = 0.5167
+
+[node name="Gate" type="Area2D" parent="S2_Shuttle"]
+position = Vector2(5544.7052, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-202.5728, 89.1515, -298.5728, 89.1515)
+hold_time = 0.4
+move_time = 0.18
+phase = 0.8917
+warning_time = 0.35
+
+[node name="S2_Elevator" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="S2_Elevator"]
+position = Vector2(5686.9891, 32)
+script = ExtResource("block")
+size = Vector2(153.6, 32)
+
+[node name="Oscillator" type="Node2D" parent="S2_Elevator/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -192)
+period = 1.8
+phase = 0.95
+
+[node name="Block" type="StaticBody2D" parent="S2_Elevator"]
+position = Vector2(6113.2938, -192)
+script = ExtResource("block")
+size = Vector2(384, 832)
+
+[node name="Gate" type="Area2D" parent="S2_Elevator"]
+position = Vector2(6006.9891, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-208.6976, 100.8542, -291.8976, 100.8542)
+hold_time = 0.45
+move_time = 0.18
+phase = 0.25
+warning_time = 0.35
+
+[node name="Block2" type="StaticBody2D" parent="S2_Elevator"]
+position = Vector2(7223.7363, 0)
+script = ExtResource("block")
+size = Vector2(1484.8, 640)
+
+[node name="Gate2" type="Area2D" parent="S2_Elevator"]
+position = Vector2(6817.2938, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-467.8647, 132.3614, -378.2647, 132.3614)
+hold_time = 0.4
+move_time = 0.18
+phase = 0.125
+warning_time = 0.35
+
+[node name="Checkpoint" type="Area2D" parent="S2_Elevator"]
+position = Vector2(7620.5363, -0)
+script = ExtResource("checkpoint")
+
+[node name="S3_CrusherDoubleJump" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="S3_CrusherDoubleJump"]
+position = Vector2(9318.1707, -96)
+script = ExtResource("block")
+size = Vector2(83.2, 736)
+
+[node name="CrushBlock" type="Area2D" parent="S3_CrusherDoubleJump"]
+position = Vector2(8810.9363, -486.4)
+script = ExtResource("crush_block")
+size = Vector2(140.8, 192)
+travel = Vector2(0, 153.6)
+period = 1.5
+phase = 0.8333
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="CrushBlock2" type="Area2D" parent="S3_CrusherDoubleJump"]
+position = Vector2(9002.9363, -537.6)
+script = ExtResource("crush_block")
+size = Vector2(140.8, 192)
+travel = Vector2(0, 140.8)
+period = 1.5
+phase = 0.7333
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="S3_SlamLedges" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="S3_SlamLedges"]
+position = Vector2(9788.1551, -64)
+script = ExtResource("block")
+size = Vector2(83.2, 704)
+
+[node name="CrushBlock" type="Area2D" parent="S3_SlamLedges"]
+position = Vector2(9762.5551, -486.4)
+script = ExtResource("crush_block")
+size = Vector2(134.4, 192)
+travel = Vector2(0, 230.4)
+period = 1.4
+phase = 0.275
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.25
+return_time = 0.45
+
+[node name="Gate" type="Area2D" parent="S3_SlamLedges"]
+position = Vector2(10274.5551, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-353.5607, 121.979)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="CrushBlock2" type="Area2D" parent="S3_SlamLedges"]
+position = Vector2(10730.0625, -0)
+script = ExtResource("crush_block")
+size = Vector2(89.6, 131.2)
+travel = Vector2(0, -128)
+period = 1.2
+phase = 0.3167
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.25
+return_time = 0.35
+
+[node name="Block2" type="StaticBody2D" parent="S3_SlamLedges"]
+position = Vector2(10602.0625, 0)
+script = ExtResource("block")
+size = Vector2(1548.8, 640)
+
+[node name="Checkpoint" type="Area2D" parent="S3_SlamLedges"]
+position = Vector2(11062.8625, -0)
+script = ExtResource("checkpoint")
+
+[node name="S4_GatesOnTheCollapse" type="Node2D" parent="."]
+
+[node name="CollapsingPath" type="StaticBody2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(12150.8625, -0)
+script = ExtResource("collapsing_path")
+tiles = 18
+tile_size = Vector2(64, 32)
+collapse_time = 18.8973
+interval = 0.0893
+warning_time = 0.35
+
+[node name="Gate" type="Area2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(12368.4625, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-111.6415, 147.6691)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Gate2" type="Area2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(12509.2625, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-171.682, 99.7332)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Gate3" type="Area2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(12650.0625, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-96.2094, 161.9438)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="RotatingArm" type="Area2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(12982.8625, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 115.2
+speed = 3
+phase = 0.15
+
+[node name="Gate4" type="Area2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(13354.0625, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-141.4769, 125.837)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Gate5" type="Area2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(13635.6625, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-261.2042, 133.5531)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Block" type="StaticBody2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(13956.6995, 0)
+script = ExtResource("block")
+size = Vector2(1420.8, 640)
+
+[node name="Checkpoint" type="Area2D" parent="S4_GatesOnTheCollapse"]
+position = Vector2(14353.4995, -0)
+script = ExtResource("checkpoint")
+
+[node name="S5_Gauntlet" type="Node2D" parent="."]
+
+[node name="CrushBlock" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(15563.0995, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 131.2)
+travel = Vector2(0, -128)
+period = 1.15
+phase = 0.725
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.2
+return_time = 0.35
+
+[node name="Block" type="StaticBody2D" parent="S5_Gauntlet"]
+position = Vector2(15377.4995, 0)
+script = ExtResource("block")
+size = Vector2(486.4, 640)
+
+[node name="Block2" type="StaticBody2D" parent="S5_Gauntlet"]
+position = Vector2(16123.548, -64)
+script = ExtResource("block")
+size = Vector2(76.8, 704)
+
+[node name="RotatingArm" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(16011.0995, -320)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 166.4
+speed = -2.8
+phase = 0.175
+
+[node name="Block3" type="StaticBody2D" parent="S5_Gauntlet"]
+position = Vector2(16830.1471, -192)
+script = ExtResource("block")
+size = Vector2(76.8, 832)
+
+[node name="Gate" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(16520.348, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-324.9149, 134.8691, -401.7149, 134.8691)
+hold_time = 0.35
+move_time = 0.16
+phase = 0.4917
+warning_time = 0.35
+
+[node name="Gate2" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(17098.9471, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-360.9331, 92.4309)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="CollapsingPath" type="StaticBody2D" parent="S5_Gauntlet"]
+position = Vector2(17323.5026, -96)
+script = ExtResource("collapsing_path")
+tiles = 7
+tile_size = Vector2(64, 32)
+collapse_time = 26.8847
+interval = 0.0741
+warning_time = 0.35
+
+[node name="Rotor" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(17694.7026, -134.4)
+script = ExtResource("rotor")
+radius = 40
+points = 3
+spin = 4.5
+phase = 0
+
+[node name="Oscillator" type="Node2D" parent="S5_Gauntlet/Rotor"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -115.2)
+period = 1.1
+phase = 0.025
+
+[node name="Gate3" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(17950.7026, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-376.205, 111.721, -286.605, 111.721)
+hold_time = 0.35
+move_time = 0.16
+phase = 0.875
+warning_time = 0.35
+
+[node name="Block4" type="StaticBody2D" parent="S5_Gauntlet"]
+position = Vector2(18274.016, 0)
+script = ExtResource("block")
+size = Vector2(1484.8, 640)
+
+[node name="FinishGate" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(19246.816, -0)
+script = ExtResource("finish_gate")
+
+[node name="Shard" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(1280, -43)
+
+[node name="Shard2" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(1504, -191)
+
+[node name="Shard3" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(1728, -53)
+
+[node name="Shard4" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(1952, -189)
+
+[node name="Shard5" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(2176, -68)
+
+[node name="Shard6" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(2400, -189)
+
+[node name="Shard7" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(2624, -75)
+
+[node name="Shard8" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(2848, -220)
+
+[node name="Shard9" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(3072, -107)
+
+[node name="Shard10" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(3296, -256)
+
+[node name="Shard11" parent="S1_Rhythm" instance=ExtResource("shard")]
+position = Vector2(3520, -101)
+
+[node name="Shard" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(4881, -43)
+
+[node name="Shard2" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(5105, -191)
+
+[node name="Shard3" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(5329, -75)
+
+[node name="Shard4" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(5553, -224)
+
+[node name="Shard5" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(5777, -109)
+
+[node name="Shard6" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(6001, -246)
+
+[node name="Shard7" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(6225, -235)
+
+[node name="Shard8" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(6449, -235)
+
+[node name="Shard9" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(6673, -384)
+
+[node name="Shard10" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(6897, -529)
+
+[node name="Shard11" parent="S2_Elevator" instance=ExtResource("shard")]
+position = Vector2(7121, -408)
+
+[node name="Shard" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(8645, -43)
+
+[node name="Shard2" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(8869, -179)
+
+[node name="Shard3" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(9093, -335)
+
+[node name="Shard4" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(9317, -214)
+
+[node name="Shard5" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(9541, -279)
+
+[node name="Shard6" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(9765, -191)
+
+[node name="Shard7" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(9989, -214)
+
+[node name="Shard8" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(10213, -371)
+
+[node name="Shard9" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(10437, -363)
+
+[node name="Shard10" parent="S3_SlamLedges" instance=ExtResource("shard")]
+position = Vector2(10661, -43)
+
+[node name="Shard" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(12279, -43)
+
+[node name="Shard2" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(12503, -193)
+
+[node name="Shard3" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(12727, -43)
+
+[node name="Shard4" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(12951, -191)
+
+[node name="Shard5" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(13175, -53)
+
+[node name="Shard6" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(13399, -186)
+
+[node name="Shard7" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(13623, -295)
+
+[node name="Shard8" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
+position = Vector2(13847, -287)
+
+[node name="Shard" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(15345, -70)
+
+[node name="Shard2" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(15537, -192)
+
+[node name="Shard3" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(15729, -82)
+
+[node name="Shard4" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(15921, -169)
+
+[node name="Shard5" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(16113, -157)
+
+[node name="Shard6" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(16305, -206)
+
+[node name="Shard7" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(16497, -352)
+
+[node name="Shard8" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(16689, -391)
+
+[node name="Shard9" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(16881, -274)
+
+[node name="Shard10" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(17073, -385)
+
+[node name="Shard11" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(17265, -260)
+
+[node name="Shard12" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(17457, -139)
+
+[node name="Shard13" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(17649, -275)
+
+[node name="Shard14" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(17841, -317)
+
+[node name="Shard15" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(18033, -417)
+
+[node name="Shard16" parent="S5_Gauntlet" instance=ExtResource("shard")]
+position = Vector2(18225, -277)

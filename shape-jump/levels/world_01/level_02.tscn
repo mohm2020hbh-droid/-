@@ -1,0 +1,494 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_01/level_02.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/block.gd" id="block"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/crush_block.gd" id="crush_block"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/rotating_arm.gd" id="rotating_arm"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level02" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 480
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Runway" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Runway"]
+position = Vector2(-768, 0)
+script = ExtResource("block")
+size = Vector2(2112, 640)
+
+[node name="Shard" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard2" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Shard3" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(832, -32)
+
+[node name="GapThenPiston" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="GapThenPiston"]
+position = Vector2(1600, 0)
+script = ExtResource("block")
+size = Vector2(832, 640)
+
+[node name="CrushBlock" type="Area2D" parent="GapThenPiston"]
+position = Vector2(1984, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 131.2)
+travel = Vector2(0, -128)
+period = 1.5
+phase = 0.4917
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.35
+return_time = 0.35
+
+[node name="CrusherOverGap" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="CrusherOverGap"]
+position = Vector2(2688, 0)
+script = ExtResource("block")
+size = Vector2(1152, 640)
+
+[node name="CrushBlock" type="Area2D" parent="CrusherOverGap"]
+position = Vector2(2483.2, -473.6)
+script = ExtResource("crush_block")
+size = Vector2(153.6, 192)
+travel = Vector2(0, 179.2)
+period = 1.8
+phase = 0.125
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="TwinPistons" type="Node2D" parent="."]
+
+[node name="CrushBlock" type="Area2D" parent="TwinPistons"]
+position = Vector2(3059.2, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 124.8)
+travel = Vector2(0, -121.6)
+period = 1.5
+phase = 0.225
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.35
+return_time = 0.35
+
+[node name="CrushBlock2" type="Area2D" parent="TwinPistons"]
+position = Vector2(3468.8, -0)
+script = ExtResource("crush_block")
+size = Vector2(96, 137.6)
+travel = Vector2(0, -134.4)
+period = 1.5
+phase = 0.9167
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.35
+return_time = 0.35
+
+[node name="NarrowSteps" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="NarrowSteps"]
+position = Vector2(4166.4, -32)
+script = ExtResource("block")
+size = Vector2(76.8, 672)
+
+[node name="Block2" type="StaticBody2D" parent="NarrowSteps"]
+position = Vector2(4588.8, -64)
+script = ExtResource("block")
+size = Vector2(76.8, 704)
+
+[node name="SlamOnLanding" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="SlamOnLanding"]
+position = Vector2(4992, 0)
+script = ExtResource("block")
+size = Vector2(288, 640)
+
+[node name="Block2" type="StaticBody2D" parent="SlamOnLanding"]
+position = Vector2(5580.8, -32)
+script = ExtResource("block")
+size = Vector2(102.4, 672)
+
+[node name="Block3" type="StaticBody2D" parent="SlamOnLanding"]
+position = Vector2(6048, 0)
+script = ExtResource("block")
+size = Vector2(1888, 640)
+
+[node name="CrushBlock" type="Area2D" parent="SlamOnLanding"]
+position = Vector2(5561.6, -473.6)
+script = ExtResource("crush_block")
+size = Vector2(140.8, 192)
+travel = Vector2(0, 249.6)
+period = 1.6
+phase = 0.475
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.25
+return_time = 0.45
+
+[node name="Checkpoint" type="Area2D" parent="SlamOnLanding"]
+position = Vector2(6400, -0)
+script = ExtResource("checkpoint")
+
+[node name="FastWindmill" type="Node2D" parent="."]
+
+[node name="RotatingArm" type="Area2D" parent="FastWindmill"]
+position = Vector2(7462.4, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 115.2
+speed = 2.6
+phase = 0
+
+[node name="ArmOverGap" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="ArmOverGap"]
+position = Vector2(8192, 0)
+script = ExtResource("block")
+size = Vector2(1190.4, 640)
+
+[node name="RotatingArm" type="Area2D" parent="ArmOverGap"]
+position = Vector2(8064, -275.2)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 166.4
+speed = -1.8
+phase = 0.1417
+
+[node name="CounterWindmills" type="Node2D" parent="."]
+
+[node name="RotatingArm" type="Area2D" parent="CounterWindmills"]
+position = Vector2(8576, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 115.2
+speed = 2.4
+phase = 0.0333
+
+[node name="RotatingArm2" type="Area2D" parent="CounterWindmills"]
+position = Vector2(9011.2, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 115.2
+speed = -2.4
+phase = 0.2
+
+[node name="WindmillBetweenLedges" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="WindmillBetweenLedges"]
+position = Vector2(9721.6, -32)
+script = ExtResource("block")
+size = Vector2(102.4, 672)
+
+[node name="Block2" type="StaticBody2D" parent="WindmillBetweenLedges"]
+position = Vector2(10188.8, 0)
+script = ExtResource("block")
+size = Vector2(1600, 640)
+
+[node name="RotatingArm" type="Area2D" parent="WindmillBetweenLedges"]
+position = Vector2(10022.4, 38.4)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 153.6
+speed = 2.2
+phase = 0.2083
+
+[node name="Checkpoint" type="Area2D" parent="WindmillBetweenLedges"]
+position = Vector2(10624, -0)
+script = ExtResource("checkpoint")
+
+[node name="PistonThenDoubleJump" type="Node2D" parent="."]
+
+[node name="CrushBlock" type="Area2D" parent="PistonThenDoubleJump"]
+position = Vector2(11648, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 118.4)
+travel = Vector2(0, -115.2)
+period = 1.5
+phase = 0.025
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.35
+return_time = 0.35
+
+[node name="Block" type="StaticBody2D" parent="PistonThenDoubleJump"]
+position = Vector2(12080.9223, -128)
+script = ExtResource("block")
+size = Vector2(89.6, 768)
+
+[node name="CrushBlock2" type="Area2D" parent="PistonThenDoubleJump"]
+position = Vector2(11929.6, -512)
+script = ExtResource("crush_block")
+size = Vector2(140.8, 192)
+travel = Vector2(0, 134.4)
+period = 1.6
+phase = 0.8667
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="Block2" type="StaticBody2D" parent="PistonThenDoubleJump"]
+position = Vector2(12541.7768, 0)
+script = ExtResource("block")
+size = Vector2(601.6, 640)
+
+[node name="CrushBlock3" type="Area2D" parent="PistonThenDoubleJump"]
+position = Vector2(12836.1768, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 131.2)
+travel = Vector2(0, -128)
+period = 1.3
+phase = 0.2833
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.3
+return_time = 0.35
+
+[node name="CrusherTunnel" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="CrusherTunnel"]
+position = Vector2(13437.7529, 0)
+script = ExtResource("block")
+size = Vector2(89.6, 640)
+
+[node name="Block2" type="StaticBody2D" parent="CrusherTunnel"]
+position = Vector2(13866.529, 0)
+script = ExtResource("block")
+size = Vector2(89.6, 640)
+
+[node name="Block3" type="StaticBody2D" parent="CrusherTunnel"]
+position = Vector2(14295.3051, 0)
+script = ExtResource("block")
+size = Vector2(89.6, 640)
+
+[node name="CrushBlock" type="Area2D" parent="CrusherTunnel"]
+position = Vector2(13412.1529, -460.8)
+script = ExtResource("crush_block")
+size = Vector2(140.8, 192)
+travel = Vector2(0, 268.8)
+period = 1.5
+phase = 0.5833
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="CrushBlock2" type="Area2D" parent="CrusherTunnel"]
+position = Vector2(13840.929, -460.8)
+script = ExtResource("crush_block")
+size = Vector2(140.8, 192)
+travel = Vector2(0, 268.8)
+period = 1.5
+phase = 0.0833
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="CrushBlock3" type="Area2D" parent="CrusherTunnel"]
+position = Vector2(14269.7051, -460.8)
+script = ExtResource("crush_block")
+size = Vector2(140.8, 192)
+travel = Vector2(0, 268.8)
+period = 1.5
+phase = 0.575
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="Block4" type="StaticBody2D" parent="CrusherTunnel"]
+position = Vector2(14685.6812, 0)
+script = ExtResource("block")
+size = Vector2(1280, 640)
+
+[node name="Checkpoint" type="Area2D" parent="CrusherTunnel"]
+position = Vector2(15069.6812, -0)
+script = ExtResource("checkpoint")
+
+[node name="PistonRush" type="Node2D" parent="."]
+
+[node name="CrushBlock" type="Area2D" parent="PistonRush"]
+position = Vector2(15997.6812, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 137.6)
+travel = Vector2(0, -134.4)
+period = 1.2
+phase = 0.2917
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.25
+return_time = 0.35
+
+[node name="CrushBlock2" type="Area2D" parent="PistonRush"]
+position = Vector2(16413.6812, -0)
+script = ExtResource("crush_block")
+size = Vector2(64, 137.6)
+travel = Vector2(0, -134.4)
+period = 1.2
+phase = 0.6583
+warning_time = 0.3
+slam_time = 0.08
+closed_time = 0.25
+return_time = 0.35
+
+[node name="Block" type="StaticBody2D" parent="PistonRush"]
+position = Vector2(15965.6812, 0)
+script = ExtResource("block")
+size = Vector2(800, 640)
+
+[node name="GapCrusherDoubleJump" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="GapCrusherDoubleJump"]
+position = Vector2(17283.6164, -160)
+script = ExtResource("block")
+size = Vector2(96, 800)
+
+[node name="CrushBlock" type="Area2D" parent="GapCrusherDoubleJump"]
+position = Vector2(16957.6812, -524.8)
+script = ExtResource("crush_block")
+size = Vector2(153.6, 192)
+travel = Vector2(0, 153.6)
+period = 1.5
+phase = 0.35
+warning_time = 0.45
+slam_time = 0.1
+closed_time = 0.35
+return_time = 0.55
+
+[node name="DropIntoWindmill" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="DropIntoWindmill"]
+position = Vector2(17751.5861, 0)
+script = ExtResource("block")
+size = Vector2(1664, 640)
+
+[node name="RotatingArm" type="Area2D" parent="DropIntoWindmill"]
+position = Vector2(18077.9861, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 115.2
+speed = 2.3
+phase = 0.0083
+
+[node name="FinishGate" type="Area2D" parent="DropIntoWindmill"]
+position = Vector2(18839.5861, -0)
+script = ExtResource("finish_gate")
+
+[node name="Shard" parent="GapThenPiston" instance=ExtResource("shard")]
+position = Vector2(1344, -105)
+
+[node name="Shard2" parent="GapThenPiston" instance=ExtResource("shard")]
+position = Vector2(1440, -179)
+
+[node name="Shard3" parent="GapThenPiston" instance=ExtResource("shard")]
+position = Vector2(1536, -189)
+
+[node name="Shard" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(3840, -43)
+
+[node name="Shard2" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(3981, -179)
+
+[node name="Shard3" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(4122, -164)
+
+[node name="Shard4" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(4262, -102)
+
+[node name="Shard5" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(4403, -218)
+
+[node name="Shard6" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(4544, -181)
+
+[node name="Shard7" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(4685, -134)
+
+[node name="Shard8" parent="NarrowSteps" instance=ExtResource("shard")]
+position = Vector2(4826, -250)
+
+[node name="Shard" parent="SlamOnLanding" instance=ExtResource("shard")]
+position = Vector2(5248, -43)
+
+[node name="Shard2" parent="SlamOnLanding" instance=ExtResource("shard")]
+position = Vector2(5376, -164)
+
+[node name="Shard3" parent="SlamOnLanding" instance=ExtResource("shard")]
+position = Vector2(5504, -189)
+
+[node name="Shard4" parent="SlamOnLanding" instance=ExtResource("shard")]
+position = Vector2(5632, -75)
+
+[node name="Shard5" parent="SlamOnLanding" instance=ExtResource("shard")]
+position = Vector2(5760, -157)
+
+[node name="Shard6" parent="SlamOnLanding" instance=ExtResource("shard")]
+position = Vector2(5888, -224)
+
+[node name="Shard" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
+position = Vector2(9344, -43)
+
+[node name="Shard2" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
+position = Vector2(9485, -150)
+
+[node name="Shard3" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
+position = Vector2(9626, -185)
+
+[node name="Shard4" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
+position = Vector2(9766, -75)
+
+[node name="Shard5" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
+position = Vector2(9907, -166)
+
+[node name="Shard6" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
+position = Vector2(10048, -224)
+
+[node name="Shard" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
+position = Vector2(11520, -105)
+
+[node name="Shard2" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
+position = Vector2(11635, -186)
+
+[node name="Shard3" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
+position = Vector2(11750, -164)
+
+[node name="Shard4" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
+position = Vector2(11866, -132)
+
+[node name="Shard5" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
+position = Vector2(11981, -222)
+
+[node name="Shard6" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
+position = Vector2(12096, -215)
+
+[node name="Shard" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
+position = Vector2(16753, -94)
+
+[node name="Shard2" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
+position = Vector2(16855, -179)
+
+[node name="Shard3" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
+position = Vector2(16958, -185)
+
+[node name="Shard4" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
+position = Vector2(17060, -146)
+
+[node name="Shard5" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
+position = Vector2(17162, -245)
+
+[node name="Shard6" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
+position = Vector2(17265, -267)

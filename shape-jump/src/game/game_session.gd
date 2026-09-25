@@ -252,12 +252,26 @@ func _on_shard_collected(shard: Shard) -> void:
 
 
 func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
-	# The level time at which the player's centre is exactly on the checkpoint,
-	# so a respawn there sees the same obstacle timing as the first pass.
-	var feet := checkpoint.global_position
-	var time := level.clock + (feet.x - player.global_position.x) / player.get_run_speed()
-	_respawn = RespawnPoint.new(feet, time, score.snapshot())
-	Events.checkpoint_reached.emit(feet)
+	_respawn = RespawnPoint.new(respawn_feet_at(checkpoint.global_position), 0.0, score.snapshot())
+	_respawn.level_time = time_at(_respawn.feet.x)
+	Events.checkpoint_reached.emit(checkpoint.global_position)
+
+
+## Level time at which the player's centre passes [param x] on the first
+## run, snapped to a physics tick of that run: a respawn then replays the
+## first pass tick for tick (taps are quantised to ticks, so even a fraction
+## of a tick of offset could flip a tight jump).
+func time_at(x: float) -> float:
+	var tick := 1.0 / Engine.physics_ticks_per_second
+	var time := (x - level.get_spawn_feet_position().x) / player.get_run_speed()
+	return roundf(time / tick) * tick
+
+
+## Where to respawn for a checkpoint at [param marker]: on its ground, at
+## the x the player really had at [method time_at] (within half a tick).
+func respawn_feet_at(marker: Vector2) -> Vector2:
+	var x := level.get_spawn_feet_position().x + player.get_run_speed() * time_at(marker.x)
+	return Vector2(x, marker.y)
 
 
 ## Obstacle sounds only for what the player can see: an off-screen machine
