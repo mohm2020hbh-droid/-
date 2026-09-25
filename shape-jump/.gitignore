@@ -6,3 +6,6 @@
 /export/
 *.apk
 *.aab
+
+# Python dev tools
+__pycache__/
