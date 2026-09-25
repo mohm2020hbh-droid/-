@@ -127,9 +127,28 @@
   }
   .foot { margin: 0; font-size: 12px; color: var(--muted); opacity: 0.8; line-height: 1.6; }
   [lang="en"] { direction: ltr; unicode-bidi: isolate; }
+  #problem {
+    position: fixed;
+    inset: auto 12px 12px 12px;
+    max-height: 45%;
+    overflow: auto;
+    z-index: 10;
+    margin: 0;
+    padding: 12px 14px;
+    background: #1a0710;
+    border: 1px solid var(--neon);
+    border-radius: 6px;
+    color: var(--hot);
+    font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    white-space: pre-wrap;
+    -webkit-user-select: text;
+    user-select: text;
+    direction: ltr;
+  }
   @media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
 </style>
 
+<pre id="problem" hidden></pre>
 <canvas id="canvas" tabindex="0">This browser cannot draw the game (canvas missing).</canvas>
 
 <div id="launcher">
@@ -166,36 +185,66 @@
 </div>
 
 <script>
-/*__GODOT_ENGINE_JS__*/
-</script>
-<script>
 (function () {
   'use strict';
-  // Filled in by tools/web/build_playtest.py: file sizes, and the game data
-  // (index.pck, a few hundred KB) embedded here as base64.
+  // Filled in by tools/web/build_playtest.py.
   const FILES = /*__FILE_SIZES__*/;
-  const PCK_BASE64 = "/*__PCK_BASE64__*/";
+  const ENGINE_FILE = 'engine.gz.wasm';
+  const LOADER_FILE = 'godot.js';
+  const DATA_FILE = 'game-data.txt';
   const $ = (id) => document.getElementById(id);
   const meter = $('meter');
   const status = $('status');
   const actions = $('actions');
   const launcher = $('launcher');
+  const problem = $('problem');
+
+  // Anything that goes wrong is shown on screen, in full, never swallowed:
+  // a blank frame tells nobody anything.
+  const log = [];
+  function report(kind, detail) {
+    const line = '[' + kind + '] ' + detail;
+    log.push(line);
+    problem.textContent = 'Shape Jump: something went wrong (select and copy this text):\n\n' + log.join('\n');
+    problem.hidden = false;
+  }
+  window.addEventListener('error', function (e) {
+    const url = e.target && (e.target.src || e.target.href);
+    if (!e.message && url && new URL(url, location.href).origin !== location.origin) {
+      console.warn('optional resource failed (the page still works): ' + url);  // Web fonts only change the typeface.
+      return;
+    }
+    report('error', (e.message || 'resource failed: ' + url) + (e.filename ? ' at ' + e.filename + ':' + e.lineno : ''));
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    const r = e.reason;
+    report('promise', r && r.stack ? r.stack : String(r));
+  });
+  const consoleError = console.error.bind(console);
+  console.error = function () {
+    consoleError.apply(console, arguments);
+    const text = Array.prototype.map.call(arguments, String).join(' ');
+    if (/^(WARNING|USER WARNING)/.test(text)) {
+      return;
+    }
+    report('engine', text);
+  };
+  $('canvas').addEventListener('webglcontextlost', function () {
+    report('webgl', 'the graphics context was lost (the GPU reset or ran out of memory)');
+  });
 
   function fail(err) {
-    console.error(err);
     const msg = err && err.message ? err.message : String(err);
     status.className = 'error';
-    status.textContent = 'تعذّر تشغيل اللعبة في هذا المتصفح: ' + msg +
-      '. جرّب نسخة حديثة من Chrome أو Edge أو Firefox أو Safari 16.4 فما فوق.';
+    status.textContent = 'تعذّر تشغيل اللعبة: ' + msg;
     actions.hidden = true;
+    report('start', err && err.stack ? err.stack : msg);
   }
 
-  // Download progress: the compressed engine is the only real download.
-  const ENGINE_FILE = 'engine.gz.wasm';
-  const loaded = { [ENGINE_FILE]: 0 };
-  const total = FILES[ENGINE_FILE];
+  const loaded = { [ENGINE_FILE]: 0, [DATA_FILE]: 0 };
+  const total = FILES[ENGINE_FILE] + FILES[DATA_FILE];
   function paint() {
-    const done = loaded[ENGINE_FILE];
+    const done = loaded[ENGINE_FILE] + loaded[DATA_FILE];
     meter.style.width = Math.min(100, (100 * done) / total).toFixed(1) + '%';
     status.textContent = 'جارٍ تحميل اللعبة… ' + (done / 1048576).toFixed(1) + ' / ' +
       (total / 1048576).toFixed(1) + ' MB';
@@ -205,7 +254,7 @@
   async function download(url) {
     const res = await nativeFetch(url);
     if (!res.ok) {
-      throw new Error('failed to load ' + url + ' (' + res.status + ')');
+      throw new Error('could not load ' + url + ' (HTTP ' + res.status + ')');
     }
     if (!res.body || !res.body.getReader) {
       const buf = await res.arrayBuffer();
@@ -223,22 +272,24 @@
       }
       chunks.push(value);
       n += value.length;
-      loaded[url] = n;
-      paint();
+      if (url in loaded) {
+        loaded[url] = n;
+        paint();
+      }
     }
     return new Blob(chunks);
   }
 
-  // The engine is published gzip-compressed (a single file must stay under 15 MB)
-  // under a .wasm name; hand Godot's loader the decompressed module as if it had
-  // fetched index.wasm. The magic bytes decide, so a transparently decoded copy works too.
+  // The engine is published gzip-compressed under a .wasm name (one file must
+  // stay under 15 MB). The magic bytes decide, so a copy the host already
+  // decoded works too.
   async function engineResponse() {
     const blob = await download(ENGINE_FILE);
     const magic = new Uint8Array(await blob.slice(0, 2).arrayBuffer());
     let body = blob.stream();
     if (magic[0] === 0x1f && magic[1] === 0x8b) {
       if (typeof DecompressionStream === 'undefined') {
-        throw new Error('DecompressionStream is not supported');
+        throw new Error('this browser cannot decompress the engine (DecompressionStream missing)');
       }
       body = body.pipeThrough(new DecompressionStream('gzip'));
     }
@@ -247,13 +298,14 @@
     return new Response(bytes, { headers: { 'Content-Type': 'application/wasm' } });
   }
 
-  function packResponse() {
-    const text = atob(PCK_BASE64);
+  // The game data (index.pck) travels as base64 text.
+  async function packResponse() {
+    const text = atob((await (await download(DATA_FILE)).text()).trim());
     const bytes = new Uint8Array(text.length);
     for (let i = 0; i < text.length; i++) {
       bytes[i] = text.charCodeAt(i);
     }
-    return Promise.resolve(new Response(bytes, { headers: { 'Content-Type': 'application/octet-stream' } }));
+    return new Response(bytes, { headers: { 'Content-Type': 'application/octet-stream' } });
   }
 
   window.fetch = function (input, init) {
@@ -267,48 +319,68 @@
     return nativeFetch(input, init);
   };
 
-  if (typeof Engine === 'undefined') {
-    fail(new Error('engine script missing'));
-    return;
-  }
-  const missing = Engine.getMissingFeatures({ threads: false });
-  if (missing.length) {
-    fail(new Error(missing.join(', ')));
-    return;
+  // Godot's loader is a published file too; it runs as an inline script so it
+  // only needs what the page's own scripts need.
+  async function loadEngineScript() {
+    const code = await (await download(LOADER_FILE)).text();
+    const tag = document.createElement('script');
+    tag.textContent = code;
+    document.head.appendChild(tag);
+    if (typeof Engine === 'undefined') {
+      throw new Error('the engine loader did not run');
+    }
   }
 
-  const engine = new Engine({
-    executable: 'index',
-    mainPack: 'index.pck',
-    canvas: $('canvas'),
-    canvasResizePolicy: 2,
-    focusCanvas: true,
-    experimentalVK: false,
-    ensureCrossOriginIsolationHeaders: false,
-    fileSizes: { 'index.wasm': FILES['index.wasm'], 'index.pck': FILES['index.pck'] },
-    godotPoolSize: 4,
-    emscriptenPoolSize: 8,
-    gdextensionLibs: [],
-    args: [],
-  });
+  const hash = (location.hash || '').slice(1);
+  const qa = hash === 'autoplay' || hash === 'autoplay-deaths';
 
-  paint();
-  Promise.all([engine.init('index'), engine.preloadFile('index.pck', 'index.pck')]).then(function () {
+  let engine = null;
+  async function boot() {
+    paint();
+    await loadEngineScript();
+    const missing = Engine.getMissingFeatures({ threads: false });
+    if (missing.length) {
+      throw new Error('missing browser features: ' + missing.join(', '));
+    }
+    engine = new Engine({
+      executable: 'index',
+      mainPack: 'index.pck',
+      canvas: $('canvas'),
+      canvasResizePolicy: 2,
+      focusCanvas: true,
+      experimentalVK: false,
+      ensureCrossOriginIsolationHeaders: false,
+      fileSizes: { 'index.wasm': FILES['index.wasm'], 'index.pck': FILES['index.pck'] },
+      godotPoolSize: 4,
+      emscriptenPoolSize: 8,
+      gdextensionLibs: [],
+      args: [],
+    });
+    await Promise.all([engine.init('index'), engine.preloadFile('index.pck', 'index.pck')]);
     meter.style.width = '100%';
     status.textContent = 'جاهزة. اختر طريقة اللعب:';
     actions.hidden = false;
     $('play-normal').focus();
-  }, fail);
+    if (qa) {
+      start(true);
+    }
+  }
 
   let started = false;
   function start(testMode) {
-    if (started) {
+    if (started || !engine) {
       return;
     }
     started = true;
     const args = ['--main-pack', 'index.pck'];
-    if (testMode) {
+    if (testMode || qa) {
       args.push('--', '--unlock-all');
+      if (qa) {
+        args.push('--autoplay');
+      }
+      if (hash === 'autoplay-deaths') {
+        args.push('--autoplay-die=50,80');
+      }
     }
     engine.start({ args: args }).then(function () {
       launcher.hidden = true;
@@ -320,5 +392,6 @@
   }
   $('play-normal').addEventListener('click', function () { start(false); });
   $('play-test').addEventListener('click', function () { start(true); });
+  boot().catch(fail);
 }());
 </script>

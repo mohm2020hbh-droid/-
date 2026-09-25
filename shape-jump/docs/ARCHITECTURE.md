@@ -56,11 +56,13 @@ shape-jump/
 │   ├── game/
 │   │   ├── game_session.gd       State Machine + الوسيط الوحيد في مشهد اللعب
 │   │   ├── progression.gd        قواعد الفتح (دوال static فوق SaveSystem)
+│   │   ├── progress_tracker.gd   تقدّم المستوى % بالمسافة + عقوبة الموت 25 نقطة
+│   │   ├── autoplay.gd           مفتاح QA (`-- --autoplay`): اللعبة تلعب نفسها بمسار كل مستوى
 │   │   ├── tap_input.gd          الإدخال → "tapped" / "pause_requested"
 │   │   ├── score_tracker.gd      منطق النقاط النقي
 │   │   └── game.tscn             المشهد الرئيسي (world = world_01.tres)
 │   └── ui/                       hud · start_overlay + level_card · death_banner · level_complete_panel · pause_menu · screen_fade
-├── levels/world_01/              level_01…05.tscn/.tres + world_01.tres  (مُولَّدة)
+├── levels/world_01/              level_01…05.tscn/.tres + world_01.tres + world_01_routes.gd (مُولَّدة)
 ├── assets/audio/                 sfx/*.wav · ambient/void_drone.ogg · sound_library.tres
 ├── tools/                        (.gdignore — لا يستورده Godot)
 │   ├── levelgen/                 levelgen.py · world_01.py · README.md
@@ -68,7 +70,7 @@ shape-jump/
 │   └── web/                      build_playtest.py + playtest_page.html (نسخة الويب للتجربة)
 └── tests/
     ├── test_runner.* · test_case.gd
-    ├── support/                  GameHarness · PhysicsArena · SaveSandbox · World01Routes (مُولَّد)
+    ├── support/                  GameHarness · PhysicsArena · SaveSandbox
     ├── unit/ · integration/
     └── tools/level_audit.tscn    تدقيق المستويات على الفيزياء الفعلية (نوافذ، استراتيجيات كسولة)
 ```
@@ -196,7 +198,7 @@ completed=true
 
 ## 10. الاختبار
 
-130 اختبارًا (≈ 20 ثانية)، تنجح بنفس النتائج على 20 و30 و60 و144 FPS.
+137 اختبارًا (≈ 32 ثانية)، تنجح بنفس النتائج على 20 و30 و60 و144 FPS.
 
 | الملف | ماذا يثبت |
 |---|---|
@@ -207,6 +209,7 @@ completed=true
 | integration/test_obstacles (16) | خط زمن كل نوع، القتل والمرور على الفيزياء الفعلية، الإنذارات، الأصوات داخل اللعب فقط، Hitbox ≤ الرسم دائمًا |
 | integration/test_player_physics (29) | الاستجابة، الارتفاع، الحواف، الفجوات، السقف، Ledge Assist، السحق، المصاعد، منصة متسارعة لا تزيح اللاعب أفقيًا |
 | integration/test_world_01_playthrough | **كل مستوى يُنهى بمساره بلا موت**، الحتمية، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت |
+| unit/test_progress_tracker (5) · integration/test_level_progress (2) | التقدّم بالمسافة 0..100، العقوبة 25 نقطة وحدّ الصفر، Checkpointان قرب 33% و66% في كل مستوى، وفي كل مستوى: موتان (≈50% و≈80%) → عقوبة → عودة عند آخر Checkpoint بحالة نظيفة → إنهاء بـ100% |
 | integration/test_progression (6) | قواعد الفتح، وضع الاختبار `--unlock-all`، رفض المستوى المغلق، NEXT LEVEL، WORLD 01 COMPLETE، لوحة الموت وعدّاد المحاولات |
 | integration: camera، game flow، review probes | الكاميرا، تدفق اللعب واللمس، عوائق تُنشأ/تُحذف أثناء اللعب، تسلسل حالات سريع |
 
@@ -216,7 +219,9 @@ completed=true
 godot --headless --path shape-jump --import
 godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn [-- --filter=obstacles]
 godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --level=5 --windows --exploits
+godot --headless --path shape-jump --fixed-fps 60 -- --autoplay --autoplay-die=50,80 --autoplay-quit   # World 01 كاملًا بموتين في كل مستوى
 ```
+صفحة الويب تشغّل نفس الـAutoplay بإضافة `#autoplay` أو `#autoplay-deaths` إلى رابطها، وتطبع الأحداث في Console المتصفح.
 
 ما **لا** تثبته الاختبارات: الإحساس — يحتاج Playtesting على هاتف (§16 في الـGDD).
 

@@ -124,10 +124,6 @@ position = Vector2(4203.0283, 0)
 script = ExtResource("block")
 size = Vector2(1600, 640)
 
-[node name="Checkpoint" type="Area2D" parent="GateDoubleGateLanding"]
-position = Vector2(4651.0283, -0)
-script = ExtResource("checkpoint")
-
 [node name="CounterWindmills" type="Node2D" parent="."]
 
 [node name="RotatingArm" type="Area2D" parent="CounterWindmills"]
@@ -166,106 +162,102 @@ hold_ratio = 0.5
 [node name="Block" type="StaticBody2D" parent="RotorOverGap"]
 position = Vector2(5803.0283, 0)
 script = ExtResource("block")
-size = Vector2(1382.4, 640)
+size = Vector2(2396.4, 640)
 
 [node name="Block2" type="StaticBody2D" parent="RotorOverGap"]
-position = Vector2(7479.8283, 0)
+position = Vector2(8493.8283, 0)
 script = ExtResource("block")
 size = Vector2(448, 640)
 
 [node name="Rotor" type="Area2D" parent="RotorOverGap"]
-position = Vector2(7332.6283, -25.6)
+position = Vector2(8346.6283, -25.6)
 script = ExtResource("rotor")
 radius = 40
 points = 3
 spin = 4
-phase = 0
+phase = 0.939
 
 [node name="Oscillator" type="Node2D" parent="RotorOverGap/Rotor"]
 script = ExtResource("oscillator")
 travel = Vector2(0, -179.2)
 period = 1.5
-phase = 0
+phase = 0.8889
 
 [node name="ArmOverLedge" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="ArmOverLedge"]
-position = Vector2(8143.1856, -64)
+position = Vector2(9157.1856, -64)
 script = ExtResource("block")
 size = Vector2(96, 704)
 
 [node name="RotatingArm" type="Area2D" parent="ArmOverLedge"]
-position = Vector2(8191.1856, -294.4)
+position = Vector2(9205.1856, -294.4)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 185.6
 speed = 2.1
-phase = 0.3583
+phase = 0.8013
 
 [node name="Block2" type="StaticBody2D" parent="ArmOverLedge"]
-position = Vector2(8608.9361, 0)
+position = Vector2(9622.9361, 0)
 script = ExtResource("block")
 size = Vector2(268.8, 640)
 
 [node name="RotorsAroundADoubleJump" type="Node2D" parent="."]
 
 [node name="Rotor" type="Area2D" parent="RotorsAroundADoubleJump"]
-position = Vector2(8954.5361, -185.6)
+position = Vector2(9968.5361, -185.6)
 script = ExtResource("rotor")
 radius = 36
 points = 4
 spin = -3
-phase = 0
+phase = 0.7958
 
 [node name="Oscillator" type="Node2D" parent="RotorsAroundADoubleJump/Rotor"]
 script = ExtResource("oscillator")
 travel = Vector2(0, -102.4)
 period = 1.2
-phase = 0.2333
+phase = 0.8444
 
 [node name="Rotor2" type="Area2D" parent="RotorsAroundADoubleJump"]
-position = Vector2(9248.9361, -89.6)
+position = Vector2(10262.9361, -89.6)
 script = ExtResource("rotor")
 radius = 36
 points = 3
 spin = 3.5
-phase = 0
+phase = 0.0716
 
 [node name="Oscillator" type="Node2D" parent="RotorsAroundADoubleJump/Rotor2"]
 script = ExtResource("oscillator")
 travel = Vector2(0, -140.8)
 period = 1.4
-phase = 0
-
-[node name="Checkpoint" type="Area2D" parent="RotorsAroundADoubleJump"]
-position = Vector2(9863.9797, -0)
-script = ExtResource("checkpoint")
+phase = 0.8095
 
 [node name="Block" type="StaticBody2D" parent="RotorsAroundADoubleJump"]
-position = Vector2(9467.1797, 0)
+position = Vector2(10481.1797, 0)
 script = ExtResource("block")
 size = Vector2(1420.8, 640)
 
 [node name="ThreeStopGate" type="Node2D" parent="."]
 
 [node name="Gate" type="Area2D" parent="ThreeStopGate"]
-position = Vector2(11041.5797, 0)
+position = Vector2(12055.5797, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-80, 160, -176, 140.8, -268.8, 140.8)
 hold_time = 0.45
 move_time = 0.2
-phase = 0.4917
+phase = 0.637
 warning_time = 0.35
 
 [node name="ShuttleThroughPulse" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="ShuttleThroughPulse"]
-position = Vector2(10887.9797, 0)
+position = Vector2(11901.9797, 0)
 script = ExtResource("block")
 size = Vector2(448, 640)
 
 [node name="MovingPlatform" type="AnimatableBody2D" parent="ShuttleThroughPulse"]
-position = Vector2(11550.6625, -32)
+position = Vector2(12564.6625, -32)
 script = ExtResource("block")
 size = Vector2(153.6, 32)
 
@@ -273,61 +265,57 @@ size = Vector2(153.6, 32)
 script = ExtResource("oscillator")
 travel = Vector2(166.4, -0)
 period = 1.6
-phase = 0.9583
+phase = 0.9167
 
 [node name="Gate" type="Area2D" parent="ShuttleThroughPulse"]
-position = Vector2(11902.6625, 0)
+position = Vector2(12916.6625, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-121.6, 140.8, -198.4, 140.8)
 hold_time = 0.5
 move_time = 0.2
-phase = 0.225
+phase = 0.0345
 warning_time = 0.35
 
 [node name="Block2" type="StaticBody2D" parent="ShuttleThroughPulse"]
-position = Vector2(12062.5638, 0)
+position = Vector2(13076.5638, 0)
 script = ExtResource("block")
-size = Vector2(576, 640)
+size = Vector2(1590, 640)
 
 [node name="LateDoubleJumpToLedge" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="LateDoubleJumpToLedge"]
-position = Vector2(13229.6831, -64)
+position = Vector2(15257.6831, -64)
 script = ExtResource("block")
 size = Vector2(89.6, 704)
 
 [node name="Gate" type="Area2D" parent="LateDoubleJumpToLedge"]
-position = Vector2(13133.6831, 0)
+position = Vector2(15161.6831, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-201.3084, 110.4049, -201.3084, 0)
 hold_time = 0.45
 move_time = 0.15
-phase = 0.3833
+phase = 0.6056
 warning_time = 0.35
 
 [node name="Block2" type="StaticBody2D" parent="LateDoubleJumpToLedge"]
-position = Vector2(13689.0335, 0)
+position = Vector2(15717.0335, 0)
 script = ExtResource("block")
 size = Vector2(1408, 640)
-
-[node name="Checkpoint" type="Area2D" parent="LateDoubleJumpToLedge"]
-position = Vector2(14073.0335, -0)
-script = ExtResource("checkpoint")
 
 [node name="LandJumpDoubleJump" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="LandJumpDoubleJump"]
-position = Vector2(15097.0335, 0)
+position = Vector2(17125.0335, 0)
 script = ExtResource("block")
 size = Vector2(44.8, 640)
 
 [node name="Block2" type="StaticBody2D" parent="LandJumpDoubleJump"]
-position = Vector2(15401.3163, -32)
+position = Vector2(17429.3163, -32)
 script = ExtResource("block")
 size = Vector2(83.2, 672)
 
 [node name="Gate" type="Area2D" parent="LandJumpDoubleJump"]
-position = Vector2(15282.6335, 0)
+position = Vector2(17310.6335, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-171.8909, 92.9152)
 hold_time = 0.9
@@ -336,12 +324,12 @@ phase = 0
 warning_time = 0.35
 
 [node name="Block3" type="StaticBody2D" parent="LandJumpDoubleJump"]
-position = Vector2(16079.1365, -128)
+position = Vector2(18107.1365, -128)
 script = ExtResource("block")
 size = Vector2(83.2, 768)
 
 [node name="Gate2" type="Area2D" parent="LandJumpDoubleJump"]
-position = Vector2(15778.9163, 0)
+position = Vector2(17806.9163, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-309.7294, 127.1531)
 hold_time = 0.9
@@ -350,22 +338,22 @@ phase = 0
 warning_time = 0.35
 
 [node name="Block4" type="StaticBody2D" parent="LandJumpDoubleJump"]
-position = Vector2(16844.868, -64)
+position = Vector2(18872.868, -64)
 script = ExtResource("block")
 size = Vector2(96, 704)
 
 [node name="RotatingArm" type="Area2D" parent="LandJumpDoubleJump"]
-position = Vector2(16488.7365, -307.2)
+position = Vector2(18516.7365, -307.2)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 147.2
 speed = 2.4
-phase = 0.1333
+phase = 0.8601
 
 [node name="FinalThread" type="Node2D" parent="."]
 
 [node name="Gate" type="Area2D" parent="FinalThread"]
-position = Vector2(17024.068, 0)
+position = Vector2(19052.068, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-186.9905, 136.8624)
 hold_time = 0.9
@@ -374,7 +362,7 @@ phase = 0
 warning_time = 0.35
 
 [node name="Gate2" type="Area2D" parent="FinalThread"]
-position = Vector2(17164.868, 0)
+position = Vector2(19192.868, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-232.0811, 94.1348)
 hold_time = 0.9
@@ -383,21 +371,21 @@ phase = 0
 warning_time = 0.35
 
 [node name="Gate3" type="Area2D" parent="FinalThread"]
-position = Vector2(17318.468, 0)
+position = Vector2(19346.468, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-327.8084, 132.3614, -225.4084, 132.3614)
 hold_time = 0.45
 move_time = 0.2
-phase = 0.4083
+phase = 0.8442
 warning_time = 0.35
 
 [node name="Block" type="StaticBody2D" parent="FinalThread"]
-position = Vector2(17642.5999, 0)
+position = Vector2(19670.5999, 0)
 script = ExtResource("block")
 size = Vector2(1356.8, 640)
 
 [node name="FinishGate" type="Area2D" parent="FinalThread"]
-position = Vector2(18487.3999, -0)
+position = Vector2(20515.3999, -0)
 script = ExtResource("finish_gate")
 
 [node name="Shard" parent="ThreadTheArc" instance=ExtResource("shard")]
@@ -458,64 +446,72 @@ position = Vector2(3616, -324)
 position = Vector2(3712, -257)
 
 [node name="Shard" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15065, -70)
+position = Vector2(17093, -70)
 
 [node name="Shard2" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15193, -179)
+position = Vector2(17221, -179)
 
 [node name="Shard3" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15321, -181)
+position = Vector2(17349, -181)
 
 [node name="Shard4" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15449, -75)
+position = Vector2(17477, -75)
 
 [node name="Shard5" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15577, -174)
+position = Vector2(17605, -174)
 
 [node name="Shard6" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15705, -280)
+position = Vector2(17733, -280)
 
 [node name="Shard7" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15833, -364)
+position = Vector2(17861, -364)
 
 [node name="Shard8" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(15961, -340)
+position = Vector2(17989, -340)
 
 [node name="Shard9" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16089, -179)
+position = Vector2(18117, -179)
 
 [node name="Shard10" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16217, -292)
+position = Vector2(18245, -292)
 
 [node name="Shard11" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16345, -334)
+position = Vector2(18373, -334)
 
 [node name="Shard12" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16473, -452)
+position = Vector2(18501, -452)
 
 [node name="Shard13" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16601, -463)
+position = Vector2(18629, -463)
 
 [node name="Shard14" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16729, -345)
+position = Vector2(18757, -345)
 
 [node name="Shard15" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16857, -107)
+position = Vector2(18885, -107)
 
 [node name="Shard16" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(16985, -189)
+position = Vector2(19013, -189)
 
 [node name="Shard17" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(17113, -256)
+position = Vector2(19141, -256)
 
 [node name="Shard18" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(17241, -285)
+position = Vector2(19269, -285)
 
 [node name="Shard19" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(17369, -375)
+position = Vector2(19397, -375)
 
 [node name="Shard20" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(17497, -363)
+position = Vector2(19525, -363)
 
 [node name="Shard21" parent="FinalThread" instance=ExtResource("shard")]
-position = Vector2(17625, -229)
+position = Vector2(19653, -229)
+
+[node name="Checkpoint" type="Area2D" parent="FinalThread"]
+position = Vector2(7052.992, 0)
+script = ExtResource("checkpoint")
+
+[node name="Checkpoint2" type="Area2D" parent="FinalThread"]
+position = Vector2(13207.936, 0)
+script = ExtResource("checkpoint")

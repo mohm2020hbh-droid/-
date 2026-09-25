@@ -4,7 +4,7 @@
     python3 tools/levelgen/world_01.py            # build, check, write all levels
     python3 tools/levelgen/world_01.py 3 --windows # one level, with tap windows
 
-Writes levels/world_01/level_0N.tscn + .tres and tests/support/world_01_routes.gd.
+Writes levels/world_01/level_0N.tscn + .tres and levels/world_01/world_01_routes.gd.
 Every obstacle's phase is fitted against the intended route (the player's
 taps), with the lazy alternative (skipping the tap) required to die.
 """
@@ -57,7 +57,6 @@ def level_01():
     lv.fit_phase(a, lazy=[lv.without(60.2)])
     lv.shard(63.2, 3.0)
 
-    lv.checkpoint(68)
 
     # ------------------------------------------------ pairs: 68 .. 128 ---
     lv.group("Elevator")
@@ -86,7 +85,6 @@ def level_01():
     lv.gate(120.4, [(2.65, 2.3)])
     lv.shards_along(117.5, 121.5, 1.0)
 
-    lv.checkpoint(128)
 
     # ------------------------------------------ double jump: 128 .. 182 ---
     lv.group("DoubleJumpWall")
@@ -102,7 +100,6 @@ def level_01():
     lv.block(174, 209.5, 0)
     lv.shards_along(160, 167, 1.4)
 
-    lv.checkpoint(182)
 
     # ----------------------------------------- the last fifth: 182 .. 232 ---
     lv.group("HighWindow")
@@ -131,6 +128,7 @@ def level_01():
 
     lv.finish(238)
     lv.done()
+    lv.progress_checkpoints()
     return lv
 
 
@@ -182,7 +180,6 @@ def level_02():
     lv.tune(slam, 88.4, 170)
     lv.shards_along(82, 93, 2.0)
 
-    lv.checkpoint(100)
 
     # ----------------------------------------------------- arms: 100 .. 166 ---
     lv.group("FastWindmill")
@@ -206,7 +203,6 @@ def level_02():
     lv.tune(lv.arm(156.6, -0.6, 2.4, speed=2.2), 153.1, 170)
     lv.shards_along(146, 158, 2.2)
 
-    lv.checkpoint(166)
 
     # ------------------------------------------------ chains: 166 .. 240 ---
     lv.group("PistonThenDoubleJump")
@@ -237,7 +233,6 @@ def level_02():
         lv.tune(lv.crusher(px - 0.4, 2.2, 4.2, -4.2, 1.5, height=3.0), tap, 170)
     cp = last + 5.0
     lv.block(last - 1.0, cp + 14.0, 0)
-    lv.checkpoint(cp)
 
     # --------------------------------------- the last fifth: pressure ---
     lv.group("PistonRush")
@@ -269,6 +264,7 @@ def level_02():
 
     lv.finish(land + 16)
     lv.done()
+    lv.progress_checkpoints()
     return lv
 
 
@@ -310,7 +306,6 @@ def level_03():
     lv.tap(71.0)
     lv.tune(lv.field(73.2, 1.0, 0.0, 1.8, 1.0, 0.6), 71.0, 160)
 
-    lv.checkpoint(78)
 
     # ------------------------------------------ moving floors: 78 .. 172 ---
     lv.group("Shuttle")
@@ -357,7 +352,6 @@ def level_03():
     lv.tap(154.5)
     lv.tune(lv.field(157.0, 1.0, 3.5, 1.8, 1.0, 0.6), 154.5, 160)
     lv.block(161.5, 186, 0)
-    lv.checkpoint(172)
 
     # ------------- moving floor > jump > prism > double jump > narrow > collapse ---
     lv.group("ShuttlePrismDoubleJump")
@@ -389,7 +383,6 @@ def level_03():
     cp = land + 5.0
     lv.block(land - 1.5, cp + 16.0, 1.0)
     lv.shards_along(path_x + 1, land, 3.0)
-    lv.checkpoint(cp, 1.0)
 
     # ------------------------------------------- the last fifth: fracture ---
     lv.group("FinalCollapseTowardYou")
@@ -432,6 +425,7 @@ def level_03():
 
     lv.finish(end + 12)
     lv.done()
+    lv.progress_checkpoints()
     return lv
 
 
@@ -478,7 +472,6 @@ def level_04():
     lv.block(floor - 1.0, floor + 24, 0)
     lv.shards_along(49, ledge + 1, 1.5)
     cp = floor + 6.0
-    lv.checkpoint(cp)
 
     # ----------------------------------------------------- rotating systems ---
     lv.group("CounterWindmills")
@@ -529,7 +522,6 @@ def level_04():
     lv.tune(rot2, r5 + 3.9, 150, osc=True)
     end2 = lv.land_x(r5, 0.0, air=3.9 / tps)
     cp2 = end2 + 5.0
-    lv.checkpoint(cp2)
     lv.block(end2 - 1.2, cp2 + 16, 0)
 
     # ------------------------------------------ pulse gates, moving floors ---
@@ -567,7 +559,6 @@ def level_04():
     down = lv.land_x(w2, -1.0)
     cp3 = down + 5.0
     lv.block(down - 1.0, cp3 + 16, 0)
-    lv.checkpoint(cp3)
 
     # ------------------------------------------------- the last fifth: chains ---
     lv.group("LandJumpDoubleJump")
@@ -604,6 +595,7 @@ def level_04():
 
     lv.finish(fin + 12)
     lv.done()
+    lv.progress_checkpoints()
     return lv
 
 
@@ -645,7 +637,6 @@ def level_05():
     cp1 = f1 + 5.0
     lv.block(f1 - 1.0, cp1 + 17, 0)
     lv.shards_along(a, f1, 3.5)
-    lv.checkpoint(cp1)
 
     # ------------------------------- 2. moving platforms and pulse gates ---
     lv.group("S2_Shuttle")
@@ -675,7 +666,6 @@ def level_05():
     lv.block(f2 - 1.2, cp2 + 17, 0)
     lv.tune(lv.pulse_gate(s4 + 6.0, -1.4, hold=0.4, move=0.18), s4 + 4.2, 130)
     lv.shards_along(s1, f2, 3.5)
-    lv.checkpoint(cp2)
 
     # ------------------------------------ 3. crush blocks, forced double jump ---
     lv.group("S3_CrusherDoubleJump")
@@ -702,7 +692,6 @@ def level_05():
     cp3 = f3 + 6.0
     lv.block(f3 - 1.2, cp3 + 17, 0)
     lv.shards_along(k1, f3, 3.5)
-    lv.checkpoint(cp3)
 
     # ------------------------- 4. sequential gates, arms, collapsing path ---
     lv.group("S4_GatesOnTheCollapse")
@@ -724,7 +713,6 @@ def level_05():
     cp4 = f4 + 5.0
     lv.block(f4 - 1.2, cp4 + 16, 0)
     lv.shards_along(q1, f4, 3.5)
-    lv.checkpoint(cp4)
 
     # ------------------------------------------------ 5. final gauntlet ---
     lv.group("S5_Gauntlet")
@@ -764,6 +752,7 @@ def level_05():
 
     lv.finish(fin + 14)
     lv.done()
+    lv.progress_checkpoints()
     return lv
 
 
@@ -771,10 +760,10 @@ LEVELS = [level_01, level_02, level_03, level_04, level_05]
 
 
 def read_routes():
-    """Routes already in tests/support/world_01_routes.gd: {level number: (name, taps)}."""
+    """Routes already in levels/world_01/world_01_routes.gd: {level number: (name, taps)}."""
     out = {}
     try:
-        with open(ROOT + "tests/support/world_01_routes.gd") as fh:
+        with open(ROOT + "levels/world_01/world_01_routes.gd") as fh:
             lines = fh.read().splitlines()
     except FileNotFoundError:
         return out
@@ -799,7 +788,7 @@ def write_routes(routes):
               "static func get_route(index: int) -> PackedFloat32Array:",
               f"\tvar all: Array[PackedFloat32Array] = [{names}]",
               "\treturn all[index]"]
-    with open(ROOT + "tests/support/world_01_routes.gd", "w") as fh:
+    with open(ROOT + "levels/world_01/world_01_routes.gd", "w") as fh:
         fh.write("\n".join(lines) + "\n")
 
 

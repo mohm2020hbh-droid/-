@@ -124,7 +124,7 @@ size = Vector2(102.4, 672)
 [node name="Block3" type="StaticBody2D" parent="SlamOnLanding"]
 position = Vector2(6048, 0)
 script = ExtResource("block")
-size = Vector2(1888, 640)
+size = Vector2(2833.36, 640)
 
 [node name="CrushBlock" type="Area2D" parent="SlamOnLanding"]
 position = Vector2(5561.6, -473.6)
@@ -138,120 +138,112 @@ slam_time = 0.1
 closed_time = 0.25
 return_time = 0.45
 
-[node name="Checkpoint" type="Area2D" parent="SlamOnLanding"]
-position = Vector2(6400, -0)
-script = ExtResource("checkpoint")
-
 [node name="FastWindmill" type="Node2D" parent="."]
 
 [node name="RotatingArm" type="Area2D" parent="FastWindmill"]
-position = Vector2(7462.4, -32)
+position = Vector2(8407.76, -32)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 115.2
 speed = 2.6
-phase = 0
+phase = 0.3034
 
 [node name="ArmOverGap" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="ArmOverGap"]
-position = Vector2(8192, 0)
+position = Vector2(9137.36, 0)
 script = ExtResource("block")
 size = Vector2(1190.4, 640)
 
 [node name="RotatingArm" type="Area2D" parent="ArmOverGap"]
-position = Vector2(8064, -275.2)
+position = Vector2(9009.36, -275.2)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 166.4
 speed = -1.8
-phase = 0.1333
+phase = 0.6156
 
 [node name="CounterWindmills" type="Node2D" parent="."]
 
 [node name="RotatingArm" type="Area2D" parent="CounterWindmills"]
-position = Vector2(8576, -32)
+position = Vector2(9521.36, -32)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 115.2
 speed = 2.4
-phase = 0.1583
+phase = 0.5153
 
 [node name="RotatingArm2" type="Area2D" parent="CounterWindmills"]
-position = Vector2(9011.2, -32)
+position = Vector2(9956.56, -32)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 115.2
 speed = -2.4
-phase = 0.2667
+phase = 0.9097
 
 [node name="WindmillBetweenLedges" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="WindmillBetweenLedges"]
-position = Vector2(9721.6, -32)
+position = Vector2(10666.96, -32)
 script = ExtResource("block")
 size = Vector2(102.4, 672)
 
 [node name="Block2" type="StaticBody2D" parent="WindmillBetweenLedges"]
-position = Vector2(10188.8, 0)
+position = Vector2(11134.16, 0)
 script = ExtResource("block")
-size = Vector2(1600, 640)
+size = Vector2(2545.36, 640)
 
 [node name="RotatingArm" type="Area2D" parent="WindmillBetweenLedges"]
-position = Vector2(10022.4, 38.4)
+position = Vector2(10967.76, 38.4)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 153.6
 speed = 2.2
-phase = 0.2083
-
-[node name="Checkpoint" type="Area2D" parent="WindmillBetweenLedges"]
-position = Vector2(10624, -0)
-script = ExtResource("checkpoint")
+phase = 0.6189
 
 [node name="PistonThenDoubleJump" type="Node2D" parent="."]
 
 [node name="CrushBlock" type="Area2D" parent="PistonThenDoubleJump"]
-position = Vector2(11648, -0)
+position = Vector2(13538.72, -0)
 script = ExtResource("crush_block")
 size = Vector2(64, 118.4)
 travel = Vector2(0, -115.2)
 period = 1.5
-phase = 0.025
+phase = 0.7806
 warning_time = 0.3
 slam_time = 0.08
 closed_time = 0.35
 return_time = 0.35
 
 [node name="Block" type="StaticBody2D" parent="PistonThenDoubleJump"]
-position = Vector2(12080.9223, -128)
+position = Vector2(13971.6423, -128)
 script = ExtResource("block")
 size = Vector2(89.6, 768)
 
 [node name="CrushBlock2" type="Area2D" parent="PistonThenDoubleJump"]
-position = Vector2(11929.6, -512)
+position = Vector2(13820.32, -512)
 script = ExtResource("crush_block")
 size = Vector2(140.8, 192)
 travel = Vector2(0, 134.4)
 period = 1.6
-phase = 0.8667
+phase = 0.7625
 warning_time = 0.45
 slam_time = 0.1
 closed_time = 0.35
 return_time = 0.55
 
 [node name="Block2" type="StaticBody2D" parent="PistonThenDoubleJump"]
-position = Vector2(12541.7768, 0)
+position = Vector2(14432.4968, 0)
 script = ExtResource("block")
 size = Vector2(601.6, 640)
 
 [node name="CrushBlock3" type="Area2D" parent="PistonThenDoubleJump"]
-position = Vector2(12836.1768, -0)
+position = Vector2(14726.8968, -0)
 script = ExtResource("crush_block")
 size = Vector2(64, 131.2)
 travel = Vector2(0, -128)
 period = 1.3
-phase = 0.2833
+phase = 0.6936
 warning_time = 0.3
 slam_time = 0.08
 closed_time = 0.3
@@ -260,110 +252,106 @@ return_time = 0.35
 [node name="CrusherTunnel" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="CrusherTunnel"]
-position = Vector2(13437.7529, 0)
+position = Vector2(15328.4729, 0)
 script = ExtResource("block")
 size = Vector2(89.6, 640)
 
 [node name="Block2" type="StaticBody2D" parent="CrusherTunnel"]
-position = Vector2(13866.529, 0)
+position = Vector2(15757.249, 0)
 script = ExtResource("block")
 size = Vector2(89.6, 640)
 
 [node name="Block3" type="StaticBody2D" parent="CrusherTunnel"]
-position = Vector2(14295.3051, 0)
+position = Vector2(16186.0251, 0)
 script = ExtResource("block")
 size = Vector2(89.6, 640)
 
 [node name="CrushBlock" type="Area2D" parent="CrusherTunnel"]
-position = Vector2(13412.1529, -460.8)
+position = Vector2(15302.8729, -460.8)
 script = ExtResource("crush_block")
 size = Vector2(140.8, 192)
 travel = Vector2(0, 268.8)
 period = 1.5
-phase = 0.5833
+phase = 0.3389
 warning_time = 0.45
 slam_time = 0.1
 closed_time = 0.35
 return_time = 0.55
 
 [node name="CrushBlock2" type="Area2D" parent="CrusherTunnel"]
-position = Vector2(13840.929, -460.8)
+position = Vector2(15731.649, -460.8)
 script = ExtResource("crush_block")
 size = Vector2(140.8, 192)
 travel = Vector2(0, 268.8)
 period = 1.5
-phase = 0.0667
+phase = 0.8222
 warning_time = 0.45
 slam_time = 0.1
 closed_time = 0.35
 return_time = 0.55
 
 [node name="CrushBlock3" type="Area2D" parent="CrusherTunnel"]
-position = Vector2(14269.7051, -460.8)
+position = Vector2(16160.4251, -460.8)
 script = ExtResource("crush_block")
 size = Vector2(140.8, 192)
 travel = Vector2(0, 268.8)
 period = 1.5
-phase = 0.1917
+phase = 0.9472
 warning_time = 0.45
 slam_time = 0.1
 closed_time = 0.35
 return_time = 0.55
 
 [node name="Block4" type="StaticBody2D" parent="CrusherTunnel"]
-position = Vector2(14685.6812, 0)
+position = Vector2(16576.4012, 0)
 script = ExtResource("block")
 size = Vector2(1280, 640)
-
-[node name="Checkpoint" type="Area2D" parent="CrusherTunnel"]
-position = Vector2(15069.6812, -0)
-script = ExtResource("checkpoint")
 
 [node name="PistonRush" type="Node2D" parent="."]
 
 [node name="CrushBlock" type="Area2D" parent="PistonRush"]
-position = Vector2(15997.6812, -0)
+position = Vector2(17888.4012, -0)
 script = ExtResource("crush_block")
 size = Vector2(64, 137.6)
 travel = Vector2(0, -134.4)
 period = 1.2
-phase = 0.3167
+phase = 0.5111
 warning_time = 0.3
 slam_time = 0.08
 closed_time = 0.25
 return_time = 0.35
 
 [node name="CrushBlock2" type="Area2D" parent="PistonRush"]
-position = Vector2(16413.6812, -0)
+position = Vector2(18304.4012, -0)
 script = ExtResource("crush_block")
 size = Vector2(64, 137.6)
 travel = Vector2(0, -134.4)
 period = 1.2
-phase = 0.6833
+phase = 0.8778
 warning_time = 0.3
 slam_time = 0.08
 closed_time = 0.25
 return_time = 0.35
 
 [node name="Block" type="StaticBody2D" parent="PistonRush"]
-position = Vector2(15965.6812, 0)
+position = Vector2(17856.4012, 0)
 script = ExtResource("block")
 size = Vector2(800, 640)
 
 [node name="GapCrusherDoubleJump" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="GapCrusherDoubleJump"]
-position = Vector2(17283.6164, -160)
+position = Vector2(19174.3364, -160)
 script = ExtResource("block")
 size = Vector2(96, 800)
 
 [node name="CrushBlock" type="Area2D" parent="GapCrusherDoubleJump"]
-position = Vector2(16957.6812, -524.8)
+position = Vector2(18848.4012, -524.8)
 script = ExtResource("crush_block")
 size = Vector2(153.6, 192)
 travel = Vector2(0, 153.6)
 period = 1.5
-phase = 0.35
+phase = 0.1056
 warning_time = 0.45
 slam_time = 0.1
 closed_time = 0.35
@@ -372,20 +360,20 @@ return_time = 0.55
 [node name="DropIntoWindmill" type="Node2D" parent="."]
 
 [node name="Block" type="StaticBody2D" parent="DropIntoWindmill"]
-position = Vector2(17751.5861, 0)
+position = Vector2(19642.3061, 0)
 script = ExtResource("block")
 size = Vector2(1664, 640)
 
 [node name="RotatingArm" type="Area2D" parent="DropIntoWindmill"]
-position = Vector2(18077.9861, -32)
+position = Vector2(19968.7061, -32)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 115.2
 speed = 2.3
-phase = 0.0083
+phase = 0.7759
 
 [node name="FinishGate" type="Area2D" parent="DropIntoWindmill"]
-position = Vector2(18839.5861, -0)
+position = Vector2(20730.3061, -0)
 script = ExtResource("finish_gate")
 
 [node name="Shard" parent="GapThenPiston" instance=ExtResource("shard")]
@@ -440,55 +428,63 @@ position = Vector2(5760, -157)
 position = Vector2(5888, -224)
 
 [node name="Shard" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
-position = Vector2(9344, -43)
+position = Vector2(10289.36, -43)
 
 [node name="Shard2" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
-position = Vector2(9485, -150)
+position = Vector2(10430.36, -150)
 
 [node name="Shard3" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
-position = Vector2(9626, -185)
+position = Vector2(10571.36, -185)
 
 [node name="Shard4" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
-position = Vector2(9766, -75)
+position = Vector2(10711.36, -75)
 
 [node name="Shard5" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
-position = Vector2(9907, -166)
+position = Vector2(10852.36, -166)
 
 [node name="Shard6" parent="WindmillBetweenLedges" instance=ExtResource("shard")]
-position = Vector2(10048, -224)
+position = Vector2(10993.36, -224)
 
 [node name="Shard" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
-position = Vector2(11520, -105)
+position = Vector2(13410.72, -105)
 
 [node name="Shard2" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
-position = Vector2(11635, -186)
+position = Vector2(13525.72, -186)
 
 [node name="Shard3" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
-position = Vector2(11750, -164)
+position = Vector2(13640.72, -164)
 
 [node name="Shard4" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
-position = Vector2(11866, -132)
+position = Vector2(13756.72, -132)
 
 [node name="Shard5" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
-position = Vector2(11981, -222)
+position = Vector2(13871.72, -222)
 
 [node name="Shard6" parent="PistonThenDoubleJump" instance=ExtResource("shard")]
-position = Vector2(12096, -215)
+position = Vector2(13986.72, -215)
 
 [node name="Shard" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
-position = Vector2(16753, -94)
+position = Vector2(18643.72, -94)
 
 [node name="Shard2" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
-position = Vector2(16855, -179)
+position = Vector2(18745.72, -179)
 
 [node name="Shard3" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
-position = Vector2(16958, -185)
+position = Vector2(18848.72, -185)
 
 [node name="Shard4" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
-position = Vector2(17060, -146)
+position = Vector2(18950.72, -146)
 
 [node name="Shard5" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
-position = Vector2(17162, -245)
+position = Vector2(19052.72, -245)
 
 [node name="Shard6" parent="GapCrusherDoubleJump" instance=ExtResource("shard")]
-position = Vector2(17265, -267)
+position = Vector2(19155.72, -267)
+
+[node name="Checkpoint" type="Area2D" parent="GapCrusherDoubleJump"]
+position = Vector2(7077.888, 0)
+script = ExtResource("checkpoint")
+
+[node name="Checkpoint2" type="Area2D" parent="GapCrusherDoubleJump"]
+position = Vector2(12459.904, 0)
+script = ExtResource("checkpoint")

@@ -112,7 +112,12 @@ func test_death_before_any_checkpoint_resets_to_spawn() -> void:
 
 
 func test_death_after_a_checkpoint_keeps_progress_before_it() -> void:
-	h.skip = [5]  # First tap after checkpoint A.
+	var first_cp := h.game.level.get_checkpoints()[0].global_position.x / GameConst.TILE
+	var route := World01Routes.get_route(0)
+	for i in route.size():
+		if route[i] > first_cp + 1.0:
+			h.skip = [i]  # First tap after the first checkpoint.
+			break
 	h.game.press_jump()
 	await h.run_until(func() -> bool: return not h.deaths.is_empty())
 	var point := h.game.get_respawn_point()

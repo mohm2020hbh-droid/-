@@ -9,6 +9,8 @@ extends Node
 ## quirks (multi-touch, duplicate events) are handled by [TapInput].
 
 signal state_changed(new_state: State)
+## A level was loaded (a fresh start, waiting for the first tap).
+signal level_loaded
 
 enum State { READY, PLAYING, PAUSED, DYING, COMPLETE }
 
@@ -45,6 +47,7 @@ var state: State = State.READY
 var level: Level
 var level_index := 0
 var score := ScoreTracker.new()
+var progress := ProgressTracker.new()
 ## Tries at the current level since it was loaded (1 + deaths).
 var attempts := 1
 
@@ -70,6 +73,7 @@ func _ready() -> void:
 	player.landed.connect(_on_player_landed)
 	player.died.connect(_on_player_died)
 	score.changed.connect(hud.set_score)
+	progress.changed.connect(hud.set_progress)
 	hud.pause_pressed.connect(pause)
 	pause_menu.resume_pressed.connect(resume)
 	pause_menu.restart_pressed.connect(restart_level)
@@ -78,12 +82,20 @@ func _ready() -> void:
 	start_overlay.level_chosen.connect(_on_level_chosen)
 	_tap_input.tapped.connect(press_jump)
 	_tap_input.pause_requested.connect(pause)
-	load_level(start_level if start_level >= 0 else Progression.furthest_unlocked(world))
+	var first := start_level if start_level >= 0 else Progression.furthest_unlocked(world)
+	if Autoplay.requested():
+		first = clampi(int(Autoplay.option("--autoplay-from")) - 1, 0, world.levels.size() - 1)
+	load_level(first)
+	if Autoplay.requested():
+		var bot := Autoplay.new()
+		bot.game = self
+		add_child(bot)
 
 
 func _physics_process(_delta: float) -> void:
 	if state == State.PLAYING:
 		score.update_progress(player.global_position.x)
+		progress.update(player.global_position.x)
 
 
 func _notification(what: int) -> void:
@@ -128,12 +140,19 @@ func load_level(index: int = level_index) -> void:
 	camera.set_kill_line(level.kill_y)
 	var spawn := level.get_spawn_feet_position()
 	score.reset(spawn.x)
+	progress.reset(spawn.x, level.get_finish().global_position.x)
+	hud.set_progress(0.0, true)
+	var marks: Array[float] = []
+	for checkpoint in level.get_checkpoints():
+		marks.append(progress.percent_at(checkpoint.global_position.x))
+	hud.set_progress_marks(marks)
 	_respawn = RespawnPoint.new(spawn, 0.0, score.snapshot())
 	player.respawn_at(spawn, false)
 	camera.snap_to_target()
 	_set_state(State.READY)
 	start_overlay.open(world, level_index)
 	Events.level_started.emit(level.data.id)
+	level_loaded.emit()
 
 
 func start_run() -> void:
@@ -257,7 +276,10 @@ func _on_player_died(cause: StringName) -> void:
 	_set_state(State.DYING)
 	camera.shake(death_shake)
 	Events.player_died.emit(player.global_position, cause)
-	death_banner.show_death(attempts, score.get_score(), SaveSystem.get_record(level.data.id).best_score)
+	var reached := progress.percent
+	progress.penalize()
+	death_banner.show_death(attempts, score.get_score(), SaveSystem.get_record(level.data.id).best_score,
+		reached, progress.percent)
 	attempts += 1
 	_sequence = _new_sequence()
 	_sequence.tween_interval(death_pause)
@@ -280,6 +302,7 @@ func _on_shard_collected(shard: Shard) -> void:
 func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	_respawn = RespawnPoint.new(respawn_feet_at(checkpoint.global_position), 0.0, score.snapshot())
 	_respawn.level_time = time_at(_respawn.feet.x)
+	hud.mark_checkpoint(level.get_checkpoints().find(checkpoint))
 	Events.checkpoint_reached.emit(checkpoint.global_position)
 
 
@@ -316,6 +339,7 @@ func _on_finish_reached() -> void:
 	if state != State.PLAYING:
 		return
 	_set_state(State.COMPLETE)  # Also makes the player invulnerable.
+	progress.complete()
 	var result := LevelCompletePanel.Result.new()
 	result.score = score.get_score()
 	result.is_new_best = SaveSystem.record_result(level.data.id, result.score, score.shards, true)

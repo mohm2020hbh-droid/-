@@ -5,12 +5,14 @@
 1. Exports the "Web" preset (single-threaded, so no special server headers
    are needed) to export/web/.
 2. Assembles export/playtest/:
-   - play.html: tools/web/playtest_page.html with Godot's loader and the
-     game data (index.pck, base64) inlined; the page offers normal
-     progression or a test mode with every level open (it passes
-     `-- --unlock-all`, see src/game/progression.gd);
+   - play.html: tools/web/playtest_page.html, a small page that paints at
+     once, shows any error on screen, and offers normal progression or a
+     test mode with every level open (`-- --unlock-all`). `#autoplay` and
+     `#autoplay-deaths` on its URL start the QA autoplay (src/game/autoplay.gd);
+   - godot.js: Godot's loader (the page runs it as an inline script);
    - engine.gz.wasm: the engine, gzip-compressed (39 MB -> ~10 MB) under a
      .wasm name so static hosts serve it; the page decompresses it;
+   - game-data.txt: the game data (index.pck) as base64 text;
    - the two audio worklet scripts.
 Serve export/playtest/ with any static server and open play.html, or
 publish the folder as-is.
@@ -29,6 +31,7 @@ OUT = os.path.join(ROOT, "export", "playtest")
 TEMPLATE = os.path.join(ROOT, "tools", "web", "playtest_page.html")
 COPIED = ["index.audio.worklet.js", "index.audio.position.worklet.js"]
 ENGINE = "engine.gz.wasm"
+DATA = "game-data.txt"
 
 
 def main():
@@ -51,16 +54,14 @@ def main():
         fh.write(wasm)
     with open(os.path.join(WEB, "index.pck"), "rb") as fh:
         pck = fh.read()
-    sizes = {"index.wasm": len(wasm), ENGINE: os.path.getsize(os.path.join(OUT, ENGINE)), "index.pck": len(pck)}
-    with open(os.path.join(WEB, "index.js"), encoding="utf-8") as fh:
-        engine_js = fh.read()
-    if "</script" in engine_js:
-        engine_js = engine_js.replace("</script", "<\\/script")
+    with open(os.path.join(OUT, DATA), "w", encoding="ascii") as fh:
+        fh.write(base64.b64encode(pck).decode("ascii"))
+    shutil.copy(os.path.join(WEB, "index.js"), os.path.join(OUT, "godot.js"))
+    sizes = {"index.wasm": len(wasm), ENGINE: os.path.getsize(os.path.join(OUT, ENGINE)), "index.pck": len(pck),
+             DATA: os.path.getsize(os.path.join(OUT, DATA))}
     with open(TEMPLATE, encoding="utf-8") as fh:
         page = fh.read()
-    page = (page.replace("/*__GODOT_ENGINE_JS__*/", engine_js)
-            .replace("/*__FILE_SIZES__*/", json.dumps(sizes))
-            .replace("/*__PCK_BASE64__*/", base64.b64encode(pck).decode("ascii")))
+    page = page.replace("/*__FILE_SIZES__*/", json.dumps(sizes))
     with open(os.path.join(OUT, "play.html"), "w", encoding="utf-8") as fh:
         fh.write(page)
     for name in sorted(os.listdir(OUT)):

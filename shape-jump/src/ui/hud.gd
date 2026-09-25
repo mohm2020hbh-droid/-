@@ -1,7 +1,8 @@
 class_name Hud
 extends CanvasLayer
-## In-game HUD (docs/GDD.md §12): score top-left, shards + pause top-right.
-## Nothing else, so the playfield stays clear. Respects the mobile safe area.
+## In-game HUD (docs/GDD.md §12): score top-left, shards + pause top-right,
+## a thin level progress bar top-centre. Nothing else, so the playfield stays
+## clear. Respects the mobile safe area.
 
 signal pause_pressed
 
@@ -20,6 +21,7 @@ var _safe_area_timer := 0.0
 @onready var _shard_label: Label = %ShardLabel
 @onready var _shard_icon: Control = %ShardIcon
 @onready var _pause_button: Button = %PauseButton
+@onready var _progress: LevelProgressBar = %Bar
 
 
 func _ready() -> void:
@@ -49,6 +51,19 @@ func set_score(score: int, shards: int) -> void:
 	_shard_label.text = str(shards)
 
 
+## Level progress in percent; [param snap] skips the easing (a new level).
+func set_progress(percent: float, snap := false) -> void:
+	_progress.set_value(percent, snap)
+
+
+func set_progress_marks(marks: Array[float]) -> void:
+	_progress.set_marks(marks)
+
+
+func mark_checkpoint(index: int) -> void:
+	_progress.mark_reached(index)
+
+
 func set_pause_enabled(enabled: bool) -> void:
 	_pause_button.visible = enabled
 
@@ -67,5 +82,7 @@ func _apply_safe_area() -> void:
 		margins.z += maxf((window.x - safe.end.x) * to_view.x, 0.0)
 	_root.add_theme_constant_override(&"margin_left", int(margins.x))
 	_root.add_theme_constant_override(&"margin_top", int(margins.y))
+	%Progress.offset_top = margins.y - 2.0
+	%Progress.offset_bottom = margins.y + 46.0
 	_root.add_theme_constant_override(&"margin_right", int(margins.z))
 

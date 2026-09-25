@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://src/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://src/ui/shard_icon.gd" id="2_icon"]
 [ext_resource type="Script" path="res://src/ui/pause_button.gd" id="3_pause"]
+[ext_resource type="Script" path="res://src/ui/level_progress_bar.gd" id="4_progress"]
 
 [node name="Hud" type="CanvasLayer"]
 layer = 10
@@ -53,3 +54,45 @@ custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 focus_mode = 0
 script = ExtResource("3_pause")
+
+[node name="Progress" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 22.0
+offset_right = 200.0
+offset_bottom = 70.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Caption" type="Label" parent="Progress"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.722, 0.604, 0.635, 0.85)
+theme_override_font_sizes/font_size = 13
+text = "LEVEL PROGRESS"
+
+[node name="Bar" type="Control" parent="Progress"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 26)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("4_progress")
+
+[node name="ProgressLabel" type="Label" parent="Progress/Bar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -56.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.957, 0.914, 0.925, 1)
+theme_override_font_sizes/font_size = 20
+text = "0%"
+horizontal_alignment = 2
+vertical_alignment = 2

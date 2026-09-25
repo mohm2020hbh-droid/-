@@ -13,6 +13,7 @@ Coordinates: tiles (64 px) for x; heights in tiles above the ground line
 (up is positive). Everything is converted to Godot pixels (y down).
 """
 import math
+import re
 
 T = 64.0
 DT = 1.0 / 60.0
@@ -923,6 +924,154 @@ class Level:
         self._path = None
         self.recenter_route()
         self._place_shards()
+
+    # -------------------------------------------------- progress checkpoints --
+    def progress_checkpoints(self, fractions=(1.0 / 3.0, 2.0 / 3.0), runway=1.5):
+        """Checkpoints at fixed shares of the level's length (after done()).
+        A checkpoint needs `runway` seconds of safe flat ground after it, and a
+        dense level has none at 33% or 66%, so each one gets its own: the level
+        is cut where the player runs on static ground with nothing near, and
+        flat ground is opened there (insert_rest). Everything after the cut
+        moves on in space and in time together, so every obstacle still meets
+        the player exactly as before and every tuned window is unchanged."""
+        assert self.finish_x is not None and not self.checkpoints, "place checkpoints once, after finish()"
+        # A whole number of physics ticks: the player then passes every later
+        # point exactly k ticks later, on the same tick grid as before.
+        length = math.ceil((runway * self.tiles_per_second() + 1.5) / self.tiles_per_tick()) * self.tiles_per_tick()
+        spawn = self.spawn_px / T
+        final = self.finish_x + length * len(fractions)
+        for i, share in enumerate(fractions):
+            want = spawn + share * (final - spawn) - 1.0 - i * length   # Cut x before the insertions after it.
+            cut = min(self._cut_points(), key=lambda x: abs(x - want))
+            height = self.at(cut)["h"] / T
+            self.insert_rest(cut, length)
+            self.checkpoint(cut + 1.0, height)
+            self.notes.append(f"checkpoint {100.0 * (cut + 1.0 - spawn) / (final - spawn):.1f}% at x={cut + 1.0:.2f} "
+                              f"(rest opened at x={cut:.2f}, {length:.1f} tiles)")
+
+    def _cut_points(self):
+        """x (tiles) where flat ground can be opened: the intended path runs on
+        static, non-collapsing ground, no tap is near, and nothing but blocks
+        and shards reaches within a tile."""
+        spawn = self.spawn_px / T
+        tick = self.tiles_per_tick()
+        reach = [(lo / T, hi / T) for lo, hi in (self._extent(e) for _, _, e in self.entries if not self._inert(e))]
+        route = sorted(self.route)
+        out = []
+        for st in self.path():
+            x = round(st["x"], 3)
+            if x < spawn + 3.0 or x > self.finish_x - 3.0:
+                continue
+            ground = [su for su in self.surfaces if su.x0 / T <= x - 1.0 and su.x1 / T >= x + 1.0
+                      and abs(-su.top / T - st["h"] / T) < 1e-3]
+            if not (st["grounded"] and ground and all(su.osc is None and su.drop is None for su in ground)):
+                continue
+            if any(lo < x + 1.0 and hi > x - 1.0 for lo, hi in reach):
+                continue
+            if any(x - 12 * tick <= r <= x + 2 * tick for r in route):
+                continue
+            out.append(x)
+        if not out:
+            raise SystemExit(f"{self.key}: nowhere to open a checkpoint runway")
+        return out
+
+    @staticmethod
+    def _inert(e):
+        return isinstance(e, Plain) and e.base in ("Block", "Shard", "Checkpoint", "FinishGate")
+
+    @staticmethod
+    def _vec(text):
+        a, b = re.match(r"Vector2\(([^,]+), ([^)]+)\)", text).groups()
+        return float(a), float(b)
+
+    def _extent(self, e):
+        """x extent (px) of any element, from its data."""
+        if not isinstance(e, Plain):
+            return e.x_range()
+        x, _ = self._vec(e._props["position"])
+        if e.base in ("Block", "MovingPlatform"):
+            w = self._vec(e._props["size"])[0]
+            lo, hi = e.osc.reach() if e.osc else (0.0, 0.0)
+            return (x + lo, x + w + hi)
+        if e.base == "CollapsingPath":
+            return (x, x + e._props["tiles"] * self._vec(e._props["tile_size"])[0])
+        return (x, x)
+
+    def insert_rest(self, x, length):
+        """Opens `length` tiles of flat ground at x (tiles): everything after x
+        moves `length` tiles on, and every timed element after x runs
+        length / speed seconds later, so the player (who arrives that much
+        later) meets it in exactly the same state. The block under x stretches
+        over the gap. Only valid at a cut point (see _cut_points)."""
+        cut, dx = x * T, length * T
+        dt = dx / self.speed
+        moved_osc = set()
+
+        def late(o):
+            if o is not None and id(o) not in moved_osc:
+                moved_osc.add(id(o))
+                o.phase -= dt / o.period
+
+        def pos(e, key="position"):
+            px, py = self._vec(e._props[key])
+            e._props[key] = v2(px + dx, py)
+
+        for _, _, e in self.entries:
+            lo, hi = self._extent(e)
+            if hi <= cut:
+                continue
+            if lo < cut:
+                assert isinstance(e, Plain) and e.base == "Block", f"{e.base} spans the cut at x={x}"
+                w, h = self._vec(e._props["size"])
+                e._props["size"] = v2(w + dx, h)
+                continue
+            if isinstance(e, Gate):
+                e.x += dx
+                if len(e.stops) > 1:
+                    e.phase -= dt / ((e.hold + e.move) * len(e.stops))
+            elif isinstance(e, Arm):
+                e.x += dx
+                e.phase -= e.speed * dt / math.tau
+            elif isinstance(e, Crusher):
+                e.x0 += dx
+                e.phase -= dt / e.period
+            elif isinstance(e, Field):
+                e.x0 += dx
+                e.phase -= dt / e.period
+            elif isinstance(e, Prism):
+                e.x += dx
+            elif isinstance(e, Rotor):
+                e.x += dx
+                e.phase -= e.spin * dt / math.tau
+            elif isinstance(e, Panel):
+                e.x0 += dx
+            elif isinstance(e, Spikes):
+                e.__init__(e.x0 + dx, e.y0, e.count, e.down)
+            else:
+                pos(e)
+                if e.span != (0.0, 0.0):
+                    e.span = (e.span[0] + dx, e.span[1] + dx)
+                if e.base == "CollapsingPath":
+                    e._props["collapse_time"] = f(float(e._props["collapse_time"]) + dt)
+            late(e.osc)
+        for su in self.surfaces:
+            if su.x1 <= cut:
+                continue
+            if su.x0 < cut:
+                su.x1 += dx
+                continue
+            su.x0 += dx
+            su.x1 += dx
+            if su.drop is not None:
+                su.drop += dt
+            late(su.osc)
+        shift = lambda r: round(r + length, 3) if r > x else r
+        self.route = [shift(r) for r in self.route]
+        self.kinds = {shift(r): k for r, k in self.kinds.items()}
+        self.checkpoints = [(shift(c), h) for c, h in self.checkpoints]
+        self.finish_x += length
+        self._sim = None
+        self._path = None
 
     def _resolve(self, x):
         x = round(x, 3)
