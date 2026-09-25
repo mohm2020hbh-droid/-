@@ -18,6 +18,8 @@ extends Node2D
 signal shard_collected(shard: Shard)
 signal checkpoint_reached(checkpoint: Checkpoint)
 signal finish_reached
+## An obstacle reported a moment worth a sound (see [method Hazard.cue]).
+signal obstacle_cued(kind: StringName, position: Vector2)
 
 ## Timed elements must move before the player each physics tick (it rides
 ## and collides with where they are now), whatever the scene tree order.
@@ -42,14 +44,14 @@ var _finish: FinishGate
 ## Registers [param element] with the level it belongs to (if any). Level
 ## elements call this when they are ready or re-enter the tree.
 static func join(element: Node) -> void:
-	var level := _owning_level(element)
+	var level := of(element)
 	if level:
 		level._register(element)
 
 
 ## Unregisters [param element]; level elements call this from _exit_tree.
 static func leave(element: Node) -> void:
-	var level := _owning_level(element)
+	var level := of(element)
 	if level:
 		level._unregister(element)
 
@@ -78,9 +80,11 @@ func rewind_to(t: float) -> void:
 	clock = t
 	_apply_time()
 	for node in _timed:
+		# Teleported, not moved: do not draw an interpolated streak.
 		if node is Oscillator:
-			# Teleported, not moved: do not draw an interpolated streak.
 			(node as Oscillator).reset_parent_interpolation()
+		elif node is CanvasItem:
+			node.reset_physics_interpolation()
 	for shard in _shards:
 		if shard.is_collected and shard.collected_at > t:
 			shard.restore()
@@ -104,6 +108,10 @@ func get_finish() -> FinishGate:
 
 func get_timed_elements() -> Array[Node]:
 	return _timed
+
+
+func report_cue(kind: StringName, at: Vector2) -> void:
+	obstacle_cued.emit(kind, at)
 
 
 func _apply_time() -> void:
@@ -146,7 +154,8 @@ func _unregister(element: Node) -> void:
 		_finish = null
 
 
-static func _owning_level(element: Node) -> Level:
+## The Level [param element] belongs to, or null.
+static func of(element: Node) -> Level:
 	var node := element.get_parent()
 	while node and not node is Level:
 		node = node.get_parent()

@@ -4,5 +4,8 @@
 
 [resource]
 script = ExtResource("1_data")
-id = &"level_01"
+id = &"w01_l01"
 display_name = "Awakening"
+tagline = "Hard tutorial"
+scene_path = "res://levels/world_01/level_01.tscn"
+speed_scale = 1

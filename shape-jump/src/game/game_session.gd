@@ -26,7 +26,9 @@ class RespawnPoint:
 		score = score_snapshot
 
 
-@export var level_scene: PackedScene
+@export var world: WorldData
+## Level (index in [member world]) opened on start; -1 = the furthest unlocked.
+@export var start_level := -1
 
 @export_group("Death & Respawn Feel")
 ## Time the shatter plays before the screen fades.
@@ -41,6 +43,7 @@ class RespawnPoint:
 
 var state: State = State.READY
 var level: Level
+var level_index := 0
 var score := ScoreTracker.new()
 
 var _state_before_pause: State = State.PLAYING
@@ -70,7 +73,7 @@ func _ready() -> void:
 	complete_panel.play_again_pressed.connect(restart_level)
 	_tap_input.tapped.connect(press_jump)
 	_tap_input.pause_requested.connect(pause)
-	load_level()
+	load_level(start_level if start_level >= 0 else Progression.furthest_unlocked(world))
 
 
 func _physics_process(_delta: float) -> void:
@@ -96,19 +99,22 @@ func press_jump() -> void:
 			player.request_jump()
 
 
-func load_level() -> void:
-	if level_scene == null:
-		push_error("GameSession: no level_scene assigned.")
+func load_level(index: int = level_index) -> void:
+	var data := world.get_level(index) if world else null
+	if data == null:
+		push_error("GameSession: the world has no level %d." % index)
 		return
 	_kill_sequence()
 	if level:
 		_level_slot.remove_child(level)
 		level.queue_free()
-	level = level_scene.instantiate()
+	level_index = index
+	level = (load(data.scene_path) as PackedScene).instantiate()
 	_level_slot.add_child(level)
 	level.shard_collected.connect(_on_shard_collected)
 	level.checkpoint_reached.connect(_on_checkpoint_reached)
 	level.finish_reached.connect(_on_finish_reached)
+	level.obstacle_cued.connect(_on_obstacle_cued)
 
 	player.kill_y = level.kill_y
 	player.set_speed_scale(level.data.speed_scale)
@@ -252,6 +258,18 @@ func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	var time := level.clock + (feet.x - player.global_position.x) / player.get_run_speed()
 	_respawn = RespawnPoint.new(feet, time, score.snapshot())
 	Events.checkpoint_reached.emit(feet)
+
+
+## Obstacle sounds only for what the player can see: an off-screen machine
+## arming somewhere ahead must not distract or mislead.
+func _on_obstacle_cued(kind: StringName, at: Vector2) -> void:
+	if state != State.PLAYING or not camera.get_view_rect().grow(32.0).has_point(at):
+		return
+	match kind:
+		&"warning":
+			Events.obstacle_warning.emit(at)
+		&"slam":
+			Events.obstacle_slam.emit(at)
 
 
 func _on_finish_reached() -> void:

@@ -1,7 +1,8 @@
 @tool
 class_name Spikes
-extends Area2D
-## A row of triangular spikes (docs/GDD.md §7).
+extends Hazard
+## A row of triangular spikes (docs/GDD.md §7). A secondary hazard in World
+## 01: the obstacle language is built on gates, arms and machines.
 ## Facing UP: origin = bottom-left, place it on a walkable surface.
 ## Facing DOWN: origin = top-left, hang it under a ceiling.
 ## Each spike's hitbox is its triangle shrunk toward the centroid, so grazing
@@ -32,15 +33,8 @@ var _shapes: Array[CollisionShape2D] = []
 
 
 func _ready() -> void:
-	collision_layer = GameConst.LAYER_HAZARD
-	collision_mask = 0
-	monitoring = false
+	super()
 	_rebuild()
-
-
-func _process(_delta: float) -> void:
-	if not Engine.is_editor_hint():
-		HazardPulse.apply(self, position.x * 0.01)
 
 
 func get_triangle(index: int) -> PackedVector2Array:

@@ -22,8 +22,9 @@ func _init(host_node: Node, route_tiles: PackedFloat32Array = PackedFloat32Array
 	route = route_tiles
 
 
-func start() -> void:
+func start(level_index := 0) -> void:
 	game = GAME_SCENE.instantiate()
+	game.start_level = level_index
 	host.add_child(game)
 	await host.get_tree().physics_frame
 	game.player.died.connect(func(cause: StringName) -> void:
@@ -54,6 +55,24 @@ func run_until(condition: Callable, max_ticks: int = 60 * 120) -> bool:
 			return true
 		await tick()
 	return condition.call()
+
+
+## Starts the run already at [param feet] (e.g. a checkpoint): the level clock
+## is where it would be when the player gets there, and the route resumes.
+func start_run_at(feet: Vector2) -> void:
+	game.press_jump()  # READY -> PLAYING.
+	var spawn := game.level.get_spawn_feet_position()
+	game.level.rewind_to((feet.x - spawn.x) / game.player.get_run_speed())
+	game.player.respawn_at(feet, true)
+	game.camera.snap_to_target()
+	seek(player_x())
+
+
+## Makes the next tap the first route entry at or after [param x_tiles].
+func seek(x_tiles: float) -> void:
+	_next = 0
+	while _next < route.size() and route[_next] < x_tiles:
+		_next += 1
 
 
 func is_state(state: GameSession.State) -> Callable:

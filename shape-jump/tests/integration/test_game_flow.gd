@@ -7,7 +7,7 @@ var _save := SaveSandbox.new()
 
 func before_each() -> void:
 	_save.enter()
-	h = GameHarness.new(self, Level01Route.TAPS)
+	h = GameHarness.new(self, World01Routes.get_route(0))
 	await h.start()
 
 
@@ -112,7 +112,7 @@ func test_death_before_any_checkpoint_resets_to_spawn() -> void:
 
 
 func test_death_after_a_checkpoint_keeps_progress_before_it() -> void:
-	h.skip = [7]  # First tap after checkpoint A.
+	h.skip = [5]  # First tap after checkpoint A.
 	h.game.press_jump()
 	await h.run_until(func() -> bool: return not h.deaths.is_empty())
 	var point := h.game.get_respawn_point()

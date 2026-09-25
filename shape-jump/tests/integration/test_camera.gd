@@ -7,7 +7,7 @@ var _save := SaveSandbox.new()
 
 func before_each() -> void:
 	_save.enter()
-	h = GameHarness.new(self, Level01Route.TAPS)
+	h = GameHarness.new(self, World01Routes.get_route(0))
 	await h.start()
 
 
@@ -40,33 +40,33 @@ func test_player_holds_the_look_ahead_anchor_while_running() -> void:
 
 func test_camera_does_not_bob_during_a_flat_jump() -> void:
 	h.game.press_jump()
-	await h.run_until(func() -> bool: return h.player_x() >= 19.0)
+	await h.run_until(func() -> bool: return h.player_x() >= 23.0)
 	var top := INF
 	var bottom := -INF
-	while h.player_x() < 26.0:  # Jump over the first gap and land on the same height.
+	while h.player_x() < 31.0:  # Jump over the first gap and land on the same height.
 		await h.tick()
 		top = minf(top, h.game.camera.global_position.y)
 		bottom = maxf(bottom, h.game.camera.global_position.y)
 	assert_near(bottom - top, 0.0, 0.5, "vertical camera ignores jump arcs")
 
 
-func test_camera_climbs_the_stairs_smoothly() -> void:
+func test_camera_follows_a_step_up_smoothly() -> void:
 	h.game.press_jump()
-	await h.run_until(func() -> bool: return h.player_x() >= 102.0)
+	await h.run_until(func() -> bool: return h.player_x() >= 92.0)
 	var start_y := h.game.camera.global_position.y
 	var previous := start_y
 	var biggest_step := 0.0
-	while h.player_x() < 120.0:
+	while h.player_x() < 104.0:  # Off the elevator onto the higher floor.
 		await h.tick()
 		var y := h.game.camera.global_position.y
 		biggest_step = maxf(biggest_step, absf(y - previous))
 		previous = y
-	assert_true(previous < start_y - 100.0, "camera rose with the staircase")
+	assert_true(previous < start_y - 40.0, "camera rose with the step")
 	assert_true(biggest_step < 12.0, "no sudden camera jumps (biggest per-tick step %.1f px)" % biggest_step)
 
 
 func test_fall_death_happens_on_screen_and_within_the_camera_limit() -> void:
-	h.skip = [16]  # Run off into the wide phase-platform pit (a real fall, not a wall hit).
+	h.skip = [5]  # Run off into the elevator pit (a real fall, not a wall hit).
 	h.game.press_jump()
 	await h.run_until(func() -> bool: return not h.deaths.is_empty())
 	var camera := h.game.camera

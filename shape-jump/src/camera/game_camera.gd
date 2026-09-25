@@ -95,6 +95,12 @@ func _update_anchor() -> void:
 		_anchor_y = target_y - fall_dead_zone
 
 
+## The part of the world on screen right now (shake ignored).
+func get_view_rect() -> Rect2:
+	var view := get_viewport_rect().size / zoom
+	return Rect2(get_screen_center_position() - view * 0.5, view)
+
+
 ## Where the camera wants to be for the current anchor (no side effects).
 func get_desired_position() -> Vector2:
 	var view := get_viewport_rect().size / zoom

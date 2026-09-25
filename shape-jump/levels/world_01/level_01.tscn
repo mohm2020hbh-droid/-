@@ -1,0 +1,342 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_01/level_01.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/block.gd" id="block"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/gate.gd" id="gate"]
+[ext_resource type="Script" path="res://src/level/elements/oscillator.gd" id="oscillator"]
+[ext_resource type="Script" path="res://src/level/elements/rotating_arm.gd" id="rotating_arm"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level01" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 480
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Runway" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Runway"]
+position = Vector2(-768, 0)
+script = ExtResource("block")
+size = Vector2(2432, 640)
+
+[node name="Shard" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard2" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Shard3" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(832, -32)
+
+[node name="Gate" type="Area2D" parent="Runway"]
+position = Vector2(1216, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-89.6, 179.2)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Shard4" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(1216, -32)
+
+[node name="FirstGap" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="FirstGap"]
+position = Vector2(1888, 0)
+script = ExtResource("block")
+size = Vector2(1376, 640)
+
+[node name="Shard" parent="FirstGap" instance=ExtResource("shard")]
+position = Vector2(1626, -134)
+
+[node name="Shard2" parent="FirstGap" instance=ExtResource("shard")]
+position = Vector2(1722, -191)
+
+[node name="Shard3" parent="FirstGap" instance=ExtResource("shard")]
+position = Vector2(1818, -164)
+
+[node name="RaisedWindow" type="Node2D" parent="."]
+
+[node name="Gate" type="Area2D" parent="RaisedWindow"]
+position = Vector2(2316.8, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-156.8, 147.2)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Shard" parent="RaisedWindow" instance=ExtResource("shard")]
+position = Vector2(2317, -141)
+
+[node name="PulseGate" type="Node2D" parent="."]
+
+[node name="Gate" type="Area2D" parent="PulseGate"]
+position = Vector2(2803.2, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-86.4, 172.8, -172.8, 153.6)
+hold_time = 0.8
+move_time = 0.3
+phase = 0.2597
+warning_time = 0.35
+
+[node name="Shard" parent="PulseGate" instance=ExtResource("shard")]
+position = Vector2(2803, -141)
+
+[node name="SecondGap" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="SecondGap"]
+position = Vector2(3520, 0)
+script = ExtResource("block")
+size = Vector2(1600, 640)
+
+[node name="Shard" parent="SecondGap" instance=ExtResource("shard")]
+position = Vector2(3238, -134)
+
+[node name="Shard2" parent="SecondGap" instance=ExtResource("shard")]
+position = Vector2(3334, -191)
+
+[node name="Shard3" parent="SecondGap" instance=ExtResource("shard")]
+position = Vector2(3430, -164)
+
+[node name="Windmill" type="Node2D" parent="."]
+
+[node name="RotatingArm" type="Area2D" parent="Windmill"]
+position = Vector2(4044.8, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 102.4
+speed = 1.5
+phase = 0.2708
+
+[node name="Shard" parent="Windmill" instance=ExtResource("shard")]
+position = Vector2(4045, -192)
+
+[node name="Checkpoint" type="Area2D" parent="Windmill"]
+position = Vector2(4352, -0)
+script = ExtResource("checkpoint")
+
+[node name="Elevator" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Elevator"]
+position = Vector2(5120, 0)
+script = ExtResource("block")
+size = Vector2(256, 640)
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Elevator"]
+position = Vector2(5600, 32)
+script = ExtResource("block")
+size = Vector2(320, 32)
+
+[node name="Oscillator" type="Node2D" parent="Elevator/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -144)
+period = 2.4
+phase = 0.7272
+
+[node name="Block2" type="StaticBody2D" parent="Elevator"]
+position = Vector2(6176, -64)
+script = ExtResource("block")
+size = Vector2(992, 704)
+
+[node name="Shard" parent="Elevator" instance=ExtResource("shard")]
+position = Vector2(5344, -142)
+
+[node name="Shard2" parent="Elevator" instance=ExtResource("shard")]
+position = Vector2(5472, -192)
+
+[node name="Shard3" parent="Elevator" instance=ExtResource("shard")]
+position = Vector2(5600, -82)
+
+[node name="Shard4" parent="Elevator" instance=ExtResource("shard")]
+position = Vector2(5728, -30)
+
+[node name="Shard5" parent="Elevator" instance=ExtResource("shard")]
+position = Vector2(5856, -70)
+
+[node name="Shard6" parent="Elevator" instance=ExtResource("shard")]
+position = Vector2(5984, -201)
+
+[node name="GateAfterLanding" type="Node2D" parent="."]
+
+[node name="Gate" type="Area2D" parent="GateAfterLanding"]
+position = Vector2(6496, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-150.4, 172.8, -236.8, 153.6)
+hold_time = 0.7
+move_time = 0.25
+phase = 0.1833
+warning_time = 0.35
+
+[node name="SecondWindmill" type="Node2D" parent="."]
+
+[node name="RotatingArm" type="Area2D" parent="SecondWindmill"]
+position = Vector2(6899.2, -96)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 102.4
+speed = -2
+phase = 0.3028
+
+[node name="WindowOverGap" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="WindowOverGap"]
+position = Vector2(7168, 0)
+script = ExtResource("block")
+size = Vector2(384, 640)
+
+[node name="Block2" type="StaticBody2D" parent="WindowOverGap"]
+position = Vector2(7808, 0)
+script = ExtResource("block")
+size = Vector2(1472, 640)
+
+[node name="Gate" type="Area2D" parent="WindowOverGap"]
+position = Vector2(7705.6, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-169.6, 147.2)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Shard" parent="WindowOverGap" instance=ExtResource("shard")]
+position = Vector2(7520, -125)
+
+[node name="Shard2" parent="WindowOverGap" instance=ExtResource("shard")]
+position = Vector2(7584, -175)
+
+[node name="Shard3" parent="WindowOverGap" instance=ExtResource("shard")]
+position = Vector2(7648, -193)
+
+[node name="Shard4" parent="WindowOverGap" instance=ExtResource("shard")]
+position = Vector2(7712, -171)
+
+[node name="Shard5" parent="WindowOverGap" instance=ExtResource("shard")]
+position = Vector2(7776, -108)
+
+[node name="Checkpoint" type="Area2D" parent="WindowOverGap"]
+position = Vector2(8192, -0)
+script = ExtResource("checkpoint")
+
+[node name="DoubleJumpWall" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="DoubleJumpWall"]
+position = Vector2(9440, -224)
+script = ExtResource("block")
+size = Vector2(800, 864)
+
+[node name="Shard" parent="DoubleJumpWall" instance=ExtResource("shard")]
+position = Vector2(9152, -94)
+
+[node name="Shard2" parent="DoubleJumpWall" instance=ExtResource("shard")]
+position = Vector2(9216, -157)
+
+[node name="Shard3" parent="DoubleJumpWall" instance=ExtResource("shard")]
+position = Vector2(9280, -230)
+
+[node name="Shard4" parent="DoubleJumpWall" instance=ExtResource("shard")]
+position = Vector2(9344, -293)
+
+[node name="Shard5" parent="DoubleJumpWall" instance=ExtResource("shard")]
+position = Vector2(9408, -325)
+
+[node name="DoubleJumpGap" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="DoubleJumpGap"]
+position = Vector2(10784, -224)
+script = ExtResource("block")
+size = Vector2(352, 864)
+
+[node name="Block2" type="StaticBody2D" parent="DoubleJumpGap"]
+position = Vector2(11136, 0)
+script = ExtResource("block")
+size = Vector2(2272, 640)
+
+[node name="Shard" parent="DoubleJumpGap" instance=ExtResource("shard")]
+position = Vector2(10240, -381)
+
+[node name="Shard2" parent="DoubleJumpGap" instance=ExtResource("shard")]
+position = Vector2(10330, -417)
+
+[node name="Shard3" parent="DoubleJumpGap" instance=ExtResource("shard")]
+position = Vector2(10419, -381)
+
+[node name="Shard4" parent="DoubleJumpGap" instance=ExtResource("shard")]
+position = Vector2(10509, -480)
+
+[node name="Shard5" parent="DoubleJumpGap" instance=ExtResource("shard")]
+position = Vector2(10598, -522)
+
+[node name="Shard6" parent="DoubleJumpGap" instance=ExtResource("shard")]
+position = Vector2(10688, -494)
+
+[node name="Checkpoint" type="Area2D" parent="DoubleJumpGap"]
+position = Vector2(11648, -0)
+script = ExtResource("checkpoint")
+
+[node name="HighWindow" type="Node2D" parent="."]
+
+[node name="Gate" type="Area2D" parent="HighWindow"]
+position = Vector2(12704, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-268.8, 153.6)
+hold_time = 0.9
+move_time = 0.25
+phase = 0
+warning_time = 0.35
+
+[node name="Shard" parent="HighWindow" instance=ExtResource("shard")]
+position = Vector2(12704, -256)
+
+[node name="ThirdWindmill" type="Node2D" parent="."]
+
+[node name="RotatingArm" type="Area2D" parent="ThirdWindmill"]
+position = Vector2(13177.6, -32)
+script = ExtResource("rotating_arm")
+arms = 2
+length = 108.8
+speed = 1.9
+phase = 0.0069
+
+[node name="PulseOverGap" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="PulseOverGap"]
+position = Vector2(13664, 0)
+script = ExtResource("block")
+size = Vector2(352, 640)
+
+[node name="Gate" type="Area2D" parent="PulseOverGap"]
+position = Vector2(13606.4, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-166.4, 140.8, -76.8, 153.6)
+hold_time = 0.6
+move_time = 0.25
+phase = 0.2972
+warning_time = 0.35
+
+[node name="FinalDoubleGap" type="Node2D" parent="."]
+
+[node name="Gate" type="Area2D" parent="FinalDoubleGap"]
+position = Vector2(14284.8, 0)
+script = ExtResource("gate")
+stops = PackedVector2Array(-249.6, 166.4, -140.8, 166.4)
+hold_time = 0.6
+move_time = 0.25
+phase = 0.1042
+warning_time = 0.35
+
+[node name="Block" type="StaticBody2D" parent="FinalDoubleGap"]
+position = Vector2(14496, 0)
+script = ExtResource("block")
+size = Vector2(1504, 640)
+
+[node name="FinishGate" type="Area2D" parent="FinalDoubleGap"]
+position = Vector2(15232, -0)
+script = ExtResource("finish_gate")

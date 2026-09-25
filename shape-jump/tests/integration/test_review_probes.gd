@@ -8,7 +8,7 @@ var _save := SaveSandbox.new()
 
 func before_each() -> void:
 	_save.enter()
-	h = GameHarness.new(self, Level01Route.TAPS)
+	h = GameHarness.new(self, World01Routes.get_route(0))
 	await h.start()
 
 
@@ -20,14 +20,14 @@ func after_each() -> void:
 	_save.leave()
 
 
-func _moving_saw(at: Vector2) -> Saw:
-	var saw := Saw.new()
-	saw.position = at
+func _moving_rotor(at: Vector2) -> Rotor:
+	var rotor := Rotor.new()
+	rotor.position = at
 	var osc := Oscillator.new()
 	osc.travel = Vector2(0, -100)
 	osc.period = 1.0
-	saw.add_child(osc)
-	return saw
+	rotor.add_child(osc)
+	return rotor
 
 
 func test_obstacles_spawned_and_freed_at_runtime() -> void:
@@ -35,12 +35,12 @@ func test_obstacles_spawned_and_freed_at_runtime() -> void:
 	await h.run_ticks(5)
 	var level := h.game.level
 	for i in 30:
-		var saw := _moving_saw(Vector2(9000 + i * 10, -300))
-		level.add_child(saw)
-		var start_y := saw.position.y
+		var rotor := _moving_rotor(Vector2(9000 + i * 10, -300))
+		level.add_child(rotor)
+		var start_y := rotor.position.y
 		await h.run_ticks(8)
-		assert_true(absf(saw.position.y - start_y) > 1.0, "a runtime-spawned oscillator moves (round %d)" % i)
-		saw.queue_free()
+		assert_true(absf(rotor.position.y - start_y) > 1.0, "a runtime-spawned oscillator moves (round %d)" % i)
+		rotor.queue_free()
 		await h.run_ticks(2)
 	assert_false(h.game.player.is_dead())
 
@@ -109,7 +109,7 @@ func test_pause_resume_is_transparent_to_the_simulation() -> void:
 
 
 func _finish_run(pause_at_ticks: Array) -> Dictionary:
-	var run := GameHarness.new(self, Level01Route.TAPS)
+	var run := GameHarness.new(self, World01Routes.get_route(0))
 	await run.start()
 	run.game.press_jump()
 	var playing_ticks := 0
