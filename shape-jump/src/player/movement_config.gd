@@ -17,6 +17,14 @@ extends Resource
 @export_range(1.0, 3.0, 0.05) var fall_gravity_multiplier: float = 1.3
 @export_range(200.0, 3000.0, 10.0, "suffix:px/s") var max_fall_speed: float = 1400.0
 
+@export_group("Double Jump")
+## Jumps allowed in the air before landing again. Capped at 1: the game has
+## exactly two jumps (ground + double), never a third.
+@export_range(0, 1) var air_jumps: int = 1
+## Height of the double jump, measured from where it starts. It resets the
+## vertical speed, so it is the same whether used rising or falling.
+@export_range(32.0, 400.0, 1.0, "suffix:px") var double_jump_height: float = 150.0
+
 @export_group("Forgiveness")
 ## Jump still allowed this long after running off a ledge.
 @export_range(0.0, 0.25, 0.01, "suffix:s") var coyote_time: float = 0.08
@@ -40,6 +48,16 @@ func fall_gravity() -> float:
 ## Initial upward speed of a jump (positive number; up is -y in Godot).
 func jump_speed() -> float:
 	return 2.0 * jump_height / time_to_apex
+
+
+## Initial upward speed of a double jump (positive number).
+func double_jump_speed() -> float:
+	return sqrt(2.0 * rise_gravity() * double_jump_height)
+
+
+## Highest the feet can get above the take-off point: double jump at the apex.
+func max_jump_height() -> float:
+	return jump_height + (double_jump_height if air_jumps > 0 else 0.0)
 
 
 ## Total airtime of a jump that lands at the same height it started from.

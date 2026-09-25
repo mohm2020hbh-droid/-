@@ -28,12 +28,16 @@ func _ready() -> void:
 	add_child(_ambient)
 
 	Events.player_jumped.connect(func(_p: Vector2) -> void: play(&"jump", 0.06))
+	Events.player_double_jumped.connect(func(_p: Vector2) -> void: play(&"double_jump", 0.04))
 	Events.player_landed.connect(_on_player_landed)
 	Events.player_died.connect(func(_p: Vector2, _c: StringName) -> void: play(&"death"))
 	Events.shard_collected.connect(func(_p: Vector2) -> void: play(&"collect", 0.04))
 	Events.checkpoint_reached.connect(func(_p: Vector2) -> void: play(&"checkpoint"))
 	Events.level_completed.connect(func(_id: StringName, _s: int, _n: int) -> void: play(&"complete"))
 	Events.ui_pressed.connect(func() -> void: play(&"ui_click"))
+	Events.obstacle_warning.connect(func(_p: Vector2) -> void: play(&"warning", 0.03, -4.0))
+	Events.obstacle_slam.connect(func(_p: Vector2) -> void: play(&"slam", 0.05, -3.0))
+	Events.level_started.connect(func(_id: StringName) -> void: _ensure_ambient())
 
 
 ## Plays [param id] on the next free (or oldest) voice. [param pitch_jitter]
@@ -61,6 +65,15 @@ func stop_all() -> void:
 func _exit_tree() -> void:
 	# Quitting mid-sound would otherwise leave playbacks alive in the AudioServer.
 	stop_all()
+
+
+## Starts the level ambience unless it already plays (it runs across
+## levels, restarts and pauses without a seam).
+func _ensure_ambient() -> void:
+	if _library and not _ambient.playing:
+		var stream := _library.get_stream(&"ambient")
+		if stream:
+			play_ambient(stream)
 
 
 func play_ambient(stream: AudioStream, volume_db: float = -12.0) -> void:

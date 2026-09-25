@@ -8,15 +8,23 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/checkpoint.wav" id="6_checkpoint"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/complete.wav" id="7_complete"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/ui_click.wav" id="8_click"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/double_jump.wav" id="9_double"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/warning.wav" id="10_warning"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/slam.wav" id="11_slam"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambient/void_drone.ogg" id="12_ambient"]
 
 [resource]
 script = ExtResource("1_library")
 sounds = Dictionary[StringName, AudioStream]({
+&"ambient": ExtResource("12_ambient"),
 &"checkpoint": ExtResource("6_checkpoint"),
 &"collect": ExtResource("4_collect"),
 &"complete": ExtResource("7_complete"),
 &"death": ExtResource("5_death"),
+&"double_jump": ExtResource("9_double"),
 &"jump": ExtResource("2_jump"),
 &"land": ExtResource("3_land"),
-&"ui_click": ExtResource("8_click")
+&"slam": ExtResource("11_slam"),
+&"ui_click": ExtResource("8_click"),
+&"warning": ExtResource("10_warning")
 })

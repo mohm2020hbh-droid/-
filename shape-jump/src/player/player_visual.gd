@@ -5,6 +5,9 @@ extends Node2D
 ##   Idle  – the core breathes, the edge glow pulses.
 ##   Run   – the core spins like a gyroscope.
 ##   Jump  – vertical stretch, the body spins half a turn per jump.
+##   Double jump – a quick extra half flip and a flare of the core. While the
+##         double jump is spent the core is hollow, so its availability is
+##         always readable on the character itself.
 ##   Fall  – keeps spinning, the core drifts up from inertia.
 ##   Land  – squash with elastic recovery, spin snaps to the nearest 90°.
 ##   Death – hidden; PlayerFx shatters it.
@@ -21,6 +24,7 @@ const MAX_SPRING_STEP := 1.0 / 30.0
 @export_range(0.2, 0.8, 0.01) var core_ratio := 0.42
 @export_group("Squash & Stretch")
 @export var jump_stretch := Vector2(0.8, 1.22)
+@export var double_jump_stretch := Vector2(0.72, 1.32)
 ## Squash at the hardest landing; softer landings scale it down.
 @export var land_squash := Vector2(1.3, 0.72)
 ## Fall speed (px/s) that produces the full landing squash.
@@ -32,6 +36,8 @@ const MAX_SPRING_STEP := 1.0 / 30.0
 @export var spin_snap_rate := 28.0
 @export var core_spin_run := 4.0
 @export var core_spin_air := 2.0
+## Speed of the extra half flip of the double jump.
+@export var flip_speed := 20.0
 @export_group("Core Inertia")
 @export var inertia_per_speed := 0.006
 @export var max_core_offset := 6.0
@@ -43,12 +49,15 @@ var _core_spin := 0.0
 var _core_offset := Vector2.ZERO
 var _squash := Vector2.ONE
 var _squash_velocity := Vector2.ZERO
+var _flip_left := 0.0
+var _flare := 0.0
 
 
 func _ready() -> void:
 	# Half a turn over a flat jump, whatever the tuning.
 	_spin_speed = PI / player.config.flat_jump_airtime()
 	player.jumped.connect(_on_jumped)
+	player.double_jumped.connect(_on_double_jumped)
 	player.landed.connect(_on_landed)
 	player.died.connect(func(_cause: StringName) -> void: visible = false)
 	player.respawned.connect(_on_respawned)
@@ -59,6 +68,11 @@ func _process(delta: float) -> void:
 	var state := player.state
 	var airborne := state == Player.State.JUMP or state == Player.State.FALL
 
+	if _flip_left > 0.0:
+		var flip := minf(_flip_left, flip_speed * delta)
+		_spin += flip
+		_flip_left -= flip
+	_flare = maxf(_flare - delta * 4.0, 0.0)
 	if airborne:
 		_spin = fposmod(_spin + _spin_speed * delta, TAU)
 	else:
@@ -97,8 +111,9 @@ func _step_spring(step: float) -> void:
 func _draw() -> void:
 	var idle := player.state == Player.State.IDLE
 	var breathe := sin(_time * 2.6)
-	var glow := 0.85 + (0.25 * breathe if idle else 0.1 * sin(_time * 9.0))
-	var core_scale := 1.0 + (0.1 * breathe if idle else 0.0)
+	var glow := 0.85 + (0.25 * breathe if idle else 0.1 * sin(_time * 9.0)) + _flare
+	var core_scale := 1.0 + (0.1 * breathe if idle else 0.0) + 0.35 * _flare
+	var charged := player.has_double_jump()
 
 	# The drawing matches the collision box size (read from the Player).
 	var half := player.half_size.x
@@ -122,14 +137,25 @@ func _draw() -> void:
 
 	for i in 4:
 		draw_line(outer[i] * 0.94, inner[i], Color(Palette.PLAYER_EDGE, 0.55), 2.0, true)
-	Neon.polyline(self, inner, Palette.PLAYER_CORE, 2.0, 0.9, true)
-	draw_colored_polygon(inner, Palette.PLAYER_CORE)
+	if charged:
+		Neon.polyline(self, inner, Palette.PLAYER_CORE, 2.0, 0.9, true)
+		draw_colored_polygon(inner, Palette.PLAYER_CORE)
+	else:
+		# Double jump spent: a hollow core until the next landing.
+		Neon.polyline(self, inner, Color(Palette.PLAYER_CORE, 0.7), 2.0, 0.3, true)
 	Neon.polyline(self, outer, Palette.PLAYER_EDGE, 3.0, glow, true)
 
 
 func _on_jumped() -> void:
 	_squash = jump_stretch
 	_squash_velocity = Vector2.ZERO
+
+
+func _on_double_jumped() -> void:
+	_squash = double_jump_stretch
+	_squash_velocity = Vector2.ZERO
+	_flip_left = PI
+	_flare = 1.0
 
 
 func _on_landed(impact_speed: float) -> void:
@@ -141,6 +167,8 @@ func _on_landed(impact_speed: float) -> void:
 func _on_respawned() -> void:
 	visible = true
 	_spin = 0.0
+	_flip_left = 0.0
+	_flare = 0.0
 	_core_offset = Vector2.ZERO
 	# Materialise: pop in from a small, stretched core.
 	_squash = Vector2(0.4, 1.5)

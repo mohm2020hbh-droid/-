@@ -1,17 +1,16 @@
 extends TestCase
 ## Player behaviour on the real physics server, in small arenas built in code.
 
-const PLAYER_SCENE := preload("res://src/player/player.tscn")
 const SHARD_SCENE := preload("res://src/level/elements/shard.tscn")
 const T := GameConst.TILE
 const TICK_DISTANCE := 520.0 / 60.0
 
-var arena: Node2D
+var arena: PhysicsArena
 var player: Player
 
 
 func before_each() -> void:
-	arena = Node2D.new()
+	arena = PhysicsArena.new()
 	add_child(arena)
 
 
@@ -21,29 +20,15 @@ func after_each() -> void:
 
 
 func _block(pos: Vector2, size: Vector2, moving := false) -> Block:
-	var block: Block = Block.new() if not moving else _animatable_block()
-	block.position = pos
-	block.size = size
-	arena.add_child(block)
-	return block
-
-
-func _animatable_block() -> Block:
-	var body: Object = AnimatableBody2D.new()
-	body.set_script(Block)
-	return body as Block
+	return arena.block(pos, size, moving)
 
 
 func _spawn_player(feet: Vector2, run := true) -> void:
-	player = PLAYER_SCENE.instantiate()
-	arena.add_child(player)
-	player.kill_y = 400.0
-	player.respawn_at(feet, run)
+	player = arena.spawn_player(feet, run)
 
 
 func _ticks(n: int) -> void:
-	for i in n:
-		await get_tree().physics_frame
+	await arena.ticks(n)
 
 
 func test_stands_on_ground_and_runs_at_exact_speed() -> void:
@@ -181,8 +166,8 @@ func test_phase_block_does_not_solidify_inside_player() -> void:
 
 func _reset_arena() -> void:
 	arena.queue_free()
-	await _ticks(1)
-	arena = Node2D.new()
+	await get_tree().physics_frame
+	arena = PhysicsArena.new()
 	add_child(arena)
 
 
@@ -298,10 +283,7 @@ func test_die_and_respawn_in_one_frame_keeps_collision() -> void:
 
 func test_max_speed_fall_does_not_tunnel_through_a_thin_platform() -> void:
 	_block(Vector2(-T * 4, 0), Vector2(T * 40, 8))
-	player = PLAYER_SCENE.instantiate()
-	arena.add_child(player)
-	player.kill_y = 400.0
-	player.respawn_at(Vector2(0, -3000), false)
+	player = arena.spawn_player(Vector2(0, -3000), false)
 	await _ticks(200)  # ~2.4 s of fall, most of it at max speed.
 	assert_false(player.is_dead(), "caught by an 8 px platform at max fall speed")
 	assert_near(player.get_feet_position().y, 0.0, 0.5)
@@ -312,6 +294,8 @@ func test_buffered_tap_jumps_on_the_first_grounded_tick() -> void:
 	_spawn_player(Vector2(0, 0))
 	await _ticks(2)
 	player.request_jump()
+	await _ticks(10)
+	player.request_jump()  # Spend the double jump: the next tap can only wait for the ground.
 	await _ticks(10)
 	while player.get_feet_position().y < -30.0 or player.velocity.y < 0.0:
 		await _ticks(1)
@@ -356,12 +340,8 @@ func test_jumping_into_ceiling_spikes_kills() -> void:
 	assert_true(player.is_dead(), "jumping into them is not")
 
 
-## Half width of the player's body, read from the scene (before any spawn).
 func player_half() -> float:
-	var probe := PLAYER_SCENE.instantiate()
-	var half: float = ((probe.get_node("BodyShape") as CollisionShape2D).shape as RectangleShape2D).size.x * 0.5
-	probe.free()
-	return half
+	return PhysicsArena.player_half()
 
 
 func test_riding_an_elevator_up_and_down_stays_attached() -> void:
@@ -401,10 +381,7 @@ func test_player_falls_when_a_phase_block_vanishes_under_it() -> void:
 
 func test_max_speed_fall_onto_a_rising_thin_platform() -> void:
 	var lift := _block(Vector2(-T * 2, 0), Vector2(T * 4, 16), true)
-	player = PLAYER_SCENE.instantiate()
-	arena.add_child(player)
-	player.kill_y = 800.0
-	player.respawn_at(Vector2(0, -2500), false)
+	player = arena.spawn_player(Vector2(0, -2500), false, 800.0)
 	for i in 200:
 		lift.position.y -= 5.0  # Rising at 300 px/s toward a player at max fall speed.
 		await _ticks(1)

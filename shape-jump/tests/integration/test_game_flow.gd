@@ -18,18 +18,29 @@ func after_each() -> void:
 	_save.leave()
 
 
+## [ground jumps, double jumps], counted live.
 func _count_jumps() -> Array[int]:
-	var jumps: Array[int] = [0]
+	var jumps: Array[int] = [0, 0]
 	h.game.player.jumped.connect(func() -> void: jumps[0] += 1)
+	h.game.player.double_jumped.connect(func() -> void: jumps[1] += 1)
 	return jumps
 
 
-func _touch(index: int) -> void:
+func _touch(index: int, position := Vector2(640, 400)) -> void:
 	var touch := InputEventScreenTouch.new()
 	touch.index = index
 	touch.pressed = true
-	touch.position = Vector2(640, 400)
+	touch.position = position
 	h.game.get_viewport().push_input(touch)
+
+
+func _emulated_click(position := Vector2(640, 400)) -> void:
+	var click := InputEventMouseButton.new()
+	click.device = InputEvent.DEVICE_ID_EMULATION
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = position
+	h.game.get_viewport().push_input(click)
 
 
 func test_first_tap_starts_the_run_without_jumping() -> void:
@@ -42,22 +53,21 @@ func test_first_tap_starts_the_run_without_jumping() -> void:
 	assert_true(h.game.player.velocity.x > 0.0, "running")
 
 
-func test_a_tap_delivered_twice_in_one_frame_counts_once() -> void:
+func test_a_touch_and_its_emulated_click_count_once() -> void:
 	var jumps := _count_jumps()
-	# The same tap as a raw extra-finger touch and as Godot's emulated click.
-	_touch(2)
-	var click := InputEventMouseButton.new()
-	click.device = InputEvent.DEVICE_ID_EMULATION
-	click.button_index = MOUSE_BUTTON_LEFT
-	click.pressed = true
-	click.position = Vector2(640, 400)
-	h.game.get_viewport().push_input(click)
+	# Godot turns a touch into a raw touch event plus an emulated mouse click.
+	_touch(0)
+	_emulated_click()
 	await h.run_ticks(30)
 	assert_eq(h.game.state, GameSession.State.PLAYING)
-	assert_eq(jumps[0], 0, "starting tap did not also jump")
+	assert_eq(jumps[0], 0, "the start tap did not also jump")
+	_touch(0)
+	_emulated_click()
+	await h.run_ticks(4)
+	assert_eq(jumps, [1, 0] as Array[int], "one tap, one jump: the duplicate did not double jump")
 
 
-func test_extra_finger_tap_jumps() -> void:
+func test_every_finger_is_a_tap() -> void:
 	var jumps := _count_jumps()
 	h.game.press_jump()
 	await h.run_ticks(10)
@@ -65,9 +75,26 @@ func test_extra_finger_tap_jumps() -> void:
 	await h.run_ticks(2)
 	assert_eq(jumps[0], 1, "second finger tap jumped")
 	await h.run_ticks(60)
-	_touch(0)  # Raw first-finger touches are left to the emulated mouse click.
+	_touch(0)
 	await h.run_ticks(2)
-	assert_eq(jumps[0], 1, "raw first-finger touch is not counted twice")
+	assert_eq(jumps[0], 2, "first finger tap jumped")
+
+
+func test_tapping_the_pause_button_pauses_without_jumping() -> void:
+	var jumps := _count_jumps()
+	h.game.press_jump()
+	await h.run_ticks(10)
+	var button: Control = h.game.hud.get_node(^"%PauseButton")
+	var center := button.get_global_rect().get_center()
+	for pressed in [true, false]:
+		# Like a device: the raw touch plus the click Godot emulates from it.
+		var touch := InputEventScreenTouch.new()
+		touch.position = center
+		touch.pressed = pressed
+		Input.parse_input_event(touch)
+		await h.run_ticks(2)
+	assert_eq(h.game.state, GameSession.State.PAUSED, "the button paused the game")
+	assert_eq(jumps[0], 0, "the tap on the button was not a jump")
 
 
 func test_death_before_any_checkpoint_resets_to_spawn() -> void:

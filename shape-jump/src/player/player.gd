@@ -8,6 +8,7 @@ extends CharacterBody2D
 ## signals below. Knows nothing about score, UI or audio.
 
 signal jumped
+signal double_jumped
 signal landed(impact_speed: float)
 signal died(cause: StringName)
 signal respawned
@@ -66,6 +67,11 @@ func is_dead() -> bool:
 	return state == State.DEAD
 
 
+## True while the double jump is still available (always on the ground).
+func has_double_jump() -> bool:
+	return motor.air_jumps_left > 0
+
+
 func set_running(value: bool) -> void:
 	motor.running = value
 
@@ -83,11 +89,11 @@ func request_jump() -> void:
 func respawn_at(feet_position: Vector2, run: bool) -> void:
 	global_position = feet_position - Vector2(0.0, half_size.y)
 	velocity = Vector2.ZERO
-	motor.reset()
-	motor.running = run
 	# Teleport: do not interpolate from the death position.
 	reset_physics_interpolation()
 	apply_floor_snap()
+	motor.reset(is_on_floor())
+	motor.running = run
 	_set_state(State.RUN if run and is_on_floor() else State.IDLE)
 	respawned.emit()
 
@@ -127,12 +133,16 @@ func _physics_process(delta: float) -> void:
 		# the body through one of them.
 		die(&"crush")
 		return
-	velocity = motor.end_tick(velocity, delta)
+	velocity = motor.end_tick(velocity, delta, is_on_floor())
 
-	if motor.jumped_this_tick:
-		jumped.emit()
-	elif is_on_floor() and not was_on_floor:
-		landed.emit(maxf(incoming_fall_speed, 0.0))
+	match motor.jump_this_tick:
+		PlayerMotor.Jump.GROUND:
+			jumped.emit()
+		PlayerMotor.Jump.AIR:
+			double_jumped.emit()
+		_:
+			if is_on_floor() and not was_on_floor:
+				landed.emit(maxf(incoming_fall_speed, 0.0))
 
 	if global_position.y > kill_y:
 		die(&"fall")

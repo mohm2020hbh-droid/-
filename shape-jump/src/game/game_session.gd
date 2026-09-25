@@ -60,6 +60,7 @@ var _sequence: Tween
 
 func _ready() -> void:
 	player.jumped.connect(_on_player_jumped)
+	player.double_jumped.connect(_on_player_double_jumped)
 	player.landed.connect(_on_player_landed)
 	player.died.connect(_on_player_died)
 	score.changed.connect(hud.set_score)
@@ -216,6 +217,10 @@ func _on_back_requested() -> void:
 
 func _on_player_jumped() -> void:
 	Events.player_jumped.emit(player.global_position)
+
+
+func _on_player_double_jumped() -> void:
+	Events.player_double_jumped.emit(player.global_position)
 
 
 func _on_player_landed(impact_speed: float) -> void:
