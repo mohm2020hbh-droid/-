@@ -38,12 +38,30 @@ static func line(ci: CanvasItem, from: Vector2, to: Vector2, color: Color, width
 	ci.draw_line(from, to, color, width, true)
 
 
-## Soft round light, e.g. behind the player core or a saw hub.
+static var _light_texture: GradientTexture2D
+
+
+## Soft round light, e.g. behind the player core or a saw hub. One textured
+## quad with a smooth radial falloff (no banding, one draw call).
 static func soft_light(ci: CanvasItem, center: Vector2, radius: float, color: Color) -> void:
-	var steps := 6
-	for i in steps:
-		var t := float(i) / steps
-		ci.draw_circle(center, radius * (1.0 - t), Color(color, color.a * 0.12 * (0.35 + t)))
+	var extent := Vector2(radius, radius)
+	ci.draw_texture_rect(light_texture(), Rect2(center - extent, extent * 2.0), false, color)
+
+
+static func light_texture() -> GradientTexture2D:
+	if _light_texture == null:
+		var gradient := Gradient.new()
+		gradient.offsets = PackedFloat32Array([0.0, 0.25, 0.6, 1.0])
+		gradient.colors = PackedColorArray([
+			Color(1, 1, 1, 1), Color(1, 1, 1, 0.45), Color(1, 1, 1, 0.1), Color(1, 1, 1, 0)])
+		_light_texture = GradientTexture2D.new()
+		_light_texture.gradient = gradient
+		_light_texture.fill = GradientTexture2D.FILL_RADIAL
+		_light_texture.fill_from = Vector2(0.5, 0.5)
+		_light_texture.fill_to = Vector2(1.0, 0.5)
+		_light_texture.width = 128
+		_light_texture.height = 128
+	return _light_texture
 
 
 ## Dashed outline, used for phase blocks while they are absent.

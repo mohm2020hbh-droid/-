@@ -20,7 +20,13 @@ func _ready() -> void:
 	var failed := 0
 	var started_ms := Time.get_ticks_msec()
 	for path in _discover():
-		var script: GDScript = load(path)
+		var script := load(path) as GDScript
+		if script == null or not script.can_instantiate():
+			# A test file that does not parse must fail the run, not vanish from it.
+			total += 1
+			failed += 1
+			print("  FAIL  %s (script failed to load)" % path.get_file())
+			continue
 		for method in script.get_script_method_list():
 			var method_name: String = method.name
 			if not method_name.begins_with("test_"):
