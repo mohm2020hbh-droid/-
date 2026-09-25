@@ -63,6 +63,7 @@ shape-jump/
 │   ├── background/             طبقات Parallax إجرائية (سماء، شمس، أبراج، ضباب)
 │   ├── game/
 │   │   ├── game_session.gd     Game State Machine + الوسيط الوحيد في مشهد اللعب
+│   │   ├── tap_input.gd        الإدخال → "tapped" / "pause_requested" (تعدد الأصابع، منع التكرار)
 │   │   ├── score_tracker.gd    منطق النقاط النقي ← قابل للاختبار
 │   │   └── game.tscn           المشهد الرئيسي
 │   └── ui/                     HUD، Start، Pause، Complete، Fade، Theme
@@ -72,7 +73,8 @@ shape-jump/
 └── tests/
     ├── test_runner.tscn / .gd  مشغّل الاختبارات (يُفشل الاختبار عند أي خطأ من المحرك)
     ├── test_case.gd            دوال assert
-    ├── support/route_runner.gd لاعب آلي يلعب المشهد الحقيقي بمسار قفزات
+    ├── support/                GameHarness (يشغّل المشهد الحقيقي Tick بـTick بإصبع آلي)،
+    │                           Level01Route (حل المستوى)، SaveSandbox (حفظ مؤقت للاختبار)
     ├── unit/                   منطق نقي + سلامة المستويات
     └── integration/            فيزياء فعلية + إنهاء Level 01
 ```
@@ -97,7 +99,7 @@ shape-jump/
 ### قاعدة التواصل
 - **Signals للأعلى، استدعاءات للأسفل.** العنصر لا يستدعي أبًا أو أخًا.
 - **Events Bus** فقط للأحداث التي تهم أنظمة عامة (Audio الآن؛ Haptics/Analytics لاحقًا). يطلقها `GameSession` حصرًا → مصدر واحد يسهل تتبعه.
-- **كل الإدخال** يمر عبر `GameSession.press_jump()`: اللمس، الماوس، لوحة المفاتيح، واللاعب الآلي في الاختبارات يستخدمون نفس المدخل.
+- **كل الإدخال** يمر عبر `GameSession.press_jump()`: `TapInput` يحوّل اللمس/الماوس/لوحة المفاتيح إلى إشارة `tapped` واحدة لكل لمسة، واللاعب الآلي في الاختبارات يستدعي نفس الدالة.
 
 ---
 
@@ -105,7 +107,7 @@ shape-jump/
 
 ```
                  ┌────────────────────── GameSession (State Machine) ─────────────────────┐
-  Touch/Click →  │ _unhandled_input ─► READY: start()   PLAYING: player.request_jump()   │
+  Touch/Click →  │ TapInput.tapped ─► press_jump ─► READY: start()   PLAYING: request_jump │
                  │                                                                         │
                  │  Player.jumped/landed/died ─────┐        Level.shard_collected ───┐     │
                  │                                 ▼                                 ▼     │
@@ -202,7 +204,10 @@ completed=true
 | Unit: SaveSystem | الحفظ والقراءة، أفضل نتيجة لا تنقص |
 | Unit: Audio / Project setup | كل أصوات اللعب موجودة في المكتبة، الـInput Map والـAudio Buses ومعدل الفيزياء |
 | Unit: Level integrity | وجود Spawn وFinish، ترتيب الـCheckpoints، ≥ 1.5 ثانية أرض آمنة بعد كل Checkpoint، الحتمية `f(t)` للعناصر الزمنية |
-| Integration: Player physics | على الفيزياء الفعلية: الوقوف والسرعة الدقيقة، ارتفاع القفزة، موت الجدار/الأشواك/السقوط، Ledge Assist، المنصات المتحركة والمختفية، جمع Shard |
+| Unit: PlayerVisual | الـSquash لا ينفجر مع توقف إطار طويل، ويستقر على 30/60/144 FPS |
+| Integration: Player physics | على الفيزياء الفعلية: زمن الاستجابة (القفز في أول Physics Tick بعد اللمس)، ارتفاع القفزة، الهبوط بلا اهتزاز، الهبوط على 3px من الحافة، فجوات ≤ 1 tile تُعبر بلا قفز، الاصطدام بالسقف، Coyote وBuffer فعليًا، Ledge Assist أثناء الجري والسقوط، السحق، عدم الاختراق بأقصى سرعة سقوط، المصاعد صعودًا ونزولًا، المنصة المختفية تحت اللاعب، الموت والعودة في نفس الإطار |
+| Integration: Camera | ثبات موضع اللاعب على الشاشة، لا تمايل مع القفز، صعود ناعم مع الدرج، موت السقوط داخل الشاشة، انتقال فوري بعد العودة |
+| Integration: Game flow | أول لمسة تبدأ ولا تقفز، لمسة مكررة في نفس الإطار تُحسب مرة، إصبع ثانٍ يقفز، الموت قبل/بعد Checkpoint، Restart من الإيقاف وأثناء الموت، الإيقاف أثناء الموت ثم الاستئناف |
 | Integration: Playthrough | لاعب آلي بجدول قفزات ثابت **ينهي Level 01 بدون موت**، ومرتين بنفس النتيجة بالضبط (Determinism) |
 | Integration: Death/Respawn | موت متعمد ← عودة للـCheckpoint ← إنهاء المستوى بنفس المسار (يثبت تطابق التوقيت بعد العودة) |
 

@@ -36,9 +36,10 @@ godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn
 godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn -- --filter=playthrough
 ```
 
-40 اختبارًا تعمل في ~4 ثوانٍ، وتشمل:
+71 اختبارًا تعمل في ~8 ثوانٍ، وتشمل:
 - رياضيات القفزة (الارتفاع الفعلي = 150px المضبوطة)، Coyote، Buffer، لا Double Jump.
-- فيزياء حقيقية: الوقوف، الموت بالجدار/الأشواك/السقوط، Ledge Assist، المنصات المتحركة والمختفية.
+- فيزياء حقيقية: زمن الاستجابة، الهبوط والحواف، الفجوات، السقف، السحق، المصاعد، Ledge Assist، عدم الاختراق.
+- الكاميرا (موضع اللاعب، لا تمايل، موت السقوط داخل الشاشة) وتدفق اللعب (بدء، تعدد الأصابع، موت، Restart، إيقاف).
 - **لاعب آلي ينهي Level 01 بدون موت**، ونتيجتان متطابقتان تمامًا لتشغيلين (Determinism)، وموت متعمد ← عودة للـCheckpoint ← إنهاء المستوى بنفس المسار.
 - قواعد سلامة المستوى (Spawn، Finish، ترتيب الـCheckpoints، ≥ 1.5 ثانية أرض آمنة بعد كل Checkpoint).
 - أي خطأ من المحرك أو السكربت أثناء اختبار يُفشل ذلك الاختبار.
@@ -55,6 +56,11 @@ godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn -
 | Fall Gravity Multiplier | 1.3 | ثقل الهبوط |
 | Coyote / Jump Buffer | 0.08 / 0.12 s | التسامح في التوقيت |
 | Ledge Assist | 10 px | التسامح مع حواف المنصات |
+
+باقي قيم الإحساس قابلة للضبط من الـInspector:
+- **Game** (GameSession) في `src/game/game.tscn`: مدة التحطم قبل الـFade، أزمنة الـFade، قوة اهتزاز الموت، فرملة النهاية.
+- **GameCamera** في نفس المشهد: موضع اللاعب الأفقي، إزاحة الأفق، سرعات المتابعة، المنطقة الميتة للسقوط.
+- **Visual / Fx** في `src/player/player.tscn`: الـSquash & Stretch، الدوران، طول الذيل الضوئي.
 
 ⚠️ تغيير سرعة الجري أو القفزة يغيّر مسار Level 01؛ شغّل الاختبارات بعدها — اختبار الـplaythrough سيخبرك أين يموت اللاعب الآلي.
 
