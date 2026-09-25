@@ -25,53 +25,57 @@
 
 ```
 shape-jump/
-├── project.godot               إعدادات المشروع، Input Map، أسماء طبقات الفيزياء، Autoloads
+├── project.godot               إعدادات المشروع، Input Map، أسماء طبقات الفيزياء، Autoloads، Theme
+├── export_presets.cfg          تصدير Android جاهز (يستثني tests/ و docs/)
 ├── default_bus_layout.tres     Master / SFX / Ambient
 ├── docs/                       GDD + Architecture
 ├── src/
-│   ├── autoload/               خدمات عامة فقط (3 ملفات)
+│   ├── autoload/               خدمات عامة (Autoload) بلا منطق لعب
 │   │   ├── events.gd           Signal Bus للأحداث العابرة للأنظمة
-│   │   ├── audio_manager.gd    يربط الأحداث بالأصوات
 │   │   └── save_system.gd      الحفظ والتحميل
+│   ├── audio/
+│   │   ├── audio_manager.gd    (Autoload) يربط الأحداث بالأصوات، Pool من 8 مشغلات
+│   │   └── sound_library.gd    Resource: معرّف → ملف صوت
 │   ├── core/                   ثوابت ومساعدات بلا حالة
+│   │   ├── game_const.gd       حجم الـTile + أرقام طبقات الفيزياء
 │   │   ├── palette.gd          الألوان (مصدر واحد للهوية البصرية)
-│   │   ├── layers.gd           أرقام طبقات الفيزياء + حجم الـTile
-│   │   └── neon.gd             دوال رسم الحواف المضيئة
+│   │   ├── neon.gd             دوال رسم الحواف المضيئة والتوهج
+│   │   └── soft_light.tres     تدرج دائري للتوهج
 │   ├── player/
 │   │   ├── movement_config.gd  Resource: كل أرقام الحركة القابلة للضبط
+│   │   ├── default_movement.tres
 │   │   ├── player_motor.gd     منطق الحركة النقي (بلا Nodes) ← قابل للاختبار
 │   │   ├── player.gd           CharacterBody2D: يطبق الـMotor، التصادم، الحالات
 │   │   ├── player_visual.gd    الرسم والـAnimations فقط (الدوران هنا فقط)
-│   │   ├── player_fx.gd        Particles والذيل الضوئي
+│   │   ├── player_fx.gd        Particles والذيل الضوئي وحلقة الموت
 │   │   └── player.tscn
 │   ├── level/
 │   │   ├── level.gd            جذر أي مستوى: ساعة المستوى، الـSpawn، الـCheckpoints
-│   │   ├── level_data.gd       Resource: اسم/معرف/معامل سرعة المستوى
+│   │   ├── level_data.gd       Resource: معرف/اسم/معامل سرعة المستوى
 │   │   └── elements/           عناصر جاهزة (@tool تظهر في المحرر مباشرة)
-│   │       ├── block.gd              منصة صلبة (ثابتة أو متحركة)
+│   │       ├── block.gd              منصة صلبة (ثابتة، أو متحركة على AnimatableBody2D)
 │   │       ├── phase_block.gd        منصة تختفي بدورة زمنية
 │   │       ├── oscillator.gd         مكوّن حركة يُضاف لأي عنصر
-│   │       ├── spikes.gd · saw.gd    أخطار
-│   │       ├── shard.gd              Collectible
+│   │       ├── spikes.gd · saw.gd · hazard_pulse.gd   أخطار
+│   │       ├── shard.gd / .tscn      Collectible
 │   │       └── checkpoint.gd · finish_gate.gd
 │   ├── camera/game_camera.gd   Follow + Look-ahead + Shake
-│   ├── background/             طبقات Parallax إجرائية
+│   ├── background/             طبقات Parallax إجرائية (سماء، شمس، أبراج، ضباب)
 │   ├── game/
-│   │   ├── game_session.gd     Game State Machine + ربط الأنظمة
+│   │   ├── game_session.gd     Game State Machine + الوسيط الوحيد في مشهد اللعب
 │   │   ├── score_tracker.gd    منطق النقاط النقي ← قابل للاختبار
 │   │   └── game.tscn           المشهد الرئيسي
 │   └── ui/                     HUD، Start، Pause، Complete، Fade، Theme
 ├── levels/
-│   └── level_01.tscn (+ .tres)
+│   └── level_01.tscn + level_01.tres
 ├── assets/audio/               ملفات الصوت + sound_library.tres
 └── tests/
-    ├── test_runner.tscn / .gd  مشغّل الاختبارات
+    ├── test_runner.tscn / .gd  مشغّل الاختبارات (يُفشل الاختبار عند أي خطأ من المحرك)
     ├── test_case.gd            دوال assert
-    ├── unit/                   منطق نقي
-    └── integration/            تشغيل المستوى فعليًا بلاعب آلي
+    ├── support/route_runner.gd لاعب آلي يلعب المشهد الحقيقي بمسار قفزات
+    ├── unit/                   منطق نقي + سلامة المستويات
+    └── integration/            فيزياء فعلية + إنهاء Level 01
 ```
-
----
 
 ## 3. فصل المسؤوليات
 
@@ -93,6 +97,7 @@ shape-jump/
 ### قاعدة التواصل
 - **Signals للأعلى، استدعاءات للأسفل.** العنصر لا يستدعي أبًا أو أخًا.
 - **Events Bus** فقط للأحداث التي تهم أنظمة عامة (Audio الآن؛ Haptics/Analytics لاحقًا). يطلقها `GameSession` حصرًا → مصدر واحد يسهل تتبعه.
+- **كل الإدخال** يمر عبر `GameSession.press_jump()`: اللمس، الماوس، لوحة المفاتيح، واللاعب الآلي في الاختبارات يستخدمون نفس المدخل.
 
 ---
 
@@ -133,6 +138,10 @@ State Machine بـ `enum` ودالة `_enter_state()` — كافية لخمس ح
 - النتيجة: نفس المحاولة = نفس التوقيتات = مستوى قابل للتعلم، واختبار آلي يمكنه إثبات أن المستوى قابل للإنهاء.
 
 ترتيب التنفيذ في كل Tick: `Level` (يحرك العناصر) ← ثم `Player` (يتحرك بالنسبة لها)، مضمون بترتيب الشجرة.
+
+**سرعة جري ثابتة:** `Player` يطرح سرعة المنصة الأفقية من حركته، فتحمله المنصات عموديًا فقط. بذلك يبقى `x(t)` خطيًا، وكل موضع في المستوى يقابل لحظة ثابتة من ساعة المستوى (المستوى "مقطوعة موسيقية"). هذا ما يسمح بـ:
+- حساب أطوار العناصر المتحركة من موقعها عند التصميم.
+- وصف حل كامل للمستوى كقائمة مواضع قفز (Route) يعيد تشغيلها اللاعب الآلي في الاختبارات.
 
 ---
 
@@ -191,9 +200,13 @@ completed=true
 | Unit: PlayerMotor | Coyote، Buffer، لا Double Jump، حد سرعة السقوط |
 | Unit: ScoreTracker | حساب النقاط، Snapshot/Restore عند الـCheckpoint |
 | Unit: SaveSystem | الحفظ والقراءة، أفضل نتيجة لا تنقص |
-| Unit: Level integrity | وجود Spawn وFinish وCheckpoints، تسجيل العناصر الزمنية، الحتمية `f(t)` |
+| Unit: Audio / Project setup | كل أصوات اللعب موجودة في المكتبة، الـInput Map والـAudio Buses ومعدل الفيزياء |
+| Unit: Level integrity | وجود Spawn وFinish، ترتيب الـCheckpoints، ≥ 1.5 ثانية أرض آمنة بعد كل Checkpoint، الحتمية `f(t)` للعناصر الزمنية |
+| Integration: Player physics | على الفيزياء الفعلية: الوقوف والسرعة الدقيقة، ارتفاع القفزة، موت الجدار/الأشواك/السقوط، Ledge Assist، المنصات المتحركة والمختفية، جمع Shard |
 | Integration: Playthrough | لاعب آلي بجدول قفزات ثابت **ينهي Level 01 بدون موت**، ومرتين بنفس النتيجة بالضبط (Determinism) |
-| Integration: Death/Respawn | الموت يعيد للـCheckpoint مع استرجاع الـScore والـShards |
+| Integration: Death/Respawn | موت متعمد ← عودة للـCheckpoint ← إنهاء المستوى بنفس المسار (يثبت تطابق التوقيت بعد العودة) |
+
+أي خطأ يسجله المحرك أثناء اختبار (Script error، استدعاء غير صالح...) يُفشل ذلك الاختبار عبر `Logger` مخصص.
 
 التشغيل:
 ```bash
