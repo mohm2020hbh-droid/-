@@ -8,6 +8,7 @@ extends Node
 ##                          every level once: a death, the 25-point penalty
 ##                          and a checkpoint respawn at each.
 ##   --autoplay-from=N      start at level N (1-based) instead of 1.
+##   --autoplay-loops=N     play the whole world N times (stress runs).
 ##   --autoplay-quit        quit when done (headless runs).
 ## Every event is printed with an [autoplay] prefix (the browser console on
 ## the web), ending with "[autoplay] WORLD COMPLETE".
@@ -20,6 +21,7 @@ var _next := 0
 var _skip: Array[int] = []
 var _was_state := -1
 var _deaths_seen := 0
+var _loop := 1
 
 
 static func requested() -> bool:
@@ -101,6 +103,10 @@ func _on_died(cause: StringName) -> void:
 func _after_complete() -> void:
 	if game.level_index + 1 < game.world.levels.size():
 		game.play_level(game.level_index + 1)
+	elif _loop < maxi(int(option("--autoplay-loops")), 1):
+		_loop += 1
+		_log("loop %d: back to level 1" % _loop)
+		game.play_level(0)
 	else:
 		_log("WORLD COMPLETE (%d deaths in all)" % _deaths_seen)
 		if "--autoplay-quit" in OS.get_cmdline_user_args():
@@ -108,4 +114,8 @@ func _after_complete() -> void:
 
 
 func _log(text: String) -> void:
-	print("[autoplay] " + text)
+	print("[autoplay] %s | vram %.1f MB, textures %.1f MB, objects %d, nodes %d, viewport %s" % [text,
+		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+		Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0,
+		Performance.get_monitor(Performance.OBJECT_COUNT), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+		get_viewport().get_visible_rect().size])

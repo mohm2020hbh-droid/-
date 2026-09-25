@@ -332,7 +332,7 @@
   }
 
   const hash = (location.hash || '').slice(1);
-  const qa = hash === 'autoplay' || hash === 'autoplay-deaths';
+  const qa = hash === 'autoplay' || hash === 'autoplay-deaths' || hash === 'stress';
 
   let engine = null;
   async function boot() {
@@ -346,7 +346,7 @@
       executable: 'index',
       mainPack: 'index.pck',
       canvas: $('canvas'),
-      canvasResizePolicy: 2,
+      canvasResizePolicy: 0,  // The page sizes the canvas itself: see fitCanvas().
       focusCanvas: true,
       experimentalVK: false,
       ensureCrossOriginIsolationHeaders: false,
@@ -366,6 +366,43 @@
     }
   }
 
+  // The canvas's pixel size is the size of Godot's main render target. Left to
+  // Godot (resize policy 2) it follows the frame size times devicePixelRatio
+  // without limit, and a frame resized past the GPU's maximum texture size
+  // (maximising the preview on a high-DPI screen, or ~4096 px on many phones)
+  // makes texImage2D fail in _update_render_target_color and the context is
+  // lost. So: follow the frame, but never above the GPU limits or a pixel
+  // budget (2.5x the 1280x720 design size), and never 0 (a hidden frame).
+  const MAX_PIXELS = 1280 * 720 * 2.5;
+  let gpuMax = 4096;
+  function readGpuLimits() {
+    const gl = $('canvas').getContext('webgl2');
+    if (gl) {
+      const dims = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+      gpuMax = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), dims[0], dims[1]);
+    }
+  }
+  function fitCanvas() {
+    const canvas = $('canvas');
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (w < 1 || h < 1) {
+      return;  // Hidden or collapsed: keep the last size.
+    }
+    let scale = window.devicePixelRatio || 1;
+    scale = Math.min(scale, gpuMax / w, gpuMax / h, Math.sqrt(MAX_PIXELS / (w * h)));
+    const pw = Math.max(1, Math.floor(w * scale));
+    const ph = Math.max(1, Math.floor(h * scale));
+    if (canvas.width !== pw || canvas.height !== ph) {
+      canvas.width = pw;
+      canvas.height = ph;
+    }
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+  }
+  window.addEventListener('resize', fitCanvas);
+  fitCanvas();
+
   let started = false;
   function start(testMode) {
     if (started || !engine) {
@@ -378,11 +415,16 @@
       if (qa) {
         args.push('--autoplay');
       }
-      if (hash === 'autoplay-deaths') {
+      if (hash === 'autoplay-deaths' || hash === 'stress') {
         args.push('--autoplay-die=50,80');
+      }
+      if (hash === 'stress') {
+        args.push('--autoplay-loops=4');
       }
     }
     engine.start({ args: args }).then(function () {
+      readGpuLimits();
+      fitCanvas();
       launcher.hidden = true;
       $('canvas').focus();
     }, function (err) {
