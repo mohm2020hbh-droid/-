@@ -73,10 +73,15 @@ func _rebuild() -> void:
 
 
 func _draw() -> void:
+	var tip_dir := -1.0 if facing == Facing.UP else 1.0
 	for i in count:
 		var tri := get_triangle(i)
-		draw_colored_polygon(tri, Palette.BLOCK_BODY)
-		Neon.polyline(self, tri, Palette.HAZARD, 2.5, 1.0, true)
-		# Hot core line up the spine makes the danger read instantly.
+		# Dark-red body that heats up toward the tip: reads as "danger" even
+		# at phone size, and never as a safe (black) block.
+		var base_color := Color(Palette.HAZARD.darkened(0.78), 1.0)
+		var tip_color := Color(Palette.HAZARD.darkened(0.35), 1.0)
+		draw_polygon(tri, PackedColorArray([base_color, tip_color, base_color]))
+		Neon.polyline(self, tri, Palette.HAZARD, 3.0, 1.3, true)
+		# Hot core line up the spine.
 		var base_mid := (tri[0] + tri[2]) * 0.5
-		draw_line(base_mid.lerp(tri[1], 0.25), tri[1], Color(Palette.HAZARD_CORE, 0.7), 1.5, true)
+		draw_line(base_mid.lerp(tri[1], 0.3), tri[1] - Vector2(0, tip_dir * 3.0), Color(Palette.HAZARD_CORE, 0.85), 2.0, true)

@@ -5,6 +5,7 @@ class_name Neon
 
 ## Relative width and alpha of each glow pass, widest first.
 const _GLOW_PASSES: Array[Vector2] = [Vector2(7.0, 0.05), Vector2(4.0, 0.1), Vector2(2.2, 0.22)]
+const LIGHT_TEXTURE: GradientTexture2D = preload("res://src/core/soft_light.tres")
 
 
 static func polyline(ci: CanvasItem, points: PackedVector2Array, color: Color, width: float,
@@ -38,30 +39,11 @@ static func line(ci: CanvasItem, from: Vector2, to: Vector2, color: Color, width
 	ci.draw_line(from, to, color, width, true)
 
 
-static var _light_texture: GradientTexture2D
-
-
 ## Soft round light, e.g. behind the player core or a saw hub. One textured
 ## quad with a smooth radial falloff (no banding, one draw call).
 static func soft_light(ci: CanvasItem, center: Vector2, radius: float, color: Color) -> void:
 	var extent := Vector2(radius, radius)
-	ci.draw_texture_rect(light_texture(), Rect2(center - extent, extent * 2.0), false, color)
-
-
-static func light_texture() -> GradientTexture2D:
-	if _light_texture == null:
-		var gradient := Gradient.new()
-		gradient.offsets = PackedFloat32Array([0.0, 0.25, 0.6, 1.0])
-		gradient.colors = PackedColorArray([
-			Color(1, 1, 1, 1), Color(1, 1, 1, 0.45), Color(1, 1, 1, 0.1), Color(1, 1, 1, 0)])
-		_light_texture = GradientTexture2D.new()
-		_light_texture.gradient = gradient
-		_light_texture.fill = GradientTexture2D.FILL_RADIAL
-		_light_texture.fill_from = Vector2(0.5, 0.5)
-		_light_texture.fill_to = Vector2(1.0, 0.5)
-		_light_texture.width = 128
-		_light_texture.height = 128
-	return _light_texture
+	ci.draw_texture_rect(LIGHT_TEXTURE, Rect2(center - extent, extent * 2.0), false, color)
 
 
 ## Dashed outline, used for phase blocks while they are absent.

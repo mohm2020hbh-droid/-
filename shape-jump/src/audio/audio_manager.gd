@@ -52,6 +52,17 @@ func play(id: StringName, pitch_jitter: float = 0.0, volume_db: float = 0.0) -> 
 	voice.play()
 
 
+func stop_all() -> void:
+	for voice in _pool:
+		voice.stop()
+	_ambient.stop()
+
+
+func _exit_tree() -> void:
+	# Quitting mid-sound would otherwise leave playbacks alive in the AudioServer.
+	stop_all()
+
+
 func play_ambient(stream: AudioStream, volume_db: float = -12.0) -> void:
 	_ambient.stream = stream
 	_ambient.volume_db = volume_db

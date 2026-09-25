@@ -1,0 +1,80 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/game/game_session.gd" id="1_session"]
+[ext_resource type="PackedScene" path="res://levels/level_01.tscn" id="2_level"]
+[ext_resource type="PackedScene" path="res://src/background/background.tscn" id="3_background"]
+[ext_resource type="PackedScene" path="res://src/player/player.tscn" id="4_player"]
+[ext_resource type="Script" path="res://src/camera/game_camera.gd" id="5_camera"]
+[ext_resource type="PackedScene" path="res://src/ui/hud.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://src/ui/start_overlay.tscn" id="7_start"]
+[ext_resource type="PackedScene" path="res://src/ui/pause_menu.tscn" id="8_pause"]
+[ext_resource type="PackedScene" path="res://src/ui/level_complete_panel.tscn" id="9_complete"]
+[ext_resource type="Script" path="res://src/ui/screen_fade.gd" id="10_fade"]
+
+[sub_resource type="Gradient" id="Gradient_embers"]
+offsets = PackedFloat32Array(0, 0.2, 0.8, 1)
+colors = PackedColorArray(1, 0.3, 0.35, 0, 1, 0.3, 0.35, 0.6, 1, 0.2, 0.28, 0.35, 1, 0.2, 0.28, 0)
+
+[node name="Game" type="Node"]
+script = ExtResource("1_session")
+level_scene = ExtResource("2_level")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Background" parent="World" instance=ExtResource("3_background")]
+
+[node name="LevelSlot" type="Node2D" parent="World"]
+unique_name_in_owner = true
+
+[node name="Player" parent="World" instance=ExtResource("4_player")]
+unique_name_in_owner = true
+
+[node name="GameCamera" type="Camera2D" parent="World" node_paths=PackedStringArray("target")]
+unique_name_in_owner = true
+process_callback = 0
+script = ExtResource("5_camera")
+target = NodePath("../Player")
+
+[node name="Embers" type="CPUParticles2D" parent="World/GameCamera"]
+position = Vector2(200, 0)
+amount = 36
+lifetime = 5.0
+preprocess = 5.0
+emission_shape = 3
+emission_rect_extents = Vector2(900, 420)
+direction = Vector2(0, -1)
+spread = 30.0
+gravity = Vector2(0, -6)
+initial_velocity_min = 8.0
+initial_velocity_max = 26.0
+scale_amount_min = 1.5
+scale_amount_max = 3.0
+color_ramp = SubResource("Gradient_embers")
+
+[node name="Hud" parent="." instance=ExtResource("6_hud")]
+unique_name_in_owner = true
+
+[node name="Overlays" type="CanvasLayer" parent="."]
+process_mode = 3
+layer = 20
+
+[node name="StartOverlay" parent="Overlays" instance=ExtResource("7_start")]
+unique_name_in_owner = true
+
+[node name="PauseMenu" parent="Overlays" instance=ExtResource("8_pause")]
+unique_name_in_owner = true
+visible = false
+
+[node name="LevelCompletePanel" parent="Overlays" instance=ExtResource("9_complete")]
+unique_name_in_owner = true
+visible = false
+
+[node name="ScreenFade" type="ColorRect" parent="Overlays"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("10_fade")

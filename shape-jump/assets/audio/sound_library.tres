@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SoundLibrary" format=3]
+
+[ext_resource type="Script" path="res://src/audio/sound_library.gd" id="1_library"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/jump.wav" id="2_jump"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/land.wav" id="3_land"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/collect.wav" id="4_collect"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/death.wav" id="5_death"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/checkpoint.wav" id="6_checkpoint"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/complete.wav" id="7_complete"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/ui_click.wav" id="8_click"]
+
+[resource]
+script = ExtResource("1_library")
+sounds = Dictionary[StringName, AudioStream]({
+&"checkpoint": ExtResource("6_checkpoint"),
+&"collect": ExtResource("4_collect"),
+&"complete": ExtResource("7_complete"),
+&"death": ExtResource("5_death"),
+&"jump": ExtResource("2_jump"),
+&"land": ExtResource("3_land"),
+&"ui_click": ExtResource("8_click")
+})
