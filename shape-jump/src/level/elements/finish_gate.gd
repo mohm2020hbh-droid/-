@@ -25,6 +25,17 @@ func _ready() -> void:
 	add_child(shape_node, false, Node.INTERNAL_MODE_FRONT)
 	if not Engine.is_editor_hint():
 		body_entered.connect(_on_body_entered)
+		Level.join(self)
+
+
+func _enter_tree() -> void:
+	if is_node_ready() and not Engine.is_editor_hint():
+		Level.join(self)  # Re-entering after a reparent.
+
+
+func _exit_tree() -> void:
+	if not Engine.is_editor_hint():
+		Level.leave(self)
 
 
 func _process(delta: float) -> void:

@@ -24,7 +24,8 @@ const LEDGE_ASSIST_CLEARANCE := 2.0
 
 ## Falling below this world Y kills the player. Set by the game from the level.
 var kill_y := INF
-## While true nothing can kill the player (e.g. after crossing the finish).
+## While true nothing can kill the player. The game session sets it for
+## every state except PLAYING (start screen, pause, finish).
 var invulnerable := false
 var state: State = State.IDLE
 var motor: PlayerMotor
@@ -84,7 +85,6 @@ func respawn_at(feet_position: Vector2, run: bool) -> void:
 	velocity = Vector2.ZERO
 	motor.reset()
 	motor.running = run
-	invulnerable = false
 	# Teleport: do not interpolate from the death position.
 	reset_physics_interpolation()
 	apply_floor_snap()
@@ -140,11 +140,12 @@ func _physics_process(delta: float) -> void:
 	_update_state()
 
 
-## If this tick's move would hit the face of a ledge whose top is only a few
-## pixels above our feet, lift onto it instead. Covers running into a low
-## lip and landing a hair short while falling onto a corner.
+## Forgives near misses on corners. If this tick's move would hit a face
+## head-on but only by a few pixels, shift past the corner instead:
+## - feet just below a ledge top -> step up (running or falling onto it);
+## - head just above an overhang's underside -> duck under (airborne only).
 func _apply_ledge_assist(delta: float) -> void:
-	if config.ledge_assist <= 0.0 or velocity.x <= 0.0:
+	if velocity.x <= 0.0:
 		return
 	var motion := velocity * delta
 	var grounded := is_on_floor()
@@ -153,25 +154,36 @@ func _apply_ledge_assist(delta: float) -> void:
 	var hit := KinematicCollision2D.new()
 	if not test_move(global_transform, motion, hit) or not _is_head_on(hit.get_normal()):
 		return
-	var lift := LEDGE_ASSIST_STEP
-	while lift <= config.ledge_assist:
-		# Clear the lip by a little more than the physics safe margin, or the
-		# next move still clips its corner.
-		var up := Vector2(0.0, -(lift + LEDGE_ASSIST_CLEARANCE))
-		if test_move(global_transform, up):
-			return  # Ceiling in the way.
-		var lifted_hit := KinematicCollision2D.new()
-		var blocked := test_move(global_transform.translated(up), motion, lifted_hit)
-		if not blocked or not _is_head_on(lifted_hit.get_normal()):
+	if _nudge_past_corner(Vector2.UP, config.ledge_assist, motion, grounded):
+		return
+	if not grounded:
+		_nudge_past_corner(Vector2.DOWN, config.head_clip_assist, motion, false)
+
+
+## Tries shifts of growing size along [param direction], up to [param limit]
+## pixels, until [param motion] no longer hits a face head-on. Returns true
+## if the player was moved.
+func _nudge_past_corner(direction: Vector2, limit: float, motion: Vector2, grounded: bool) -> bool:
+	var amount := LEDGE_ASSIST_STEP
+	while amount <= limit:
+		# Clear the corner by a little more than the physics safe margin, or
+		# the next move still clips it.
+		var shift := direction * (amount + LEDGE_ASSIST_CLEARANCE)
+		if test_move(global_transform, shift):
+			return false  # Blocked on that side.
+		var shifted_hit := KinematicCollision2D.new()
+		var blocked := test_move(global_transform.translated(shift), motion, shifted_hit)
+		if not blocked or not _is_head_on(shifted_hit.get_normal()):
 			if grounded:
 				# Do this tick's horizontal step here too: left to move_and_slide,
 				# floor snapping would first pull us back onto the lower ground.
-				global_position += up + Vector2(motion.x, 0.0)
+				global_position += shift + Vector2(motion.x, 0.0)
 				velocity.x = 0.0
 			else:
-				global_position += up
-			return
-		lift += LEDGE_ASSIST_STEP
+				global_position += shift
+			return true
+		amount += LEDGE_ASSIST_STEP
+	return false
 
 
 ## Auto-running into a wall would pin the player forever (a softlock), so a

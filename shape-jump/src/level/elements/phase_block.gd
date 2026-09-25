@@ -15,13 +15,24 @@ extends Block
 
 var _solid := true
 var _time_to_vanish := INF
+var _drawn_presence := -1.0
 var _query: PhysicsShapeQueryParameters2D
 
 
 func _ready() -> void:
 	super()
 	if not Engine.is_editor_hint():
-		add_to_group(&"timed")
+		Level.join(self)
+
+
+func _enter_tree() -> void:
+	if is_node_ready() and not Engine.is_editor_hint():
+		Level.join(self)  # Re-entering after a reparent.
+
+
+func _exit_tree() -> void:
+	if not Engine.is_editor_hint():
+		Level.leave(self)
 
 
 func is_solid_at(t: float) -> bool:
@@ -39,7 +50,11 @@ func apply_time(t: float) -> void:
 		solid = false  # Wait until the player is clear instead of trapping it.
 	_set_solid(solid)
 	_time_to_vanish = (solid_ratio - cycle) * period if solid else INF
-	queue_redraw()
+	# Redraw only when the picture changes (appear, vanish, flicker frames).
+	var presence := _presence() if solid else 0.0
+	if presence != _drawn_presence:
+		_drawn_presence = presence
+		queue_redraw()
 
 
 func _set_solid(value: bool) -> void:
@@ -58,13 +73,15 @@ func _overlaps_player() -> bool:
 	return not get_world_2d().direct_space_state.intersect_shape(_query, 1).is_empty()
 
 
+## 1 when steady, flickering between 1 and 0.35 just before vanishing.
+func _presence() -> float:
+	if _time_to_vanish < warning_time and sin(_time_to_vanish * 70.0) > 0.0:
+		return 0.35
+	return 1.0
+
+
 func _draw() -> void:
 	if _solid:
-		var presence := 1.0
-		if _time_to_vanish < warning_time:
-			# Flicker faster as the moment approaches.
-			var flicker := sin(_time_to_vanish * 70.0)
-			presence = 0.35 if flicker > 0.0 else 1.0
-		_draw_block(presence)
+		_draw_block(_presence())
 	else:
 		Neon.dashed_rect(self, get_rect(), Color(Palette.NEON_DIM, 0.75), 2.0, 12.0)

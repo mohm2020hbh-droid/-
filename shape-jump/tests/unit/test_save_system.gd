@@ -41,3 +41,23 @@ func test_best_values_never_decrease() -> void:
 	assert_eq(rec.best_score, 1200)
 	assert_eq(rec.best_shards, 7)
 	assert_eq(rec.completed, true)
+
+
+func test_writes_leave_no_temp_file_behind() -> void:
+	SaveSystem.record_result(&"level_x", 10, 1, false)
+	assert_true(FileAccess.file_exists(TEST_PATH), "save written")
+	assert_false(FileAccess.file_exists(TEST_PATH + ".tmp"), "temp file renamed into place")
+
+
+func test_recovers_from_an_interrupted_write() -> void:
+	SaveSystem.record_result(&"level_x", 777, 3, true)
+	# Simulate a crash between writing the temp file and the rename: the
+	# temp holds the new data, the main file is garbage.
+	DirAccess.copy_absolute(ProjectSettings.globalize_path(TEST_PATH), ProjectSettings.globalize_path(TEST_PATH + ".tmp"))
+	var broken := FileAccess.open(TEST_PATH, FileAccess.WRITE)
+	broken.store_string("[half-written")
+	broken.close()
+	expect_engine_error("ConfigFile parse error")
+	SaveSystem.load_from_disk()
+	assert_eq(SaveSystem.get_record(&"level_x").best_score, 777, "progress recovered")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_PATH + ".tmp"))

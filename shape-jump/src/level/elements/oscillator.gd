@@ -29,8 +29,28 @@ func _ready() -> void:
 	_parent = get_parent() as Node2D
 	if _parent:
 		_origin = _parent.position
+	update_configuration_warnings()
 	if not Engine.is_editor_hint():
-		add_to_group(&"timed")
+		Level.join(self)
+
+
+func _enter_tree() -> void:
+	if is_node_ready() and not Engine.is_editor_hint():
+		Level.join(self)  # Re-entering after a reparent.
+
+
+func _exit_tree() -> void:
+	if not Engine.is_editor_hint():
+		Level.leave(self)
+
+
+func _get_configuration_warnings() -> PackedStringArray:
+	var parent := get_parent()
+	if not parent is Node2D:
+		return ["Oscillator moves its parent, which must be a Node2D."]
+	if parent is PhysicsBody2D and not parent is AnimatableBody2D:
+		return ["A moving solid must be an AnimatableBody2D, or bodies standing on it are not carried."]
+	return []
 
 
 ## Fraction of [member travel] covered at level time [param t] (0 = origin).

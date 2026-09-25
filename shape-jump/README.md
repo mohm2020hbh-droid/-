@@ -36,7 +36,7 @@ godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn
 godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn -- --filter=playthrough
 ```
 
-71 اختبارًا تعمل في ~8 ثوانٍ، وتشمل:
+84 اختبارًا تعمل في ~8 ثوانٍ (وتنجح بنفس النتائج على 20 و30 و60 و144 FPS)، وتشمل:
 - رياضيات القفزة (الارتفاع الفعلي = 150px المضبوطة)، Coyote، Buffer، لا Double Jump.
 - فيزياء حقيقية: زمن الاستجابة، الهبوط والحواف، الفجوات، السقف، السحق، المصاعد، Ledge Assist، عدم الاختراق.
 - الكاميرا (موضع اللاعب، لا تمايل، موت السقوط داخل الشاشة) وتدفق اللعب (بدء، تعدد الأصابع، موت، Restart، إيقاف).

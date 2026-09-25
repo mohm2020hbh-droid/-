@@ -78,9 +78,12 @@ func _physics_process(_delta: float) -> void:
 
 
 func _notification(what: int) -> void:
-	# Mobile: leaving the app (call, home button) must never cost a life.
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
-		pause()
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED:
+			# Mobile: leaving the app (call, home button) must never cost a life.
+			_pause(false)
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			_on_back_requested()
 
 
 ## The single "tap" entry point (TapInput or a test bot).
@@ -93,6 +96,9 @@ func press_jump() -> void:
 
 
 func load_level() -> void:
+	if level_scene == null:
+		push_error("GameSession: no level_scene assigned.")
+		return
 	_kill_sequence()
 	if level:
 		_level_slot.remove_child(level)
@@ -125,13 +131,18 @@ func start_run() -> void:
 
 
 func pause() -> void:
+	_pause(true)
+
+
+func _pause(user_initiated: bool) -> void:
 	if state != State.PLAYING and state != State.DYING:
 		return
 	_state_before_pause = state
 	_set_state(State.PAUSED)
 	get_tree().paused = true
 	pause_menu.open()
-	Events.ui_pressed.emit()
+	if user_initiated:
+		Events.ui_pressed.emit()  # No click sound when the OS paused us.
 
 
 func resume() -> void:
@@ -162,6 +173,10 @@ func get_respawn_point() -> RespawnPoint:
 
 func _set_state(next: State) -> void:
 	state = next
+	# The player can only die while actually playing: a hazard reaching it on
+	# the start screen, while paused or after the finish must not leave a
+	# dead player that the next tap would set running.
+	player.invulnerable = state != State.PLAYING
 	level.running = state == State.PLAYING or state == State.DYING or state == State.COMPLETE
 	hud.set_pause_enabled(state == State.PLAYING or state == State.DYING)
 	state_changed.emit(state)
@@ -185,6 +200,18 @@ func _kill_sequence() -> void:
 	if _sequence and _sequence.is_valid():
 		_sequence.kill()
 	_sequence = null
+
+
+## Android Back (also the edge-swipe gesture): never quit in the middle of
+## a run. Playing -> pause, paused -> resume, menus -> leave the game.
+func _on_back_requested() -> void:
+	match state:
+		State.PLAYING, State.DYING:
+			pause()
+		State.PAUSED:
+			resume()
+		_:
+			get_tree().quit()
 
 
 func _on_player_jumped() -> void:
@@ -217,18 +244,15 @@ func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	# The level time at which the player's centre is exactly on the checkpoint,
 	# so a respawn there sees the same obstacle timing as the first pass.
 	var feet := checkpoint.global_position
-	checkpoint.level_time = level.clock + (feet.x - player.global_position.x) / player.get_run_speed()
-	_respawn = RespawnPoint.new(feet, checkpoint.level_time, score.snapshot())
+	var time := level.clock + (feet.x - player.global_position.x) / player.get_run_speed()
+	_respawn = RespawnPoint.new(feet, time, score.snapshot())
 	Events.checkpoint_reached.emit(feet)
 
 
 func _on_finish_reached() -> void:
 	if state != State.PLAYING:
 		return
-	_set_state(State.COMPLETE)
-	# A hazard touched in the same physics step must not shatter the player
-	# under the results screen.
-	player.invulnerable = true
+	_set_state(State.COMPLETE)  # Also makes the player invulnerable.
 	var final_score := score.get_score()
 	var is_new_best := SaveSystem.record_result(level.data.id, final_score, score.shards, true)
 	var best: int = SaveSystem.get_record(level.data.id).best_score

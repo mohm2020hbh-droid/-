@@ -140,3 +140,33 @@ func test_pause_during_death_then_resume_still_respawns() -> void:
 	var respawned := await h.run_until(h.is_state(GameSession.State.PLAYING), 120)
 	assert_true(respawned, "respawn continued after resume")
 	assert_false(h.game.player.is_dead())
+
+
+func test_android_back_pauses_and_resumes_instead_of_quitting() -> void:
+	h.game.press_jump()
+	await h.run_ticks(20)
+	h.game.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_eq(h.game.state, GameSession.State.PAUSED, "back mid-run pauses")
+	await h.run_ticks(5)
+	h.game.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	assert_eq(h.game.state, GameSession.State.PLAYING, "back on the pause menu resumes")
+	assert_false(ProjectSettings.get_setting("application/config/quit_on_go_back"), "engine does not quit on its own")
+
+
+func test_player_cannot_die_outside_playing() -> void:
+	h.game.player.die(&"test")
+	assert_false(h.game.player.is_dead(), "not on the start screen")
+	h.game.press_jump()
+	await h.run_ticks(5)
+	h.game.pause()
+	h.game.player.die(&"test")
+	assert_false(h.game.player.is_dead(), "not while paused")
+	h.game.resume()
+	h.game.player.die(&"test")
+	assert_true(h.game.player.is_dead(), "but yes while playing")
+
+
+func test_update_order_does_not_depend_on_scene_order() -> void:
+	var game := h.game
+	assert_true(game.level.process_physics_priority < game.player.process_physics_priority, "level moves before the player")
+	assert_true(game.player.process_physics_priority < game.camera.process_physics_priority, "camera follows after the player")

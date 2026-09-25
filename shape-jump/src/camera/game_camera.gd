@@ -28,6 +28,10 @@ extends Camera2D
 @export var max_shake := 7.0
 @export_range(0.05, 2.0, 0.05, "suffix:s") var shake_duration := 0.35
 
+## Runs after the player every physics tick (it follows where the player is
+## now), whatever the scene tree order.
+const PHYSICS_PRIORITY := 10
+
 ## Lowest world Y the bottom of the view may show (see [method set_kill_line]).
 var bottom_limit := INF
 
@@ -36,6 +40,7 @@ var _trauma := 0.0
 
 
 func _ready() -> void:
+	process_physics_priority = PHYSICS_PRIORITY
 	position_smoothing_enabled = false
 	# Physics interpolation requires (and would force) the physics callback.
 	process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS

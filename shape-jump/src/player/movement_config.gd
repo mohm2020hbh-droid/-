@@ -24,6 +24,9 @@ extends Resource
 @export_range(0.0, 0.25, 0.01, "suffix:s") var jump_buffer_time: float = 0.12
 ## Running into a ledge lower than this lifts the player onto it instead of killing.
 @export_range(0.0, 24.0, 1.0, "suffix:px") var ledge_assist: float = 10.0
+## In the air, grazing the underside corner of an overhang by less than this
+## ducks the player under it instead of killing.
+@export_range(0.0, 16.0, 1.0, "suffix:px") var head_clip_assist: float = 6.0
 
 
 func rise_gravity() -> float:

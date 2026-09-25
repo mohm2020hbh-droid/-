@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/level/elements/shard.gd" id="1_shard"]
+[ext_resource type="Script" path="res://src/level/elements/shard_gem.gd" id="2_gem"]
 
 [sub_resource type="CircleShape2D" id="Shape_pickup"]
 radius = 20.0
@@ -14,6 +15,10 @@ script = ExtResource("1_shard")
 
 [node name="Shape" type="CollisionShape2D" parent="."]
 shape = SubResource("Shape_pickup")
+
+[node name="Gem" type="Node2D" parent="."]
+physics_interpolation_mode = 2
+script = ExtResource("2_gem")
 
 [node name="Burst" type="CPUParticles2D" parent="."]
 emitting = false

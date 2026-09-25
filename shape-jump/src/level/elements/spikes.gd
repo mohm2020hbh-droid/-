@@ -17,6 +17,8 @@ enum Facing { UP, DOWN }
 	set(value):
 		facing = value
 		_rebuild()
+## Keep the hitbox (spike_size.y * hitbox_scale) at least 24 px tall: hazards
+## are overlap-tested once per physics tick and a max-speed fall moves 23 px.
 @export var spike_size := Vector2(64, 52):
 	set(value):
 		spike_size = value

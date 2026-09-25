@@ -29,10 +29,17 @@ func _ready() -> void:
 	_rebuild()
 
 
-func _process(delta: float) -> void:
+## The spin changes the node's transform, so it runs on physics ticks where
+## physics interpolation smooths it; done per frame it would jitter.
+func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	rotation = wrapf(rotation + spin_speed * delta, 0.0, TAU)
+
+
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	HazardPulse.apply(self, position.x * 0.01)
 
 

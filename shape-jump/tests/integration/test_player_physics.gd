@@ -397,3 +397,41 @@ func test_player_falls_when_a_phase_block_vanishes_under_it() -> void:
 	await _ticks(10)
 	assert_false(player.is_on_floor(), "falls once it vanishes")
 	assert_true(player.get_feet_position().y > 20.0, "dropped through where it was")
+
+
+func test_max_speed_fall_onto_a_rising_thin_platform() -> void:
+	var lift := _block(Vector2(-T * 2, 0), Vector2(T * 4, 16), true)
+	player = PLAYER_SCENE.instantiate()
+	arena.add_child(player)
+	player.kill_y = 800.0
+	player.respawn_at(Vector2(0, -2500), false)
+	for i in 200:
+		lift.position.y -= 5.0  # Rising at 300 px/s toward a player at max fall speed.
+		await _ticks(1)
+		if player.is_on_floor():
+			break
+	assert_true(player.is_on_floor(), "caught by a 16 px platform rising into a max-speed fall")
+
+
+func test_grazing_an_overhang_corner_while_falling() -> void:
+	_block(Vector2(-T * 4, 0), Vector2(T * 20, T * 4))
+	# Overhang starting 3 px ahead whose underside is 3 px below our head
+	# (head at y = -198, underside at -195), while we drop slowly past it.
+	var half := player_half()
+	_block(Vector2(3.0, -400.0), Vector2(T * 4, 400.0 - 195.0))
+	_spawn_player(Vector2(-half, -150.0))
+	player.motor.velocity = Vector2(0.0, 200.0)
+	var causes := _track_deaths()
+	await _ticks(40)
+	assert_eq(causes, [] as Array[StringName], "a 3 px corner graze is not a head-on wall hit")
+
+
+func test_a_real_overhang_hit_in_the_air_still_kills() -> void:
+	_block(Vector2(-T * 4, 0), Vector2(T * 20, T * 4))
+	var half := player_half()
+	_block(Vector2(3.0, -400.0), Vector2(T * 4, 400.0 - 178.0))  # 20 px into the head.
+	_spawn_player(Vector2(-half, -150.0))
+	player.motor.velocity = Vector2(0.0, 200.0)
+	var causes := _track_deaths()
+	await _ticks(20)
+	assert_eq(causes, [&"wall"] as Array[StringName], "beyond the assist limit it is a wall hit")

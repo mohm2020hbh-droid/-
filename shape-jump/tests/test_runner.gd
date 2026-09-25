@@ -73,7 +73,9 @@ func _ready() -> void:
 			await test.before_each()
 			await test.call(method_name)
 			await test.after_each()
-			test.failures.append_array(collector.take())
+			for error in collector.take():
+				if not _is_expected(error, test.expected_errors):
+					test.failures.append(error)
 			if test.failures.is_empty():
 				print("  PASS  ", test_id)
 			else:
@@ -92,6 +94,13 @@ func _ready() -> void:
 		OS.delay_msec(50)  # Real time: --fixed-fps frames do not wait for the audio thread.
 		await get_tree().process_frame
 	get_tree().quit(1 if failed > 0 or total == 0 else 0)
+
+
+static func _is_expected(error: String, expected: PackedStringArray) -> bool:
+	for substring in expected:
+		if error.contains(substring):
+			return true
+	return false
 
 
 func _discover() -> PackedStringArray:

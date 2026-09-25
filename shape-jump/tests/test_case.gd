@@ -5,6 +5,8 @@ extends Node
 ## that is added to the scene tree, so integration tests may await frames.
 
 var failures: PackedStringArray = []
+## Substrings of engine errors this test provokes on purpose.
+var expected_errors: PackedStringArray = []
 
 
 ## Called before each test method. May be a coroutine.
@@ -15,6 +17,12 @@ func before_each() -> void:
 ## Called after each test method. May be a coroutine.
 func after_each() -> void:
 	pass
+
+
+## Declares that an engine error containing [param substring] is expected
+## (e.g. a deliberately corrupted file); it will not fail the test.
+func expect_engine_error(substring: String) -> void:
+	expected_errors.append(substring)
 
 
 func fail(message: String) -> void:

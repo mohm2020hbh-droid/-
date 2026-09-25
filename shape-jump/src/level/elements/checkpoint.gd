@@ -11,8 +11,6 @@ const BEAM_HEIGHT := 320.0
 const TRIGGER_WIDTH := 24.0
 
 var is_active := false
-## Level time at which the player passed it (set by the Level).
-var level_time := 0.0
 
 var _flash := 0.0
 
@@ -28,8 +26,18 @@ func _ready() -> void:
 	shape_node.position = Vector2(0, -BEAM_HEIGHT * 0.5)
 	add_child(shape_node, false, Node.INTERNAL_MODE_FRONT)
 	if not Engine.is_editor_hint():
-		add_to_group(&"checkpoints")
 		body_entered.connect(_on_body_entered)
+		Level.join(self)
+
+
+func _enter_tree() -> void:
+	if is_node_ready() and not Engine.is_editor_hint():
+		Level.join(self)  # Re-entering after a reparent.
+
+
+func _exit_tree() -> void:
+	if not Engine.is_editor_hint():
+		Level.leave(self)
 
 
 func _process(delta: float) -> void:
