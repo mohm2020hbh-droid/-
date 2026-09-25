@@ -1,0 +1,8 @@
+# Godot 4 generated data
+.godot/
+/android/
+*.tmp
+# Local exports
+/export/
+*.apk
+*.aab
