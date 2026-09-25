@@ -40,6 +40,9 @@ class ErrorCollector extends Logger:
 
 
 func _ready() -> void:
+	# Headless has no real window; give the root a 16:9 phone-landscape size
+	# so camera and UI tests see the same view as a device.
+	get_tree().root.size = Vector2i(1280, 720)
 	# Let autoloads finish their _ready before any test touches them.
 	await get_tree().process_frame
 	var filter := _parse_filter()

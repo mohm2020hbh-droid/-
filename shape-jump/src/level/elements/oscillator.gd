@@ -50,6 +50,11 @@ func apply_time(t: float) -> void:
 		_parent.position = _origin + offset_at(t)
 
 
+func reset_parent_interpolation() -> void:
+	if _parent:
+		_parent.reset_physics_interpolation()
+
+
 func _draw() -> void:
 	if not Engine.is_editor_hint():
 		return

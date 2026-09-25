@@ -16,8 +16,8 @@ func _ready() -> void:
 
 
 func open(score: int, best_score: int, is_new_best: bool, shards: int, total_shards: int) -> void:
-	_score_label.text = Hud.format_int(score)
-	_best_label.text = "NEW BEST!" if is_new_best else "BEST  %s" % Hud.format_int(best_score)
+	_score_label.text = UiFormat.thousands(score)
+	_best_label.text = "NEW BEST!" if is_new_best else "BEST  %s" % UiFormat.thousands(best_score)
 	_best_label.modulate = Palette.NEON if is_new_best else Palette.UI_MUTED
 	_shards_label.text = "%d / %d" % [shards, total_shards]
 	show()

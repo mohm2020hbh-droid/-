@@ -65,6 +65,10 @@ func _physics_process(delta: float) -> void:
 func rewind_to(t: float) -> void:
 	clock = t
 	_apply_time()
+	for node in _timed:
+		if node is Oscillator:
+			# Teleported, not moved: do not draw an interpolated streak.
+			(node as Oscillator).reset_parent_interpolation()
 	for shard in _shards:
 		if shard.is_collected and shard.collected_at > t:
 			shard.restore()

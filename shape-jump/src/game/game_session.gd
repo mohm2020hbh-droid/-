@@ -5,29 +5,46 @@ extends Node
 ##
 ## Signals come up from Player, Level and UI; calls go down to them. It is
 ## also the only emitter of the global [Events] bus. Input is routed here so
-## a test bot can drive the game through the same entry points.
+## a test bot can drive the game through the same entry points; device
+## quirks (multi-touch, duplicate events) are handled by [TapInput].
 
 signal state_changed(new_state: State)
 
 enum State { READY, PLAYING, PAUSED, DYING, COMPLETE }
 
-const DEATH_PAUSE := 0.45
-const FADE_OUT := 0.16
-const FADE_IN := 0.24
-const DEATH_SHAKE := 0.85
-const FINISH_BRAKE_TIME := 0.7
-const RESULTS_DELAY := 0.8
+
+## Where and when the player comes back after a death.
+class RespawnPoint:
+	var feet := Vector2.ZERO
+	## Level time at which the player's centre was exactly at [member feet].
+	var level_time := 0.0
+	var score := {}
+
+	func _init(feet_position: Vector2, time: float, score_snapshot: Dictionary) -> void:
+		feet = feet_position
+		level_time = time
+		score = score_snapshot
+
 
 @export var level_scene: PackedScene
+
+@export_group("Death & Respawn Feel")
+## Time the shatter plays before the screen fades.
+@export_range(0.0, 2.0, 0.05, "suffix:s") var death_pause := 0.45
+@export_range(0.0, 1.0, 0.01, "suffix:s") var fade_out_time := 0.16
+@export_range(0.0, 1.0, 0.01, "suffix:s") var fade_in_time := 0.24
+## Camera shake on death, 0..1 trauma.
+@export_range(0.0, 1.0, 0.05) var death_shake := 0.85
+@export_group("Finish Feel")
+@export_range(0.0, 3.0, 0.05, "suffix:s") var finish_brake_time := 0.7
+@export_range(0.0, 3.0, 0.05, "suffix:s") var results_delay := 0.8
 
 var state: State = State.READY
 var level: Level
 var score := ScoreTracker.new()
 
 var _state_before_pause: State = State.PLAYING
-var _respawn_feet := Vector2.ZERO
-var _respawn_time := 0.0
-var _respawn_score := {}
+var _respawn: RespawnPoint
 var _sequence: Tween
 
 @onready var player: Player = %Player
@@ -38,6 +55,7 @@ var _sequence: Tween
 @onready var complete_panel: LevelCompletePanel = %LevelCompletePanel
 @onready var fade: ScreenFade = %ScreenFade
 @onready var _level_slot: Node2D = %LevelSlot
+@onready var _tap_input: TapInput = %TapInput
 
 
 func _ready() -> void:
@@ -49,6 +67,8 @@ func _ready() -> void:
 	pause_menu.resume_pressed.connect(resume)
 	pause_menu.restart_pressed.connect(restart_level)
 	complete_panel.play_again_pressed.connect(restart_level)
+	_tap_input.tapped.connect(press_jump)
+	_tap_input.pause_requested.connect(pause)
 	load_level()
 
 
@@ -57,22 +77,13 @@ func _physics_process(_delta: float) -> void:
 		score.update_progress(player.global_position.x)
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"pause"):
-		get_viewport().set_input_as_handled()
-		pause()
-	elif event.is_action_pressed(&"jump"):
-		get_viewport().set_input_as_handled()
-		press_jump()
-
-
 func _notification(what: int) -> void:
 	# Mobile: leaving the app (call, home button) must never cost a life.
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		pause()
 
 
-## The single "tap" entry point (touch, mouse, keyboard or test bot).
+## The single "tap" entry point (TapInput or a test bot).
 func press_jump() -> void:
 	match state:
 		State.READY:
@@ -94,13 +105,11 @@ func load_level() -> void:
 
 	player.kill_y = level.kill_y
 	player.set_speed_scale(level.data.speed_scale)
-	camera.bottom_limit = level.kill_y
-	_respawn_feet = level.get_spawn_feet_position()
-	_respawn_time = 0.0
-	score.reset(_respawn_feet.x)
-	_respawn_score = score.snapshot()
-	hud.set_score(0, 0)
-	player.respawn_at(_respawn_feet, false)
+	camera.set_kill_line(level.kill_y)
+	var spawn := level.get_spawn_feet_position()
+	score.reset(spawn.x)
+	_respawn = RespawnPoint.new(spawn, 0.0, score.snapshot())
+	player.respawn_at(spawn, false)
 	camera.snap_to_target()
 	_set_state(State.READY)
 	start_overlay.open(level.data.display_name, SaveSystem.get_record(level.data.id).best_score)
@@ -143,7 +152,12 @@ func restart_level() -> void:
 	load_level()
 	fade.color.a = 1.0
 	_sequence = _new_sequence()
-	fade.tween_to(_sequence, 0.0, FADE_IN)
+	fade.tween_to(_sequence, 0.0, fade_in_time)
+
+
+## Where the player will come back after the next death.
+func get_respawn_point() -> RespawnPoint:
+	return _respawn
 
 
 func _set_state(next: State) -> void:
@@ -153,10 +167,10 @@ func _set_state(next: State) -> void:
 	state_changed.emit(state)
 
 
-func _respawn() -> void:
-	level.rewind_to(_respawn_time)
-	score.restore(_respawn_score)
-	player.respawn_at(_respawn_feet, true)
+func _respawn_player() -> void:
+	level.rewind_to(_respawn.level_time)
+	score.restore(_respawn.score)
+	player.respawn_at(_respawn.feet, true)
 	camera.snap_to_target()
 	_set_state(State.PLAYING)
 	Events.player_respawned.emit(player.global_position)
@@ -185,13 +199,13 @@ func _on_player_died(cause: StringName) -> void:
 	if state != State.PLAYING:
 		return
 	_set_state(State.DYING)
-	camera.shake(DEATH_SHAKE)
+	camera.shake(death_shake)
 	Events.player_died.emit(player.global_position, cause)
 	_sequence = _new_sequence()
-	_sequence.tween_interval(DEATH_PAUSE)
-	fade.tween_to(_sequence, 1.0, FADE_OUT)
-	_sequence.tween_callback(_respawn)
-	fade.tween_to(_sequence, 0.0, FADE_IN)
+	_sequence.tween_interval(death_pause)
+	fade.tween_to(_sequence, 1.0, fade_out_time)
+	_sequence.tween_callback(_respawn_player)
+	fade.tween_to(_sequence, 0.0, fade_in_time)
 
 
 func _on_shard_collected(shard: Shard) -> void:
@@ -202,26 +216,27 @@ func _on_shard_collected(shard: Shard) -> void:
 func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	# The level time at which the player's centre is exactly on the checkpoint,
 	# so a respawn there sees the same obstacle timing as the first pass.
-	var speed := player.config.run_speed * level.data.speed_scale
-	checkpoint.level_time = level.clock + (checkpoint.global_position.x - player.global_position.x) / speed
-	_respawn_feet = checkpoint.global_position
-	_respawn_time = checkpoint.level_time
-	_respawn_score = score.snapshot()
-	Events.checkpoint_reached.emit(checkpoint.global_position)
+	var feet := checkpoint.global_position
+	checkpoint.level_time = level.clock + (feet.x - player.global_position.x) / player.get_run_speed()
+	_respawn = RespawnPoint.new(feet, checkpoint.level_time, score.snapshot())
+	Events.checkpoint_reached.emit(feet)
 
 
 func _on_finish_reached() -> void:
 	if state != State.PLAYING:
 		return
 	_set_state(State.COMPLETE)
+	# A hazard touched in the same physics step must not shatter the player
+	# under the results screen.
+	player.invulnerable = true
 	var final_score := score.get_score()
 	var is_new_best := SaveSystem.record_result(level.data.id, final_score, score.shards, true)
 	var best: int = SaveSystem.get_record(level.data.id).best_score
 	Events.level_completed.emit(level.data.id, final_score, score.shards)
 	_sequence = _new_sequence()
-	_sequence.tween_method(player.set_speed_scale, level.data.speed_scale, 0.0, FINISH_BRAKE_TIME) \
+	_sequence.tween_method(player.set_speed_scale, level.data.speed_scale, 0.0, finish_brake_time) \
 		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_sequence.tween_callback(player.set_running.bind(false))
-	_sequence.tween_interval(maxf(RESULTS_DELAY - FINISH_BRAKE_TIME, 0.0))
+	_sequence.tween_interval(maxf(results_delay - finish_brake_time, 0.0))
 	_sequence.tween_callback(complete_panel.open.bind(
 		final_score, best, is_new_best, score.shards, level.get_shard_count()))

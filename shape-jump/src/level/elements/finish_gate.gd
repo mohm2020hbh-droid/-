@@ -36,8 +36,9 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func _on_body_entered(body: Node2D) -> void:
-	if _triggered or not body is Player:
+## Only the player's body can trigger this: collision_mask is the player layer.
+func _on_body_entered(_body: Node2D) -> void:
+	if _triggered:
 		return
 	_triggered = true
 	reached.emit()

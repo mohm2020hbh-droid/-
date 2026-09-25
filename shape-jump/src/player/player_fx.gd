@@ -4,11 +4,11 @@ extends Node2D
 ## exist up front and are restarted on demand: nothing is instantiated
 ## during play. Purely cosmetic.
 
-const TRAIL_POINTS := 14
-const DEATH_RING_TIME := 0.4
-const DEATH_RING_RADIUS := 130.0
-
 @export var player: Player
+## Trail length in physics ticks (14 ≈ 0.23 s of history).
+@export_range(2, 60) var trail_points := 14
+@export_range(0.05, 2.0, 0.05, "suffix:s") var death_ring_time := 0.4
+@export var death_ring_radius := 130.0
 
 var _trail_points := PackedVector2Array()
 var _death_ring_left := 0.0
@@ -37,7 +37,7 @@ func _physics_process(_delta: float) -> void:
 		_fade_trail()
 		return
 	_trail_points.append(player.global_position)
-	if _trail_points.size() > TRAIL_POINTS:
+	if _trail_points.size() > trail_points:
 		_trail_points.remove_at(0)
 	_trail.points = _trail_points
 
@@ -51,10 +51,10 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if _death_ring_left <= 0.0:
 		return
-	var t := 1.0 - _death_ring_left / DEATH_RING_TIME
+	var t := 1.0 - _death_ring_left / death_ring_time
 	var eased := 1.0 - pow(1.0 - t, 3.0)
 	var local_center := to_local(_death_ring_center)
-	var radius := DEATH_RING_RADIUS * eased
+	var radius := death_ring_radius * eased
 	var alpha := 1.0 - t
 	draw_arc(local_center, radius, 0.0, TAU, 48, Color(Palette.PLAYER_EDGE, 0.35 * alpha), 10.0 * alpha + 1.0, true)
 	draw_arc(local_center, radius, 0.0, TAU, 48, Color(Palette.PLAYER_CORE, 0.8 * alpha), 2.0, true)
@@ -75,7 +75,7 @@ func _on_state_changed(new_state: Player.State, _old_state: Player.State) -> voi
 func _on_died(_cause: StringName) -> void:
 	_run_sparks.emitting = false
 	_death_ring_center = player.global_position
-	_death_ring_left = DEATH_RING_TIME
+	_death_ring_left = death_ring_time
 	_death_shatter.restart()
 
 

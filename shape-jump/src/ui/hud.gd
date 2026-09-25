@@ -31,7 +31,7 @@ func _process(delta: float) -> void:
 
 
 func set_score(score: int, shards: int) -> void:
-	_score_label.text = format_int(score)
+	_score_label.text = UiFormat.thousands(score)
 	if shards > _shards:
 		_pop = 1.0  # Little bounce on the shard icon for each pickup.
 	_shards = shards
@@ -57,12 +57,3 @@ func _apply_safe_area() -> void:
 	_root.add_theme_constant_override(&"margin_top", int(margins.y))
 	_root.add_theme_constant_override(&"margin_right", int(margins.z))
 
-
-static func format_int(value: int) -> String:
-	var digits := str(value)
-	var out := ""
-	for i in digits.length():
-		if i > 0 and (digits.length() - i) % 3 == 0:
-			out += ","
-		out += digits[i]
-	return out

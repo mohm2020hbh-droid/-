@@ -10,16 +10,31 @@ extends Node2D
 ##   Death – hidden; PlayerFx shatters it.
 ## Purely cosmetic: nothing here feeds back into gameplay or collision.
 
-const HALF := Player.SIZE * 0.5
-const CORE_RATIO := 0.42
-## Spring pulling the squash scale back to 1:1.
-const SQUASH_STIFFNESS := 320.0
-const SQUASH_DAMPING := 16.0
-const SPIN_SNAP_RATE := 28.0
-const INERTIA_PER_SPEED := 0.006
-const MAX_CORE_OFFSET := 6.0
+## Longest step the squash spring integrates at once. A frame hitch (app
+## resume, GC) would otherwise make the explicit spring blow up.
+const MAX_SPRING_STEP := 1.0 / 30.0
 
 @export var player: Player
+
+@export_group("Shape")
+## Inner core size relative to the body.
+@export_range(0.2, 0.8, 0.01) var core_ratio := 0.42
+@export_group("Squash & Stretch")
+@export var jump_stretch := Vector2(0.8, 1.22)
+## Squash at the hardest landing; softer landings scale it down.
+@export var land_squash := Vector2(1.3, 0.72)
+## Fall speed (px/s) that produces the full landing squash.
+@export var land_impact_full := 1100.0
+@export var spring_stiffness := 320.0
+@export var spring_damping := 16.0
+@export_group("Spin")
+## How fast the body settles on the nearest 90° after landing.
+@export var spin_snap_rate := 28.0
+@export var core_spin_run := 4.0
+@export var core_spin_air := 2.0
+@export_group("Core Inertia")
+@export var inertia_per_speed := 0.006
+@export var max_core_offset := 6.0
 
 var _time := 0.0
 var _spin := 0.0
@@ -45,29 +60,38 @@ func _process(delta: float) -> void:
 	var airborne := state == Player.State.JUMP or state == Player.State.FALL
 
 	if airborne:
-		_spin += _spin_speed * delta
+		_spin = fposmod(_spin + _spin_speed * delta, TAU)
 	else:
 		var snapped_spin := snappedf(_spin, PI * 0.5)
-		_spin = lerpf(_spin, snapped_spin, 1.0 - exp(-SPIN_SNAP_RATE * delta))
+		_spin = lerpf(_spin, snapped_spin, 1.0 - exp(-spin_snap_rate * delta))
 
 	match state:
 		Player.State.RUN:
-			_core_spin += 4.0 * delta
+			_core_spin += core_spin_run * delta
 		Player.State.JUMP, Player.State.FALL:
-			_core_spin += 2.0 * delta
+			_core_spin += core_spin_air * delta
 		_:
 			_core_spin = lerp_angle(_core_spin, 0.0, 1.0 - exp(-4.0 * delta))
+	_core_spin = fposmod(_core_spin, TAU)
 
 	# The core lags behind velocity, as if it floated inside a deeper space.
-	var target_offset := (-player.velocity * INERTIA_PER_SPEED).limit_length(MAX_CORE_OFFSET)
+	var target_offset := (-player.velocity * inertia_per_speed).limit_length(max_core_offset)
 	target_offset.x *= 0.5
 	_core_offset = _core_offset.lerp(target_offset, 1.0 - exp(-10.0 * delta))
 
-	var force := (Vector2.ONE - _squash) * SQUASH_STIFFNESS - _squash_velocity * SQUASH_DAMPING
-	_squash_velocity += force * delta
-	_squash += _squash_velocity * delta
-
+	_step_spring(minf(delta, MAX_SPRING_STEP))
 	queue_redraw()
+
+
+func get_squash() -> Vector2:
+	return _squash
+
+
+## Semi-implicit Euler: stable for these stiffness values at <= 1/30 s steps.
+func _step_spring(step: float) -> void:
+	var force := (Vector2.ONE - _squash) * spring_stiffness - _squash_velocity * spring_damping
+	_squash_velocity += force * step
+	_squash += _squash_velocity * step
 
 
 func _draw() -> void:
@@ -76,23 +100,25 @@ func _draw() -> void:
 	var glow := 0.85 + (0.25 * breathe if idle else 0.1 * sin(_time * 9.0))
 	var core_scale := 1.0 + (0.1 * breathe if idle else 0.0)
 
+	# The drawing matches the collision box size (read from the Player).
+	var half := player.half_size.x
 	# Squash around the feet so landings stay planted, then spin around the centre.
-	var xf := Transform2D(0.0, Vector2(0.0, HALF))
+	var xf := Transform2D(0.0, Vector2(0.0, half))
 	xf = xf * Transform2D(0.0, _squash, 0.0, Vector2.ZERO)
-	xf = xf * Transform2D(_spin, Vector2(0.0, -HALF))
+	xf = xf * Transform2D(_spin, Vector2(0.0, -half))
 	draw_set_transform_matrix(xf)
 
-	Neon.soft_light(self, Vector2.ZERO, HALF * 2.6, Color(Palette.PLAYER_EDGE, 0.42 * glow))
+	Neon.soft_light(self, Vector2.ZERO, half * 2.6, Color(Palette.PLAYER_EDGE, 0.42 * glow))
 
 	var outer := PackedVector2Array([
-		Vector2(-HALF, -HALF), Vector2(HALF, -HALF), Vector2(HALF, HALF), Vector2(-HALF, HALF)])
+		Vector2(-half, -half), Vector2(half, -half), Vector2(half, half), Vector2(-half, half)])
 	draw_colored_polygon(outer, Palette.PLAYER_BODY)
 
-	var core_half := HALF * CORE_RATIO * core_scale
+	var core_half := half * core_ratio * core_scale
 	var core_xf := Transform2D(_core_spin - _spin, _core_offset.rotated(-_spin))
 	var inner := PackedVector2Array()
 	for corner in outer:
-		inner.append(core_xf * (corner / HALF * core_half))
+		inner.append(core_xf * (corner / half * core_half))
 
 	for i in 4:
 		draw_line(outer[i] * 0.94, inner[i], Color(Palette.PLAYER_EDGE, 0.55), 2.0, true)
@@ -102,13 +128,13 @@ func _draw() -> void:
 
 
 func _on_jumped() -> void:
-	_squash = Vector2(0.8, 1.22)
+	_squash = jump_stretch
 	_squash_velocity = Vector2.ZERO
 
 
 func _on_landed(impact_speed: float) -> void:
-	var strength := clampf(impact_speed / 1100.0, 0.25, 1.0)
-	_squash = Vector2(1.0 + 0.3 * strength, 1.0 - 0.28 * strength)
+	var strength := clampf(impact_speed / land_impact_full, 0.25, 1.0)
+	_squash = Vector2.ONE.lerp(land_squash, strength)
 	_squash_velocity = Vector2.ZERO
 
 

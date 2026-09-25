@@ -15,8 +15,6 @@ signal state_changed(new_state: State, old_state: State)
 
 enum State { IDLE, RUN, JUMP, FALL, DEAD }
 
-## Side length of the square collision body, in pixels.
-const SIZE := 48.0
 ## Walls whose normal points back at us more than this count as a head-on hit.
 const WALL_HIT_NORMAL_X := -0.7
 const LEDGE_ASSIST_STEP := 2.0
@@ -26,23 +24,41 @@ const LEDGE_ASSIST_CLEARANCE := 2.0
 
 ## Falling below this world Y kills the player. Set by the game from the level.
 var kill_y := INF
+## While true nothing can kill the player (e.g. after crossing the finish).
+var invulnerable := false
 var state: State = State.IDLE
 var motor: PlayerMotor
+## Half extents of the collision box, read from the BodyShape in the scene
+## (the single source of truth for the player's size).
+var half_size := Vector2.ZERO
 
-@onready var _body_shape: CollisionShape2D = $BodyShape
 @onready var _hurtbox: Area2D = $Hurtbox
 
 
-func _ready() -> void:
+func _enter_tree() -> void:
+	# Runs before the children's _ready, so PlayerVisual/PlayerFx can rely on
+	# config, motor and size being set.
 	if config == null:
 		config = MovementConfig.new()
-	motor = PlayerMotor.new(config)
+	if motor == null:
+		motor = PlayerMotor.new(config)
+	var rect := ($BodyShape as CollisionShape2D).shape as RectangleShape2D
+	assert(rect != null, "Player BodyShape must be a RectangleShape2D")
+	half_size = rect.size * 0.5
+
+
+func _ready() -> void:
 	_hurtbox.area_entered.connect(_on_hurtbox_area_entered)
 
 
 ## Position of the player's feet (bottom-centre of the collision box).
 func get_feet_position() -> Vector2:
-	return global_position + Vector2(0.0, SIZE * 0.5)
+	return global_position + Vector2(0.0, half_size.y)
+
+
+## Current horizontal speed while running (px/s), including the level scale.
+func get_run_speed() -> float:
+	return config.run_speed * motor.speed_scale
 
 
 func is_dead() -> bool:
@@ -64,12 +80,11 @@ func request_jump() -> void:
 
 ## Places the player standing on [param feet_position] and revives it.
 func respawn_at(feet_position: Vector2, run: bool) -> void:
-	global_position = feet_position - Vector2(0.0, SIZE * 0.5)
+	global_position = feet_position - Vector2(0.0, half_size.y)
 	velocity = Vector2.ZERO
 	motor.reset()
 	motor.running = run
-	_body_shape.disabled = false
-	_hurtbox.monitoring = true
+	invulnerable = false
 	# Teleport: do not interpolate from the death position.
 	reset_physics_interpolation()
 	apply_floor_snap()
@@ -78,13 +93,14 @@ func respawn_at(feet_position: Vector2, run: bool) -> void:
 
 
 func die(cause: StringName) -> void:
-	if state == State.DEAD:
+	if state == State.DEAD or invulnerable:
 		return
+	# The body is simply frozen (DEAD skips all physics). Collision shapes are
+	# deliberately left alone: toggling them with deferred calls here and
+	# directly in respawn_at could land in the wrong order within one frame
+	# and respawn the player without collision.
 	motor.running = false
 	velocity = Vector2.ZERO
-	# May be called from a physics callback, where shapes cannot change directly.
-	_body_shape.set_deferred(&"disabled", true)
-	_hurtbox.set_deferred(&"monitoring", false)
 	_set_state(State.DEAD)
 	died.emit(cause)
 
@@ -106,6 +122,11 @@ func _physics_process(delta: float) -> void:
 	if _hit_wall_head_on():
 		die(&"wall")
 		return
+	if is_on_floor() and is_on_ceiling():
+		# Squeezed between a platform and a ceiling: resolving it would push
+		# the body through one of them.
+		die(&"crush")
+		return
 	velocity = motor.end_tick(velocity, delta)
 
 	if motor.jumped_this_tick:
@@ -119,16 +140,18 @@ func _physics_process(delta: float) -> void:
 	_update_state()
 
 
-## If the next horizontal move would hit a ledge that is only a few pixels
-## above our feet, step up onto it. Makes near-miss landings feel fair.
+## If this tick's move would hit the face of a ledge whose top is only a few
+## pixels above our feet, lift onto it instead. Covers running into a low
+## lip and landing a hair short while falling onto a corner.
 func _apply_ledge_assist(delta: float) -> void:
 	if config.ledge_assist <= 0.0 or velocity.x <= 0.0:
 		return
-	var motion := Vector2(velocity.x * delta, 0.0)
+	var motion := velocity * delta
+	var grounded := is_on_floor()
+	if grounded:
+		motion.y = 0.0  # Otherwise the resting floor contact is the first hit.
 	var hit := KinematicCollision2D.new()
-	if not test_move(global_transform, motion, hit):
-		return
-	if hit.get_normal().x > WALL_HIT_NORMAL_X:
+	if not test_move(global_transform, motion, hit) or not _is_head_on(hit.get_normal()):
 		return
 	var lift := LEDGE_ASSIST_STEP
 	while lift <= config.ledge_assist:
@@ -137,11 +160,16 @@ func _apply_ledge_assist(delta: float) -> void:
 		var up := Vector2(0.0, -(lift + LEDGE_ASSIST_CLEARANCE))
 		if test_move(global_transform, up):
 			return  # Ceiling in the way.
-		if not test_move(global_transform.translated(up), motion):
-			# Do this tick's horizontal step here too: left to move_and_slide,
-			# floor snapping would first pull us back onto the lower ground.
-			global_position += up + motion
-			velocity.x = 0.0
+		var lifted_hit := KinematicCollision2D.new()
+		var blocked := test_move(global_transform.translated(up), motion, lifted_hit)
+		if not blocked or not _is_head_on(lifted_hit.get_normal()):
+			if grounded:
+				# Do this tick's horizontal step here too: left to move_and_slide,
+				# floor snapping would first pull us back onto the lower ground.
+				global_position += up + Vector2(motion.x, 0.0)
+				velocity.x = 0.0
+			else:
+				global_position += up
 			return
 		lift += LEDGE_ASSIST_STEP
 
@@ -150,9 +178,13 @@ func _apply_ledge_assist(delta: float) -> void:
 ## head-on wall hit is a death. Grazing a surface from above or below is not.
 func _hit_wall_head_on() -> bool:
 	for i in get_slide_collision_count():
-		if get_slide_collision(i).get_normal().x <= WALL_HIT_NORMAL_X:
+		if _is_head_on(get_slide_collision(i).get_normal()):
 			return true
 	return false
+
+
+static func _is_head_on(normal: Vector2) -> bool:
+	return normal.x <= WALL_HIT_NORMAL_X
 
 
 func _update_state() -> void:

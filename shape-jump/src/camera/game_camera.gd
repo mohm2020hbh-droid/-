@@ -16,12 +16,19 @@ extends Camera2D
 ## Camera centre relative to the ground anchor (negative = show more sky).
 @export var vertical_offset := -90.0
 @export_range(0.5, 20.0, 0.1) var follow_speed_y := 4.5
+## Faster follow when the view must move down (falls), so a fall death is
+## never below the screen.
+@export_range(0.5, 30.0, 0.1) var fall_follow_speed_y := 16.0
 ## How far the target may drop below its last ground height before we follow.
-@export var fall_dead_zone := 140.0
+## Jump arcs only go up from the anchor, so anything below it is a real drop:
+## keep this small, or a pit fall ends below the screen.
+@export var fall_dead_zone := 24.0
+## How far below the kill line the view may reach, so a fall death is seen.
+@export var kill_line_margin := 200.0
 @export var max_shake := 7.0
 @export_range(0.05, 2.0, 0.05, "suffix:s") var shake_duration := 0.35
 
-## Lowest world Y the bottom of the view may show (set from the level).
+## Lowest world Y the bottom of the view may show (see [method set_kill_line]).
 var bottom_limit := INF
 
 var _anchor_y := 0.0
@@ -37,9 +44,11 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
-	var desired := _desired_position()
+	_update_anchor()
+	var desired := get_desired_position()
 	global_position.x = desired.x
-	global_position.y = lerpf(global_position.y, desired.y, 1.0 - exp(-follow_speed_y * delta))
+	var speed := fall_follow_speed_y if desired.y > global_position.y else follow_speed_y
+	global_position.y = lerpf(global_position.y, desired.y, 1.0 - exp(-speed * delta))
 
 
 func _process(delta: float) -> void:
@@ -48,6 +57,12 @@ func _process(delta: float) -> void:
 	_trauma = maxf(_trauma - delta / shake_duration, 0.0)
 	var amount := _trauma * _trauma * max_shake
 	offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * amount
+
+
+## Limits how far down the camera follows a fall: just past the level's
+## kill line, so the shatter is on screen but the void below is not.
+func set_kill_line(kill_y: float) -> void:
+	bottom_limit = kill_y + kill_line_margin
 
 
 ## Adds shake trauma (0..1). Squared falloff keeps small hits subtle.
@@ -60,19 +75,24 @@ func snap_to_target() -> void:
 	if target == null:
 		return
 	_anchor_y = target.global_position.y
-	global_position = _desired_position()
+	global_position = get_desired_position()
 	_trauma = 0.0
 	offset = Vector2.ZERO
 	reset_physics_interpolation()
 
 
-func _desired_position() -> Vector2:
-	var view := get_viewport_rect().size / zoom
+## Vertical anchor: the last ground height, pulled down only by real falls.
+func _update_anchor() -> void:
 	var target_y := target.global_position.y
 	if target.is_on_floor():
 		_anchor_y = target_y
 	elif target_y > _anchor_y + fall_dead_zone:
 		_anchor_y = target_y - fall_dead_zone
+
+
+## Where the camera wants to be for the current anchor (no side effects).
+func get_desired_position() -> Vector2:
+	var view := get_viewport_rect().size / zoom
 	var y := _anchor_y + vertical_offset
 	y = minf(y, bottom_limit - view.y * 0.5)
 	return Vector2(target.global_position.x + view.x * (0.5 - screen_anchor_x), y)
