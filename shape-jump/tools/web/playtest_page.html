@@ -127,6 +127,20 @@
   }
   .foot { margin: 0; font-size: 12px; color: var(--muted); opacity: 0.8; line-height: 1.6; }
   [lang="en"] { direction: ltr; unicode-bidi: isolate; }
+  #notice {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    margin: 0;
+    padding: 8px 14px;
+    background: var(--panel);
+    border: 1px solid var(--neon);
+    border-radius: 6px;
+    font: 600 13px var(--display);
+    color: var(--hot);
+  }
   #problem {
     position: fixed;
     inset: auto 12px 12px 12px;
@@ -149,6 +163,7 @@
 </style>
 
 <pre id="problem" hidden></pre>
+<p id="notice" hidden>Graphics reset by the browser: resuming your run…</p>
 <canvas id="canvas" tabindex="0">This browser cannot draw the game (canvas missing).</canvas>
 
 <div id="launcher">
@@ -198,6 +213,8 @@
   const actions = $('actions');
   const launcher = $('launcher');
   const problem = $('problem');
+  const notice = $('notice');
+  let canvasEl = $('canvas');
 
   // Anything that goes wrong is shown on screen, in full, never swallowed:
   // a blank frame tells nobody anything.
@@ -222,16 +239,13 @@
   });
   const consoleError = console.error.bind(console);
   console.error = function () {
-    consoleError.apply(console, arguments);
     const text = Array.prototype.map.call(arguments, String).join(' ');
+    consoleError.apply(console, arguments);
     if (/^(WARNING|USER WARNING)/.test(text)) {
       return;
     }
     report('engine', text);
   };
-  $('canvas').addEventListener('webglcontextlost', function () {
-    report('webgl', 'the graphics context was lost (the GPU reset or ran out of memory)');
-  });
 
   function fail(err) {
     const msg = err && err.message ? err.message : String(err);
@@ -342,10 +356,36 @@
     if (missing.length) {
       throw new Error('missing browser features: ' + missing.join(', '));
     }
-    engine = new Engine({
+    engine = makeEngine(canvasEl);
+    await Promise.all([engine.init('index'), engine.preloadFile('index.pck', 'index.pck')]);
+    meter.style.width = '100%';
+    status.textContent = 'جاهزة. اختر طريقة اللعب:';
+    actions.hidden = false;
+    $('play-normal').focus();
+    if (qa) {
+      start(true);
+    }
+  }
+
+  // Each engine reports its own errors, so a retired one (see recover())
+  // can be told apart: its shutdown report ("Unreferenced static string",
+  // pages in use at exit) is expected while it is disposed, not a fault.
+  const retired = new Set();
+  function makeEngine(canvas) {
+    const instance = new Engine({
+      onPrint: function () {
+        console.log.apply(console, arguments);
+      },
+      onPrintError: function () {
+        if (retired.has(instance)) {
+          console.warn.apply(console, ['[retired engine]'].concat(Array.prototype.slice.call(arguments)));
+        } else {
+          console.error.apply(console, arguments);
+        }
+      },
       executable: 'index',
       mainPack: 'index.pck',
-      canvas: $('canvas'),
+      canvas: canvas,
       canvasResizePolicy: 0,  // The page sizes the canvas itself: see fitCanvas().
       focusCanvas: true,
       experimentalVK: false,
@@ -356,14 +396,7 @@
       gdextensionLibs: [],
       args: [],
     });
-    await Promise.all([engine.init('index'), engine.preloadFile('index.pck', 'index.pck')]);
-    meter.style.width = '100%';
-    status.textContent = 'جاهزة. اختر طريقة اللعب:';
-    actions.hidden = false;
-    $('play-normal').focus();
-    if (qa) {
-      start(true);
-    }
+    return instance;
   }
 
   // The canvas's pixel size is the size of Godot's main render target. Left to
@@ -376,14 +409,14 @@
   const MAX_PIXELS = 1280 * 720 * 2.5;
   let gpuMax = 4096;
   function readGpuLimits() {
-    const gl = $('canvas').getContext('webgl2');
+    const gl = canvasEl.getContext('webgl2');
     if (gl) {
       const dims = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
       gpuMax = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), dims[0], dims[1]);
     }
   }
   function fitCanvas() {
-    const canvas = $('canvas');
+    const canvas = canvasEl;
     const w = window.innerWidth;
     const h = window.innerHeight;
     if (w < 1 || h < 1) {
@@ -403,7 +436,69 @@
   window.addEventListener('resize', fitCanvas);
   fitCanvas();
 
+  // WebGL contexts can be dropped by the browser at any time (a GPU driver
+  // reset, the GPU process restarting, too many contexts in the app, memory
+  // pressure elsewhere): the spec requires pages to cope, and Godot cannot
+  // rebuild a lost context. So the page stops the dead engine, starts a fresh
+  // one on a new canvas (the engine is already downloaded) and the game picks
+  // the run up where the game last published it: same level, last checkpoint,
+  // same progress, attempts and score (window.shapeJumpResume, see
+  // GameSession._resume). No page reload, nothing lost.
+  let recoveries = [];
+  function watch(canvas) {
+    canvas.addEventListener('webglcontextlost', function (e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();  // Godot's own handler only calls alert("please reload").
+      if (canvas !== canvasEl) {
+        return;
+      }
+      console.warn('[webgl] context lost; restarting the engine and resuming the run');
+      recover().catch(function (err) {
+        report('webgl', 'the graphics context was lost and the engine could not restart: ' + (err && err.message));
+      });
+    });
+  }
+
+  async function recover() {
+    const now = Date.now();
+    recoveries = recoveries.filter(function (t) { return now - t < 60000; });
+    recoveries.push(now);
+    if (recoveries.length > 3) {
+      throw new Error('the browser keeps dropping the graphics context (4 times in a minute)');
+    }
+    const old = engine;
+    retired.add(old);
+    try {
+      old.rtenv.pauseMainLoop();
+    } catch (e) {
+      // Already stopped.
+    }
+    const fresh = document.createElement('canvas');
+    fresh.id = 'canvas';
+    fresh.tabIndex = 0;
+    canvasEl.replaceWith(fresh);
+    canvasEl = fresh;
+    watch(fresh);
+    fitCanvas();
+    notice.hidden = false;
+    engine = makeEngine(fresh);
+    await Promise.all([engine.init('index'), engine.preloadFile('index.pck', 'index.pck')]);
+    const args = baseArgs.slice();
+    if (args.indexOf('--') < 0) {
+      args.push('--');
+    }
+    if (window.shapeJumpResume) {
+      args.push('--resume=' + window.shapeJumpResume);
+    }
+    await engine.start({ args: args });
+    readGpuLimits();
+    fitCanvas();
+    fresh.focus();
+    setTimeout(function () { notice.hidden = true; }, 1500);
+  }
+
   let started = false;
+  let baseArgs = [];
   function start(testMode) {
     if (started || !engine) {
       return;
@@ -422,11 +517,12 @@
         args.push('--autoplay-loops=4');
       }
     }
+    baseArgs = args.slice();
     engine.start({ args: args }).then(function () {
       readGpuLimits();
       fitCanvas();
       launcher.hidden = true;
-      $('canvas').focus();
+      canvasEl.focus();
     }, function (err) {
       started = false;
       fail(err);
@@ -434,6 +530,7 @@
   }
   $('play-normal').addEventListener('click', function () { start(false); });
   $('play-test').addEventListener('click', function () { start(true); });
+  watch(canvasEl);
   boot().catch(fail);
 }());
 </script>

@@ -64,6 +64,15 @@ func _on_level_loaded() -> void:
 			game.press_jump())
 
 
+var _frames := 0
+
+
+func _process(_delta: float) -> void:
+	_frames += 1
+	if _frames % 300 == 0 and game.state == GameSession.State.PLAYING:
+		_log("level %d at %.0f%%" % [game.level_index + 1, game.progress.percent])
+
+
 func _physics_process(_delta: float) -> void:
 	if game.state != GameSession.State.PLAYING:
 		return
@@ -114,7 +123,9 @@ func _after_complete() -> void:
 
 
 func _log(text: String) -> void:
-	print("[autoplay] %s | vram %.1f MB, textures %.1f MB, objects %d, nodes %d, viewport %s" % [text,
+	print("[autoplay] %s | draw calls %d, primitives %d, vram %.1f MB, textures %.1f MB, objects %d, nodes %d, viewport %s" % [text,
+		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
 		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
 		Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0,
 		Performance.get_monitor(Performance.OBJECT_COUNT), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),

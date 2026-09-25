@@ -92,3 +92,21 @@ func _die_twice_then_finish(index: int) -> void:
 	h.free_game()
 	await get_tree().physics_frame
 	h = null
+
+
+## The web page restarts the engine when the browser drops the WebGL
+## context; the run must continue at the same checkpoint with its progress,
+## attempts and score, and still finish.
+func test_resume_continues_the_run_at_its_checkpoint() -> void:
+	h = GameHarness.new(self, World01Routes.get_route(1))
+	await h.start(1)
+	var cp := h.game.level.get_checkpoints()[1]
+	h.game._resume(1, 55.0, 4, {"tiles": 150, "shards": 10})
+	h.seek(h.player_x())
+	assert_eq(h.game.state, GameSession.State.PLAYING, "playing at once")
+	assert_near(h.game.player.global_position.x, cp.global_position.x, 12.0, "at the checkpoint")
+	assert_near(h.game.progress.percent, 55.0, 0.01, "progress kept")
+	assert_eq(h.game.attempts, 4, "attempts kept")
+	assert_eq(h.game.score.shards, 10, "shards kept")
+	assert_true(await h.run_until(h.is_state(GameSession.State.COMPLETE), 60 * 60), "the resumed run finishes")
+	assert_true(h.deaths.is_empty(), "with the same timing as the first pass")

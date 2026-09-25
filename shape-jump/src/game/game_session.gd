@@ -53,6 +53,7 @@ var attempts := 1
 
 var _state_before_pause: State = State.PLAYING
 var _respawn: RespawnPoint
+var _last_checkpoint: Checkpoint
 var _sequence: Tween
 
 @onready var player: Player = %Player
@@ -85,7 +86,12 @@ func _ready() -> void:
 	var first := start_level if start_level >= 0 else Progression.furthest_unlocked(world)
 	if Autoplay.requested():
 		first = clampi(int(Autoplay.option("--autoplay-from")) - 1, 0, world.levels.size() - 1)
+	var resume := Autoplay.option("--resume").split(",")
+	if resume.size() == 6:
+		first = clampi(int(resume[0]), 0, world.levels.size() - 1)
 	load_level(first)
+	if resume.size() == 6:
+		_resume(int(resume[1]), float(resume[2]), int(resume[3]), {"tiles": int(resume[4]), "shards": int(resume[5])})
 	if Autoplay.requested():
 		var bot := Autoplay.new()
 		bot.game = self
@@ -147,6 +153,7 @@ func load_level(index: int = level_index) -> void:
 		marks.append(progress.percent_at(checkpoint.global_position.x))
 	hud.set_progress_marks(marks)
 	_respawn = RespawnPoint.new(spawn, 0.0, score.snapshot())
+	_last_checkpoint = null
 	player.respawn_at(spawn, false)
 	camera.snap_to_target()
 	_set_state(State.READY)
@@ -214,6 +221,42 @@ func get_respawn_point() -> RespawnPoint:
 	return _respawn
 
 
+## Continues a run in a fresh engine (the web page restarts the engine when
+## the browser drops the WebGL context): same level, back at checkpoint
+## [param checkpoint] (-1: the start) with the progress, attempts and score
+## the run had there.
+func _resume(checkpoint: int, percent: float, tries: int, score_state: Dictionary) -> void:
+	start_run()
+	var cps := level.get_checkpoints()
+	if checkpoint >= 0 and checkpoint < cps.size():
+		_on_checkpoint_reached(cps[checkpoint])
+		_respawn.score = score_state
+		_respawn_player()
+	attempts = maxi(tries, 1)
+	progress.percent = clampf(percent, 0.0, 100.0)
+	progress.changed.emit(progress.percent)
+	hud.set_progress(progress.percent, true)
+
+
+## Where a restarted engine would pick this run up (see [method _resume]);
+## the web page keeps the latest copy.
+func _publish_resume_point() -> void:
+	if not OS.has_feature("web"):
+		return
+	var level_at := level_index
+	var checkpoint := level.get_checkpoints().find(_last_checkpoint) if _last_checkpoint else -1
+	var saved := _respawn.score if _respawn and checkpoint >= 0 else {"tiles": 0, "shards": 0}
+	if state == State.COMPLETE and level_index + 1 < world.levels.size():
+		level_at = level_index + 1  # Finished: a restart goes on to the next level.
+		checkpoint = -1
+		saved = {"tiles": 0, "shards": 0}
+	var percent := progress.percent if level_at == level_index else 0.0
+	# A property set through the bridge, not eval(): pages may forbid eval.
+	var window := JavaScriptBridge.get_interface("window")
+	if window:
+		window.shapeJumpResume = "%d,%d,%.3f,%d,%d,%d" % [level_at, checkpoint, percent, attempts, saved.tiles, saved.shards]
+
+
 func _set_state(next: State) -> void:
 	state = next
 	# The player can only die while actually playing: a hazard reaching it on
@@ -224,6 +267,7 @@ func _set_state(next: State) -> void:
 	hud.set_pause_enabled(state == State.PLAYING or state == State.DYING)
 	hud.visible = state != State.READY  # The level select owns the screen.
 	state_changed.emit(state)
+	_publish_resume_point()
 
 
 func _respawn_player() -> void:
@@ -302,7 +346,9 @@ func _on_shard_collected(shard: Shard) -> void:
 func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	_respawn = RespawnPoint.new(respawn_feet_at(checkpoint.global_position), 0.0, score.snapshot())
 	_respawn.level_time = time_at(_respawn.feet.x)
+	_last_checkpoint = checkpoint
 	hud.mark_checkpoint(level.get_checkpoints().find(checkpoint))
+	_publish_resume_point()
 	Events.checkpoint_reached.emit(checkpoint.global_position)
 
 
