@@ -54,6 +54,10 @@ func _play_route() -> void:
 	if h.deaths.is_empty():
 		print("  ROUTE OK  %.1f s  taps %d  jumps %d  double jumps %d  shards %d/%d" % [h.ticks / 60.0,
 			route.size(), jumps[0], jumps[1], h.game.score.shards, level.get_shard_count()])
+		for shard in level.find_children("*", "Shard", true, false):
+			if not (shard as Shard).is_collected:
+				print("  SHARD MISSED at x=%.2f y=%.2f" % [(shard as Shard).global_position.x / GameConst.TILE,
+					(shard as Shard).global_position.y / GameConst.TILE])
 	else:
 		print("  ROUTE DIES  %s" % [h.deaths[0]])
 	h.free_game()

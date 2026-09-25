@@ -39,7 +39,7 @@ static func line(ci: CanvasItem, from: Vector2, to: Vector2, color: Color, width
 	ci.draw_line(from, to, color, width, true)
 
 
-## Soft round light, e.g. behind the player core or a saw hub. One textured
+## Soft round light, e.g. behind the player core or an arm tip. One textured
 ## quad with a smooth radial falloff (no banding, one draw call).
 static func soft_light(ci: CanvasItem, center: Vector2, radius: float, color: Color) -> void:
 	var extent := Vector2(radius, radius)

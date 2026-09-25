@@ -10,8 +10,10 @@
 [ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
 [ext_resource type="Script" path="res://src/level/elements/gate.gd" id="gate"]
 [ext_resource type="Script" path="res://src/level/elements/oscillator.gd" id="oscillator"]
+[ext_resource type="Script" path="res://src/level/elements/prism_beam.gd" id="prism_beam"]
 [ext_resource type="Script" path="res://src/level/elements/rotating_arm.gd" id="rotating_arm"]
 [ext_resource type="Script" path="res://src/level/elements/rotor.gd" id="rotor"]
+[ext_resource type="Script" path="res://src/level/elements/wall_panel.gd" id="wall_panel"]
 [ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
 
 [node name="Level05" type="Node2D"]
@@ -332,17 +334,16 @@ script = ExtResource("checkpoint")
 
 [node name="S5_Gauntlet" type="Node2D" parent="."]
 
-[node name="CrushBlock" type="Area2D" parent="S5_Gauntlet"]
-position = Vector2(15563.0995, -0)
-script = ExtResource("crush_block")
-size = Vector2(64, 131.2)
-travel = Vector2(0, -128)
-period = 1.15
-phase = 0.725
-warning_time = 0.3
-slam_time = 0.08
-closed_time = 0.2
-return_time = 0.35
+[node name="PrismBeam" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(15563.0995, -25.6)
+script = ExtResource("prism_beam")
+span = 140.8
+
+[node name="Oscillator" type="Node2D" parent="S5_Gauntlet/PrismBeam"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.2
+phase = 0.25
 
 [node name="Block" type="StaticBody2D" parent="S5_Gauntlet"]
 position = Vector2(15377.4995, 0)
@@ -360,7 +361,20 @@ script = ExtResource("rotating_arm")
 arms = 2
 length = 166.4
 speed = -2.8
-phase = 0.175
+phase = 0.275
+
+[node name="WallPanel" type="Area2D" parent="S5_Gauntlet"]
+position = Vector2(15998.2995, -108.8)
+script = ExtResource("wall_panel")
+size = Vector2(48, 108.8)
+
+[node name="Oscillator" type="Node2D" parent="S5_Gauntlet/WallPanel"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -185.6)
+period = 1.2
+phase = 0.45
+wave = 2
+hold_ratio = 0.5
 
 [node name="Block3" type="StaticBody2D" parent="S5_Gauntlet"]
 position = Vector2(16830.1471, -192)
@@ -379,10 +393,10 @@ warning_time = 0.35
 [node name="Gate2" type="Area2D" parent="S5_Gauntlet"]
 position = Vector2(17098.9471, 0)
 script = ExtResource("gate")
-stops = PackedVector2Array(-360.9331, 92.4309)
-hold_time = 0.9
-move_time = 0.25
-phase = 0
+stops = PackedVector2Array(-360.9331, 92.4309, -360.9331, 0)
+hold_time = 0.35
+move_time = 0.14
+phase = 0.1083
 warning_time = 0.35
 
 [node name="CollapsingPath" type="StaticBody2D" parent="S5_Gauntlet"]
@@ -414,7 +428,7 @@ script = ExtResource("gate")
 stops = PackedVector2Array(-376.205, 111.721, -286.605, 111.721)
 hold_time = 0.35
 move_time = 0.16
-phase = 0.8917
+phase = 0.8667
 warning_time = 0.35
 
 [node name="Block4" type="StaticBody2D" parent="S5_Gauntlet"]
@@ -547,28 +561,28 @@ position = Vector2(13623, -283)
 position = Vector2(13847, -290)
 
 [node name="Shard" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(15345, -70)
+position = Vector2(15345, -43)
 
 [node name="Shard2" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(15537, -192)
+position = Vector2(15537, -189)
 
 [node name="Shard3" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(15729, -82)
+position = Vector2(15729, -108)
 
 [node name="Shard4" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(15921, -175)
+position = Vector2(15921, -157)
 
 [node name="Shard5" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(16113, -149)
+position = Vector2(16113, -171)
 
 [node name="Shard6" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(16305, -214)
+position = Vector2(16305, -197)
 
 [node name="Shard7" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(16497, -360)
+position = Vector2(16497, -349)
 
 [node name="Shard8" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(16689, -386)
+position = Vector2(16689, -388)
 
 [node name="Shard9" parent="S5_Gauntlet" instance=ExtResource("shard")]
 position = Vector2(16881, -274)
@@ -586,10 +600,10 @@ position = Vector2(17457, -139)
 position = Vector2(17649, -279)
 
 [node name="Shard14" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(17841, -344)
+position = Vector2(17841, -311)
 
 [node name="Shard15" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(18033, -420)
+position = Vector2(18033, -410)
 
 [node name="Shard16" parent="S5_Gauntlet" instance=ExtResource("shard")]
-position = Vector2(18225, -250)
+position = Vector2(18225, -270)

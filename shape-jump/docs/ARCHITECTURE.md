@@ -8,16 +8,16 @@
 
 | القرار | الاختيار | السبب المختصر |
 |---|---|---|
-| المحرك | **Godot 4.7.2 (stable)** | محرك 2D حقيقي مجاني: Physics، Camera، Particles، Audio Buses، محرر مرئي للمستويات، وتصدير Android مباشر. بناء محرك خاص بـKotlin كان سيعني كتابة وصيانة كل هذا يدويًا. |
-| اللغة | **GDScript مع Static Typing** | اللغة الأصلية للمحرك، أسرع دورة تطوير، والـTyping يمنع فئة كاملة من الأخطاء. |
-| Renderer | **Compatibility (OpenGL ES 3)** | أوسع دعم لأجهزة Android المتوسطة والضعيفة. التوهج يُرسم يدويًا فلا نحتاج Bloom مكلفًا. |
-| فيزياء اللاعب | **CharacterBody2D + move_and_slide** | Ground detection وSnap ومنصات متحركة مدعومة ومختبرة في المحرك. لا حاجة لـRigidBody (غير قابل للتحكم الدقيق). |
-| المنصات المتحركة | **AnimatableBody2D** | صُممت لتحريك أجسام صلبة تحمل الـCharacterBody بشكل صحيح. |
-| الأخطار / الجمع / المحفزات | **Area2D** | كشف تداخل بدون استجابة فيزيائية. |
-| معدل الفيزياء | 60 Hz ثابت + **Physics Interpolation** | منطق حتمي، ورسم ناعم على شاشات 90/120Hz. (تم التحقق تجريبيًا أن الكاميرا تُستوفى بشكل صحيح.) |
-| الشاشة | 1280×720 أساس، `canvas_items` + `expand`، Landscape | منطقة التصميم تظهر دائمًا كاملة؛ الشاشات الأعرض ترى أكثر أمامها. |
-| الحفظ | **ConfigFile** في `user://` | بسيط، مقروء، مدمج في المحرك، يكفي لبيانات تقدم صغيرة. |
-| الاختبارات | **Test Runner صغير داخل المشروع** | بدون Addons خارجية، يعمل Headless في أي CI بأمر واحد. الانتقال لـGUT لاحقًا سهل لأن الاختبارات دوال `test_*` عادية. |
+| المحرك | **Godot 4.7.2 (stable)** | محرك 2D حقيقي: Physics، Camera، Particles، Audio Buses، محرر مرئي، وتصدير Android مباشر. |
+| اللغة | **GDScript مع Static Typing** | اللغة الأصلية للمحرك، والـTyping يمنع فئة كاملة من الأخطاء. |
+| Renderer | **Compatibility (OpenGL ES 3)** | أوسع دعم لأجهزة Android. التوهج مرسوم يدويًا فلا نحتاج Bloom. |
+| فيزياء اللاعب | **CharacterBody2D + move_and_slide** | Ground detection وSnap ومنصات متحركة مدعومة في المحرك. |
+| المنصات المتحركة | **AnimatableBody2D** | تحمل الـCharacterBody بشكل صحيح. |
+| الأخطار / الجمع / المحفزات | **Area2D** | كشف تداخل بلا استجابة فيزيائية. |
+| معدل الفيزياء | 60 Hz ثابت + **Physics Interpolation** | منطق حتمي ورسم ناعم على 90/120Hz. كل ما يحرك Transforms يفعل ذلك داخل الـPhysics Tick. |
+| تأليف المستويات | **مولّد Python** (`tools/levelgen`) يكتب مشاهد `.tscn` عادية | المستويات الصعبة تحتاج ضبطًا رقميًا لنوافذ التوقيت؛ المولّد يحاكي حركة اللاعب بدقة Tick، والمشاهد الناتجة تبقى قابلة للفتح والتعديل في المحرر. |
+| الحفظ | **ConfigFile** في `user://` | بسيط ومقروء ويكفي بيانات التقدم. |
+| الاختبارات | **Test Runner صغير داخل المشروع** | بلا Addons، يعمل Headless بأمر واحد. |
 
 ---
 
@@ -25,126 +25,125 @@
 
 ```
 shape-jump/
-├── project.godot               إعدادات المشروع، Input Map، أسماء طبقات الفيزياء، Autoloads، Theme
-├── export_presets.cfg          تصدير Android جاهز (يستثني tests/ و docs/)
-├── default_bus_layout.tres     Master / SFX / Ambient
-├── docs/                       GDD + Architecture
+├── project.godot / export_presets.cfg / default_bus_layout.tres
+├── docs/                         GDD + Architecture
 ├── src/
-│   ├── autoload/               خدمات عامة (Autoload) بلا منطق لعب
-│   │   ├── events.gd           Signal Bus للأحداث العابرة للأنظمة
-│   │   └── save_system.gd      الحفظ والتحميل
-│   ├── audio/
-│   │   ├── audio_manager.gd    (Autoload) يربط الأحداث بالأصوات، Pool من 8 مشغلات
-│   │   └── sound_library.gd    Resource: معرّف → ملف صوت
-│   ├── core/                   ثوابت ومساعدات بلا حالة
-│   │   ├── game_const.gd       حجم الـTile + أرقام طبقات الفيزياء
-│   │   ├── palette.gd          الألوان (مصدر واحد للهوية البصرية)
-│   │   ├── neon.gd             دوال رسم الحواف المضيئة والتوهج
-│   │   └── soft_light.tres     تدرج دائري للتوهج
+│   ├── autoload/                 events.gd (Signal Bus) · save_system.gd
+│   ├── audio/                    audio_manager.gd (Autoload) · sound_library.gd
+│   ├── core/                     game_const.gd · palette.gd · neon.gd · soft_light.tres
 │   ├── player/
-│   │   ├── movement_config.gd  Resource: كل أرقام الحركة القابلة للضبط
-│   │   ├── default_movement.tres
-│   │   ├── player_motor.gd     منطق الحركة النقي (بلا Nodes) ← قابل للاختبار
-│   │   ├── player.gd           CharacterBody2D: يطبق الـMotor، التصادم، الحالات
-│   │   ├── player_visual.gd    الرسم والـAnimations فقط (الدوران هنا فقط)
-│   │   ├── player_fx.gd        Particles والذيل الضوئي وحلقة الموت
-│   │   └── player.tscn
+│   │   ├── movement_config.gd    Resource: أرقام الحركة (ومنها Double Jump)
+│   │   ├── player_motor.gd       قواعد القفز النقية (بلا Nodes): Jump/Double Jump، Coyote، Buffer، طابور اللمسات
+│   │   ├── player.gd             CharacterBody2D: يطبق الـMotor، التصادم، الموت، التعويض الأفقي فوق المنصات
+│   │   ├── player_visual.gd      الرسم والـAnimations (قلبة الـDJ، النواة المجوفة)
+│   │   ├── player_fx.gd          Particles، الذيل، حلقة الـDJ، التحطم
+│   │   └── player.tscn · default_movement.tres
 │   ├── level/
-│   │   ├── level.gd            جذر أي مستوى: ساعة المستوى، الـSpawn، الـCheckpoints
-│   │   ├── level_data.gd       Resource: معرف/اسم/معامل سرعة المستوى
-│   │   └── elements/           عناصر جاهزة (@tool تظهر في المحرر مباشرة)
-│   │       ├── block.gd              منصة صلبة (ثابتة، أو متحركة على AnimatableBody2D)
-│   │       ├── phase_block.gd        منصة تختفي بدورة زمنية
-│   │       ├── oscillator.gd         مكوّن حركة يُضاف لأي عنصر
-│   │       ├── spikes.gd · saw.gd · hazard_pulse.gd   أخطار
-│   │       ├── shard.gd / .tscn      Collectible
-│   │       └── checkpoint.gd · finish_gate.gd
-│   ├── camera/game_camera.gd   Follow + Look-ahead + Shake
-│   ├── background/             طبقات Parallax إجرائية (سماء، شمس، أبراج، ضباب)
+│   │   ├── level.gd              جذر المستوى: ساعة المستوى، التسجيل، الـRewind، إشارات الإنذار
+│   │   ├── level_data.gd         Resource: id، الاسم، الوصف، المشهد، معامل السرعة
+│   │   ├── world_data.gd         Resource: رقم العالم، اسمه، قائمة LevelData، اسم العالم التالي
+│   │   └── elements/
+│   │       ├── hazard.gd                 قاعدة كل خطر (طبقة، Hitbox مُصغَّر، رسم خلف الكتل، cue)
+│   │       ├── gate.gd                   Pulse / Sequential / Timed Opening
+│   │       ├── rotating_arm.gd · crush_block.gd · prism_beam.gd · energy_field.gd
+│   │       ├── rotor.gd · wall_panel.gd · spikes.gd
+│   │       ├── collapsing_path.gd        ممر ينهار (StaticBody2D، يمشى عليه)
+│   │       ├── block.gd · phase_block.gd · oscillator.gd (SINE / LINEAR / STEPS)
+│   │       ├── hazard_art.gd · slab_art.gd · hazard_pulse.gd   رسم الأخطار
+│   │       └── shard · checkpoint · finish_gate
+│   ├── camera/game_camera.gd     Follow + Look-ahead + Shake + get_view_rect
+│   ├── background/               Parallax إجرائي
 │   ├── game/
-│   │   ├── game_session.gd     Game State Machine + الوسيط الوحيد في مشهد اللعب
-│   │   ├── tap_input.gd        الإدخال → "tapped" / "pause_requested" (تعدد الأصابع، منع التكرار)
-│   │   ├── score_tracker.gd    منطق النقاط النقي ← قابل للاختبار
-│   │   └── game.tscn           المشهد الرئيسي
-│   └── ui/                     HUD، Start، Pause، Complete، Fade، Theme
-├── levels/
-│   └── level_01.tscn + level_01.tres
-├── assets/audio/               ملفات الصوت + sound_library.tres
+│   │   ├── game_session.gd       State Machine + الوسيط الوحيد في مشهد اللعب
+│   │   ├── progression.gd        قواعد الفتح (دوال static فوق SaveSystem)
+│   │   ├── tap_input.gd          الإدخال → "tapped" / "pause_requested"
+│   │   ├── score_tracker.gd      منطق النقاط النقي
+│   │   └── game.tscn             المشهد الرئيسي (world = world_01.tres)
+│   └── ui/                       hud · start_overlay + level_card · death_banner · level_complete_panel · pause_menu · screen_fade
+├── levels/world_01/              level_01…05.tscn/.tres + world_01.tres  (مُولَّدة)
+├── assets/audio/                 sfx/*.wav · ambient/void_drone.ogg · sound_library.tres
+├── tools/                        (.gdignore — لا يستورده Godot)
+│   ├── levelgen/                 levelgen.py · world_01.py · README.md
+│   └── audio/gen_sfx.py          توليد الأصوات
 └── tests/
-    ├── test_runner.tscn / .gd  مشغّل الاختبارات (يُفشل الاختبار عند أي خطأ من المحرك)
-    ├── test_case.gd            دوال assert
-    ├── support/                GameHarness (يشغّل المشهد الحقيقي Tick بـTick بإصبع آلي)،
-    │                           Level01Route (حل المستوى)، SaveSandbox (حفظ مؤقت للاختبار)
-    ├── unit/                   منطق نقي + سلامة المستويات
-    └── integration/            فيزياء فعلية + إنهاء Level 01
+    ├── test_runner.* · test_case.gd
+    ├── support/                  GameHarness · PhysicsArena · SaveSandbox · World01Routes (مُولَّد)
+    ├── unit/ · integration/
+    └── tools/level_audit.tscn    تدقيق المستويات على الفيزياء الفعلية (نوافذ، استراتيجيات كسولة)
 ```
 
 ## 3. فصل المسؤوليات
 
 | النظام | المسؤول | ما لا يفعله |
 |---|---|---|
-| **Player** | `player.gd` | لا يعرف شيئًا عن Score أو UI أو Audio. يطلق Signals محلية فقط. |
-| **Movement** | `player_motor.gd` + `movement_config.gd` | لا يلمس Nodes أو Physics Server. يأخذ حالة ويرجع سرعة. |
-| **Physics** | `player.gd` (move_and_slide، Ledge Assist، قواعد الموت بالجدار) | لا يدوّر صندوق التصادم أبدًا. |
-| **Visual** | `player_visual.gd`, `player_fx.gd` | لا يؤثر على اللعب. يمكن حذفه واللعبة تبقى تعمل (كما في الاختبارات). |
-| **Level** | `level.gd` + العناصر | لا يعرف اللاعب. يطلق Signals: Shard جُمع، Checkpoint، نهاية. |
-| **Obstacles** | `spikes.gd`, `saw.gd` | بيانات + شكل + Hitbox فقط. لا منطق موت داخلها. |
-| **Collectibles** | `shard.gd` | يعرف فقط أنه جُمع ومتى (لإعادته عند الرجوع للـCheckpoint). |
-| **Camera** | `game_camera.gd` | لا يقرأ الإدخال ولا الحالة؛ يتبع هدفًا ويهتز عند الطلب. |
-| **UI** | `src/ui/*` | لا منطق لعب. يعرض قيمًا ويطلق Signals (resume, restart). |
+| **Movement** | `player_motor.gd` + `movement_config.gd` | لا يلمس Nodes. يقرر كل Tick: لا قفزة / Jump / Double Jump، ويرجع السرعة العمودية. |
+| **Player** | `player.gd` | لا يعرف Score أو UI أو Audio. يطلق `jumped` / `double_jumped` / `landed` / `died`. |
+| **Visual / FX** | `player_visual.gd`, `player_fx.gd` | لا يؤثر على اللعب. |
+| **Level** | `level.gd` | لا يعرف اللاعب. يحرك العناصر بالساعة، ويطلق: Shard، Checkpoint، النهاية، `obstacle_cued`. |
+| **Obstacles** | `hazard.gd` وأبناؤه | بيانات + شكل + Hitbox + `apply_time(t)`. لا منطق موت داخلها (الـHurtbox هو من يرى الطبقة). |
+| **Progression** | `progression.gd` + `WorldData` | لا حالة خاصة: يقرأ `SaveSystem` فقط. |
+| **Camera** | `game_camera.gd` | يتبع هدفًا ويهتز عند الطلب. |
+| **UI** | `src/ui/*` | لا منطق لعب: يعرض قيمًا ويطلق Signals (level_chosen، next، retry، resume، restart). |
 | **Audio** | `audio_manager.gd` | الوحيد الذي يعرف أي صوت لأي حدث. |
-| **Game State** | `game_session.gd` | الوسيط الوحيد في مشهد اللعب: يستقبل Signals من الأسفل ويستدعي الأنظمة للأسفل. |
-| **Save** | `save_system.gd` | لا يعرف شيئًا عن اللعب؛ API صغيرة: `record_result` / `get_record`. |
+| **Game State** | `game_session.gd` | الوسيط الوحيد: يستقبل Signals ويستدعي الأنظمة. |
+| **Save** | `save_system.gd` | API صغيرة: `record_result` / `get_record`، كتابة ذرية عبر ملف مؤقت. |
 
 ### قاعدة التواصل
-- **Signals للأعلى، استدعاءات للأسفل.** العنصر لا يستدعي أبًا أو أخًا.
-- **Events Bus** فقط للأحداث التي تهم أنظمة عامة (Audio الآن؛ Haptics/Analytics لاحقًا). يطلقها `GameSession` حصرًا → مصدر واحد يسهل تتبعه.
-- **كل الإدخال** يمر عبر `GameSession.press_jump()`: `TapInput` يحوّل اللمس/الماوس/لوحة المفاتيح إلى إشارة `tapped` واحدة لكل لمسة، واللاعب الآلي في الاختبارات يستدعي نفس الدالة.
+- **Signals للأعلى، استدعاءات للأسفل.**
+- **Events Bus** يطلقه `GameSession` حصرًا للأنظمة العامة (Audio). إنذارات العوائق تمر: العنصر ← `Level.report_cue` ← `obstacle_cued` ← `GameSession` (يتحقق أن المصدر داخل الكاميرا) ← `Events.obstacle_warning / obstacle_slam`.
+- **كل الإدخال** يمر عبر `GameSession.press_jump()`، واللاعب الآلي في الاختبارات يستدعي نفس الدالة.
 
 ---
 
 ## 4. تدفق البيانات في مشهد اللعب
 
 ```
-                 ┌────────────────────── GameSession (State Machine) ─────────────────────┐
-  Touch/Click →  │ TapInput.tapped ─► press_jump ─► READY: start()   PLAYING: request_jump │
-                 │                                                                         │
-                 │  Player.jumped/landed/died ─────┐        Level.shard_collected ───┐     │
-                 │                                 ▼                                 ▼     │
-                 │            Events.emit(...) → AudioManager       ScoreTracker → HUD      │
-                 │            player.died → camera.shake → fade → level.rewind_to(t)        │
-                 │                                             → player.respawn_at(p)       │
-                 └─────────────────────────────────────────────────────────────────────────┘
+                 ┌──────────────────────── GameSession (State Machine) ────────────────────────┐
+  Touch/Click →  │ TapInput.tapped ─► press_jump ─► READY: start_run()   PLAYING: request_jump  │
+  Level card  →  │ StartOverlay.level_chosen ─► play_level(i)  (إن كان مفتوحًا)                │
+                 │                                                                              │
+                 │  Player.jumped/double_jumped/landed/died ─┐   Level.shard_collected ───┐      │
+                 │                                           ▼                             ▼      │
+                 │                   Events.emit(...) → AudioManager       ScoreTracker → HUD     │
+                 │  died → DeathBanner + shake → fade → level.rewind_to(t) → player.respawn_at(p) │
+                 │  finish → SaveSystem.record_result → LevelCompletePanel (Next / Retry)         │
+                 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Game State Machine
 ```
-READY ──tap──► PLAYING ──died──► DYING ──(0.45s + fade)──► PLAYING
-                 │  ▲
-          pause  │  │ resume
-                 ▼  │
-                PAUSED                PLAYING ──finish──► COMPLETE ──play again──► READY
+READY (اختيار المستوى) ──tap──► PLAYING ──died──► DYING ──(تحطم + fade)──► PLAYING
+                                   │  ▲
+                            pause  │  │ resume
+                                   ▼  │
+                                  PAUSED
+
+PLAYING ──finish──► COMPLETE ──NEXT LEVEL──► READY (المستوى التالي)
+                             └──RETRY──────► READY (نفس المستوى)
 ```
-State Machine بـ `enum` ودالة `_enter_state()` — كافية لخمس حالات. نمط State-per-Node سيكون تعقيدًا بلا فائدة هنا.
+الـHUD مخفي في READY. `play_level(i)` يرفض أي مستوى مغلق.
 
 ### Player States
-`IDLE → RUN → JUMP → FALL → RUN ... → DEAD`. تُشتق من الفيزياء (on_floor، اتجاه السرعة) في نهاية كل Physics Tick، وتُطلق `state_changed` للـVisual.
+`IDLE → RUN → JUMP → FALL → RUN ... → DEAD`. الـDouble Jump **حدث** (`double_jumped`) وليس حالة: الجسم يبقى JUMP/FALL، والرسم يقرأ `has_double_jump()`.
+
+### قرار القفز داخل الـMotor (كل Physics Tick)
+1. على الأرض: تُستعاد القفزة الهوائية ويُعاد ضبط الـCoyote.
+2. إن كانت هناك لمسة في الطابور: أرضية إن كان على الأرض أو داخل الـCoyote، وإلا هوائية إن بقيت واحدة، وإلا تذهب إلى الـBuffer.
+3. إن لم تكن: الـBuffer يُنفَّذ قفزةً أرضية عند الهبوط.
+4. قفزة واحدة على الأكثر لكل Tick؛ اللمسات الزائدة عن القفزات المتاحة لا تدخل الطابور بل تُدمج في خانة الـBuffer الواحدة.
 
 ---
 
 ## 5. ساعة المستوى (Level Clock) — لماذا هي قلب الحتمية
 
-- `Level` يملك `clock: float` يتقدم بـ`delta` الفيزياء فقط أثناء اللعب.
-- كل عنصر متحرك يطبق `apply_time(t)`: موقعه/حالته **دالة نقية** في `t`.
-- العناصر **تسجّل نفسها** في المستوى عند دخولها الشجرة (`Level.join`) وتلغي تسجيلها عند خروجها (`Level.leave`)، فالعوائق التي تُنشأ أو تُحذف أثناء اللعب تعمل مثل الموضوعة في المحرر.
-- `Checkpoint` يسجل قيمة الساعة لحظة المرور. عند الموت: `level.rewind_to(t)` → كل العناصر تعود لنفس الطور، والـShards المجمعة بعد `t` تعود.
-- النتيجة: نفس المحاولة = نفس التوقيتات = مستوى قابل للتعلم، واختبار آلي يمكنه إثبات أن المستوى قابل للإنهاء.
+- `Level.clock` يتقدم بـ`delta` الفيزياء فقط أثناء اللعب، وكل عنصر زمني يطبق `apply_time(t)` كدالة نقية.
+- العناصر **تسجّل نفسها** (`Level.join` / `Level.leave`)، فالعوائق التي تُنشأ أو تُحذف أثناء اللعب تعمل كالموضوعة في المحرر. `Level.of(element)` يجد مستوى العنصر.
+- `rewind_to(t)`: كل العناصر تعود لنفس الطور، الـShards المجمعة بعد `t` تعود، وتُعاد ضبط الـInterpolation للعناصر المتحركة حتى لا "تنزلق" بصريًا.
+- **Checkpoint على شبكة الـTicks:** `GameSession.time_at(x)` يقرّب زمن الـCheckpoint إلى أقرب Tick، و`respawn_feet_at` يضع اللاعب في الموضع المقابل لذلك الـTick بالضبط. بدون ذلك يعود اللاعب بفارق جزء من Tick، فتتغير توقيتات كل ما بعده (اكتُشف كحلقة موت في Level 02).
 
-ترتيب التنفيذ في كل Tick: `Level` (يحرك العناصر) ← ثم `Player` (يتحرك بالنسبة لها) ← ثم `GameCamera`، مضمون بـ`process_physics_priority` (−10 / 0 / +10) وليس بترتيب العقد في المشهد.
+ترتيب التنفيذ في كل Tick: `Level` (−10) ← `Player` (0) ← `GameCamera` (+10) عبر `process_physics_priority`.
 
-**سرعة جري ثابتة:** `Player` يطرح سرعة المنصة الأفقية من حركته، فتحمله المنصات عموديًا فقط. بذلك يبقى `x(t)` خطيًا، وكل موضع في المستوى يقابل لحظة ثابتة من ساعة المستوى (المستوى "مقطوعة موسيقية"). هذا ما يسمح بـ:
-- حساب أطوار العناصر المتحركة من موقعها عند التصميم.
-- وصف حل كامل للمستوى كقائمة مواضع قفز (Route) يعيد تشغيلها اللاعب الآلي في الاختبارات.
+**سرعة جري ثابتة:** `Player` يطرح سرعة الأرضية الأفقية من حركته. السرعة تُقرأ من `PhysicsServer2D.body_get_direct_state` للجسم الذي يقف عليه (السرعة **الحالية** في نقطة التلامس)، لا من `get_platform_velocity()` التي تتأخر Tick على المنصات المتسارعة. بذلك يبقى `x(t)` خطيًا تمامًا، والمسار (قائمة مواضع اللمس) يصف حلًا كاملًا للمستوى.
 
 ---
 
@@ -152,9 +151,9 @@ State Machine بـ `enum` ودالة `_enter_state()` — كافية لخمس ح
 
 | # | الاسم | من عليها | من يراقبها |
 |---|---|---|---|
-| 1 | `world` | Blocks، منصات متحركة ومختفية | جسم اللاعب |
+| 1 | `world` | Blocks، منصات متحركة، بلاطات الانهيار | جسم اللاعب |
 | 2 | `player` | جسم اللاعب | Shards، Checkpoints، Finish |
-| 3 | `hazard` | Spikes، Saws | Hurtbox اللاعب |
+| 3 | `hazard` | كل أبناء `Hazard` | Hurtbox اللاعب فقط |
 | 4 | `pickup` | Shards | — |
 | 5 | `trigger` | Checkpoints، Finish | — |
 
@@ -163,74 +162,72 @@ State Machine بـ `enum` ودالة `_enter_state()` — كافية لخمس ح
 ## 7. نظام الصوت
 
 ```
-GameSession ──► Events.player_jumped ──► AudioManager ──► SoundLibrary["jump"] ──► Pool(8) على Bus "SFX"
+GameSession ──► Events.player_double_jumped ──► AudioManager ──► SoundLibrary["double_jump"] ──► Pool(8) على "SFX"
 ```
-- `SoundLibrary` (Resource) = قاموس `id → AudioStream`. إضافة صوت = ملف + سطر في المكتبة.
-- Pool من `AudioStreamPlayer` يسمح بتداخل الأصوات دون إنشاء Nodes أثناء اللعب.
-- Bus منفصل `Ambient` جاهز لصوت خلفية (`AudioManager.play_ambient(stream)`).
+- المعرّفات: `jump`, `double_jump`, `land`, `collect`, `checkpoint`, `warning`, `slam`, `death`, `complete`, `ui_click`, و`ambient` (يبدأ مع أول مستوى على Bus "Ambient" ويتكرر).
+- إضافة صوت = ملف + سطر في `sound_library.tres` + ربط حدث في `AudioManager`.
 
 ---
 
 ## 8. نظام الحفظ
 
-`user://save.cfg` (ConfigFile):
+`user://save.cfg` (ConfigFile)، قسم لكل معرّف مستوى:
 ```ini
 [meta]
 version=1
-[level_01]
-best_score=5230
-best_shards=18
+[w01_l01]
+best_score=5830
+best_shards=36
 completed=true
 ```
-`version` موجود لتمكين Migration لاحقًا دون كسر حفظ اللاعبين.
+الفتح مشتق من `completed` (`Progression.is_unlocked`)، و"World 02 مفتوح" = اكتمال كل مستويات World 01. الكتابة إلى ملف مؤقت ثم استبدال، مع استرداد إن انقطعت الكتابة.
 
 ---
 
 ## 9. الأداء (ميزانية الهاتف المتوسط)
 
-- رسم العناصر الثابتة يتم **مرة واحدة** (`_draw` مخزّن) وليس كل Frame.
-- لا `instantiate()` أثناء اللعب: كل الـParticles موجودة مسبقًا وتُعاد (`restart()`).
-- لا Post-Processing. التوهج طبقات خطوط شفافة.
-- الخلفية أشكال مرسومة إجرائيًا (بدون Textures كبيرة) → حجم APK صغير.
+- رسم العناصر يتم **مرة واحدة**؛ الحركة تغيّر Transforms فقط (ألواح البوابات وكتل السحق `SlabArt`، والـShards `ShardGem`).
+- لا `instantiate()` أثناء اللعب: كل الـParticles موجودة مسبقًا وتُعاد.
+- لا Post-Processing؛ الخلفية إجرائية بلا Textures كبيرة.
+- الأخطار لا تراقب شيئًا (`monitoring = false`): الـHurtbox وحده يفحص طبقتها.
 
 ---
 
 ## 10. الاختبار
 
-| النوع | ماذا يثبت |
+129 اختبارًا (≈ 19 ثانية)، تنجح بنفس النتائج على 20 و30 و60 و144 FPS.
+
+| الملف | ماذا يثبت |
 |---|---|
-| Unit: MovementConfig | الجاذبية والسرعة المشتقة تعطي ارتفاع القفزة المطلوب فعليًا بمحاكاة 60Hz |
-| Unit: PlayerMotor | Coyote، Buffer، لا Double Jump، حد سرعة السقوط |
-| Unit: ScoreTracker | حساب النقاط، Snapshot/Restore عند الـCheckpoint |
-| Unit: SaveSystem | الحفظ والقراءة، أفضل نتيجة لا تنقص |
-| Unit: Audio / Project setup | كل أصوات اللعب موجودة في المكتبة، الـInput Map والـAudio Buses ومعدل الفيزياء |
-| Unit: Level integrity | وجود Spawn وFinish، ترتيب الـCheckpoints، ≥ 1.5 ثانية أرض آمنة بعد كل Checkpoint، الحتمية `f(t)` للعناصر الزمنية |
-| Unit: PlayerVisual | الـSquash لا ينفجر مع توقف إطار طويل، ويستقر على 30/60/144 FPS |
-| Integration: Player physics | على الفيزياء الفعلية: زمن الاستجابة (القفز في أول Physics Tick بعد اللمس)، ارتفاع القفزة، الهبوط بلا اهتزاز، الهبوط على 3px من الحافة، فجوات ≤ 1 tile تُعبر بلا قفز، الاصطدام بالسقف، Coyote وBuffer فعليًا، Ledge Assist أثناء الجري والسقوط، السحق، عدم الاختراق بأقصى سرعة سقوط، المصاعد صعودًا ونزولًا، المنصة المختفية تحت اللاعب، الموت والعودة في نفس الإطار |
-| Integration: Camera | ثبات موضع اللاعب على الشاشة، لا تمايل مع القفز، صعود ناعم مع الدرج، موت السقوط داخل الشاشة، انتقال فوري بعد العودة |
-| Integration: Game flow | أول لمسة تبدأ ولا تقفز، لمسة مكررة في نفس الإطار تُحسب مرة، إصبع ثانٍ يقفز، الموت قبل/بعد Checkpoint، Restart من الإيقاف وأثناء الموت، الإيقاف أثناء الموت ثم الاستئناف |
-| Integration: Playthrough | لاعب آلي بجدول قفزات ثابت **ينهي Level 01 بدون موت**، ومرتين بنفس النتيجة بالضبط (Determinism) |
-| Integration: Death/Respawn | موت متعمد ← عودة للـCheckpoint ← إنهاء المستوى بنفس المسار (يثبت تطابق التوقيت بعد العودة) |
+| unit/test_player_motor (20) | Jump، Double Jump، حد القفزتين، Coyote، Buffer، طابور اللمسات، أقصى سرعة سقوط |
+| unit/test_level_integrity | خمسة مستويات بسرعة متصاعدة، Spawn/Finish/Shards، ترتيب الـCheckpoints و≥ 1.5s أرض آمنة بعدها، حتمية `f(t)` |
+| unit: audio، save، score، visual، project | كل المعرّفات موجودة، الـAmbient يتكرر، الحفظ الذري، النقاط، الـSquash، إعدادات المشروع |
+| integration/test_double_jump (11) | القمة المزدوجة، جدار لا تعبره قفزة واحدة، لا قفزة ثالثة، لمستان في إطار واحد، الاستعادة بعد الهبوط، الحافة والـCoyote، سقف منخفض، Respawn وسط DJ، الهبوط على منصة متحركة |
+| integration/test_obstacles (16) | خط زمن كل نوع، القتل والمرور على الفيزياء الفعلية، الإنذارات، الأصوات داخل اللعب فقط، Hitbox ≤ الرسم دائمًا |
+| integration/test_player_physics (29) | الاستجابة، الارتفاع، الحواف، الفجوات، السقف، Ledge Assist، السحق، المصاعد، منصة متسارعة لا تزيح اللاعب أفقيًا |
+| integration/test_world_01_playthrough | **كل مستوى يُنهى بمساره بلا موت**، الحتمية، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت |
+| integration/test_progression (5) | قواعد الفتح، رفض المستوى المغلق، NEXT LEVEL، WORLD 01 COMPLETE، لوحة الموت وعدّاد المحاولات |
+| integration: camera، game flow، review probes | الكاميرا، تدفق اللعب واللمس، عوائق تُنشأ/تُحذف أثناء اللعب، تسلسل حالات سريع |
 
-أي خطأ يسجله المحرك أثناء اختبار (Script error، استدعاء غير صالح...) يُفشل ذلك الاختبار عبر `Logger` مخصص.
+أي خطأ يسجله المحرك أثناء اختبار يُفشله.
 
-التشغيل:
 ```bash
-godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn
+godot --headless --path shape-jump --import
+godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn [-- --filter=obstacles]
+godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --level=5 --windows --exploits
 ```
-`--fixed-fps` يجعل المحاكاة تعمل أسرع من الزمن الحقيقي بنفس النتائج (الفيزياء بخطوة ثابتة).
 
-ما **لا** تثبته الاختبارات: الإحساس (Game Feel) — يحتاج Playtesting بشري على هاتف (قائمة §16 في الـGDD).
+ما **لا** تثبته الاختبارات: الإحساس — يحتاج Playtesting على هاتف (§16 في الـGDD).
 
 ---
 
-## 11. نقاط التوسع المستقبلية (بدون تعديل البنية)
+## 11. نقاط التوسع (بدون تعديل البنية)
 
 | الإضافة | أين |
 |---|---|
-| مستوى جديد | `levels/level_XX.tscn` + `LevelData` |
-| عنصر جديد | مشهد في `src/level/elements/` يطبق `apply_time(t)` إن كان زمنيًا، ويستدعي `Level.join(self)` في `_ready` و`Level.leave(self)` في `_exit_tree` |
+| مستوى في World 01 | دالة جديدة في `tools/levelgen/world_01.py` + إضافتها إلى `LEVELS` |
+| World 02 | ملف `world_02.py` بنفس الـAPI، و`WorldData` جديد، و`game.tscn` يأخذ `world` مختلفًا |
+| نوع عائق جديد | سكربت يرث `Hazard` ويطبق `apply_time(t)`، ونسخة Hitbox مطابقة في `levelgen.py` |
 | صوت جديد | ملف + سطر في `sound_library.tres` |
-| قائمة رئيسية / اختيار مستوى | مشهد جديد يستدعي `game.tscn` مع `level_scene` مختلف |
 | Haptics / Analytics | Listener جديد على `Events` |
 | Localization | ملفات ترجمة + خط عربي في الـTheme |

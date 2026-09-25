@@ -203,6 +203,7 @@ func _set_state(next: State) -> void:
 	player.invulnerable = state != State.PLAYING
 	level.running = state == State.PLAYING or state == State.DYING or state == State.COMPLETE
 	hud.set_pause_enabled(state == State.PLAYING or state == State.DYING)
+	hud.visible = state != State.READY  # The level select owns the screen.
 	state_changed.emit(state)
 
 

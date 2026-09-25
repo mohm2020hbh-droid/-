@@ -3,10 +3,11 @@
 A level is written as Python: blocks, obstacles and the intended route (the
 x positions where the player taps). The player's x(t) is linear and every
 timed element is a pure function of level time, so this module can replay
-the route tick by tick with the motor's exact rules (Sim), knows every
-hazard's hitbox at any time (mirrors of the GDScript classes), and fits each
-obstacle's phase so the intended path runs through the middle of its gap.
-The Godot audit (tests/tools/level_audit.tscn) then checks the real thing.
+the route tick by tick with the motor's exact rules (Level.simulate), knows
+every hazard's hitbox at any time (mirrors of the GDScript classes), and
+tunes each obstacle's phase so the tap it guards gets a timing window of a
+chosen size (the difficulty dial). The Godot audit
+(tests/tools/level_audit.tscn) then checks the real thing.
 
 Coordinates: tiles (64 px) for x; heights in tiles above the ground line
 (up is positive). Everything is converted to Godot pixels (y down).
@@ -929,10 +930,10 @@ class Level:
             x = self._moved[x]
         return x
 
-    def _tune_now(self, element, tap, target_ms, osc=False, steps=120, recenter=True, stop_after=4.0, forced=True):
+    def _tune_now(self, element, tap, target_ms, osc=False, steps=120, stop_after=4.0, forced=True):
         """Chooses the phase of `element` (or its oscillator) so that the window of
-        `tap` (all other taps fixed) is as close as possible to `target_ms`, then
-        moves the tap to the middle of its window. This is the difficulty dial:
+        `tap` (all other taps fixed) is as close as possible to `target_ms`, as
+        centred on the tap as possible. This is the difficulty dial:
         the obstacle is placed so it really constrains the tap, by a known amount.
         `tap` may be a list (e.g. landing on a platform and leaving it): the phase
         then balances all their windows. With `forced`, skipping any of the taps
@@ -978,13 +979,7 @@ class Level:
         # Taps are not moved here: moving one can change what the next taps do.
         # The score above already prefers phases that centre the window on the
         # tap, and recenter_route() centres the rest one at a time, checked.
-        recenter = False
         for x, (lo, hi) in zip(taps, best[2]):
-            shift = (lo + hi) // 2 if recenter else 0
-            if shift:
-                new = round(x + shift * self.tiles_per_tick(), 3)
-                self._move_tap(x, new)
-                x, lo, hi = new, lo - shift, hi - shift
             self.notes.append(f"{element.base} x={element.x_range()[0] / T:.1f}: tap {x:.2f} window "
                               f"[{lo:+d},{hi:+d}] {int((hi - lo + 1) * 1000 / 60)} ms")
         self._sim = None

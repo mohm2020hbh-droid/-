@@ -208,9 +208,6 @@ move_time = 0.25
 phase = 0
 warning_time = 0.35
 
-[node name="Shard" parent="HighWindow" instance=ExtResource("shard")]
-position = Vector2(12704, -256)
-
 [node name="ThirdWindmill" type="Node2D" parent="."]
 
 [node name="RotatingArm" type="Area2D" parent="ThirdWindmill"]
@@ -340,3 +337,6 @@ position = Vector2(10598, -500)
 
 [node name="Shard6" parent="DoubleJumpGap" instance=ExtResource("shard")]
 position = Vector2(10688, -509)
+
+[node name="Shard" parent="HighWindow" instance=ExtResource("shard")]
+position = Vector2(12704, -342)

@@ -109,7 +109,7 @@ def level_01():
     lv.tap(193.4)
     lv.dj(195.7)
     lv.gate(198.5, [(4.2, 2.4)])
-    lv.shard(198.5, 4.0)
+    lv.shards_along(198.5, 198.5)  # Through the middle of the gate, on the final path.
 
     lv.group("ThirdWindmill")
     lv.tap(202.9)
@@ -234,7 +234,7 @@ def level_02():
         lv.tap(px + 1.1)
     last = lv.land_x(plats[-1][1], 0)
     for px, tap in plats:
-        lv.tune(lv.crusher(px - 0.4, 2.2, 4.2, -4.2, 1.5, height=3.0), tap, 170, recenter=False)
+        lv.tune(lv.crusher(px - 0.4, 2.2, 4.2, -4.2, 1.5, height=3.0), tap, 170)
     cp = last + 5.0
     lv.block(last - 1.0, cp + 14.0, 0)
     lv.checkpoint(cp)
@@ -285,9 +285,14 @@ def level_03():
         lv.shard(x, 0.5)
 
     lv.group("CrumblingBridge")
-    # Falls away right behind the player: nothing to do yet, but it never waits.
+    # Falls away right behind the player, and the field and the beam on it
+    # still have to be read: there is no stopping to think.
     lv.collapsing(22, 18, 0.0, lv.clock(22.4) + 0.25, 1.0 / tps, tile_w=1.0, thickness=0.5)
     lv.block(40, 44, 0)
+    lv.tap(26.5)
+    lv.tune(lv.field(29.0, 1.0, 0.0, 1.8, 1.1, 0.6), 26.5, 170)
+    lv.tap(34.0)
+    lv.tune(lv.prism(37.0, 0.3, 2.0, 2.4, 1.5), 34.0, 170, osc=True)
     lv.shards_along(24, 38, 3.5)
 
     lv.group("CollapseTowardYou")
@@ -302,6 +307,8 @@ def level_03():
     lv.tap(63.4)
     lv.tune(lv.prism(67.0, 0.4, 4.0, 3.0, 1.8), 63.4, 170, osc=True)
     lv.shards_along(64, 69, 1.5)
+    lv.tap(71.0)
+    lv.tune(lv.field(73.2, 1.0, 0.0, 1.8, 1.0, 0.6), 71.0, 160)
 
     lv.checkpoint(78)
 
@@ -347,7 +354,9 @@ def level_03():
     lv.shards_along(127, 158, 3.5)
 
     lv.group("Drop")
-    lv.block(163.5, 186, 0)
+    lv.tap(154.5)
+    lv.tune(lv.field(157.0, 1.0, 3.5, 1.8, 1.0, 0.6), 154.5, 160)
+    lv.block(161.5, 186, 0)
     lv.checkpoint(172)
 
     # ------------- moving floor > jump > prism > double jump > narrow > collapse ---
@@ -402,12 +411,13 @@ def level_03():
     ledge = lv.land_x(f2, 2.5, air=(f3 - f2) / tps) - 0.7
     lv.block(ledge, ledge + 1.3, 3.5)
     lv.tune(lv.prism(f2 + 3.4, 0.3, 2.4, 2.8, 1.3), f3, 140, osc=True)
+    lv.window_gate(f3 + 2.0, 0.3)  # On the rising arc: it times the double jump itself.
     lv.shards_along(f1, ledge + 1, 3.0)
 
     lv.group("FinalChase")
     f4 = ledge + 1.0
     lv.tap(f4)
-    lv.window_gate(f4 + 3.6, 0.35)
+    lv.tune(lv.timed_gate(f4 + 3.6, 0.35, hold=0.35, move=0.14), f4, 120)
     chase = lv.land_x(f4, -2.0) - 0.8
     lv.collapsing(chase, 9, 1.5, lv.clock(chase) + 0.25, 1.0 / (1.3 * tps))
     f5 = chase + 3.2
@@ -515,8 +525,8 @@ def level_04():
                     osc=Osc((0.0, -1.6 * 64), 1.2))
     rot2 = lv.rotor(r5 + 7.0, 1.4, radius=36.0, points=3, spin=3.5,
                     osc=Osc((0.0, -2.2 * 64), 1.4))
-    lv.tune(rot1, r5, 160, osc=True, recenter=False)
-    lv.tune(rot2, r5 + 3.9, 150, osc=True, recenter=False)
+    lv.tune(rot1, r5, 160, osc=True)
+    lv.tune(rot2, r5 + 3.9, 150, osc=True)
     end2 = lv.land_x(r5, 0.0, air=3.9 / tps)
     cp2 = end2 + 5.0
     lv.checkpoint(cp2)
@@ -720,13 +730,17 @@ def level_05():
     lv.group("S5_Gauntlet")
     g1 = cp4 + 15.5
     lv.tap(g1)
-    lv.tune(piston(lv, g1 + 3.4, height=2.0, period=1.15, closed=0.2), g1, 120)
+    lv.tune(lv.prism(g1 + 3.4, 0.4, 2.2, 2.4, 1.2), g1, 120, osc=True)
     g2 = g1 + 7.0
     lv.block(cp4 + 16, g2 + 1.1, 0)
     lv.tap(g2)
     h1 = lv.land_x(g2, 1.0) - 0.9
     lv.block(h1, h1 + 1.2, 1.0)
-    lv.tune(lv.arm(g2 + 3.4, 5.0, 2.6, speed=-2.8), g2, 120)
+    # The panel times the jump; the arm sweeping above it shuts the high line
+    # (an early double jump over everything).
+    lv.tune(lv.arm(g2 + 3.4, 5.0, 2.6, speed=-2.8), g2, 150)
+    lv.tune(lv.panel(g2 + 3.2, 0.75, 0.0, 1.7, osc=Osc((0.0, -2.9 * 64), 1.2, wave="steps", hold_ratio=0.5)),
+            g2, 120, osc=True)
     g3 = h1 + 1.0
     lv.tap(g3)
     lv.dj(g3 + 3.8)
@@ -735,7 +749,7 @@ def level_05():
     lv.tune(lv.pulse_gate(g3 + 5.2, 1.2, hold=0.35, move=0.16), g3 + 3.8, 110)
     g4 = h2 + 1.0
     lv.tap(g4)
-    lv.window_gate(g4 + 3.2, 0.3)
+    lv.tune(lv.timed_gate(g4 + 3.2, 0.3, hold=0.35, move=0.14), g4, 100)
     h3x = lv.land_x(g4, -1.5) - 1.0
     lv.collapsing(h3x, 7, 1.5, lv.clock(h3x) + 0.2, 1.0 / (1.35 * tps))
     g5 = h3x + 2.6
@@ -743,8 +757,8 @@ def level_05():
     lv.dj(g5 + 4.8)
     fin = lv.land_x(g5, -1.5, air=4.8 / tps)
     lv.tune(lv.rotor(g5 + 3.2, 2.1, radius=40.0, points=3, spin=4.5,
-                     osc=Osc((0.0, -1.8 * 64), 1.1)), g5, 110, osc=True)
-    lv.tune(lv.pulse_gate(g5 + 7.2, -1.4, hold=0.35, move=0.16), g5 + 4.8, 110)
+                     osc=Osc((0.0, -1.8 * 64), 1.1)), g5, 100, osc=True)
+    lv.tune(lv.pulse_gate(g5 + 7.2, -1.4, hold=0.35, move=0.16), g5 + 4.8, 100)
     lv.block(fin - 1.2, fin + 22, 0)
     lv.shards_along(g1, fin, 3.0)
 
