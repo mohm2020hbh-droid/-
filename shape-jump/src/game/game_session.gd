@@ -28,8 +28,11 @@ class RespawnPoint:
 		score = score_snapshot
 
 
-@export var world: WorldData
-## Level (index in [member world]) opened on start; -1 = the furthest unlocked.
+## Every world, in order (World 01 first).
+@export var worlds: Array[WorldData] = []
+## World opened on start; -1 = the furthest one unlocked.
+@export var start_world := -1
+## Level (index in the start world) opened on start; -1 = the furthest unlocked.
 @export var start_level := -1
 
 @export_group("Death & Respawn Feel")
@@ -44,6 +47,9 @@ class RespawnPoint:
 @export_range(0.0, 3.0, 0.05, "suffix:s") var results_delay := 0.8
 
 var state: State = State.READY
+## The world being played, and its index in [member worlds].
+var world: WorldData
+var world_index := -1
 var level: Level
 var level_index := 0
 var score := ScoreTracker.new()
@@ -66,6 +72,17 @@ var _sequence: Tween
 @onready var fade: ScreenFade = %ScreenFade
 @onready var _level_slot: Node2D = %LevelSlot
 @onready var _tap_input: TapInput = %TapInput
+@onready var whiteout: WhiteoutVeil = %WhiteoutVeil
+@onready var _embers: CPUParticles2D = %Embers
+@onready var _embers_ramp_red: Gradient = _embers.color_ramp
+var _embers_ramp_mono: Gradient = _make_mono_ramp()
+
+
+static func _make_mono_ramp() -> Gradient:
+	var g := Gradient.new()
+	g.colors = PackedColorArray([Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.55), Color(0.8, 0.8, 0.8, 0.0)])
+	g.offsets = PackedFloat32Array([0.0, 0.3, 1.0])
+	return g
 
 
 func _ready() -> void:
@@ -78,20 +95,30 @@ func _ready() -> void:
 	hud.pause_pressed.connect(pause)
 	pause_menu.resume_pressed.connect(resume)
 	pause_menu.restart_pressed.connect(restart_level)
-	complete_panel.next_pressed.connect(func() -> void: play_level(level_index + 1))
+	complete_panel.next_pressed.connect(_play_next)
 	complete_panel.retry_pressed.connect(restart_level)
 	start_overlay.level_chosen.connect(_on_level_chosen)
+	start_overlay.world_chosen.connect(_on_world_chosen)
+	whiteout.player = player
 	_tap_input.tapped.connect(press_jump)
 	_tap_input.pause_requested.connect(pause)
+	# A fixed start level (tests, development) means World 01 unless a start
+	# world is given too; otherwise the player's furthest world.
+	var w := start_world if start_world >= 0 else (0 if start_level >= 0 else _furthest_world())
+	if Autoplay.requested() and Autoplay.option("--autoplay-world") != "":
+		w = int(Autoplay.option("--autoplay-world")) - 1
+	var resume := Autoplay.option("--resume").split(",")
+	if resume.size() == 7:
+		w = int(resume[0])
+	_use_world(clampi(w, 0, worlds.size() - 1))
 	var first := start_level if start_level >= 0 else Progression.furthest_unlocked(world)
 	if Autoplay.requested():
 		first = clampi(int(Autoplay.option("--autoplay-from")) - 1, 0, world.levels.size() - 1)
-	var resume := Autoplay.option("--resume").split(",")
-	if resume.size() == 6:
-		first = clampi(int(resume[0]), 0, world.levels.size() - 1)
+	if resume.size() == 7:
+		first = clampi(int(resume[1]), 0, world.levels.size() - 1)
 	load_level(first)
-	if resume.size() == 6:
-		_resume(int(resume[1]), float(resume[2]), int(resume[3]), {"tiles": int(resume[4]), "shards": int(resume[5])})
+	if resume.size() == 7:
+		_resume(int(resume[2]), float(resume[3]), int(resume[4]), {"tiles": int(resume[5]), "shards": int(resume[6])})
 	if Autoplay.requested():
 		var bot := Autoplay.new()
 		bot.game = self
@@ -157,7 +184,8 @@ func load_level(index: int = level_index) -> void:
 	player.respawn_at(spawn, false)
 	camera.snap_to_target()
 	_set_state(State.READY)
-	start_overlay.open(world, level_index)
+	start_overlay.open(worlds, world_index, level_index)
+	whiteout.level = level
 	Events.level_started.emit(level.data.id)
 	level_loaded.emit()
 
@@ -243,18 +271,24 @@ func _resume(checkpoint: int, percent: float, tries: int, score_state: Dictionar
 func _publish_resume_point() -> void:
 	if not OS.has_feature("web"):
 		return
+	var world_at := world_index
 	var level_at := level_index
 	var checkpoint := level.get_checkpoints().find(_last_checkpoint) if _last_checkpoint else -1
 	var saved := _respawn.score if _respawn and checkpoint >= 0 else {"tiles": 0, "shards": 0}
-	if state == State.COMPLETE and level_index + 1 < world.levels.size():
-		level_at = level_index + 1  # Finished: a restart goes on to the next level.
-		checkpoint = -1
+	if state == State.COMPLETE:
+		checkpoint = -1  # Finished: a restart goes on to the next level.
 		saved = {"tiles": 0, "shards": 0}
-	var percent := progress.percent if level_at == level_index else 0.0
+		if level_index + 1 < world.levels.size():
+			level_at = level_index + 1
+		elif world_index + 1 < worlds.size():
+			world_at = world_index + 1
+			level_at = 0
+	var percent := progress.percent if level_at == level_index and world_at == world_index else 0.0
 	# A property set through the bridge, not eval(): pages may forbid eval.
 	var window := JavaScriptBridge.get_interface("window")
 	if window:
-		window.shapeJumpResume = "%d,%d,%.3f,%d,%d,%d" % [level_at, checkpoint, percent, attempts, saved.tiles, saved.shards]
+		window.shapeJumpResume = "%d,%d,%d,%.3f,%d,%d,%d" % [world_at, level_at, checkpoint, percent, attempts,
+			saved.tiles, saved.shards]
 
 
 func _set_state(next: State) -> void:
@@ -333,6 +367,58 @@ func _on_player_died(cause: StringName) -> void:
 	fade.tween_to(_sequence, 0.0, fade_in_time)
 
 
+## NEXT on the results: the next level, or the first level of the next world.
+func _play_next() -> void:
+	if level_index + 1 < world.levels.size():
+		play_level(level_index + 1)
+	elif world_index + 1 < worlds.size() and Progression.is_world_unlocked(worlds[world_index + 1]):
+		play_world(world_index + 1, 0)
+
+
+## Opens world [param index] at level [param at] (-1: its furthest unlocked
+## level), switching the whole look (palette, background, UI) to it.
+func play_world(index: int, at := -1) -> void:
+	if index < 0 or index >= worlds.size() or not Progression.is_world_unlocked(worlds[index]):
+		return
+	_use_world(index)
+	play_level(at if at >= 0 else Progression.furthest_unlocked(world))
+
+
+func _furthest_world() -> int:
+	var best := 0
+	for i in worlds.size():
+		if Progression.is_world_unlocked(worlds[i]):
+			best = i
+	return best
+
+
+## Makes [param index] the current world and dresses everything in its look.
+func _use_world(index: int) -> void:
+	world_index = index
+	world = worlds[index]
+	Palette.use(world.theme)
+	if world.background:
+		var old := get_node_or_null(^"World/Background")
+		if old == null or old.scene_file_path != world.background.resource_path:
+			var fresh := world.background.instantiate()
+			if old:
+				old.get_parent().remove_child(old)
+				old.queue_free()
+			fresh.name = "Background"
+			$World.add_child(fresh)
+			$World.move_child(fresh, 0)
+	player.visual.void_style = Palette.is_mono()
+	player.fx.refresh_colors()
+	UiLook.apply(self, world.theme)
+	_embers.color_ramp = _embers_ramp_red if world.theme == &"red" else _embers_ramp_mono
+	hud.refresh_look()
+
+
+func _on_world_chosen(index: int) -> void:
+	if state == State.READY and index != world_index:
+		play_world(index)
+
+
 func _on_level_chosen(index: int) -> void:
 	if state == State.READY and index != level_index:
 		play_level(index)
@@ -386,6 +472,7 @@ func _on_finish_reached() -> void:
 		return
 	_set_state(State.COMPLETE)  # Also makes the player invulnerable.
 	progress.complete()
+	player.visual.settle()
 	var result := LevelCompletePanel.Result.new()
 	result.score = score.get_score()
 	result.is_new_best = SaveSystem.record_result(level.data.id, result.score, score.shards, true)
@@ -394,12 +481,12 @@ func _on_finish_reached() -> void:
 	result.total_shards = level.get_shard_count()
 	result.attempts = attempts
 	var next := world.get_level(level_index + 1)
-	result.has_next = next != null
+	result.has_next = next != null or world_index + 1 < worlds.size()
 	if next:
 		result.unlocked = "%s UNLOCKED" % next.display_name.to_upper()
 	else:
 		result.title = "WORLD %02d COMPLETE" % world.number
-		result.unlocked = "%s UNLOCKED" % world.next_world_name.to_upper()
+		result.unlocked = "%s UNLOCKED" % world.next_world_name.to_upper() if world.next_world_name != "" else ""
 	Events.level_completed.emit(level.data.id, result.score, score.shards)
 	_sequence = _new_sequence()
 	_sequence.tween_method(player.set_speed_scale, level.data.speed_scale, 0.0, finish_brake_time) \

@@ -35,6 +35,8 @@ var motor: PlayerMotor
 var half_size := Vector2.ZERO
 
 @onready var _hurtbox: Area2D = $Hurtbox
+@onready var visual: PlayerVisual = $Visual
+@onready var fx: PlayerFx = $Fx
 
 
 func _enter_tree() -> void:

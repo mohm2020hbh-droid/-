@@ -6,16 +6,14 @@ class_name HazardArt
 
 enum Face { NONE, TOP, BOTTOM, LEFT, RIGHT }
 
-const BODY := Color("2a070c")
-const STRIPE := Color(0.55, 0.08, 0.13, 0.5)
 const STRIPE_SPACING := 22.0
 const TOOTH := Vector2(22, 16)
 
 
 ## A deadly slab. [param hot_face] is the face that strikes (lit hottest).
 static func slab(ci: CanvasItem, rect: Rect2, hot_face: Face = Face.NONE, glow := 1.0) -> void:
-	ci.draw_rect(rect, BODY)
-	stripes(ci, rect.grow(-3.0), STRIPE_SPACING, STRIPE, 3.0)
+	ci.draw_rect(rect, Palette.HAZARD_BODY)
+	stripes(ci, rect.grow(-3.0), STRIPE_SPACING, Palette.HAZARD_STRIPE, 3.0)
 	Neon.rect_outline(ci, rect, Palette.HAZARD, 2.5, glow)
 	if hot_face != Face.NONE:
 		var edge := face_of(rect, hot_face)
@@ -38,7 +36,7 @@ static func teeth(ci: CanvasItem, rect: Rect2, face: Face) -> void:
 		var b := a + dir * TOOTH.x
 		var tip := (a + b) * 0.5 + out * TOOTH.y
 		var tri := PackedVector2Array([a, tip, b])
-		ci.draw_colored_polygon(tri, BODY)
+		ci.draw_colored_polygon(tri, Palette.HAZARD_BODY)
 		Neon.polyline(ci, tri, Palette.HAZARD_CORE, 2.0, 0.8)
 
 

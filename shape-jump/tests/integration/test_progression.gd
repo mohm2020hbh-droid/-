@@ -95,8 +95,15 @@ func test_finishing_the_last_level_completes_the_world() -> void:
 	var panel := h.game.complete_panel
 	assert_eq((panel.get_node(^"%TitleLabel") as Label).text, "WORLD 01 COMPLETE")
 	assert_eq((panel.get_node(^"%UnlockLabel") as Label).text, "WORLD 02 UNLOCKED")
-	assert_false((panel.get_node(^"%NextButton") as Button).visible, "no level after the last one")
+	assert_true((panel.get_node(^"%NextButton") as Button).visible, "World 02 follows the last level")
 	assert_true(Progression.is_world_completed(WORLD))
+	assert_true(Progression.is_world_unlocked(h.game.worlds[1]), "completing World 01 opens World 02")
+	panel.next_pressed.emit()
+	await h.run_ticks(2)
+	assert_eq(h.game.world_index, 1, "NEXT goes on to World 02")
+	assert_eq(h.game.level_index, 0, "at its first level")
+	assert_true(Palette.is_mono(), "dressed in World 02's black and white")
+	assert_true(h.game.player.visual.void_style, "the player is the World 02 entity")
 
 
 func test_death_banner_counts_attempts_and_clears_on_respawn() -> void:
@@ -116,3 +123,30 @@ func test_death_banner_counts_attempts_and_clears_on_respawn() -> void:
 	h.game.restart_level()
 	await h.run_ticks(2)
 	assert_eq(h.game.attempts, 1, "a restart starts counting again")
+
+
+func test_world_tabs_open_world_02_once_world_01_is_done() -> void:
+	h = GameHarness.new(self)
+	await h.start(0)
+	var overlay := h.game.start_overlay
+	var tabs: Array[Button] = overlay._tabs
+	assert_eq(tabs.size(), 2, "one tab per world")
+	assert_true(tabs[1].disabled, "World 02 is locked on a fresh save")
+	overlay.world_chosen.emit(1)
+	await h.run_ticks(2)
+	assert_eq(h.game.world_index, 0, "a locked world cannot be chosen")
+	assert_false(Palette.is_mono(), "still World 01's reds")
+	for i in WORLD.levels.size():
+		_complete(i)
+	h.game.load_level(0)  # Back on the start screen: the tabs are rebuilt.
+	assert_false(tabs[1].disabled, "World 02 opens once World 01 is complete")
+	overlay.world_chosen.emit(1)
+	await h.run_ticks(2)
+	assert_eq(h.game.world_index, 1, "the World 02 tab switches worlds")
+	assert_eq(h.game.level.data.id, &"w02_l01", "at its first level")
+	assert_true(Palette.is_mono(), "black and white")
+	overlay.world_chosen.emit(0)
+	await h.run_ticks(2)
+	assert_eq(h.game.world_index, 0, "and back to World 01")
+	assert_false(Palette.is_mono(), "in red again")
+	assert_false(h.game.player.visual.void_style, "with the World 01 core")

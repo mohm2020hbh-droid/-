@@ -22,9 +22,10 @@ func _init(host_node: Node, route_tiles: PackedFloat32Array = PackedFloat32Array
 	route = route_tiles
 
 
-func start(level_index := 0) -> void:
+func start(level_index := 0, world_index := 0) -> void:
 	game = GAME_SCENE.instantiate()
 	game.start_level = level_index
+	game.start_world = world_index
 	host.add_child(game)
 	await host.get_tree().physics_frame
 	game.player.died.connect(func(cause: StringName) -> void:

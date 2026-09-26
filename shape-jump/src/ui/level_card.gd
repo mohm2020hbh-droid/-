@@ -36,7 +36,7 @@ func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size).grow(-3.0)
 	var edge := Palette.NEON if selected else (Palette.NEON_DIM if not locked else Color(Palette.UI_MUTED, 0.35))
 	# Opaque: bright neon behind a card showed through even at 92% cover.
-	draw_rect(rect, Color(0.05, 0.03, 0.045))
+	draw_rect(rect, Palette.UI_CARD)
 	if selected:
 		Neon.rect_outline(self, rect, edge, 3.0, 1.2)
 	else:

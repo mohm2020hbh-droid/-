@@ -75,7 +75,7 @@ func _draw() -> void:
 		var bar := PackedVector2Array([
 			xf * Vector2(0, -half), xf * Vector2(length - half, -half),
 			xf * Vector2(length, 0), xf * Vector2(length - half, half), xf * Vector2(0, half)])
-		draw_colored_polygon(bar, HazardArt.BODY)
+		draw_colored_polygon(bar, Palette.HAZARD_BODY)
 		Neon.polyline(self, bar, Palette.HAZARD, 2.5, 1.0, true)
 		# Hot core line to a bright tip: the tip is what hits first.
 		draw_line(xf * Vector2(hub_radius, 0), xf * Vector2(length - half, 0), Color(Palette.HAZARD_CORE, 0.6), 2.0, true)
@@ -83,6 +83,6 @@ func _draw() -> void:
 	var hub := PackedVector2Array()
 	for i in 6:
 		hub.append(Vector2.from_angle(TAU * i / 6.0) * hub_radius)
-	draw_colored_polygon(hub, HazardArt.BODY)
+	draw_colored_polygon(hub, Palette.HAZARD_BODY)
 	Neon.polyline(self, hub, Palette.HAZARD, 3.0, 1.2, true)
 	draw_circle(Vector2.ZERO, hub_radius * 0.35, Palette.HAZARD_CORE)

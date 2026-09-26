@@ -64,6 +64,13 @@ func mark_checkpoint(index: int) -> void:
 	_progress.mark_reached(index)
 
 
+## Redraws what paints itself from the [Palette] (after a world change).
+func refresh_look() -> void:
+	_progress.queue_redraw()
+	_shard_icon.queue_redraw()
+	_pause_button.queue_redraw()
+
+
 func set_pause_enabled(enabled: bool) -> void:
 	_pause_button.visible = enabled
 

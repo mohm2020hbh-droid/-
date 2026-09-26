@@ -1,11 +1,12 @@
-# Level Generator — World 01
+# Level Generator — World 01 و World 02
 
-أداة تطوير (Python 3، بلا مكتبات خارجية) تكتب مستويات World 01 وتتحقق منها. المجلد `tools/` يحتوي `.gdignore`، فلا يستورده Godot ولا يدخل في التصدير.
+أداة تطوير (Python 3، بلا مكتبات خارجية) تكتب مستويات العالمين وتتحقق منها. المجلد `tools/` يحتوي `.gdignore`، فلا يستورده Godot ولا يدخل في التصدير.
 
 | الملف | الدور |
 |---|---|
 | `levelgen.py` | الـAPI: الكتل، العوائق (نسخ مطابقة لـHitboxes الـGDScript)، محاكاة حركة اللاعب Tick بـTick، الضبط، التقارير، كتابة المشاهد |
-| `world_01.py` | المستويات الخمسة كمقاطع (Groups) مقروءة، وكتابة `world_01.tres` والمسارات |
+| `world_01.py` | مستويات World 01 الخمسة كمقاطع (Groups) مقروءة، وكتابة `world_01.tres` والمسارات |
+| `world_02.py` | مستويات World 02 الخمسة (The Monochrome Void)، و`world_02.tres` (ثيم `mono`، خلفية `background_mono.tscn`، يُفتح بإنهاء World 01) و`world_02_routes.gd` |
 
 ## التشغيل
 
@@ -15,7 +16,11 @@ python3 world_01.py              # يبني المستويات الخمسة (≈
 python3 world_01.py 3            # يبني Level 03 فقط، ويُبقي مسارات الباقي كما هي
 python3 world_01.py 3 --windows  # + نافذة التوقيت لكل لمسة ونتيجة ضبط كل عائق
 python3 world_01.py 3 --taps=5,6 # نوافذ لمسات محددة فقط (أسرع)
+python3 world_02.py              # World 02 كاملًا (≈ 7 دقائق)
+python3 world_02.py 2 4          # مستويات محددة في عملية واحدة
 ```
+
+> لا تشغّل عدة عمليات للعالم نفسه بالتوازي: كل عملية تقرأ ملف المسارات ثم تعيد كتابته.
 
 المخرجات:
 - `levels/world_01/level_0N.tscn` و`.tres` (المشهد والـ`LevelData`)، و`levels/world_01/world_01.tres`.
@@ -41,15 +46,38 @@ lv.shards_along(205, 220, 3.0)           # Shards على المسار النها
 - `fit_phase(element, lazy=[...])`: بديل أبسط (Level 01): أبعد طور عن المسار مع قتل المسارات الكسولة.
 - الضبط والوضع يحدثان في `done()` **بترتيب الكتابة**، والعوائق التي لم يأتِ دورها لا تدخل المحاكاة. بعدها `recenter_route()` يمركز كل لمسة في نافذتها ويتحقق من المسار كاملًا بعد كل نقل.
 
+## عناصر World 02 في الـAPI
+
+| الدالة | العنصر |
+|---|---|
+| `shadow(x0, x1, top)` | **SHADOW GAP**: أرض مرسومة بلا تصادم (حافة متقطعة). البناء يفشل إن وُضعت فوق أرض حقيقية |
+| `mirror_wall(...)` / `mirror_wall_fit(x, margin)` | **MIRROR WALL**: لوحان يفتحان ممرًا ويغلقانه؛ `_fit` يضع الممر على قوس المسار |
+| `orbit(...)` / `orbit_fit(x, radius, spin)` | **ORBIT RING**: حلقة تدور بفتحات؛ `_fit` يضع مركزها حيث يعبر المسار جانبيها (3 فتحات × 60° افتراضيًا) |
+| `column(x0, w, bottom, h, travel)` / `column_under(x, w, margin)` | **BLACK COLUMN** متحرك عموديًا، أو ثابت تحت القوس (يعاقب القفزة المتأخرة) |
+| `chaser(x_from, x_to, lag, period, reach, tongue)` | **SHADOW CHASER**: ظل خلف اللاعب يمد لسانًا على الأرض بإيقاع ثابت |
+| `maze(x, h, length, hold, turn, direction)` | **ROTATING MAZE**: لوح يدور ربع دورة كل مرة |
+| `binary(x, white, black, period)` | **BINARY GATE**: حاجز بحالتين (أبيض/أسود) بمجالين مختلفين |
+| `whiteout(x0, x1, ...)` (و`world_02.whiteout(lv, …, flash_x)`) | **WHITEOUT**: وميض أبيض بصري فقط يبدأ عند موضع محدد |
+| `floating(...)` / `split_floor(x0, n, w, top, travel, period)` + `slab_group(slabs)` | **FLOATING PANELS** و**SPLIT FLOOR** (طور واحد قابل للضبط لكل الألواح) |
+
+### مطابقة فيزياء المحرك (مهم للمنصات المتحركة)
+
+- المنصة المتحركة (`AnimatableBody2D` مع `sync_to_physics`) تصل لمحرك الفيزياء **بعد Tick واحد** من حركة عقدتها: المحاكاة تصطدم بـ`Surface.solid(t)` = موضعها عند `t − 1 Tick`.
+- الوقوف: الـFloor Snap يختار أعلى سطح تحت الجسم ضمن 12px، لكن السطح المجاور لا "يلتقط" اللاعب إلا إن لم يكن فوق قدميه قبل Tick (من هناك يرفعه صاعدًا).
+- الجدران: تُفحص بالمسح (أين القدمان لحظة لمس الواجهة)، والـLedge Assist يقيس الدرجة من القدمين القديمتين وقت الوقوف (≤ 10px).
+- **Crush**: لوح يرفع اللاعب إلى أسفل لوح آخر (أو ينزل على رأسه) = موت، كما في المحرك.
+- الـMaze يعيد نمطه كل 4 دورات: الطور يُكتب كسرًا والدورات الكاملة تُضاف إلى `start_quarter`.
+
 ## التحقق على المحرك
 
 المحاكاة محافظة (هامش أمان 2px حول كل Hitbox)، لكن المرجع النهائي هو Godot:
 
 ```bash
-godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --level=3 --windows --exploits
+godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --world=2 --level=3 --windows --exploits
+godot ... level_audit.tscn -- --world=2 --level=4 --probe=72,75 --probe-contacts --trace-jumps   # تشخيص Tick بـTick
 ```
 
-- `ROUTE`: المسار كاملًا بلا موت، عدد القفزات والـDouble Jumps، والـShards المجمعة (وأي Shard فائت).
+- `ROUTE`: المسار كاملًا بلا موت (وعند الموت: العائق القاتل وزاويته وآخر مواضع اللاعب)، عدد القفزات والـDouble Jumps، والـShards المجمعة (وأي Shard فائت).
 - `--windows`: لكل لمسة، كم Tick يمكن تقديمها أو تأخيرها وحدها مع النجاة.
 - `--exploits`: استراتيجيات كسولة (بلا لمس، لمس بإيقاع ثابت، Jump+DJ متكرر) يجب أن تموت مبكرًا.
 

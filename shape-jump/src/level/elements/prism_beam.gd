@@ -48,5 +48,5 @@ func _draw() -> void:
 			Vector2(x, -PRISM_SIZE.y), Vector2(x + PRISM_SIZE.x * 0.5, 0),
 			Vector2(x, PRISM_SIZE.y), Vector2(x - PRISM_SIZE.x * 0.5, 0)])
 		Neon.soft_light(self, Vector2(x, 0), 40.0, Color(Palette.HAZARD_CORE, 0.45))
-		draw_colored_polygon(prism, HazardArt.BODY)
+		draw_colored_polygon(prism, Palette.HAZARD_BODY)
 		Neon.polyline(self, prism, Palette.HAZARD_CORE, 2.5, 1.2, true)

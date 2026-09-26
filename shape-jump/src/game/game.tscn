@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" path="res://src/game/game_session.gd" id="1_session"]
 [ext_resource type="Resource" path="res://levels/world_01/world_01.tres" id="2_world"]
+[ext_resource type="Resource" path="res://levels/world_02/world_02.tres" id="13_world2"]
+[ext_resource type="Script" path="res://src/game/whiteout_veil.gd" id="14_veil"]
+[ext_resource type="Script" path="res://src/level/world_data.gd" id="15_worlddata"]
 [ext_resource type="PackedScene" path="res://src/background/background.tscn" id="3_background"]
 [ext_resource type="PackedScene" path="res://src/player/player.tscn" id="4_player"]
 [ext_resource type="Script" path="res://src/camera/game_camera.gd" id="5_camera"]
@@ -19,7 +22,7 @@ colors = PackedColorArray(1, 0.3, 0.35, 0, 1, 0.3, 0.35, 0.6, 1, 0.2, 0.28, 0.35
 
 [node name="Game" type="Node"]
 script = ExtResource("1_session")
-world = ExtResource("2_world")
+worlds = Array[ExtResource("15_worlddata")]([ExtResource("2_world"), ExtResource("13_world2")])
 
 [node name="TapInput" type="Node" parent="."]
 unique_name_in_owner = true
@@ -42,6 +45,7 @@ script = ExtResource("5_camera")
 target = NodePath("../Player")
 
 [node name="Embers" type="CPUParticles2D" parent="World/GameCamera"]
+unique_name_in_owner = true
 position = Vector2(200, 0)
 amount = 36
 lifetime = 5.0
@@ -56,6 +60,10 @@ initial_velocity_max = 26.0
 scale_amount_min = 1.5
 scale_amount_max = 3.0
 color_ramp = SubResource("Gradient_embers")
+
+[node name="WhiteoutVeil" type="Node2D" parent="World"]
+unique_name_in_owner = true
+script = ExtResource("14_veil")
 
 [node name="Hud" parent="." instance=ExtResource("6_hud")]
 unique_name_in_owner = true

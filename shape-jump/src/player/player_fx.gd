@@ -39,6 +39,18 @@ func _ready() -> void:
 	_trail.global_position = Vector2.ZERO
 
 
+## Re-colors the emitters and the trail for the current [Palette] theme.
+func refresh_colors() -> void:
+	for node in [_trail] + find_children("*", "CPUParticles2D", false, false):
+		var key := &"gradient" if node is Line2D else &"color_ramp"
+		if not node.has_meta(&"red_gradient"):
+			node.set_meta(&"red_gradient", node.get(key))
+		var red: Gradient = node.get_meta(&"red_gradient")
+		if red:
+			node.set(key, UiLook.grey_gradient(red) if Palette.is_mono() else red)
+	queue_redraw()
+
+
 func _physics_process(_delta: float) -> void:
 	if player.is_dead():
 		_fade_trail()

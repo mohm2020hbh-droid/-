@@ -258,12 +258,12 @@ warning_time = 0.35
 [node name="Block" type="StaticBody2D" parent="Drop"]
 position = Vector2(11315.3333, 0)
 script = ExtResource("block")
-size = Vector2(2547.3333, 640)
+size = Vector2(1568, 640)
 
 [node name="ShuttlePrismDoubleJump" type="Node2D" parent="."]
 
 [node name="MovingPlatform" type="AnimatableBody2D" parent="ShuttlePrismDoubleJump"]
-position = Vector2(14093.0666, -0)
+position = Vector2(13113.7333, -0)
 script = ExtResource("block")
 size = Vector2(153.6, 32)
 
@@ -271,15 +271,15 @@ size = Vector2(153.6, 32)
 script = ExtResource("oscillator")
 travel = Vector2(192, -0)
 period = 1.8
-phase = 0.5398
+phase = 0.4657
 
 [node name="Block" type="StaticBody2D" parent="ShuttlePrismDoubleJump"]
-position = Vector2(14862.6622, -192)
+position = Vector2(13883.3289, -192)
 script = ExtResource("block")
 size = Vector2(89.6, 832)
 
 [node name="PrismBeam" type="Area2D" parent="ShuttlePrismDoubleJump"]
-position = Vector2(14438.6667, -76.8)
+position = Vector2(13459.3333, -76.8)
 script = ExtResource("prism_beam")
 span = 166.4
 
@@ -287,21 +287,21 @@ span = 166.4
 script = ExtResource("oscillator")
 travel = Vector2(0, -166.4)
 period = 1.6
-phase = 0.4667
+phase = 0.5083
 
 [node name="ChasingCollapse" type="Node2D" parent="."]
 
 [node name="CollapsingPath" type="StaticBody2D" parent="ChasingCollapse"]
-position = Vector2(14952.2622, -192)
+position = Vector2(13972.9289, -192)
 script = ExtResource("collapsing_path")
 tiles = 10
 tile_size = Vector2(64, 32)
-collapse_time = 25.3607
+collapse_time = 23.694
 interval = 0.0871
 warning_time = 0.35
 
 [node name="PrismBeam" type="Area2D" parent="ChasingCollapse"]
-position = Vector2(15413.0622, -217.6)
+position = Vector2(14433.7289, -217.6)
 script = ExtResource("prism_beam")
 span = 140.8
 
@@ -309,10 +309,10 @@ span = 140.8
 script = ExtResource("oscillator")
 travel = Vector2(0, -115.2)
 period = 1.4
-phase = 0.819
+phase = 0.0095
 
 [node name="Gate" type="Area2D" parent="ChasingCollapse"]
-position = Vector2(15752.2622, 0)
+position = Vector2(14772.9289, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-465.6624, 100.5348)
 hold_time = 0.9
@@ -321,9 +321,9 @@ phase = 0
 warning_time = 0.35
 
 [node name="Block" type="StaticBody2D" parent="ChasingCollapse"]
-position = Vector2(15938.1853, -64)
+position = Vector2(14958.852, -64)
 script = ExtResource("block")
-size = Vector2(1440, 704)
+size = Vector2(2419.3333, 704)
 
 [node name="FinalCollapseTowardYou" type="Node2D" parent="."]
 
@@ -509,40 +509,40 @@ position = Vector2(10675.3333, -338)
 position = Vector2(10899.3333, -329)
 
 [node name="Shard" parent="ShuttlePrismDoubleJump" instance=ExtResource("shard")]
-position = Vector2(13862.6666, -82)
+position = Vector2(12883.3333, -82)
 
 [node name="Shard2" parent="ShuttlePrismDoubleJump" instance=ExtResource("shard")]
-position = Vector2(14054.6666, -193)
+position = Vector2(13075.3333, -193)
 
 [node name="Shard3" parent="ShuttlePrismDoubleJump" instance=ExtResource("shard")]
-position = Vector2(14246.6666, -43)
+position = Vector2(13267.3333, -43)
 
 [node name="Shard4" parent="ShuttlePrismDoubleJump" instance=ExtResource("shard")]
-position = Vector2(14438.6666, -179)
+position = Vector2(13459.3333, -179)
 
 [node name="Shard5" parent="ShuttlePrismDoubleJump" instance=ExtResource("shard")]
-position = Vector2(14630.6666, -196)
+position = Vector2(13651.3333, -196)
 
 [node name="Shard6" parent="ShuttlePrismDoubleJump" instance=ExtResource("shard")]
-position = Vector2(14822.6666, -306)
+position = Vector2(13843.3333, -306)
 
 [node name="Shard" parent="ChasingCollapse" instance=ExtResource("shard")]
-position = Vector2(15016.6666, -235)
+position = Vector2(14037.3333, -235)
 
 [node name="Shard2" parent="ChasingCollapse" instance=ExtResource("shard")]
-position = Vector2(15208.6666, -235)
+position = Vector2(14229.3333, -235)
 
 [node name="Shard3" parent="ChasingCollapse" instance=ExtResource("shard")]
-position = Vector2(15400.6666, -383)
+position = Vector2(14421.3333, -383)
 
 [node name="Shard4" parent="ChasingCollapse" instance=ExtResource("shard")]
-position = Vector2(15592.6666, -430)
+position = Vector2(14613.3333, -430)
 
 [node name="Shard5" parent="ChasingCollapse" instance=ExtResource("shard")]
-position = Vector2(15784.6666, -487)
+position = Vector2(14805.3333, -487)
 
 [node name="Shard6" parent="ChasingCollapse" instance=ExtResource("shard")]
-position = Vector2(15976.6666, -231)
+position = Vector2(14997.3333, -231)
 
 [node name="Shard" parent="FinalPrismDoubleJump" instance=ExtResource("shard")]
 position = Vector2(17851.6666, -121)
@@ -591,5 +591,5 @@ position = Vector2(7165.568, 0)
 script = ExtResource("checkpoint")
 
 [node name="Checkpoint2" type="Area2D" parent="FinalChase"]
-position = Vector2(12875.072, 0)
+position = Vector2(15127.488, -64)
 script = ExtResource("checkpoint")

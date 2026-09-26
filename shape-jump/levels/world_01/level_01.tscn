@@ -334,5 +334,5 @@ position = Vector2(6317.312, -64)
 script = ExtResource("checkpoint")
 
 [node name="Checkpoint2" type="Area2D" parent="HighWindow"]
-position = Vector2(10537.984, -224)
+position = Vector2(11110.016, -224)
 script = ExtResource("checkpoint")

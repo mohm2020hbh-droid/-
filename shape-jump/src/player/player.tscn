@@ -32,6 +32,7 @@ offsets = PackedFloat32Array(0, 0.25, 1)
 colors = PackedColorArray(1, 0.95, 0.96, 1, 1, 0.24, 0.33, 1, 0.5, 0.05, 0.1, 0)
 
 [node name="Player" type="CharacterBody2D"]
+z_index = 50
 collision_layer = 2
 collision_mask = 1
 floor_snap_length = 12.0

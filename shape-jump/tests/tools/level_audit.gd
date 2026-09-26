@@ -1,18 +1,20 @@
 extends Node
-## Dev tool: audits World 01 levels on the real physics (docs/ARCHITECTURE.md §10).
+## Dev tool: audits levels on the real physics (docs/ARCHITECTURE.md §10).
 ##
-##   godot --headless --path . --fixed-fps 60 res://tests/tools/level_audit.tscn -- --level=3 --windows --exploits
+##   godot --headless --path . --fixed-fps 60 res://tests/tools/level_audit.tscn -- --world=2 --level=3 --windows --exploits
 ##
 ## - route: plays the intended route; reports deaths, duration, jumps.
 ## - --windows: for every tap, how many ticks earlier/later it could come
 ##   (all other taps unchanged) and still survive to the next checkpoint.
 ## - --exploits: lazy strategies (never tap, tap on a fixed rhythm) must die.
 
-const WORLD := preload("res://levels/world_01/world_01.tres")
+const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres"]
 const HORIZON_TAPS := 3
 const MAX_SHIFT := 24
 
 var level_index := 0
+var world_index := 0
+var WORLD: WorldData
 var route: PackedFloat32Array
 var checkpoints: Array[float] = []
 var speed_tiles := 0.0
@@ -26,7 +28,10 @@ func _ready() -> void:
 	for arg in args:
 		if arg.begins_with("--level="):
 			level_index = int(arg.trim_prefix("--level=")) - 1
-	route = World01Routes.get_route(level_index)
+		if arg.begins_with("--world="):
+			world_index = int(arg.trim_prefix("--world=")) - 1
+	WORLD = load(WORLDS[world_index])
+	route = Autoplay.route_for(world_index, level_index)
 	await _play_route()
 	if "--windows" in args:
 		await _windows(args)
@@ -37,8 +42,25 @@ func _ready() -> void:
 
 func _play_route() -> void:
 	var h := GameHarness.new(self, route)
-	await h.start(level_index)
+	await h.start(level_index, world_index)
 	var level := h.game.level
+	var trail: Array[Vector2] = []
+	h.game.player.died.connect(func(_cause: StringName) -> void:
+		var hits := PackedStringArray()
+		for area in (h.game.player.get_node(^"Hurtbox") as Area2D).get_overlapping_areas():
+			hits.append("%s/%s at (%.2f, %.2f) rotation %.1f°" % [area.get_parent().name, area.name,
+				area.global_position.x / GameConst.TILE, -area.global_position.y / GameConst.TILE,
+				area.rotation_degrees])
+		print("  KILLED BY %s  at t=%.3f" % [", ".join(hits), level.clock])
+		for p in trail.slice(-int(Autoplay.option("--trail") if Autoplay.option("--trail") != "" else "12")):
+			print("    x=%.2f feet=%.3f" % [p.x, p.y]))
+	if "--trace-jumps" in OS.get_cmdline_user_args():
+		h.game.player.jumped.connect(func() -> void: print("    jump at x=%.3f" % h.player_x()))
+		h.game.player.double_jumped.connect(func() -> void: print("    double jump at x=%.3f" % h.player_x()))
+	h.game.player.get_tree().physics_frame.connect(func() -> void:
+		if is_instance_valid(h.game):
+			var feet := h.game.player.get_feet_position()
+			trail.append(Vector2(feet.x / GameConst.TILE, -feet.y / GameConst.TILE)))
 	speed_tiles = h.game.player.get_run_speed() / GameConst.TILE
 	for cp in level.get_checkpoints():
 		checkpoints.append(cp.global_position.x / GameConst.TILE)
@@ -46,7 +68,19 @@ func _play_route() -> void:
 	h.game.player.jumped.connect(func() -> void: jumps[0] += 1)
 	h.game.player.double_jumped.connect(func() -> void: jumps[1] += 1)
 	h.game.press_jump()
+	# --probe=x0,x1: the player's state after every tick in that stretch.
+	var probe := Autoplay.option("--probe").split(",")
 	await h.run_until(func() -> bool:
+		var x := h.player_x()
+		if probe.size() == 2 and x >= float(probe[0]) and x <= float(probe[1]):
+			print("    tick %d x=%.3f feet=%.3f vy=%.1f floor=%s" % [h.ticks, x,
+				-h.game.player.get_feet_position().y / GameConst.TILE, h.game.player.velocity.y,
+				h.game.player.is_on_floor()])
+			if "--probe-contacts" in OS.get_cmdline_user_args():
+				for i in h.game.player.get_slide_collision_count():
+					var c := h.game.player.get_slide_collision(i)
+					print("      contact %s normal=%s at=%s" % [(c.get_collider() as Node).name, c.get_normal(),
+						c.get_position() / GameConst.TILE])
 		return h.game.state == GameSession.State.COMPLETE or not h.deaths.is_empty(), 60 * 400)
 	var data := WORLD.get_level(level_index)
 	print("LEVEL %d %s  speed %.0f px/s  finish x=%.1f  checkpoints %s" % [level_index + 1, data.display_name,
@@ -86,7 +120,7 @@ func _survives(j: int, shift: int) -> bool:
 	var taps := route.duplicate()
 	taps[j] += shift * speed_tiles / 60.0
 	var h := GameHarness.new(self, taps)
-	await h.start(level_index)
+	await h.start(level_index, world_index)
 	var from := _start_before(route[j])
 	if from >= 0.0:
 		h.start_run_at(Vector2(from * GameConst.TILE, _checkpoint_y(h, from)))
@@ -158,7 +192,7 @@ func _exploits() -> void:
 	var worst := 0.0
 	for strategy in strategies:
 		var h := GameHarness.new(self)
-		await h.start(level_index)
+		await h.start(level_index, world_index)
 		h.game.press_jump()
 		var every: int = strategy[1]
 		var second: int = strategy[2]

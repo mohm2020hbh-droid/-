@@ -1,0 +1,765 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_02/level_04.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/binary_gate.gd" id="binary_gate"]
+[ext_resource type="Script" path="res://src/level/elements/block.gd" id="block"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/maze_panel.gd" id="maze_panel"]
+[ext_resource type="Script" path="res://src/level/elements/orbit_ring.gd" id="orbit_ring"]
+[ext_resource type="Script" path="res://src/level/elements/oscillator.gd" id="oscillator"]
+[ext_resource type="Script" path="res://src/level/elements/shadow_block.gd" id="shadow_block"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level04" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 480
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Runway" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Runway"]
+position = Vector2(-768, 0)
+script = ExtResource("block")
+size = Vector2(2304, 640)
+
+[node name="Shard" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard2" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Shard3" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(832, -32)
+
+[node name="FirstMaze" type="Node2D" parent="."]
+
+[node name="MazePanel" type="Area2D" parent="FirstMaze"]
+position = Vector2(1491.2, -48)
+script = ExtResource("maze_panel")
+length = 230.4
+thickness = 32
+hold_time = 0.8
+turn_time = 0.25
+phase = 0.2417
+start_quarter = 0
+direction = 1
+warning_time = 0.3
+
+[node name="MazePanel2" type="Area2D" parent="FirstMaze"]
+position = Vector2(1984, -48)
+script = ExtResource("maze_panel")
+length = 230.4
+thickness = 32
+hold_time = 0.6
+turn_time = 0.2
+phase = 0.7667
+start_quarter = 0
+direction = -1
+warning_time = 0.3
+
+[node name="Block" type="StaticBody2D" parent="FirstMaze"]
+position = Vector2(1536, 0)
+script = ExtResource("block")
+size = Vector2(1785.6, 640)
+
+[node name="FirstBinary" type="Node2D" parent="."]
+
+[node name="BinaryGate" type="Area2D" parent="FirstBinary"]
+position = Vector2(2624, 0)
+script = ExtResource("binary_gate")
+width = 48
+white_span = Vector2(-115.2, 64)
+black_span = Vector2(-896, -140.8)
+period = 1.3
+phase = 0.1333
+warning_time = 0.35
+
+[node name="MazePanel" type="Area2D" parent="FirstBinary"]
+position = Vector2(3430.4, -48)
+script = ExtResource("maze_panel")
+length = 192
+thickness = 32
+hold_time = 0.7
+turn_time = 0.22
+phase = 0.6333
+start_quarter = 0
+direction = 1
+warning_time = 0.3
+
+[node name="BinaryGate2" type="Area2D" parent="FirstBinary"]
+position = Vector2(3635.2, 0)
+script = ExtResource("binary_gate")
+width = 48
+white_span = Vector2(-204.8, 64)
+black_span = Vector2(-896, -243.2)
+period = 1.1
+phase = 0.125
+warning_time = 0.35
+
+[node name="ShadowBlock" type="Node2D" parent="FirstBinary"]
+position = Vector2(3321.6, 0)
+script = ExtResource("shadow_block")
+size = Vector2(616.4832, 640)
+
+[node name="Block" type="StaticBody2D" parent="FirstBinary"]
+position = Vector2(3938.0832, 0)
+script = ExtResource("block")
+size = Vector2(428.8, 640)
+
+[node name="RingSlabs" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="RingSlabs"]
+position = Vector2(4578.0832, -51.2)
+script = ExtResource("block")
+size = Vector2(212.48, 32)
+
+[node name="Oscillator" type="Node2D" parent="RingSlabs/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.3
+phase = 0.425
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform2" type="AnimatableBody2D" parent="RingSlabs"]
+position = Vector2(4795.6832, -51.2)
+script = ExtResource("block")
+size = Vector2(212.48, 32)
+
+[node name="Oscillator" type="Node2D" parent="RingSlabs/MovingPlatform2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.3
+phase = 0.925
+wave = 2
+hold_ratio = 0.5
+
+[node name="OrbitRing" type="Area2D" parent="RingSlabs"]
+position = Vector2(4520.4832, -122.9159)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.4
+phase = 0.2583
+
+[node name="Block" type="StaticBody2D" parent="RingSlabs"]
+position = Vector2(5026.657, -128)
+script = ExtResource("block")
+size = Vector2(83.2, 768)
+
+[node name="MazePanel" type="Area2D" parent="RingSlabs"]
+position = Vector2(4903.1031, -294.4)
+script = ExtResource("maze_panel")
+length = 166.4
+thickness = 32
+hold_time = 0.6
+turn_time = 0.2
+phase = 0.7667
+start_quarter = 0
+direction = 1
+warning_time = 0.3
+
+[node name="OrbitRing2" type="Area2D" parent="RingSlabs"]
+position = Vector2(5314.657, -249.7527)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.0917
+
+[node name="Block2" type="StaticBody2D" parent="RingSlabs"]
+position = Vector2(5530.3976, 0)
+script = ExtResource("block")
+size = Vector2(1737.6, 640)
+
+[node name="Chain" type="Node2D" parent="."]
+
+[node name="MazePanel" type="Area2D" parent="Chain"]
+position = Vector2(7421.5976, -48)
+script = ExtResource("maze_panel")
+length = 230.4
+thickness = 32
+hold_time = 0.55
+turn_time = 0.2
+phase = 0.5111
+start_quarter = 2
+direction = 1
+warning_time = 0.3
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Chain"]
+position = Vector2(7922.5194, -64)
+script = ExtResource("block")
+size = Vector2(76.8, 32)
+
+[node name="Oscillator" type="Node2D" parent="Chain/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(153.6, -0)
+period = 1.2
+phase = 0.4528
+
+[node name="OrbitRing" type="Area2D" parent="Chain"]
+position = Vector2(7709.5976, -179.4623)
+script = ExtResource("orbit_ring")
+radius = 121.6
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.4
+phase = 0.505
+
+[node name="Block" type="StaticBody2D" parent="Chain"]
+position = Vector2(8401.1394, -115.2)
+script = ExtResource("block")
+size = Vector2(76.8, 755.2)
+
+[node name="BinaryGate" type="Area2D" parent="Chain"]
+position = Vector2(8248.9194, 0)
+script = ExtResource("binary_gate")
+width = 48
+white_span = Vector2(-166.4, 64)
+black_span = Vector2(-896, -211.2)
+period = 0.8
+phase = 0.0667
+warning_time = 0.35
+
+[node name="OrbitRing2" type="Area2D" parent="Chain"]
+position = Vector2(8676.3394, -237.2581)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.5437
+
+[node name="ShadowBlock" type="Node2D" parent="Chain"]
+position = Vector2(8477.9394, 0)
+script = ExtResource("shadow_block")
+size = Vector2(433.493, 640)
+
+[node name="Block2" type="StaticBody2D" parent="Chain"]
+position = Vector2(8911.4324, 0)
+script = ExtResource("block")
+size = Vector2(1068.8, 640)
+
+[node name="Corridor" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Corridor"]
+position = Vector2(9916.2324, 0)
+script = ExtResource("block")
+size = Vector2(1472, 640)
+
+[node name="MazePanel" type="Area2D" parent="Corridor"]
+position = Vector2(9660.2324, -48)
+script = ExtResource("maze_panel")
+length = 230.4
+thickness = 32
+hold_time = 0.5
+turn_time = 0.2
+phase = 0.2857
+start_quarter = 2
+direction = 1
+warning_time = 0.3
+
+[node name="MazePanel2" type="Area2D" parent="Corridor"]
+position = Vector2(10121.0324, -48)
+script = ExtResource("maze_panel")
+length = 230.4
+thickness = 32
+hold_time = 0.5
+turn_time = 0.2
+phase = 0.644
+start_quarter = 3
+direction = -1
+warning_time = 0.3
+
+[node name="BinaryGate" type="Area2D" parent="Corridor"]
+position = Vector2(10581.8324, 0)
+script = ExtResource("binary_gate")
+width = 48
+white_span = Vector2(-115.2, 64)
+black_span = Vector2(-896, -147.2)
+period = 0.8
+phase = 0.3833
+warning_time = 0.35
+
+[node name="MazePanel3" type="Area2D" parent="Corridor"]
+position = Vector2(11004.2324, -48)
+script = ExtResource("maze_panel")
+length = 192
+thickness = 32
+hold_time = 0.5
+turn_time = 0.2
+phase = 0.619
+start_quarter = 1
+direction = 1
+warning_time = 0.3
+
+[node name="OrbitRing" type="Area2D" parent="Corridor"]
+position = Vector2(11209.0324, -256.237)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.4853
+
+[node name="ShadowBlock" type="Node2D" parent="Corridor"]
+position = Vector2(11388.2324, 0)
+script = ExtResource("shadow_block")
+size = Vector2(130.0832, 640)
+
+[node name="Block2" type="StaticBody2D" parent="Corridor"]
+position = Vector2(11518.3156, 0)
+script = ExtResource("block")
+size = Vector2(678.4, 640)
+
+[node name="GateRings" type="Node2D" parent="."]
+
+[node name="OrbitRing" type="Area2D" parent="GateRings"]
+position = Vector2(12350.3156, -117.541)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.502
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="GateRings"]
+position = Vector2(12885.8093, -38.4)
+script = ExtResource("block")
+size = Vector2(199.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="GateRings/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1
+phase = 0.6167
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform2" type="AnimatableBody2D" parent="GateRings"]
+position = Vector2(13090.6093, -38.4)
+script = ExtResource("block")
+size = Vector2(199.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="GateRings/MovingPlatform2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1
+phase = 0.1167
+wave = 2
+hold_ratio = 0.5
+
+[node name="MazePanel" type="Area2D" parent="GateRings"]
+position = Vector2(13173.8093, -86.4)
+script = ExtResource("maze_panel")
+length = 230.4
+thickness = 32
+hold_time = 0.5
+turn_time = 0.18
+phase = 0.549
+start_quarter = 1
+direction = 1
+warning_time = 0.3
+
+[node name="Block" type="StaticBody2D" parent="GateRings"]
+position = Vector2(13367.7349, 0)
+script = ExtResource("block")
+size = Vector2(1737.6, 640)
+
+[node name="Fractal" type="Node2D" parent="."]
+
+[node name="OrbitRing" type="Area2D" parent="Fractal"]
+position = Vector2(15258.9349, -122.0581)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.879
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Fractal"]
+position = Vector2(15770.2361, -64)
+script = ExtResource("block")
+size = Vector2(115.2, 32)
+
+[node name="Oscillator" type="Node2D" parent="Fractal/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -89.6)
+period = 1.2
+phase = 0.2222
+wave = 2
+hold_ratio = 0.5
+
+[node name="OrbitRing2" type="Area2D" parent="Fractal"]
+position = Vector2(15559.7349, -184.3331)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.4
+phase = 0.7268
+
+[node name="MazePanel" type="Area2D" parent="Fractal"]
+position = Vector2(16058.2361, -358.4)
+script = ExtResource("maze_panel")
+length = 166.4
+thickness = 32
+hold_time = 0.5
+turn_time = 0.2
+phase = 0.2381
+start_quarter = 3
+direction = 1
+warning_time = 0.3
+
+[node name="MovingPlatform2" type="AnimatableBody2D" parent="Fractal"]
+position = Vector2(16219.7847, -76.8)
+script = ExtResource("block")
+size = Vector2(199.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="Fractal/MovingPlatform2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.2
+phase = 0.4972
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform3" type="AnimatableBody2D" parent="Fractal"]
+position = Vector2(16424.5847, -76.8)
+script = ExtResource("block")
+size = Vector2(199.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="Fractal/MovingPlatform3"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.2
+phase = 0.9972
+wave = 2
+hold_ratio = 0.5
+
+[node name="OrbitRing3" type="Area2D" parent="Fractal"]
+position = Vector2(16693.3847, -345.7034)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.8
+phase = 0.6812
+
+[node name="BinaryGate" type="Area2D" parent="Fractal"]
+position = Vector2(16853.3847, 0)
+script = ExtResource("binary_gate")
+width = 48
+white_span = Vector2(-217.6, 64)
+black_span = Vector2(-896, -268.8)
+period = 0.8
+phase = 0.8333
+warning_time = 0.35
+
+[node name="ShadowBlock" type="Node2D" parent="Fractal"]
+position = Vector2(15111.7349, 0)
+script = ExtResource("shadow_block")
+size = Vector2(1924.583, 640)
+
+[node name="Echo" type="Node2D" parent="."]
+
+[node name="MazePanel" type="Area2D" parent="Echo"]
+position = Vector2(17535.5179, -48)
+script = ExtResource("maze_panel")
+length = 230.4
+thickness = 32
+hold_time = 0.45
+turn_time = 0.18
+phase = 0.9423
+start_quarter = 2
+direction = 1
+warning_time = 0.3
+
+[node name="BinaryGate" type="Area2D" parent="Echo"]
+position = Vector2(17996.3179, 0)
+script = ExtResource("binary_gate")
+width = 48
+white_span = Vector2(-115.2, 64)
+black_span = Vector2(-896, -147.2)
+period = 0.8
+phase = 0.8333
+warning_time = 0.35
+
+[node name="Block" type="StaticBody2D" parent="Echo"]
+position = Vector2(17036.3179, 0)
+script = ExtResource("block")
+size = Vector2(1273.6, 640)
+
+[node name="ShadowBlock" type="Node2D" parent="Echo"]
+position = Vector2(18309.9179, 0)
+script = ExtResource("shadow_block")
+size = Vector2(622.8832, 640)
+
+[node name="OrbitRing" type="Area2D" parent="Echo"]
+position = Vector2(18623.5179, -256.237)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.904
+
+[node name="Block2" type="StaticBody2D" parent="Echo"]
+position = Vector2(18932.8011, 0)
+script = ExtResource("block")
+size = Vector2(1452.8, 640)
+
+[node name="FinishGate" type="Area2D" parent="Echo"]
+position = Vector2(19873.6011, -0)
+script = ExtResource("finish_gate")
+
+[node name="Shard" parent="FirstMaze" instance=ExtResource("shard")]
+position = Vector2(1280, -43)
+
+[node name="Shard2" parent="FirstMaze" instance=ExtResource("shard")]
+position = Vector2(1408, -164)
+
+[node name="Shard3" parent="FirstMaze" instance=ExtResource("shard")]
+position = Vector2(1536, -189)
+
+[node name="Shard4" parent="FirstMaze" instance=ExtResource("shard")]
+position = Vector2(1664, -95)
+
+[node name="Shard5" parent="FirstMaze" instance=ExtResource("shard")]
+position = Vector2(1792, -82)
+
+[node name="Shard6" parent="FirstMaze" instance=ExtResource("shard")]
+position = Vector2(1920, -179)
+
+[node name="Shard7" parent="FirstMaze" instance=ExtResource("shard")]
+position = Vector2(2048, -177)
+
+[node name="Shard" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(2432, -94)
+
+[node name="Shard2" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(2592, -191)
+
+[node name="Shard3" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(2752, -130)
+
+[node name="Shard4" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(2912, -43)
+
+[node name="Shard5" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(3072, -43)
+
+[node name="Shard6" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(3232, -115)
+
+[node name="Shard7" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(3392, -193)
+
+[node name="Shard8" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(3552, -280)
+
+[node name="Shard9" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(3712, -327)
+
+[node name="Shard10" parent="FirstBinary" instance=ExtResource("shard")]
+position = Vector2(3872, -191)
+
+[node name="Shard" parent="RingSlabs" instance=ExtResource("shard")]
+position = Vector2(4309, -94)
+
+[node name="Shard2" parent="RingSlabs" instance=ExtResource("shard")]
+position = Vector2(4501, -192)
+
+[node name="Shard3" parent="RingSlabs" instance=ExtResource("shard")]
+position = Vector2(4693, -127)
+
+[node name="Shard4" parent="RingSlabs" instance=ExtResource("shard")]
+position = Vector2(4885, -268)
+
+[node name="Shard5" parent="RingSlabs" instance=ExtResource("shard")]
+position = Vector2(5077, -186)
+
+[node name="Shard6" parent="RingSlabs" instance=ExtResource("shard")]
+position = Vector2(5269, -303)
+
+[node name="Shard7" parent="RingSlabs" instance=ExtResource("shard")]
+position = Vector2(5461, -277)
+
+[node name="Shard" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7210, -43)
+
+[node name="Shard2" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7402, -191)
+
+[node name="Shard3" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7594, -146)
+
+[node name="Shard4" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7786, -269)
+
+[node name="Shard5" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7978, -144)
+
+[node name="Shard6" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8170, -243)
+
+[node name="Shard7" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8362, -194)
+
+[node name="Shard8" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8554, -240)
+
+[node name="Shard9" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8746, -301)
+
+[node name="Shard10" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8938, -100)
+
+[node name="Shard" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(9468, -57)
+
+[node name="Shard2" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(9660, -192)
+
+[node name="Shard3" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(9852, -82)
+
+[node name="Shard4" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(10044, -175)
+
+[node name="Shard5" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(10236, -149)
+
+[node name="Shard6" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(10428, -125)
+
+[node name="Shard7" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(10620, -189)
+
+[node name="Shard8" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(10812, -57)
+
+[node name="Shard9" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(11004, -191)
+
+[node name="Shard10" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(11196, -309)
+
+[node name="Shard11" parent="Corridor" instance=ExtResource("shard")]
+position = Vector2(11388, -302)
+
+[node name="Shard" parent="GateRings" instance=ExtResource("shard")]
+position = Vector2(12139, -70)
+
+[node name="Shard2" parent="GateRings" instance=ExtResource("shard")]
+position = Vector2(12331, -193)
+
+[node name="Shard3" parent="GateRings" instance=ExtResource("shard")]
+position = Vector2(12523, -96)
+
+[node name="Shard4" parent="GateRings" instance=ExtResource("shard")]
+position = Vector2(12715, -230)
+
+[node name="Shard5" parent="GateRings" instance=ExtResource("shard")]
+position = Vector2(12907, -121)
+
+[node name="Shard6" parent="GateRings" instance=ExtResource("shard")]
+position = Vector2(13099, -252)
+
+[node name="Shard7" parent="GateRings" instance=ExtResource("shard")]
+position = Vector2(13291, -173)
+
+[node name="Shard" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(15048, -57)
+
+[node name="Shard2" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(15240, -191)
+
+[node name="Shard3" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(15432, -158)
+
+[node name="Shard4" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(15624, -269)
+
+[node name="Shard5" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(15816, -129)
+
+[node name="Shard6" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(16008, -247)
+
+[node name="Shard7" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(16200, -192)
+
+[node name="Shard8" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(16392, -292)
+
+[node name="Shard9" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(16584, -320)
+
+[node name="Shard10" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(16776, -444)
+
+[node name="Shard11" parent="Fractal" instance=ExtResource("shard")]
+position = Vector2(16968, -318)
+
+[node name="Shard" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(17344, -105)
+
+[node name="Shard2" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(17536, -192)
+
+[node name="Shard3" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(17728, -43)
+
+[node name="Shard4" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(17920, -175)
+
+[node name="Shard5" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(18112, -149)
+
+[node name="Shard6" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(18304, -82)
+
+[node name="Shard7" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(18496, -218)
+
+[node name="Shard8" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(18688, -341)
+
+[node name="Shard9" parent="Echo" instance=ExtResource("shard")]
+position = Vector2(18880, -216)
+
+[node name="Checkpoint" type="Area2D" parent="Echo"]
+position = Vector2(6206.4, 0)
+script = ExtResource("checkpoint")
+
+[node name="Checkpoint2" type="Area2D" parent="Echo"]
+position = Vector2(13496.768, 0)
+script = ExtResource("checkpoint")

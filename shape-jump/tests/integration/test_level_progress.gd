@@ -2,9 +2,20 @@ extends TestCase
 ## Level progress, the 33% / 66% checkpoints, the death penalty and the
 ## respawn, on the real game scene for every World 01 level.
 
-const WORLD := preload("res://levels/world_01/world_01.tres")
+const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres"]
+
+var WORLD: WorldData
 
 var h: GameHarness
+
+
+## Which world these tests play (0-based); overridden per world.
+func world_index() -> int:
+	return 0
+
+
+func before_each() -> void:
+	WORLD = load(WORLDS[world_index()])
 
 
 func after_each() -> void:
@@ -29,7 +40,7 @@ func _tap_after(route: PackedFloat32Array, percent: float) -> int:
 func test_every_level_has_checkpoints_near_a_third_and_two_thirds() -> void:
 	for i in WORLD.levels.size():
 		h = GameHarness.new(self)
-		await h.start(i)
+		await h.start(i, world_index())
 		var cps := h.game.level.get_checkpoints()
 		assert_eq(cps.size(), 2, "level %d: two checkpoints" % (i + 1))
 		var a := _percent(cps[0].global_position.x / GameConst.TILE)
@@ -49,9 +60,9 @@ func test_deaths_cost_25_points_and_respawn_at_the_last_checkpoint() -> void:
 
 
 func _die_twice_then_finish(index: int) -> void:
-	var route := World01Routes.get_route(index)
+	var route := Autoplay.route_for(world_index(), index)
 	h = GameHarness.new(self, route)
-	await h.start(index)
+	await h.start(index, world_index())
 	var name := "level %d" % (index + 1)
 	var cps := h.game.level.get_checkpoints()
 	h.skip = [_tap_after(route, 50.0), _tap_after(route, 80.0)]
@@ -98,8 +109,8 @@ func _die_twice_then_finish(index: int) -> void:
 ## context; the run must continue at the same checkpoint with its progress,
 ## attempts and score, and still finish.
 func test_resume_continues_the_run_at_its_checkpoint() -> void:
-	h = GameHarness.new(self, World01Routes.get_route(1))
-	await h.start(1)
+	h = GameHarness.new(self, Autoplay.route_for(world_index(), 1))
+	await h.start(1, world_index())
 	var cp := h.game.level.get_checkpoints()[1]
 	h.game._resume(1, 55.0, 4, {"tiles": 150, "shards": 10})
 	h.seek(h.player_x())

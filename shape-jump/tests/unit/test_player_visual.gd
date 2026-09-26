@@ -33,3 +33,31 @@ func test_squash_settles_back_to_rest_at_low_and_high_frame_rates() -> void:
 		for i in int(fps * 1.5):
 			visual._process(1.0 / fps)
 		assert_true(visual.get_squash().distance_to(Vector2.ONE) < 0.01, "settled at %d fps" % fps)
+
+
+func test_world_02_entity_collapses_on_death_and_returns_on_respawn() -> void:
+	visual.void_style = true
+	player.die(&"test")
+	assert_true(visual.visible, "the shell stays on screen while the void collapses")
+	for i in 10:
+		visual._process(visual.void_death_time / 10.0 + 0.001)
+	assert_false(visual.visible, "gone once the collapse is over")
+	player.respawn_at(Vector2(0, 0), false)
+	assert_true(visual.visible, "back at the respawn")
+
+
+func test_world_01_core_hides_at_once_on_death() -> void:
+	visual.void_style = false
+	player.die(&"test")
+	assert_false(visual.visible, "the core shatters (PlayerFx) and is hidden at once")
+
+
+func test_world_02_entity_draws_at_any_frame_rate() -> void:
+	visual.void_style = true
+	for delta in [1.0 / 144.0, 1.0 / 60.0, 1.0 / 20.0, 0.5]:
+		player.jumped.emit()
+		player.double_jumped.emit()
+		visual._process(delta)
+		visual.queue_redraw()
+		await get_tree().process_frame
+	assert_true(visual._danger >= 0.0 and visual._danger <= 1.0, "danger stays within 0..1")

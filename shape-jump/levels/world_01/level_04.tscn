@@ -513,5 +513,5 @@ position = Vector2(7052.992, 0)
 script = ExtResource("checkpoint")
 
 [node name="Checkpoint2" type="Area2D" parent="FinalThread"]
-position = Vector2(13207.936, 0)
+position = Vector2(13532.416, 0)
 script = ExtResource("checkpoint")

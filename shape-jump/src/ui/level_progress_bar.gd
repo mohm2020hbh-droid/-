@@ -64,6 +64,9 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var width := size.x - LABEL_WIDTH
 	var y := size.y - TRACK_HEIGHT * 0.5 - 6.0
+	if Palette.is_mono():
+		# A dark plate: the bar stays readable through a whiteout.
+		draw_rect(Rect2(-8.0, y - 11.0, width + 16.0, 22.0), Color(0.0, 0.0, 0.0, 0.55))
 	draw_line(Vector2(0, y), Vector2(width, y), Color(Palette.UI_MUTED, 0.22), TRACK_HEIGHT)
 	var fill := width * _shown / 100.0
 	if fill > 0.5:

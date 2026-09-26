@@ -1,15 +1,24 @@
 extends TestCase
 ## Every World 01 level is finishable by its intended route without dying,
 ## the simulation is deterministic, and a checkpoint respawn reproduces the
-## exact same obstacle timing.
+## exact same obstacle timing. test_world_02_playthrough runs the same tests
+## on World 02.
 
-const WORLD := preload("res://levels/world_01/world_01.tres")
+const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres"]
+
+var WORLD: WorldData
 
 var _harnesses: Array[GameHarness] = []
 var _save := SaveSandbox.new()
 
 
+## Which world these tests play (0-based); overridden per world.
+func world_index() -> int:
+	return 0
+
+
 func before_each() -> void:
+	WORLD = load(WORLDS[world_index()])
 	_save.enter()
 
 
@@ -22,10 +31,10 @@ func after_each() -> void:
 
 
 func _play(level: int, skip: PackedInt32Array = []) -> GameHarness:
-	var harness := GameHarness.new(self, World01Routes.get_route(level))
+	var harness := GameHarness.new(self, Autoplay.route_for(world_index(), level))
 	harness.skip = skip
 	_harnesses.append(harness)
-	await harness.start(level)
+	await harness.start(level, world_index())
 	harness.game.press_jump()  # Tap to start.
 	var stop_on_death := skip.is_empty()
 	await harness.run_until(func() -> bool:
@@ -68,9 +77,9 @@ func test_simulation_is_deterministic() -> void:
 
 func test_death_respawns_at_each_checkpoint_with_same_timing() -> void:
 	for level in WORLD.levels.size():
-		var route := World01Routes.get_route(level)
+		var route := Autoplay.route_for(world_index(), level)
 		var probe := GameHarness.new(self)
-		await probe.start(level)
+		await probe.start(level, world_index())
 		var skip := PackedInt32Array()
 		for checkpoint in probe.game.level.get_checkpoints():
 			# The first tap after each checkpoint: skip it once to die there.

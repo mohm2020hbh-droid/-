@@ -405,6 +405,239 @@ class Spikes(Element):
         return p
 
 
+
+# ------------------------------------------------------------- World 02 --
+
+def steps_progress(cycle, hold_ratio):
+    """Mirror of Timeline.steps (src/level/elements/timeline.gd)."""
+    hold, move = hold_ratio * 0.5, (1.0 - hold_ratio) * 0.5
+    if cycle < hold:
+        return 0.0
+    if cycle < hold + move:
+        return smoothstep((cycle - hold) / move)
+    if cycle < hold * 2 + move:
+        return 1.0
+    return 1.0 - smoothstep((cycle - hold * 2 - move) / move)
+
+
+class MirrorWall(Element):
+    base, type_, script = "MirrorWall", "Area2D", "mirror_wall"
+
+    def __init__(self, x, center, max_gap, period, hold_ratio, phase, warning, width, reach):
+        self.x, self.center, self.max_gap, self.period = x, center, max_gap, period
+        self.hold_ratio, self.phase, self.warning, self.width, self.reach = hold_ratio, phase, warning, width, reach
+
+    def gap(self, t):
+        return self.max_gap * steps_progress((t / self.period + self.phase) % 1.0, self.hold_ratio)
+
+    def polys(self, t):
+        half = self.gap(t) / 2
+        x0, x1 = self.x - self.width / 2 + INSET, self.x + self.width / 2 - INSET
+        top, bottom = self.center - half, self.center + half
+        return [rect_poly(x0, top - self.reach + INSET, x1, top - INSET),
+                rect_poly(x0, bottom + INSET, x1, bottom + self.reach - INSET)]
+
+    def x_range(self):
+        return (self.x - self.width / 2, self.x + self.width / 2)
+
+    def props(self):
+        return {"position": v2(self.x, 0), "width": f(float(self.width)), "reach": f(float(self.reach)),
+                "center_y": f(float(self.center)), "max_gap": f(float(self.max_gap)),
+                "period": f(float(self.period)), "hold_ratio": f(float(self.hold_ratio)),
+                "phase": f(float(self.phase % 1.0)), "warning_time": f(float(self.warning))}
+
+
+class OrbitRing(Element):
+    base, type_, script = "OrbitRing", "Area2D", "orbit_ring"
+
+    def __init__(self, x, y, radius, thickness, segments, gap_segments, openings, spin, phase):
+        self.x, self.y, self.radius, self.thickness = x, y, radius, thickness
+        self.segments, self.gap_segments, self.openings = segments, gap_segments, openings
+        self.spin, self.phase = spin, phase
+        step = math.tau / segments
+        self._local = []
+        for i in range(segments):
+            if i % (segments // openings) < gap_segments:
+                continue
+            a0, a1 = i * step + INSET / radius, (i + 1) * step - INSET / radius
+            r0, r1 = radius - thickness / 2 + INSET, radius + thickness / 2 - INSET
+            self._local.append([(math.cos(a0) * r0, math.sin(a0) * r0), (math.cos(a0) * r1, math.sin(a0) * r1),
+                                (math.cos(a1) * r1, math.sin(a1) * r1), (math.cos(a1) * r0, math.sin(a1) * r0)])
+
+    def angle(self, t):
+        return self.phase * math.tau + self.spin * t
+
+    def polys(self, t):
+        a = self.angle(t)
+        c, s = math.cos(a), math.sin(a)
+        return [[(self.x + px * c - py * s, self.y + px * s + py * c) for px, py in quad] for quad in self._local]
+
+    def x_range(self):
+        r = self.radius + self.thickness / 2
+        return (self.x - r, self.x + r)
+
+    def props(self):
+        return {"position": v2(self.x, self.y), "radius": f(float(self.radius)), "thickness": f(float(self.thickness)),
+                "segments": self.segments, "gap_segments": self.gap_segments, "openings": self.openings,
+                "spin": f(float(self.spin)), "phase": f(float(self.phase % 1.0))}
+
+
+class BlackColumn(Element):
+    base, type_, script = "BlackColumn", "Area2D", "black_column"
+
+    def __init__(self, x0, y0, size, osc):
+        self.x0, self.y0, self.size, self.osc = x0, y0, size, osc
+
+    def polys(self, t):
+        ox, oy = _offset(self.osc, t)
+        return [rect_poly(self.x0 + ox + INSET, self.y0 + oy + INSET,
+                          self.x0 + ox + self.size[0] - INSET, self.y0 + oy + self.size[1] - INSET)]
+
+    def x_range(self):
+        lo, hi = self.osc.reach() if self.osc else (0.0, 0.0)
+        return (self.x0 + lo, self.x0 + self.size[0] + hi)
+
+    def props(self):
+        return {"position": v2(self.x0, self.y0), "size": v2(*self.size)}
+
+
+class ShadowChaser(Element):
+    """Mirror of shadow_chaser.gd."""
+    base, type_, script = "ShadowChaser", "Area2D", "shadow_chaser"
+    BODY_W, BODY_H, EXTEND, HOLD, RETRACT = 1600.0, 1400.0, 0.16, 0.2, 0.3
+
+    def __init__(self, floor_y, spawn, speed, lag, t_start, t_end, period, phase, reach, tongue_h, warning):
+        self.floor_y, self.spawn, self.speed, self.lag = floor_y, spawn, speed, lag
+        self.t_start, self.t_end, self.period, self.phase = t_start, t_end, period, phase
+        self.reach, self.tongue_h, self.warning = reach, tongue_h, warning
+
+    def front(self, t):
+        active = min(max(t, self.t_start), self.t_end)
+        x = self.spawn + self.speed * active - self.lag
+        if t < self.t_start:
+            x -= (self.t_start - t) * self.speed * 2.0
+        elif t > self.t_end:
+            x -= (t - self.t_end) * self.speed * 2.0
+        return x
+
+    def tongue(self, t):
+        if t < self.t_start or t > self.t_end:
+            return 0.0
+        u = ((t / self.period + self.phase) % 1.0) * self.period
+        w = self.warning
+        if u < w:
+            return 0.0
+        if u < w + self.EXTEND:
+            return self.reach * smoothstep((u - w) / self.EXTEND)
+        if u < w + self.EXTEND + self.HOLD:
+            return self.reach
+        if u < w + self.EXTEND + self.HOLD + self.RETRACT:
+            return self.reach * (1.0 - smoothstep((u - w - self.EXTEND - self.HOLD) / self.RETRACT))
+        return 0.0
+
+    def polys(self, t):
+        fx, y = self.front(t), self.floor_y
+        out = [rect_poly(fx - self.BODY_W + INSET, y - self.BODY_H + 200.0, fx - INSET, y + 200.0)]
+        reach = max(self.tongue(t), 1.0)
+        out.append(rect_poly(fx, y - self.tongue_h + INSET, fx + reach - INSET, y - INSET))
+        return out
+
+    def x_range(self):
+        return (self.front(self.t_start) - self.BODY_W, self.front(self.t_end) + self.reach)
+
+    def props(self):
+        return {"position": v2(0, self.floor_y), "spawn_x": f(float(self.spawn)), "speed": f(float(self.speed)),
+                "lag": f(float(self.lag)), "t_start": f(float(self.t_start)), "t_end": f(float(self.t_end)),
+                "lunge_period": f(float(self.period)), "lunge_phase": f(float(self.phase % 1.0)),
+                "lunge_reach": f(float(self.reach)), "tongue_height": f(float(self.tongue_h)),
+                "warning_time": f(float(self.warning))}
+
+
+class MazePanel(Element):
+    base, type_, script = "MazePanel", "Area2D", "maze_panel"
+
+    def __init__(self, x, y, length, thickness, hold, turn, phase, start_quarter, direction, warning):
+        self.x, self.y, self.length, self.thickness = x, y, length, thickness
+        self.hold, self.turn, self.phase = hold, turn, phase
+        self.start_quarter, self.direction, self.warning = start_quarter, direction, warning
+
+    def angle(self, t):
+        cycle = self.hold + self.turn
+        u = t + self.phase * cycle
+        k = math.floor(u / cycle)
+        local = u - k * cycle
+        frac = 0.0 if local < self.hold else smoothstep((local - self.hold) / self.turn)
+        return (self.start_quarter + self.direction * ((k % 4) + frac)) * math.pi / 2
+
+    def polys(self, t):
+        return [rotated_rect(self.x, self.y, self.length - 2 * INSET, self.thickness - 2 * INSET, self.angle(t))]
+
+    def x_range(self):
+        return (self.x - self.length / 2, self.x + self.length / 2)
+
+    def props(self):
+        # The pattern repeats every four cycles: whole cycles of the phase
+        # (a checkpoint's rest shifts it by many) go into the start quarter.
+        whole = math.floor(self.phase)
+        start = (self.start_quarter + self.direction * whole) % 4
+        return {"position": v2(self.x, self.y), "length": f(float(self.length)), "thickness": f(float(self.thickness)),
+                "hold_time": f(float(self.hold)), "turn_time": f(float(self.turn)),
+                "phase": f(float(self.phase - whole)), "start_quarter": start,
+                "direction": self.direction, "warning_time": f(float(self.warning))}
+
+
+class BinaryGate(Element):
+    base, type_, script = "BinaryGate", "Area2D", "binary_gate"
+
+    def __init__(self, x, width, white, black, period, phase, warning):
+        self.x, self.width, self.white, self.black = x, width, white, black
+        self.period, self.phase, self.warning = period, phase, warning
+
+    def state(self, t):
+        return int(((t / self.period + self.phase) % 1.0) * 2.0) % 2
+
+    def polys(self, t):
+        y0, y1 = self.white if self.state(t) == 0 else self.black
+        return [rect_poly(self.x - self.width / 2 + INSET, y0 + INSET, self.x + self.width / 2 - INSET, y1 - INSET)]
+
+    def x_range(self):
+        return (self.x - self.width / 2, self.x + self.width / 2)
+
+    def props(self):
+        return {"position": v2(self.x, 0), "width": f(float(self.width)),
+                "white_span": v2(*self.white), "black_span": v2(*self.black),
+                "period": f(float(self.period)), "phase": f(float(self.phase % 1.0)),
+                "warning_time": f(float(self.warning))}
+
+
+class SlabGroup:
+    """Tuning proxy: setting `phase` moves every slab's oscillator together,
+    keeping the half-cycle offsets of a SPLIT FLOOR."""
+
+    def __init__(self, slabs):
+        self.slabs = slabs
+        self._base = [s.osc.phase for s in slabs]
+        self._phase = 0.0
+
+    @property
+    def phase(self):
+        return self._phase
+
+    @phase.setter
+    def phase(self, value):
+        self._phase = value
+        for slab, base in zip(self.slabs, self._base):
+            slab.osc.phase = (base + value) % 1.0
+
+    @property
+    def base(self):
+        return "SplitFloor"
+
+    def x_range(self):
+        ranges = [s.x_range() for s in self.slabs]
+        return (min(r[0] for r in ranges), max(r[1] for r in ranges))
+
+
 class Plain(Element):
     """Any other node: fixed props, no hitbox. `span` (px) is its x extent."""
 
@@ -442,6 +675,12 @@ class Surface:
         dx, dy = _offset(self.osc, t)
         return self.x0 + dx, self.x1 + dx, self.top + dy, self.bottom + dy
 
+    def solid(self, t):
+        """Where the engine collides with it at level time t: a moving
+        platform (AnimatableBody2D, sync_to_physics) reaches the physics
+        server one tick after its node moves."""
+        return self.rect(t - DT) if self.osc else self.rect(t)
+
 
 # --------------------------------------------------------------------- level --
 
@@ -469,6 +708,7 @@ class Level:
         self._moved = {}         # tap x -> where tuning moved it
         self.last_kinds = {}     # tap x -> kind it had in the last simulation
         self._names = {}
+        self._shadows = []       # (x0, x1, top) of every shadow gap
         self._sim = None
         self._path = None
 
@@ -515,6 +755,8 @@ class Level:
     # ------------------------------------------------------------ geometry --
     def block(self, x0, x1, top, bottom=-10.0, top_edge=True):
         """Solid block from x0 to x1 (tiles) whose top is `top` tiles above the ground line."""
+        if x1 <= x0:
+            raise SystemExit(f"{self.key}: block from x={x0:.2f} to x={x1:.2f} has no width")
         props = {"position": v2(x0 * T, -top * T), "size": v2((x1 - x0) * T, (top - bottom) * T)}
         if not top_edge:
             props["top_edge"] = "false"
@@ -753,28 +995,72 @@ class Level:
             # move and collide
             nx, ny = x + self.speed * DT, y + vy * DT
             landed, new_support, death = False, None, None
-            if grounded and jump is None and support is not None and support.alive(t):
-                sx0, sx1, stop, _ = support.rect(t)
-                if nx + HALF > sx0 and nx - HALF < sx1 and abs(ny - stop) <= 12.0:
-                    ny, vy, landed, new_support = stop, 0.0, True, support
+            if grounded and jump is None and support is not None:
+                # Floor snap: the highest top under the body within snap range.
+                # Not only the current support: where two surfaces meet (split
+                # floor), the higher one carries the player, as in the engine.
+                best = None
+                for (blo, bhi), s in surfaces:
+                    if blo > nx + 64.0:
+                        break
+                    if bhi < nx - 64.0 or not s.alive(t):
+                        continue
+                    sx0, sx1, stop, _ = s.solid(t)
+                    before = s.solid(t - DT)[2]
+                    # Another surface only takes over if it was not above the
+                    # feet a tick ago (from there, rising, it pushes the body
+                    # up); one already above is a step or a wall (below).
+                    if s is not support and before < y - 0.5:
+                        continue
+                    if nx + HALF > sx0 and nx - HALF < sx1 and abs(ny - stop) <= 12.0 and \
+                            (best is None or stop < best[0]):
+                        best = (stop, s)
+                if best is not None:
+                    ny, vy, landed, new_support = best[0], 0.0, True, best[1]
+                # Walking into the side of a higher surface: a step of up to
+                # LEDGE_ASSIST is climbed, anything higher is a wall. The
+                # engine measures the step before the platform carries the
+                # body this tick: from the old feet (y) to the surface now.
+                for (blo, bhi), s in surfaces:
+                    if blo > nx + 64.0 or death:
+                        break
+                    if bhi < nx - 64.0 or s is new_support or not s.alive(t):
+                        continue
+                    sx0, sx1, stop, sbottom = s.solid(t)
+                    if x + HALF <= sx0 + 0.5 < nx + HALF and stop < min(y, ny) - 0.5 and ny - 2 * HALF < sbottom:
+                        if y - stop <= LEDGE_ASSIST:
+                            ny, new_support = stop, s
+                        else:
+                            death = "wall"
+                    elif nx + HALF > sx0 + 0.5 and nx - HALF < sx1 - 0.5 and ny - 2 * HALF < sbottom - 0.5 \
+                            and ny > stop + 0.5:
+                        # Carried up into the underside of another surface
+                        # (or one came down onto the head): squeezed.
+                        death = "crush"
             for (blo, bhi), s in surfaces:
                 if blo > nx + 64.0:
                     break
                 if bhi < nx - 64.0 or landed or not s.alive(t):
                     continue
-                sx0, sx1, stop, sbottom = s.rect(t)
+                sx0, sx1, stop, sbottom = s.solid(t)
                 if nx + HALF <= sx0 or nx - HALF >= sx1:
                     continue
                 # Where its top was a tick ago: a platform rising into falling
                 # feet lands the player on it (the engine pushes the body up).
-                prev_top = s.rect(t - DT)[2] if s.osc else stop
+                prev_top = s.solid(t - DT)[2]
                 if vy >= 0 and y <= max(stop, prev_top) + 1.0 and ny >= stop:
                     ny, landed, new_support = stop, True, s
-                elif x + HALF <= sx0 + 0.5 and ny > stop and ny - 2 * HALF < sbottom:
-                    if ny - stop <= LEDGE_ASSIST:
-                        ny, landed, new_support = stop, True, s
-                    else:
-                        death = "wall"
+                elif x + HALF <= sx0 + 0.5:
+                    # Swept: where the feet are when the body's front meets
+                    # the face. The engine's ledge assist measures the step
+                    # from the old feet while grounded, along the move if not.
+                    k = min(max((sx0 - (x + HALF)) / max(nx - x, 1e-6), 0.0), 1.0)
+                    yc = y + (ny - y) * k
+                    if yc > stop + 0.5 and yc - 2 * HALF < sbottom:
+                        if (y if on_floor else yc) - stop <= LEDGE_ASSIST:
+                            ny, landed, new_support = stop, True, s
+                        else:
+                            death = "wall"
                 elif vy < 0 and y - 2 * HALF >= sbottom - 0.5 and ny - 2 * HALF < sbottom:
                     ny, vy = sbottom + 2 * HALF, 0.0
             grounded, support = landed, new_support
@@ -905,6 +1191,13 @@ class Level:
     def done(self):
         """Places route-fitted gates and runs the tunes front to back, then
         centres the route in its windows."""
+        # A shadow gap over real ground would be a lie with no cost.
+        for x0, x1, top in self._shadows:
+            for su in self.surfaces:
+                if su.osc is None and su.drop is None and abs(-su.top / T - top) < 1e-6 and \
+                        su.x0 / T < x1 - 0.05 and su.x1 / T > x0 + 0.05:
+                    raise SystemExit(f"{self.key}: the shadow gap at x={x0:.2f}..{x1:.2f} lies on real ground "
+                                     f"({su.x0 / T:.2f}..{su.x1 / T:.2f})")
         # Hazards still waiting for their turn are left out of the simulation:
         # their phase or shape is arbitrary until then.
         self._pending = {id(e) for _, e, _ in self._steps}
@@ -925,6 +1218,108 @@ class Level:
         self.recenter_route()
         self._place_shards()
 
+
+    # ------------------------------------------------------- World 02 API --
+    def shadow(self, x0, x1, top, bottom=-10.0):
+        """SHADOW GAP: looks like ground (x0..x1, top tiles), has no collision."""
+        if x1 <= x0:
+            raise SystemExit(f"{self.key}: shadow from x={x0:.2f} to x={x1:.2f} has no width")
+        self._shadows.append((x0, x1, top))
+        self.add(Plain("ShadowBlock", "Node2D", "shadow_block",
+                       {"position": v2(x0 * T, -top * T), "size": v2((x1 - x0) * T, (top - bottom) * T)}))
+
+    def mirror_wall(self, x, center, gap, period=1.6, hold_ratio=0.6, phase=0.0, warning=0.3, width=56.0, reach=1200.0):
+        """MIRROR WALL at x; the passage's centre `center` tiles up, `gap` tiles open at most."""
+        return self.add(MirrorWall(x * T, -center * T, gap * T, period, hold_ratio, phase, warning, width, reach))
+
+    def mirror_wall_fit(self, x, margin=0.35, bias=0.0, **kw):
+        """A MIRROR WALL whose passage fits the intended route where it crosses
+        x (as window_gate), plus `margin` tiles above and below. Tune it."""
+        wall = self.mirror_wall(x, 0.0, 0.0, **kw)
+
+        def place():
+            low, high = self._route_band(x, wall.width)
+            wall.center = -((low + high) / 2 + bias * T)
+            wall.max_gap = high - low + 2 * margin * T
+        self._steps.append(("place", wall, place))
+        return wall
+
+    def orbit_fit(self, x, radius, spin, bias=0.0, openings=3, gap_segments=4, **kw):
+        """An ORBIT RING centred on x whose centre sits at the height where the
+        intended route crosses its left and right sides (so the way through
+        is gap to gap). Placed in done(); tune it."""
+        ring = self.orbit(x, 0.0, radius, spin, openings=openings, gap_segments=gap_segments, **kw)
+
+        def place():
+            h = [self.at(x - radius)["h"], self.at(x + radius)["h"]]
+            ring.y = -((h[0] + h[1]) / 2 + HALF + bias * T)
+        self._steps.append(("place", ring, place))
+        return ring
+
+    def column_under(self, x, width=1.0, margin=0.35):
+        """A still BLACK COLUMN from the pit up to `margin` tiles under the
+        intended route where it crosses x..x+width: a late jump (a lower
+        arc) meets it. Placed in done(), in order."""
+        col = self.add(BlackColumn(x * T, 0.0, (width * T, T), None))
+
+        def place():
+            reach = HURT_HALF / T
+            feet = [st["h"] for st in self.path() if x - reach <= st["x"] <= x + width + reach]
+            if not feet:
+                raise SystemExit(f"{self.key}: the route never reaches the column at x={x:.1f}")
+            top = min(feet) + (HALF - HURT_HALF) - margin * T
+            bottom = -10.0 * T
+            col.y0, col.size = -top, (width * T, top - bottom)
+        self._steps.append(("place", col, place))
+        return col
+
+    def slab_group(self, slabs):
+        """One tunable phase for a SPLIT FLOOR (its slabs keep their offsets)."""
+        return SlabGroup(slabs)
+
+    def orbit(self, x, height, radius, spin, phase=0.0, thickness=22.0, segments=24, gap_segments=3, openings=2):
+        """ORBIT RING centred at (x, height) tiles, radius in tiles."""
+        return self.add(OrbitRing(x * T, -height * T, radius * T, thickness, segments, gap_segments, openings, spin, phase))
+
+    def column(self, x0, width, bottom, height, travel=0.0, period=1.6, phase=0.0, wave="steps", hold_ratio=0.5):
+        """BLACK COLUMN from `bottom` to `bottom + height` tiles, moving `travel` tiles up (negative: down)."""
+        osc = Osc((0.0, -travel * T), period, phase, wave, hold_ratio) if travel else None
+        return self.add(BlackColumn(x0 * T, -(bottom + height) * T, (width * T, height * T), osc))
+
+    def chaser(self, x_from, x_to, floor=0.0, lag=3.0, period=1.6, phase=0.0, reach=5.0, tongue=0.9, warning=0.35):
+        """SHADOW CHASER over the run from x_from to x_to (tiles): body `lag` tiles
+        behind the player, tongue `reach` tiles past the body, `tongue` tall."""
+        return self.add(ShadowChaser(-floor * T, self.spawn_px, self.speed, lag * T, self.clock(x_from),
+                                     self.clock(x_to), period, phase, reach * T, tongue * T, warning))
+
+    def maze(self, x, height, length, hold=0.9, turn=0.25, phase=0.0, start=0, direction=1, thickness=32.0, warning=0.3):
+        """ROTATING MAZE panel pivoting at (x, height) tiles, `length` tiles long."""
+        return self.add(MazePanel(x * T, -height * T, length * T, thickness, hold, turn, phase, start, direction, warning))
+
+    def binary(self, x, white, black, period=2.0, phase=0.0, width=48.0, warning=0.35):
+        """BINARY GATE: `white` and `black` are (bottom, top) spans in tiles."""
+        span = lambda b: (-b[1] * T, -b[0] * T)
+        return self.add(BinaryGate(x * T, width, span(white), span(black), period, phase, warning))
+
+    def whiteout(self, x0, x1, period=2.4, flash=0.9, warning=0.45, phase=0.0):
+        """WHITEOUT over x0..x1 (visual only)."""
+        self.add(Plain("WhiteoutZone", "Node2D", "whiteout_zone",
+                       {"position": v2(x0 * T, 0), "length": f(float((x1 - x0) * T)), "period": f(float(period)),
+                        "flash_time": f(float(flash)), "warning_time": f(float(warning)), "phase": f(float(phase))}))
+
+    def floating(self, x0, width, top, travel, period, phase=0.0, wave="sine", hold_ratio=0.6):
+        """FLOATING PANEL: a moving platform with nothing under it."""
+        return self.mover(x0, width, top, travel, period, phase, wave, hold_ratio)
+
+    def split_floor(self, x0, count, width, top, travel, period, phase=0.0, hold_ratio=0.5):
+        """SPLIT FLOOR: `count` slabs side by side, alternately rising and falling
+        (STEPS) by `travel` tiles. Returns the slabs."""
+        slabs = []
+        for i in range(count):
+            p = phase + (0.5 if i % 2 else 0.0)
+            slabs.append(self.mover(x0 + i * width, width - 0.08, top, (0.0, travel), period, p, "steps", hold_ratio))
+        return slabs
+
     # -------------------------------------------------- progress checkpoints --
     def progress_checkpoints(self, fractions=(1.0 / 3.0, 2.0 / 3.0), runway=1.5):
         """Checkpoints at fixed shares of the level's length (after done()).
@@ -941,7 +1336,9 @@ class Level:
         spawn = self.spawn_px / T
         final = self.finish_x + length * len(fractions)
         for i, share in enumerate(fractions):
-            want = spawn + share * (final - spawn) - 1.0 - i * length   # Cut x before the insertions after it.
+            # Earlier cuts are already opened; later ones lie further on and
+            # do not move this one: `want` is already a final position.
+            want = spawn + share * (final - spawn) - 1.0
             cut = min(self._cut_points(), key=lambda x: abs(x - want))
             height = self.at(cut)["h"] / T
             self.insert_rest(cut, length)
@@ -977,7 +1374,7 @@ class Level:
 
     @staticmethod
     def _inert(e):
-        return isinstance(e, Plain) and e.base in ("Block", "Shard", "Checkpoint", "FinishGate")
+        return isinstance(e, Plain) and e.base in ("Block", "Shard", "Checkpoint", "FinishGate", "WhiteoutZone")
 
     @staticmethod
     def _vec(text):
@@ -986,10 +1383,16 @@ class Level:
 
     def _extent(self, e):
         """x extent (px) of any element, from its data."""
+        if isinstance(e, ShadowChaser):
+            # Its body trails far behind, but it only reaches forward, and
+            # only between t_start and t_end.
+            return (e.front(e.t_start), e.front(e.t_end) + e.lag + e.reach)
         if not isinstance(e, Plain):
             return e.x_range()
         x, _ = self._vec(e._props["position"])
-        if e.base in ("Block", "MovingPlatform"):
+        if e.base == "WhiteoutZone":
+            return (x, x + float(e._props["length"]))
+        if e.base in ("Block", "MovingPlatform", "ShadowBlock"):
             w = self._vec(e._props["size"])[0]
             lo, hi = e.osc.reach() if e.osc else (0.0, 0.0)
             return (x + lo, x + w + hi)
@@ -1021,6 +1424,9 @@ class Level:
             if hi <= cut:
                 continue
             if lo < cut:
+                if isinstance(e, Plain) and e.base == "WhiteoutZone":
+                    e._props["length"] = f(float(e._props["length"]) + dx)
+                    continue
                 assert isinstance(e, Plain) and e.base == "Block", f"{e.base} spans the cut at x={x}"
                 w, h = self._vec(e._props["size"])
                 e._props["size"] = v2(w + dx, h)
@@ -1045,6 +1451,24 @@ class Level:
                 e.phase -= e.spin * dt / math.tau
             elif isinstance(e, Panel):
                 e.x0 += dx
+            elif isinstance(e, MirrorWall):
+                e.x += dx
+                e.phase -= dt / e.period
+            elif isinstance(e, OrbitRing):
+                e.x += dx
+                e.phase -= e.spin * dt / math.tau
+            elif isinstance(e, BlackColumn):
+                e.x0 += dx
+            elif isinstance(e, ShadowChaser):
+                e.t_start += dt
+                e.t_end += dt
+                e.phase -= dt / e.period
+            elif isinstance(e, MazePanel):
+                e.x += dx
+                e.phase -= dt / (e.hold + e.turn)
+            elif isinstance(e, BinaryGate):
+                e.x += dx
+                e.phase -= dt / e.period
             elif isinstance(e, Spikes):
                 e.__init__(e.x0 + dx, e.y0, e.count, e.down)
             else:
@@ -1053,6 +1477,8 @@ class Level:
                     e.span = (e.span[0] + dx, e.span[1] + dx)
                 if e.base == "CollapsingPath":
                     e._props["collapse_time"] = f(float(e._props["collapse_time"]) + dt)
+                if e.base == "WhiteoutZone":
+                    e._props["phase"] = f(float(e._props["phase"]) - dt / float(e._props["period"]))
             late(e.osc)
         for su in self.surfaces:
             if su.x1 <= cut:

@@ -1,0 +1,553 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_02/level_01.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/black_column.gd" id="black_column"]
+[ext_resource type="Script" path="res://src/level/elements/block.gd" id="block"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/mirror_wall.gd" id="mirror_wall"]
+[ext_resource type="Script" path="res://src/level/elements/oscillator.gd" id="oscillator"]
+[ext_resource type="Script" path="res://src/level/elements/shadow_block.gd" id="shadow_block"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level01" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 480
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Runway" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Runway"]
+position = Vector2(-768, 0)
+script = ExtResource("block")
+size = Vector2(2176, 640)
+
+[node name="Shard" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard2" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Shard3" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(832, -32)
+
+[node name="FirstShadow" type="Node2D" parent="."]
+
+[node name="ShadowBlock" type="Node2D" parent="FirstShadow"]
+position = Vector2(1408, 0)
+script = ExtResource("shadow_block")
+size = Vector2(288, 640)
+
+[node name="Block" type="StaticBody2D" parent="FirstShadow"]
+position = Vector2(1696, 0)
+script = ExtResource("block")
+size = Vector2(608, 640)
+
+[node name="ShadowStair" type="Node2D" parent="."]
+
+[node name="ShadowBlock" type="Node2D" parent="ShadowStair"]
+position = Vector2(2304, 0)
+script = ExtResource("shadow_block")
+size = Vector2(256, 640)
+
+[node name="Block" type="StaticBody2D" parent="ShadowStair"]
+position = Vector2(2560, -64)
+script = ExtResource("block")
+size = Vector2(128, 704)
+
+[node name="ShadowBlock2" type="Node2D" parent="ShadowStair"]
+position = Vector2(2688, -64)
+script = ExtResource("shadow_block")
+size = Vector2(320, 704)
+
+[node name="Block2" type="StaticBody2D" parent="ShadowStair"]
+position = Vector2(3008, 0)
+script = ExtResource("block")
+size = Vector2(800, 640)
+
+[node name="FirstMirror" type="Node2D" parent="."]
+
+[node name="MirrorWall" type="Area2D" parent="FirstMirror"]
+position = Vector2(3456, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -166.972
+max_gap = 115.5532
+period = 1.6
+hold_ratio = 0.6
+phase = 0.3667
+warning_time = 0.3
+
+[node name="Shard" parent="FirstMirror" instance=ExtResource("shard")]
+position = Vector2(3456, -128)
+
+[node name="MirrorPair" type="Node2D" parent="."]
+
+[node name="MirrorWall" type="Area2D" parent="MirrorPair"]
+position = Vector2(3852.8, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -151.2827
+max_gap = 136.288
+period = 1.4
+hold_ratio = 0.6
+phase = 0
+warning_time = 0.3
+
+[node name="ShadowBlock" type="Node2D" parent="MirrorPair"]
+position = Vector2(3808, 0)
+script = ExtResource("shadow_block")
+size = Vector2(256, 640)
+
+[node name="Block" type="StaticBody2D" parent="MirrorPair"]
+position = Vector2(4064, 0)
+script = ExtResource("block")
+size = Vector2(896, 640)
+
+[node name="MirrorWall2" type="Area2D" parent="MirrorPair"]
+position = Vector2(3980.8, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -151.4273
+max_gap = 138.8921
+period = 1.4
+hold_ratio = 0.6
+phase = 0
+warning_time = 0.3
+
+[node name="FirstColumn" type="Node2D" parent="."]
+
+[node name="BlackColumn" type="Area2D" parent="FirstColumn"]
+position = Vector2(4569.6, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 204.8)
+
+[node name="Oscillator" type="Node2D" parent="FirstColumn/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -140.8)
+period = 1.5
+phase = 0.2833
+wave = 2
+hold_ratio = 0.5
+
+[node name="ColumnDoor" type="Node2D" parent="."]
+
+[node name="ShadowBlock" type="Node2D" parent="ColumnDoor"]
+position = Vector2(4960, 0)
+script = ExtResource("shadow_block")
+size = Vector2(262.4, 640)
+
+[node name="BlackColumn" type="Area2D" parent="ColumnDoor"]
+position = Vector2(5030.4, -332.8)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="ColumnDoor/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -217.6)
+period = 1.6
+phase = 0.5083
+wave = 2
+hold_ratio = 0.5
+
+[node name="Pairs_ShadowMirror" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Pairs_ShadowMirror"]
+position = Vector2(5222.4, 0)
+script = ExtResource("block")
+size = Vector2(1404.4667, 640)
+
+[node name="ShadowBlock" type="Node2D" parent="Pairs_ShadowMirror"]
+position = Vector2(6626.8667, 0)
+script = ExtResource("shadow_block")
+size = Vector2(288, 640)
+
+[node name="MirrorWall" type="Area2D" parent="Pairs_ShadowMirror"]
+position = Vector2(6735.6667, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -168.9331
+max_gap = 98.8309
+period = 1.3
+hold_ratio = 0.6
+phase = 0.7468
+warning_time = 0.3
+
+[node name="Block2" type="StaticBody2D" parent="Pairs_ShadowMirror"]
+position = Vector2(6914.8667, 0)
+script = ExtResource("block")
+size = Vector2(256, 640)
+
+[node name="Block3" type="StaticBody2D" parent="Pairs_ShadowMirror"]
+position = Vector2(7347.4311, -76.8)
+script = ExtResource("block")
+size = Vector2(102.4, 716.8)
+
+[node name="BlackColumn" type="Area2D" parent="Pairs_ShadowMirror"]
+position = Vector2(7196.4667, -38.4)
+script = ExtResource("black_column")
+size = Vector2(64, 192)
+
+[node name="Oscillator" type="Node2D" parent="Pairs_ShadowMirror/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.3
+phase = 0.9801
+wave = 2
+hold_ratio = 0.5
+
+[node name="ShadowBlock2" type="Node2D" parent="Pairs_ShadowMirror"]
+position = Vector2(7449.8311, -76.8)
+script = ExtResource("shadow_block")
+size = Vector2(649.1955, 716.8)
+
+[node name="MirrorWall2" type="Area2D" parent="Pairs_ShadowMirror"]
+position = Vector2(7769.831, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -354.9474
+max_gap = 143.3267
+period = 1.2
+hold_ratio = 0.6
+phase = 0.8556
+warning_time = 0.3
+
+[node name="Block4" type="StaticBody2D" parent="Pairs_ShadowMirror"]
+position = Vector2(8086.2266, 0)
+script = ExtResource("block")
+size = Vector2(960, 640)
+
+[node name="Pairs_ColumnMirror" type="Node2D" parent="."]
+
+[node name="BlackColumn" type="Area2D" parent="Pairs_ColumnMirror"]
+position = Vector2(8675.0265, -339.2)
+script = ExtResource("black_column")
+size = Vector2(64, 320)
+
+[node name="Oscillator" type="Node2D" parent="Pairs_ColumnMirror/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -217.6)
+period = 1.2
+phase = 0.1556
+wave = 2
+hold_ratio = 0.5
+
+[node name="MirrorWall" type="Area2D" parent="Pairs_ColumnMirror"]
+position = Vector2(8828.6265, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -133.1017
+max_gap = 155.0616
+period = 1.2
+hold_ratio = 0.6
+phase = 0.3472
+warning_time = 0.3
+
+[node name="ShadowBlock" type="Node2D" parent="Pairs_ColumnMirror"]
+position = Vector2(9078.2266, 0)
+script = ExtResource("shadow_block")
+size = Vector2(288, 640)
+
+[node name="BlackColumn2" type="Area2D" parent="Pairs_ColumnMirror"]
+position = Vector2(9212.6265, -51.2)
+script = ExtResource("black_column")
+size = Vector2(64, 217.6)
+
+[node name="Oscillator" type="Node2D" parent="Pairs_ColumnMirror/BlackColumn2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -179.2)
+period = 1.2
+phase = 0.8389
+wave = 2
+hold_ratio = 0.5
+
+[node name="Block" type="StaticBody2D" parent="Pairs_ColumnMirror"]
+position = Vector2(9366.2266, 0)
+script = ExtResource("block")
+size = Vector2(1584.2705, 640)
+
+[node name="Triples" type="Node2D" parent="."]
+
+[node name="MirrorWall" type="Area2D" parent="Triples"]
+position = Vector2(11040.097, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -155.5265
+max_gap = 124.1009
+period = 1.2
+hold_ratio = 0.6
+phase = 0.1194
+warning_time = 0.3
+
+[node name="ShadowBlock" type="Node2D" parent="Triples"]
+position = Vector2(10950.4971, 0)
+script = ExtResource("shadow_block")
+size = Vector2(579.8365, 640)
+
+[node name="BlackColumn" type="Area2D" parent="Triples"]
+position = Vector2(11283.297, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Triples/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.2
+phase = 0.8694
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn2" type="Area2D" parent="Triples"]
+position = Vector2(11283.297, -257.7577)
+script = ExtResource("black_column")
+size = Vector2(76.8, 897.7577)
+
+[node name="BlackColumn3" type="Area2D" parent="Triples"]
+position = Vector2(11959.1335, -76.8)
+script = ExtResource("black_column")
+size = Vector2(64, 217.6)
+
+[node name="Oscillator" type="Node2D" parent="Triples/BlackColumn3"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.1
+phase = 0.6644
+wave = 2
+hold_ratio = 0.5
+
+[node name="MirrorWall2" type="Area2D" parent="Triples"]
+position = Vector2(12099.9335, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -133.1017
+max_gap = 148.6616
+period = 1.1
+hold_ratio = 0.6
+phase = 0.9394
+warning_time = 0.3
+
+[node name="Block" type="StaticBody2D" parent="Triples"]
+position = Vector2(11530.3335, 0)
+script = ExtResource("block")
+size = Vector2(1235.8038, 640)
+
+[node name="Inversion" type="Node2D" parent="."]
+
+[node name="ShadowBlock" type="Node2D" parent="Inversion"]
+position = Vector2(12772.5373, 0)
+script = ExtResource("shadow_block")
+size = Vector2(960, 640)
+
+[node name="Block" type="StaticBody2D" parent="Inversion"]
+position = Vector2(13259.5299, -128)
+script = ExtResource("block")
+size = Vector2(89.6, 768)
+
+[node name="BlackColumn" type="Area2D" parent="Inversion"]
+position = Vector2(12836.5372, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 243.2)
+
+[node name="Oscillator" type="Node2D" parent="Inversion/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -192)
+period = 1.2
+phase = 0.9194
+wave = 2
+hold_ratio = 0.5
+
+[node name="Block2" type="StaticBody2D" parent="Inversion"]
+position = Vector2(13663.3337, -128)
+script = ExtResource("block")
+size = Vector2(89.6, 768)
+
+[node name="MirrorWall" type="Area2D" parent="Inversion"]
+position = Vector2(13521.9298, 0)
+script = ExtResource("mirror_wall")
+width = 56
+reach = 1200
+center_y = -294.972
+max_gap = 96.3532
+period = 1.1
+hold_ratio = 0.6
+phase = 0.3894
+warning_time = 0.3
+
+[node name="ShadowBlock2" type="Node2D" parent="Inversion"]
+position = Vector2(13752.9337, -64)
+script = ExtResource("shadow_block")
+size = Vector2(651.4977, 704)
+
+[node name="BlackColumn2" type="Area2D" parent="Inversion"]
+position = Vector2(14053.7336, -550.4)
+script = ExtResource("black_column")
+size = Vector2(64, 320)
+
+[node name="Oscillator" type="Node2D" parent="Inversion/BlackColumn2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 166.4)
+period = 1.1
+phase = 0.7727
+wave = 2
+hold_ratio = 0.5
+
+[node name="Block3" type="StaticBody2D" parent="Inversion"]
+position = Vector2(14404.4314, -64)
+script = ExtResource("block")
+size = Vector2(1318.4, 704)
+
+[node name="FinishGate" type="Area2D" parent="Inversion"]
+position = Vector2(15274.8314, -64)
+script = ExtResource("finish_gate")
+
+[node name="Shard" parent="FirstShadow" instance=ExtResource("shard")]
+position = Vector2(1382, -57)
+
+[node name="Shard2" parent="FirstShadow" instance=ExtResource("shard")]
+position = Vector2(1478, -157)
+
+[node name="Shard3" parent="FirstShadow" instance=ExtResource("shard")]
+position = Vector2(1574, -193)
+
+[node name="Shard" parent="ShadowStair" instance=ExtResource("shard")]
+position = Vector2(2259, -43)
+
+[node name="Shard2" parent="ShadowStair" instance=ExtResource("shard")]
+position = Vector2(2374, -157)
+
+[node name="Shard3" parent="ShadowStair" instance=ExtResource("shard")]
+position = Vector2(2490, -192)
+
+[node name="Shard4" parent="ShadowStair" instance=ExtResource("shard")]
+position = Vector2(2605, -119)
+
+[node name="Shard5" parent="ShadowStair" instance=ExtResource("shard")]
+position = Vector2(2720, -158)
+
+[node name="Shard6" parent="ShadowStair" instance=ExtResource("shard")]
+position = Vector2(2835, -247)
+
+[node name="Shard7" parent="ShadowStair" instance=ExtResource("shard")]
+position = Vector2(2950, -241)
+
+[node name="Shard" parent="ColumnDoor" instance=ExtResource("shard")]
+position = Vector2(4928, -142)
+
+[node name="Shard2" parent="ColumnDoor" instance=ExtResource("shard")]
+position = Vector2(5056, -193)
+
+[node name="Shard3" parent="ColumnDoor" instance=ExtResource("shard")]
+position = Vector2(5184, -119)
+
+[node name="Shard" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(6530.8667, -57)
+
+[node name="Shard2" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(6722.8667, -193)
+
+[node name="Shard3" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(6914.8667, -43)
+
+[node name="Shard4" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(7106.8667, -105)
+
+[node name="Shard5" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(7298.8667, -189)
+
+[node name="Shard6" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(7490.8667, -133)
+
+[node name="Shard7" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(7682.8667, -331)
+
+[node name="Shard8" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(7874.8667, -401)
+
+[node name="Shard9" parent="Pairs_ShadowMirror" instance=ExtResource("shard")]
+position = Vector2(8066.8667, -162)
+
+[node name="Shard" parent="Pairs_ColumnMirror" instance=ExtResource("shard")]
+position = Vector2(8533.8667, -43)
+
+[node name="Shard2" parent="Pairs_ColumnMirror" instance=ExtResource("shard")]
+position = Vector2(8725.8667, -186)
+
+[node name="Shard3" parent="Pairs_ColumnMirror" instance=ExtResource("shard")]
+position = Vector2(8917.8667, -95)
+
+[node name="Shard4" parent="Pairs_ColumnMirror" instance=ExtResource("shard")]
+position = Vector2(9109.8667, -164)
+
+[node name="Shard5" parent="Pairs_ColumnMirror" instance=ExtResource("shard")]
+position = Vector2(9301.8667, -149)
+
+[node name="Shard" parent="Triples" instance=ExtResource("shard")]
+position = Vector2(10886.7334, -70)
+
+[node name="Shard2" parent="Triples" instance=ExtResource("shard")]
+position = Vector2(11078.7334, -193)
+
+[node name="Shard3" parent="Triples" instance=ExtResource("shard")]
+position = Vector2(11270.7334, -317)
+
+[node name="Shard4" parent="Triples" instance=ExtResource("shard")]
+position = Vector2(11462.7334, -257)
+
+[node name="Shard5" parent="Triples" instance=ExtResource("shard")]
+position = Vector2(11654.7334, -43)
+
+[node name="Shard6" parent="Triples" instance=ExtResource("shard")]
+position = Vector2(11846.7334, -82)
+
+[node name="Shard7" parent="Triples" instance=ExtResource("shard")]
+position = Vector2(12038.7334, -192)
+
+[node name="Shard" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(12708.7334, -94)
+
+[node name="Shard2" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(12900.7334, -220)
+
+[node name="Shard3" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(13092.7334, -343)
+
+[node name="Shard4" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(13284.7334, -171)
+
+[node name="Shard5" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(13476.7334, -320)
+
+[node name="Shard6" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(13668.7334, -181)
+
+[node name="Shard7" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(13860.7334, -303)
+
+[node name="Shard8" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(14052.7334, -452)
+
+[node name="Shard9" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(14244.7334, -407)
+
+[node name="Shard10" parent="Inversion" instance=ExtResource("shard")]
+position = Vector2(14436.7334, -107)
+
+[node name="Checkpoint" type="Area2D" parent="Inversion"]
+position = Vector2(5353.6, 0)
+script = ExtResource("checkpoint")
+
+[node name="Checkpoint2" type="Area2D" parent="Inversion"]
+position = Vector2(9948.672, 0)
+script = ExtResource("checkpoint")

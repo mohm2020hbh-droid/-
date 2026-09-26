@@ -1,12 +1,24 @@
 extends TestCase
-## Structural rules every World 01 level must follow (docs/GDD.md §8).
+## Structural rules every World 01 level must follow (docs/GDD.md §8);
+## test_level_integrity_w02 applies them to World 02.
 
-const WORLD := preload("res://levels/world_01/world_01.tres")
+const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres"]
+
+var WORLD: WorldData
 ## GDD §8.2: after a checkpoint the player respawns running, so the next
 ## hazard or gap must be at least this far away.
 const MIN_RUNWAY_SECONDS := 1.5
 
 var level: Level
+
+
+## Which world these tests check (0-based); overridden per world.
+func world_index() -> int:
+	return 0
+
+
+func before_each() -> void:
+	WORLD = load(WORLDS[world_index()])
 
 
 func after_each() -> void:
@@ -25,7 +37,7 @@ func _load(index: int) -> Level:
 
 
 func test_world_lists_five_levels_of_rising_speed() -> void:
-	assert_eq(WORLD.levels.size(), 5, "World 01 has five levels")
+	assert_eq(WORLD.levels.size(), 5, "World %02d has five levels" % WORLD.number)
 	var ids := {}
 	var previous_speed := 0.0
 	for data in WORLD.levels:
@@ -35,7 +47,7 @@ func test_world_lists_five_levels_of_rising_speed() -> void:
 		assert_true(data.speed_scale >= previous_speed, "%s: never slower than the level before" % data.id)
 		previous_speed = data.speed_scale
 	for i in WORLD.levels.size():
-		assert_true(World01Routes.get_route(i).size() > 0, "level %d has a route" % (i + 1))
+		assert_true(Autoplay.route_for(world_index(), i).size() > 0, "level %d has a route" % (i + 1))
 
 
 func test_levels_have_required_structure() -> void:

@@ -245,21 +245,21 @@ return_time = 0.35
 [node name="Block2" type="StaticBody2D" parent="S3_SlamLedges"]
 position = Vector2(11668.0625, 0)
 script = ExtResource("block")
-size = Vector2(2614.8, 640)
+size = Vector2(1548.8, 640)
 
 [node name="S4_GatesOnTheCollapse" type="Node2D" parent="."]
 
 [node name="CollapsingPath" type="StaticBody2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(14282.8625, -0)
+position = Vector2(13216.8625, -0)
 script = ExtResource("collapsing_path")
 tiles = 18
 tile_size = Vector2(64, 32)
-collapse_time = 22.2307
+collapse_time = 20.564
 interval = 0.0893
 warning_time = 0.35
 
 [node name="Gate" type="Area2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(14500.4625, 0)
+position = Vector2(13434.4625, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-111.6415, 147.6691)
 hold_time = 0.9
@@ -268,7 +268,7 @@ phase = 0
 warning_time = 0.35
 
 [node name="Gate2" type="Area2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(14641.2625, 0)
+position = Vector2(13575.2625, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-171.682, 99.7332)
 hold_time = 0.9
@@ -277,7 +277,7 @@ phase = 0
 warning_time = 0.35
 
 [node name="Gate3" type="Area2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(14782.0625, 0)
+position = Vector2(13716.0625, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-96.2094, 161.9438)
 hold_time = 0.9
@@ -286,15 +286,15 @@ phase = 0
 warning_time = 0.35
 
 [node name="RotatingArm" type="Area2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(15114.8625, -32)
+position = Vector2(14048.8625, -32)
 script = ExtResource("rotating_arm")
 arms = 2
 length = 115.2
 speed = 3
-phase = 0.5501
+phase = 0.3459
 
 [node name="Gate4" type="Area2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(15486.0625, 0)
+position = Vector2(14420.0625, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-141.4769, 125.837)
 hold_time = 0.9
@@ -303,7 +303,7 @@ phase = 0
 warning_time = 0.35
 
 [node name="Gate5" type="Area2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(15767.6625, 0)
+position = Vector2(14701.6625, 0)
 script = ExtResource("gate")
 stops = PackedVector2Array(-261.2042, 133.5531)
 hold_time = 0.9
@@ -312,9 +312,9 @@ phase = 0
 warning_time = 0.35
 
 [node name="Block" type="StaticBody2D" parent="S4_GatesOnTheCollapse"]
-position = Vector2(16088.6995, 0)
+position = Vector2(15022.6995, 0)
 script = ExtResource("block")
-size = Vector2(1420.8, 640)
+size = Vector2(2486.8, 640)
 
 [node name="S5_Gauntlet" type="Node2D" parent="."]
 
@@ -521,28 +521,28 @@ position = Vector2(11503, -362)
 position = Vector2(11727, -43)
 
 [node name="Shard" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(14411, -43)
+position = Vector2(13345, -43)
 
 [node name="Shard2" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(14635, -193)
+position = Vector2(13569, -193)
 
 [node name="Shard3" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(14859, -43)
+position = Vector2(13793, -43)
 
 [node name="Shard4" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(15083, -191)
+position = Vector2(14017, -191)
 
 [node name="Shard5" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(15307, -53)
+position = Vector2(14241, -53)
 
 [node name="Shard6" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(15531, -186)
+position = Vector2(14465, -186)
 
 [node name="Shard7" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(15755, -283)
+position = Vector2(14689, -283)
 
 [node name="Shard8" parent="S4_GatesOnTheCollapse" instance=ExtResource("shard")]
-position = Vector2(15979, -290)
+position = Vector2(14913, -290)
 
 [node name="Shard" parent="S5_Gauntlet" instance=ExtResource("shard")]
 position = Vector2(17477, -43)
@@ -597,5 +597,5 @@ position = Vector2(7387.584, 0)
 script = ExtResource("checkpoint")
 
 [node name="Checkpoint2" type="Area2D" parent="S5_Gauntlet"]
-position = Vector2(13207.936, 0)
+position = Vector2(15158.72, 0)
 script = ExtResource("checkpoint")

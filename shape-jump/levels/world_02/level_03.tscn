@@ -1,0 +1,871 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_02/level_03.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/black_column.gd" id="black_column"]
+[ext_resource type="Script" path="res://src/level/elements/block.gd" id="block"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/oscillator.gd" id="oscillator"]
+[ext_resource type="Script" path="res://src/level/elements/shadow_block.gd" id="shadow_block"]
+[ext_resource type="Script" path="res://src/level/elements/shadow_chaser.gd" id="shadow_chaser"]
+[ext_resource type="Script" path="res://src/level/elements/whiteout_zone.gd" id="whiteout_zone"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level03" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 480
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Runway" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Runway"]
+position = Vector2(-768, 0)
+script = ExtResource("block")
+size = Vector2(2176, 640)
+
+[node name="Shard" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard2" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Shard3" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(832, -32)
+
+[node name="FirstFlash" type="Node2D" parent="."]
+
+[node name="ShadowBlock" type="Node2D" parent="FirstFlash"]
+position = Vector2(1408, 0)
+script = ExtResource("shadow_block")
+size = Vector2(281.6, 640)
+
+[node name="Block" type="StaticBody2D" parent="FirstFlash"]
+position = Vector2(1689.6, 0)
+script = ExtResource("block")
+size = Vector2(742.4, 640)
+
+[node name="WhiteoutZone" type="Node2D" parent="FirstFlash"]
+position = Vector2(896, 0)
+script = ExtResource("whiteout_zone")
+length = 1664
+period = 2.4
+flash_time = 0.9
+warning_time = 0.45
+phase = 0.436
+
+[node name="BlackColumn" type="Area2D" parent="FirstFlash"]
+position = Vector2(2137.6, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 204.8)
+
+[node name="Oscillator" type="Node2D" parent="FirstFlash/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -140.8)
+period = 1.4
+phase = 0.0667
+wave = 2
+hold_ratio = 0.5
+
+[node name="Chase" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Chase"]
+position = Vector2(2432, 0)
+script = ExtResource("block")
+size = Vector2(448, 640)
+
+[node name="ShadowBlock" type="Node2D" parent="Chase"]
+position = Vector2(2918.4, 0)
+script = ExtResource("shadow_block")
+size = Vector2(230.4, 640)
+
+[node name="Block2" type="StaticBody2D" parent="Chase"]
+position = Vector2(3148.8, 0)
+script = ExtResource("block")
+size = Vector2(756.64, 640)
+
+[node name="ShadowBlock2" type="Node2D" parent="Chase"]
+position = Vector2(3943.84, 0)
+script = ExtResource("shadow_block")
+size = Vector2(230.4, 640)
+
+[node name="Block3" type="StaticBody2D" parent="Chase"]
+position = Vector2(4174.24, 0)
+script = ExtResource("block")
+size = Vector2(756.64, 640)
+
+[node name="ShadowBlock3" type="Node2D" parent="Chase"]
+position = Vector2(4969.28, 0)
+script = ExtResource("shadow_block")
+size = Vector2(230.4, 640)
+
+[node name="Block4" type="StaticBody2D" parent="Chase"]
+position = Vector2(5199.68, 0)
+script = ExtResource("block")
+size = Vector2(756.64, 640)
+
+[node name="ShadowBlock4" type="Node2D" parent="Chase"]
+position = Vector2(5994.72, 0)
+script = ExtResource("shadow_block")
+size = Vector2(230.4, 640)
+
+[node name="Block5" type="StaticBody2D" parent="Chase"]
+position = Vector2(6225.12, 0)
+script = ExtResource("block")
+size = Vector2(2195.7333, 640)
+
+[node name="ShadowChaser" type="Area2D" parent="Chase"]
+position = Vector2(0, -0)
+script = ExtResource("shadow_chaser")
+spawn_x = 256
+speed = 603.2
+lag = 192
+t_start = 3.183
+t_end = 9.9806
+lunge_period = 1.7
+lunge_phase = 0.6333
+lunge_reach = 320
+tongue_height = 57.6
+warning_time = 0.35
+
+[node name="BlackColumn" type="Area2D" parent="Chase"]
+position = Vector2(3475.2, -57.6)
+script = ExtResource("black_column")
+size = Vector2(64, 198.4)
+
+[node name="Oscillator" type="Node2D" parent="Chase/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -140.8)
+period = 1.7
+phase = 0.1833
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn2" type="Area2D" parent="Chase"]
+position = Vector2(4500.64, -57.6)
+script = ExtResource("black_column")
+size = Vector2(64, 198.4)
+
+[node name="Oscillator" type="Node2D" parent="Chase/BlackColumn2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -140.8)
+period = 1.7
+phase = 0.1833
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn3" type="Area2D" parent="Chase"]
+position = Vector2(5526.08, -57.6)
+script = ExtResource("black_column")
+size = Vector2(64, 198.4)
+
+[node name="Oscillator" type="Node2D" parent="Chase/BlackColumn3"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -140.8)
+period = 1.7
+phase = 0.1833
+wave = 2
+hold_ratio = 0.5
+
+[node name="WhiteoutZone" type="Node2D" parent="Chase"]
+position = Vector2(3585.44, 0)
+script = ExtResource("whiteout_zone")
+length = 1665.44
+period = 1.7
+flash_time = 0.8
+warning_time = 0.5
+phase = 0.8351
+
+[node name="WhiteColumns" type="Node2D" parent="."]
+
+[node name="ShadowBlock" type="Node2D" parent="WhiteColumns"]
+position = Vector2(8420.8533, 0)
+script = ExtResource("shadow_block")
+size = Vector2(230.4, 640)
+
+[node name="BlackColumn" type="Area2D" parent="WhiteColumns"]
+position = Vector2(8484.8533, -332.8)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="WhiteColumns/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -217.6)
+period = 1.4
+phase = 0.9762
+wave = 2
+hold_ratio = 0.5
+
+[node name="Block" type="StaticBody2D" parent="WhiteColumns"]
+position = Vector2(8651.2533, 0)
+script = ExtResource("block")
+size = Vector2(198.4, 640)
+
+[node name="ShadowBlock2" type="Node2D" parent="WhiteColumns"]
+position = Vector2(8849.6533, 0)
+script = ExtResource("shadow_block")
+size = Vector2(624.1134, 640)
+
+[node name="BlackColumn2" type="Area2D" parent="WhiteColumns"]
+position = Vector2(8958.4533, -76.8)
+script = ExtResource("black_column")
+size = Vector2(64, 217.6)
+
+[node name="Oscillator" type="Node2D" parent="WhiteColumns/BlackColumn2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.3
+phase = 0.8013
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn3" type="Area2D" parent="WhiteColumns"]
+position = Vector2(9201.6533, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="WhiteColumns/BlackColumn3"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.3
+phase = 0.5263
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn4" type="Area2D" parent="WhiteColumns"]
+position = Vector2(9201.6533, -264.1577)
+script = ExtResource("black_column")
+size = Vector2(76.8, 904.1577)
+
+[node name="WhiteoutZone" type="Node2D" parent="WhiteColumns"]
+position = Vector2(6788.32, 0)
+script = ExtResource("whiteout_zone")
+length = 2864.6467
+period = 1.6
+flash_time = 0.8
+warning_time = 0.5
+phase = 0.4765
+
+[node name="Block2" type="StaticBody2D" parent="WhiteColumns"]
+position = Vector2(9473.7667, 0)
+script = ExtResource("block")
+size = Vector2(332.8, 640)
+
+[node name="Block3" type="StaticBody2D" parent="WhiteColumns"]
+position = Vector2(10057.2088, -64)
+script = ExtResource("block")
+size = Vector2(83.2, 704)
+
+[node name="BlackColumn5" type="Area2D" parent="WhiteColumns"]
+position = Vector2(9902.5667, -89.6)
+script = ExtResource("black_column")
+size = Vector2(64, 230.4)
+
+[node name="Oscillator" type="Node2D" parent="WhiteColumns/BlackColumn5"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -166.4)
+period = 1.2
+phase = 0.9194
+wave = 2
+hold_ratio = 0.5
+
+[node name="ShadowBlock3" type="Node2D" parent="WhiteColumns"]
+position = Vector2(10140.4088, -64)
+script = ExtResource("shadow_block")
+size = Vector2(391.5173, 704)
+
+[node name="BlackColumn6" type="Area2D" parent="WhiteColumns"]
+position = Vector2(10319.6089, -614.4)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="WhiteColumns/BlackColumn6"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 153.6)
+period = 1.2
+phase = 0.0278
+wave = 2
+hold_ratio = 0.5
+
+[node name="WhiteoutZone2" type="Node2D" parent="WhiteColumns"]
+position = Vector2(9808.7262, 0)
+script = ExtResource("whiteout_zone")
+length = 1024
+period = 1.6
+flash_time = 0.8
+warning_time = 0.5
+phase = -0.8894
+
+[node name="Block4" type="StaticBody2D" parent="WhiteColumns"]
+position = Vector2(10531.9262, 0)
+script = ExtResource("block")
+size = Vector2(1100.8, 640)
+
+[node name="Chase2" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Chase2"]
+position = Vector2(11632.7262, 0)
+script = ExtResource("block")
+size = Vector2(32, 640)
+
+[node name="ShadowBlock" type="Node2D" parent="Chase2"]
+position = Vector2(11690.3262, 0)
+script = ExtResource("shadow_block")
+size = Vector2(586.6499, 640)
+
+[node name="BlackColumn" type="Area2D" parent="Chase2"]
+position = Vector2(11997.5262, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Chase2/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.5
+phase = 0.9556
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn2" type="Area2D" parent="Chase2"]
+position = Vector2(11997.5262, -265.6688)
+script = ExtResource("black_column")
+size = Vector2(76.8, 905.6688)
+
+[node name="Block2" type="StaticBody2D" parent="Chase2"]
+position = Vector2(12276.9761, 0)
+script = ExtResource("block")
+size = Vector2(292.5501, 640)
+
+[node name="ShadowBlock2" type="Node2D" parent="Chase2"]
+position = Vector2(12607.9262, 0)
+script = ExtResource("shadow_block")
+size = Vector2(236.8, 640)
+
+[node name="BlackColumn3" type="Area2D" parent="Chase2"]
+position = Vector2(12697.5262, -332.8)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Chase2/BlackColumn3"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -217.6)
+period = 1.5
+phase = 0.9806
+wave = 2
+hold_ratio = 0.5
+
+[node name="Block3" type="StaticBody2D" parent="Chase2"]
+position = Vector2(12844.7262, 0)
+script = ExtResource("block")
+size = Vector2(629.6, 640)
+
+[node name="ShadowBlock3" type="Node2D" parent="Chase2"]
+position = Vector2(13499.9262, 0)
+script = ExtResource("shadow_block")
+size = Vector2(586.6499, 640)
+
+[node name="BlackColumn4" type="Area2D" parent="Chase2"]
+position = Vector2(13807.1262, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Chase2/BlackColumn4"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.5
+phase = 0.9556
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn5" type="Area2D" parent="Chase2"]
+position = Vector2(13807.1262, -265.6688)
+script = ExtResource("black_column")
+size = Vector2(76.8, 905.6688)
+
+[node name="Block4" type="StaticBody2D" parent="Chase2"]
+position = Vector2(14086.5761, 0)
+script = ExtResource("block")
+size = Vector2(2249.0834, 640)
+
+[node name="ShadowChaser" type="Area2D" parent="Chase2"]
+position = Vector2(0, -0)
+script = ExtResource("shadow_chaser")
+spawn_x = 256
+speed = 603.2
+lag = 192
+t_start = 18.2771
+t_end = 22.4442
+lunge_period = 1.5
+lunge_phase = 0.6806
+lunge_reach = 320
+tongue_height = 57.6
+warning_time = 0.35
+
+[node name="WhiteoutZone" type="Node2D" parent="Chase2"]
+position = Vector2(11856.7262, 0)
+script = ExtResource("whiteout_zone")
+length = 1937.6
+period = 3
+flash_time = 0.8
+warning_time = 0.5
+phase = 0.4151
+
+[node name="Finale" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Finale"]
+position = Vector2(15823.6595, 0)
+script = ExtResource("block")
+size = Vector2(576, 640)
+
+[node name="ShadowBlock" type="Node2D" parent="Finale"]
+position = Vector2(16412.4595, 0)
+script = ExtResource("shadow_block")
+size = Vector2(593.3755, 640)
+
+[node name="Block2" type="StaticBody2D" parent="Finale"]
+position = Vector2(17005.835, 0)
+script = ExtResource("block")
+size = Vector2(177.9845, 640)
+
+[node name="BlackColumn" type="Area2D" parent="Finale"]
+position = Vector2(16489.2595, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 204.8)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.3
+phase = 0.5942
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn2" type="Area2D" parent="Finale"]
+position = Vector2(16719.6595, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.3
+phase = 0.9359
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn3" type="Area2D" parent="Finale"]
+position = Vector2(16719.6595, -261.7786)
+script = ExtResource("black_column")
+size = Vector2(76.8, 901.7786)
+
+[node name="ShadowBlock2" type="Node2D" parent="Finale"]
+position = Vector2(17196.6195, 0)
+script = ExtResource("shadow_block")
+size = Vector2(593.3755, 640)
+
+[node name="Block3" type="StaticBody2D" parent="Finale"]
+position = Vector2(17789.995, 0)
+script = ExtResource("block")
+size = Vector2(177.9845, 640)
+
+[node name="BlackColumn4" type="Area2D" parent="Finale"]
+position = Vector2(17273.4195, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 204.8)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn4"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.3
+phase = 0.5942
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn5" type="Area2D" parent="Finale"]
+position = Vector2(17503.8195, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn5"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.3
+phase = 0.9359
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn6" type="Area2D" parent="Finale"]
+position = Vector2(17503.8195, -261.7786)
+script = ExtResource("black_column")
+size = Vector2(76.8, 901.7786)
+
+[node name="ShadowBlock3" type="Node2D" parent="Finale"]
+position = Vector2(17980.7795, 0)
+script = ExtResource("shadow_block")
+size = Vector2(593.3755, 640)
+
+[node name="Block4" type="StaticBody2D" parent="Finale"]
+position = Vector2(18574.155, 0)
+script = ExtResource("block")
+size = Vector2(177.9845, 640)
+
+[node name="BlackColumn7" type="Area2D" parent="Finale"]
+position = Vector2(18057.5795, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 204.8)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn7"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.3
+phase = 0.5942
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn8" type="Area2D" parent="Finale"]
+position = Vector2(18287.9795, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn8"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.3
+phase = 0.9359
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn9" type="Area2D" parent="Finale"]
+position = Vector2(18287.9795, -261.7786)
+script = ExtResource("black_column")
+size = Vector2(76.8, 901.7786)
+
+[node name="ShadowBlock4" type="Node2D" parent="Finale"]
+position = Vector2(18764.9395, 0)
+script = ExtResource("shadow_block")
+size = Vector2(593.3755, 640)
+
+[node name="Block5" type="StaticBody2D" parent="Finale"]
+position = Vector2(19358.315, 0)
+script = ExtResource("block")
+size = Vector2(177.9845, 640)
+
+[node name="BlackColumn10" type="Area2D" parent="Finale"]
+position = Vector2(18841.7395, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 204.8)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn10"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.3
+phase = 0.5942
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn11" type="Area2D" parent="Finale"]
+position = Vector2(19072.1395, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn11"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.3
+phase = 0.9359
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn12" type="Area2D" parent="Finale"]
+position = Vector2(19072.1395, -261.7786)
+script = ExtResource("black_column")
+size = Vector2(76.8, 901.7786)
+
+[node name="ShadowBlock5" type="Node2D" parent="Finale"]
+position = Vector2(19549.0995, 0)
+script = ExtResource("shadow_block")
+size = Vector2(593.3755, 640)
+
+[node name="Block6" type="StaticBody2D" parent="Finale"]
+position = Vector2(20142.475, 0)
+script = ExtResource("block")
+size = Vector2(1505.8245, 640)
+
+[node name="BlackColumn13" type="Area2D" parent="Finale"]
+position = Vector2(19625.8995, -64)
+script = ExtResource("black_column")
+size = Vector2(64, 204.8)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn13"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -153.6)
+period = 1.3
+phase = 0.5942
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn14" type="Area2D" parent="Finale"]
+position = Vector2(19856.2995, -691.2)
+script = ExtResource("black_column")
+size = Vector2(76.8, 320)
+
+[node name="Oscillator" type="Node2D" parent="Finale/BlackColumn14"]
+script = ExtResource("oscillator")
+travel = Vector2(0, 179.2)
+period = 1.3
+phase = 0.9359
+wave = 2
+hold_ratio = 0.5
+
+[node name="BlackColumn15" type="Area2D" parent="Finale"]
+position = Vector2(19856.2995, -261.7786)
+script = ExtResource("black_column")
+size = Vector2(76.8, 901.7786)
+
+[node name="ShadowChaser" type="Area2D" parent="Finale"]
+position = Vector2(0, -0)
+script = ExtResource("shadow_chaser")
+spawn_x = 256
+speed = 603.2
+lag = 192
+t_start = 26.1268
+t_end = 32.4939
+lunge_period = 1.3
+lunge_phase = 0.5526
+lunge_reach = 320
+tongue_height = 57.6
+warning_time = 0.35
+
+[node name="WhiteoutZone" type="Node2D" parent="Finale"]
+position = Vector2(15951.6595, 0)
+script = ExtResource("whiteout_zone")
+length = 4032.64
+period = 1.3
+flash_time = 0.7
+warning_time = 0.45
+phase = -2.2411
+
+[node name="FinishGate" type="Area2D" parent="Finale"]
+position = Vector2(20752.2995, -0)
+script = ExtResource("finish_gate")
+
+[node name="Shard" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(1280, -43)
+
+[node name="Shard2" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(1408, -105)
+
+[node name="Shard3" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(1536, -189)
+
+[node name="Shard4" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(1664, -157)
+
+[node name="Shard5" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(1792, -43)
+
+[node name="Shard6" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(1920, -43)
+
+[node name="Shard7" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(2048, -115)
+
+[node name="Shard8" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(2176, -189)
+
+[node name="Shard9" parent="FirstFlash" instance=ExtResource("shard")]
+position = Vector2(2304, -157)
+
+[node name="Shard" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(2816, -43)
+
+[node name="Shard2" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(3008, -179)
+
+[node name="Shard3" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(3200, -130)
+
+[node name="Shard4" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(3392, -115)
+
+[node name="Shard5" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(3584, -185)
+
+[node name="Shard6" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(3776, -43)
+
+[node name="Shard7" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(3968, -142)
+
+[node name="Shard8" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(4160, -177)
+
+[node name="Shard9" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(4352, -43)
+
+[node name="Shard10" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(4544, -191)
+
+[node name="Shard11" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(4736, -82)
+
+[node name="Shard12" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(4928, -70)
+
+[node name="Shard13" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(5120, -193)
+
+[node name="Shard14" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(5312, -53)
+
+[node name="Shard15" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(5504, -169)
+
+[node name="Shard16" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(5696, -149)
+
+[node name="Shard17" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(5888, -43)
+
+[node name="Shard18" parent="Chase" instance=ExtResource("shard")]
+position = Vector2(6080, -179)
+
+[node name="Shard" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(8305.3333, -94)
+
+[node name="Shard2" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(8497.3333, -192)
+
+[node name="Shard3" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(8689.3333, -43)
+
+[node name="Shard4" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(8881.3333, -157)
+
+[node name="Shard5" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(9073.3333, -247)
+
+[node name="Shard6" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(9265.3333, -333)
+
+[node name="Shard7" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(9457.3333, -146)
+
+[node name="Shard8" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(9649.3333, -43)
+
+[node name="Shard9" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(9841.3333, -142)
+
+[node name="Shard10" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(10033.3333, -177)
+
+[node name="Shard11" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(10225.3333, -178)
+
+[node name="Shard12" parent="WhiteColumns" instance=ExtResource("shard")]
+position = Vector2(10417.3333, -252)
+
+[node name="Shard" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(11600.3333, -70)
+
+[node name="Shard2" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(11792.3333, -193)
+
+[node name="Shard3" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(11984.3333, -325)
+
+[node name="Shard4" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(12176.3333, -275)
+
+[node name="Shard5" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(12368.3333, -43)
+
+[node name="Shard6" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(12560.3333, -134)
+
+[node name="Shard7" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(12752.3333, -177)
+
+[node name="Shard8" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(12944.3333, -43)
+
+[node name="Shard9" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(13136.3333, -43)
+
+[node name="Shard10" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(13328.3333, -43)
+
+[node name="Shard11" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(13520.3333, -169)
+
+[node name="Shard12" parent="Chase2" instance=ExtResource("shard")]
+position = Vector2(13712.3333, -270)
+
+[node name="Shard" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(16335.6666, -43)
+
+[node name="Shard2" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(16527.6666, -189)
+
+[node name="Shard3" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(16719.6666, -329)
+
+[node name="Shard4" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(16911.6666, -280)
+
+[node name="Shard5" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(17103.6666, -43)
+
+[node name="Shard6" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(17295.6666, -183)
+
+[node name="Shard7" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(17487.6666, -325)
+
+[node name="Shard8" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(17679.6666, -290)
+
+[node name="Shard9" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(17871.6666, -43)
+
+[node name="Shard10" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(18063.6666, -179)
+
+[node name="Shard11" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(18255.6666, -314)
+
+[node name="Shard12" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(18447.6666, -307)
+
+[node name="Shard13" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(18639.6666, -43)
+
+[node name="Shard14" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(18831.6666, -169)
+
+[node name="Shard15" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(19023.6666, -300)
+
+[node name="Shard16" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(19215.6666, -321)
+
+[node name="Shard17" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(19407.6666, -43)
+
+[node name="Shard18" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(19599.6666, -164)
+
+[node name="Shard19" parent="Finale" instance=ExtResource("shard")]
+position = Vector2(19791.6666, -292)
+
+[node name="Checkpoint" type="Area2D" parent="Finale"]
+position = Vector2(7085.888, 0)
+script = ExtResource("checkpoint")
+
+[node name="Checkpoint2" type="Area2D" parent="Finale"]
+position = Vector2(14243.84, 0)
+script = ExtResource("checkpoint")

@@ -17,9 +17,11 @@ static func is_completed(level: LevelData) -> bool:
 static func is_unlocked(world: WorldData, index: int) -> bool:
 	if unlock_all:
 		return index >= 0 and index < world.levels.size()
-	if index <= 0:
-		return index == 0
-	return index < world.levels.size() and is_completed(world.levels[index - 1])
+	if index < 0 or index >= world.levels.size():
+		return false
+	if index == 0:
+		return world.requires == null or is_world_completed(world.requires)
+	return is_completed(world.levels[index - 1])
 
 
 ## The level a returning player most likely wants: the first one not yet
@@ -29,6 +31,10 @@ static func furthest_unlocked(world: WorldData) -> int:
 		if not is_completed(world.levels[i]):
 			return i
 	return maxi(world.levels.size() - 1, 0)
+
+
+static func is_world_unlocked(world: WorldData) -> bool:
+	return is_unlocked(world, 0)
 
 
 static func is_world_completed(world: WorldData) -> bool:

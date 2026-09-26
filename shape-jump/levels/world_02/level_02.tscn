@@ -1,0 +1,624 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_02/level_02.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/block.gd" id="block"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/orbit_ring.gd" id="orbit_ring"]
+[ext_resource type="Script" path="res://src/level/elements/oscillator.gd" id="oscillator"]
+[ext_resource type="Script" path="res://src/level/elements/shadow_block.gd" id="shadow_block"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level02" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 480
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Runway" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="Runway"]
+position = Vector2(-768, 0)
+script = ExtResource("block")
+size = Vector2(2304, 640)
+
+[node name="Shard" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard2" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Shard3" parent="Runway" instance=ExtResource("shard")]
+position = Vector2(832, -32)
+
+[node name="FirstRing" type="Node2D" parent="."]
+
+[node name="OrbitRing" type="Area2D" parent="FirstRing"]
+position = Vector2(1491.2, -111.4646)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.2
+phase = 0.1
+
+[node name="Block" type="StaticBody2D" parent="FirstRing"]
+position = Vector2(1536, 0)
+script = ExtResource("block")
+size = Vector2(544, 640)
+
+[node name="Shard" parent="FirstRing" instance=ExtResource("shard")]
+position = Vector2(1491, -141)
+
+[node name="RingOverShadow" type="Node2D" parent="."]
+
+[node name="ShadowBlock" type="Node2D" parent="RingOverShadow"]
+position = Vector2(2080, 0)
+script = ExtResource("shadow_block")
+size = Vector2(192, 640)
+
+[node name="OrbitRing" type="Area2D" parent="RingOverShadow"]
+position = Vector2(2131.2, -111.4646)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.8
+phase = 0.05
+
+[node name="Block" type="StaticBody2D" parent="RingOverShadow"]
+position = Vector2(2272, 0)
+script = ExtResource("block")
+size = Vector2(595.2, 640)
+
+[node name="FirstPanel" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="FirstPanel"]
+position = Vector2(3094.1698, -32)
+script = ExtResource("block")
+size = Vector2(153.6, 32)
+
+[node name="Oscillator" type="Node2D" parent="FirstPanel/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(153.6, -0)
+period = 1.6
+phase = 0.5917
+
+[node name="Block" type="StaticBody2D" parent="FirstPanel"]
+position = Vector2(3572.5152, 0)
+script = ExtResource("block")
+size = Vector2(576, 640)
+
+[node name="SplitFloor" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="SplitFloor"]
+position = Vector2(4148.5152, -0)
+script = ExtResource("block")
+size = Vector2(135.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="SplitFloor/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.4
+phase = 0.6833
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform2" type="AnimatableBody2D" parent="SplitFloor"]
+position = Vector2(4289.3152, -0)
+script = ExtResource("block")
+size = Vector2(135.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="SplitFloor/MovingPlatform2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.4
+phase = 0.1833
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform3" type="AnimatableBody2D" parent="SplitFloor"]
+position = Vector2(4430.1152, -0)
+script = ExtResource("block")
+size = Vector2(135.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="SplitFloor/MovingPlatform3"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.4
+phase = 0.6833
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform4" type="AnimatableBody2D" parent="SplitFloor"]
+position = Vector2(4570.9152, -0)
+script = ExtResource("block")
+size = Vector2(135.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="SplitFloor/MovingPlatform4"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.4
+phase = 0.1833
+wave = 2
+hold_ratio = 0.5
+
+[node name="RingHigh" type="Node2D" parent="."]
+
+[node name="Block" type="StaticBody2D" parent="RingHigh"]
+position = Vector2(4711.7152, 0)
+script = ExtResource("block")
+size = Vector2(377.6, 640)
+
+[node name="OrbitRing" type="Area2D" parent="RingHigh"]
+position = Vector2(5441.3152, -260.6416)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.4
+phase = 0.1333
+
+[node name="Block2" type="StaticBody2D" parent="RingHigh"]
+position = Vector2(5637.5492, 0)
+script = ExtResource("block")
+size = Vector2(1676.9333, 640)
+
+[node name="Chain" type="Node2D" parent="."]
+
+[node name="OrbitRing" type="Area2D" parent="Chain"]
+position = Vector2(7468.0826, -111.4646)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.427
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Chain"]
+position = Vector2(7923.5422, -64)
+script = ExtResource("block")
+size = Vector2(128, 32)
+
+[node name="Oscillator" type="Node2D" parent="Chain/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(140.8, -0)
+period = 1.5
+phase = 0.0722
+
+[node name="Block" type="StaticBody2D" parent="Chain"]
+position = Vector2(8406.5121, -96)
+script = ExtResource("block")
+size = Vector2(76.8, 736)
+
+[node name="OrbitRing2" type="Area2D" parent="Chain"]
+position = Vector2(8288.3423, -179.9817)
+script = ExtResource("orbit_ring")
+radius = 121.6
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.2
+phase = 0.7164
+
+[node name="Block2" type="StaticBody2D" parent="Chain"]
+position = Vector2(8860.1215, 0)
+script = ExtResource("block")
+size = Vector2(697.6, 640)
+
+[node name="Stairs" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Stairs"]
+position = Vector2(9794.5215, -38.4)
+script = ExtResource("block")
+size = Vector2(122.88, 32)
+
+[node name="Oscillator" type="Node2D" parent="Stairs/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.2
+phase = 0.7111
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform2" type="AnimatableBody2D" parent="Stairs"]
+position = Vector2(9922.5215, -38.4)
+script = ExtResource("block")
+size = Vector2(122.88, 32)
+
+[node name="Oscillator" type="Node2D" parent="Stairs/MovingPlatform2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -76.8)
+period = 1.2
+phase = 0.2111
+wave = 2
+hold_ratio = 0.5
+
+[node name="OrbitRing" type="Area2D" parent="Stairs"]
+position = Vector2(9711.3216, -111.4646)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.5187
+
+[node name="Block" type="StaticBody2D" parent="Stairs"]
+position = Vector2(10183.3879, -140.8)
+script = ExtResource("block")
+size = Vector2(128, 780.8)
+
+[node name="OrbitRing2" type="Area2D" parent="Stairs"]
+position = Vector2(10669.7879, -386.9579)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.4
+phase = 0.68
+
+[node name="MovingPlatform3" type="AnimatableBody2D" parent="Stairs"]
+position = Vector2(10906.3249, -0)
+script = ExtResource("block")
+size = Vector2(128, 32)
+
+[node name="Oscillator" type="Node2D" parent="Stairs/MovingPlatform3"]
+script = ExtResource("oscillator")
+travel = Vector2(140.8, -0)
+period = 1.2
+phase = 0.8278
+
+[node name="Block2" type="StaticBody2D" parent="Stairs"]
+position = Vector2(11487.0702, 0)
+script = ExtResource("block")
+size = Vector2(1612.9333, 640)
+
+[node name="Climb" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="Climb"]
+position = Vector2(13360.7488, -0)
+script = ExtResource("block")
+size = Vector2(140.8, 32)
+
+[node name="Oscillator" type="Node2D" parent="Climb/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -166.4)
+period = 1.8
+phase = 0.0398
+wave = 2
+hold_ratio = 0.5
+
+[node name="Block" type="StaticBody2D" parent="Climb"]
+position = Vector2(13686.7122, -294.4)
+script = ExtResource("block")
+size = Vector2(89.6, 934.4)
+
+[node name="OrbitRing" type="Area2D" parent="Climb"]
+position = Vector2(14205.1123, -522.7628)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.4
+phase = 0.0351
+
+[node name="Block2" type="StaticBody2D" parent="Climb"]
+position = Vector2(14563.4353, 0)
+script = ExtResource("block")
+size = Vector2(697.6, 640)
+
+[node name="FinalChain" type="Node2D" parent="."]
+
+[node name="MovingPlatform" type="AnimatableBody2D" parent="FinalChain"]
+position = Vector2(15497.8353, -51.2)
+script = ExtResource("block")
+size = Vector2(135.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="FinalChain/MovingPlatform"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -64)
+period = 1.3
+phase = 0.2526
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform2" type="AnimatableBody2D" parent="FinalChain"]
+position = Vector2(15638.6353, -51.2)
+script = ExtResource("block")
+size = Vector2(135.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="FinalChain/MovingPlatform2"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -64)
+period = 1.3
+phase = 0.7526
+wave = 2
+hold_ratio = 0.5
+
+[node name="MovingPlatform3" type="AnimatableBody2D" parent="FinalChain"]
+position = Vector2(15779.4353, -51.2)
+script = ExtResource("block")
+size = Vector2(135.68, 32)
+
+[node name="Oscillator" type="Node2D" parent="FinalChain/MovingPlatform3"]
+script = ExtResource("oscillator")
+travel = Vector2(0, -64)
+period = 1.3
+phase = 0.2526
+wave = 2
+hold_ratio = 0.5
+
+[node name="Block" type="StaticBody2D" parent="FinalChain"]
+position = Vector2(15877.2449, -128)
+script = ExtResource("block")
+size = Vector2(83.2, 768)
+
+[node name="OrbitRing" type="Area2D" parent="FinalChain"]
+position = Vector2(15414.6353, -112.606)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.6
+phase = 0.7873
+
+[node name="OrbitRing2" type="Area2D" parent="FinalChain"]
+position = Vector2(16158.845, -240.606)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.4
+phase = 0.7934
+
+[node name="MovingPlatform4" type="AnimatableBody2D" parent="FinalChain"]
+position = Vector2(16692.5676, -64)
+script = ExtResource("block")
+size = Vector2(115.2, 32)
+
+[node name="Oscillator" type="Node2D" parent="FinalChain/MovingPlatform4"]
+script = ExtResource("oscillator")
+travel = Vector2(153.6, -0)
+period = 1.3
+phase = 0.1609
+
+[node name="Block2" type="StaticBody2D" parent="FinalChain"]
+position = Vector2(17157.8642, -128)
+script = ExtResource("block")
+size = Vector2(70.4, 768)
+
+[node name="OrbitRing3" type="Area2D" parent="FinalChain"]
+position = Vector2(17625.0642, -377.4533)
+script = ExtResource("orbit_ring")
+radius = 128
+thickness = 22
+segments = 24
+gap_segments = 4
+openings = 3
+spin = 2.8
+phase = 0.6312
+
+[node name="Block3" type="StaticBody2D" parent="FinalChain"]
+position = Vector2(17933.7025, 0)
+script = ExtResource("block")
+size = Vector2(1472, 640)
+
+[node name="FinishGate" type="Area2D" parent="FinalChain"]
+position = Vector2(18893.7025, -0)
+script = ExtResource("finish_gate")
+
+[node name="Shard" parent="FirstPanel" instance=ExtResource("shard")]
+position = Vector2(2816, -43)
+
+[node name="Shard2" parent="FirstPanel" instance=ExtResource("shard")]
+position = Vector2(2944, -134)
+
+[node name="Shard3" parent="FirstPanel" instance=ExtResource("shard")]
+position = Vector2(3072, -193)
+
+[node name="Shard4" parent="FirstPanel" instance=ExtResource("shard")]
+position = Vector2(3200, -130)
+
+[node name="Shard5" parent="FirstPanel" instance=ExtResource("shard")]
+position = Vector2(3328, -114)
+
+[node name="Shard6" parent="FirstPanel" instance=ExtResource("shard")]
+position = Vector2(3456, -215)
+
+[node name="Shard7" parent="FirstPanel" instance=ExtResource("shard")]
+position = Vector2(3584, -203)
+
+[node name="Shard" parent="SplitFloor" instance=ExtResource("shard")]
+position = Vector2(4072, -57)
+
+[node name="Shard2" parent="SplitFloor" instance=ExtResource("shard")]
+position = Vector2(4200, -175)
+
+[node name="Shard3" parent="SplitFloor" instance=ExtResource("shard")]
+position = Vector2(4328, -181)
+
+[node name="Shard4" parent="SplitFloor" instance=ExtResource("shard")]
+position = Vector2(4456, -117)
+
+[node name="Shard5" parent="SplitFloor" instance=ExtResource("shard")]
+position = Vector2(4584, -235)
+
+[node name="Shard6" parent="SplitFloor" instance=ExtResource("shard")]
+position = Vector2(4712, -260)
+
+[node name="Shard" parent="RingHigh" instance=ExtResource("shard")]
+position = Vector2(5032, -70)
+
+[node name="Shard2" parent="RingHigh" instance=ExtResource("shard")]
+position = Vector2(5192, -189)
+
+[node name="Shard3" parent="RingHigh" instance=ExtResource("shard")]
+position = Vector2(5352, -319)
+
+[node name="Shard4" parent="RingHigh" instance=ExtResource("shard")]
+position = Vector2(5512, -321)
+
+[node name="Shard5" parent="RingHigh" instance=ExtResource("shard")]
+position = Vector2(5672, -96)
+
+[node name="Shard" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7257.3333, -43)
+
+[node name="Shard2" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7449.3333, -192)
+
+[node name="Shard3" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7641.3333, -82)
+
+[node name="Shard4" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(7833.3333, -217)
+
+[node name="Shard5" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8025.3333, -107)
+
+[node name="Shard6" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8217.3333, -238)
+
+[node name="Shard7" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8409.3333, -193)
+
+[node name="Shard8" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8601.3333, -253)
+
+[node name="Shard9" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(8793.3333, -260)
+
+[node name="Shard" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(9500.3333, -57)
+
+[node name="Shard2" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(9692.3333, -193)
+
+[node name="Shard3" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(9884.3333, -115)
+
+[node name="Shard4" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(10076.3333, -263)
+
+[node name="Shard5" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(10268.3333, -184)
+
+[node name="Shard6" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(10460.3333, -320)
+
+[node name="Shard7" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(10652.3333, -469)
+
+[node name="Shard8" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(10844.3333, -409)
+
+[node name="Shard9" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(11036.3333, -55)
+
+[node name="Shard10" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(11228.3333, -169)
+
+[node name="Shard11" parent="Stairs" instance=ExtResource("shard")]
+position = Vector2(11420.3333, -149)
+
+[node name="Shard" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(13042.6666, -43)
+
+[node name="Shard2" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(13234.6666, -183)
+
+[node name="Shard3" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(13426.6666, -208)
+
+[node name="Shard4" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(13618.6666, -355)
+
+[node name="Shard5" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(13810.6666, -376)
+
+[node name="Shard6" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(14002.6666, -488)
+
+[node name="Shard7" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(14194.6666, -602)
+
+[node name="Shard8" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(14386.6666, -568)
+
+[node name="Shard9" parent="Climb" instance=ExtResource("shard")]
+position = Vector2(14578.6666, -216)
+
+[node name="Shard" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(15203.6666, -43)
+
+[node name="Shard2" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(15395.6666, -191)
+
+[node name="Shard3" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(15587.6666, -116)
+
+[node name="Shard4" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(15779.6666, -252)
+
+[node name="Shard5" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(15971.6666, -171)
+
+[node name="Shard6" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(16163.6666, -320)
+
+[node name="Shard7" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(16355.6666, -196)
+
+[node name="Shard8" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(16547.6666, -345)
+
+[node name="Shard9" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(16739.6666, -206)
+
+[node name="Shard10" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(16931.6666, -233)
+
+[node name="Shard11" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(17123.6666, -204)
+
+[node name="Shard12" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(17315.6666, -270)
+
+[node name="Shard13" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(17507.6666, -380)
+
+[node name="Shard14" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(17699.6666, -464)
+
+[node name="Shard15" parent="FinalChain" instance=ExtResource("shard")]
+position = Vector2(17891.6666, -261)
+
+[node name="Checkpoint" type="Area2D" parent="FinalChain"]
+position = Vector2(6313.536, 0)
+script = ExtResource("checkpoint")
+
+[node name="Checkpoint2" type="Area2D" parent="FinalChain"]
+position = Vector2(12111.168, 0)
+script = ExtResource("checkpoint")

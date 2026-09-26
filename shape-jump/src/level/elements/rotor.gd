@@ -56,7 +56,7 @@ func _rebuild() -> void:
 func _draw() -> void:
 	Neon.soft_light(self, Vector2.ZERO, radius * 1.6, Color(Palette.HAZARD, 0.28))
 	var outer := get_polygon()
-	draw_colored_polygon(outer, HazardArt.BODY)
+	draw_colored_polygon(outer, Palette.HAZARD_BODY)
 	Neon.polyline(self, outer, Palette.HAZARD, 3.0, 1.2, true)
 	# A counter-set inner polygon and a hot core make the spin readable.
 	var inner := PackedVector2Array()

@@ -30,18 +30,18 @@ shape-jump/
 ├── src/
 │   ├── autoload/                 events.gd (Signal Bus) · save_system.gd
 │   ├── audio/                    audio_manager.gd (Autoload) · sound_library.gd
-│   ├── core/                     game_const.gd · palette.gd · neon.gd · soft_light.tres
+│   ├── core/                     game_const.gd · palette.gd (ثيمات العوالم: red / mono) · neon.gd · soft_light.tres
 │   ├── player/
 │   │   ├── movement_config.gd    Resource: أرقام الحركة (ومنها Double Jump)
 │   │   ├── player_motor.gd       قواعد القفز النقية (بلا Nodes): Jump/Double Jump، Coyote، Buffer، طابور اللمسات
 │   │   ├── player.gd             CharacterBody2D: يطبق الـMotor، التصادم، الموت، التعويض الأفقي فوق المنصات
-│   │   ├── player_visual.gd      الرسم والـAnimations (قلبة الـDJ، النواة المجوفة)
+│   │   ├── player_visual.gd      الرسم والـAnimations (قلبة الـDJ، النواة المجوفة)؛ `void_style` = كيان World 02
 │   │   ├── player_fx.gd          Particles، الذيل، حلقة الـDJ، التحطم
 │   │   └── player.tscn · default_movement.tres
 │   ├── level/
 │   │   ├── level.gd              جذر المستوى: ساعة المستوى، التسجيل، الـRewind، إشارات الإنذار
 │   │   ├── level_data.gd         Resource: id، الاسم، الوصف، المشهد، معامل السرعة
-│   │   ├── world_data.gd         Resource: رقم العالم، اسمه، قائمة LevelData، اسم العالم التالي
+│   │   ├── world_data.gd         Resource: رقم العالم، اسمه، قائمة LevelData، العالم التالي، `requires`، `theme`، `background`
 │   │   └── elements/
 │   │       ├── hazard.gd                 قاعدة كل خطر (طبقة، Hitbox مُصغَّر، رسم خلف الكتل، cue)
 │   │       ├── gate.gd                   Pulse / Sequential / Timed Opening
@@ -50,22 +50,27 @@ shape-jump/
 │   │       ├── collapsing_path.gd        ممر ينهار (StaticBody2D، يمشى عليه)
 │   │       ├── block.gd · phase_block.gd · oscillator.gd (SINE / LINEAR / STEPS)
 │   │       ├── hazard_art.gd · slab_art.gd · hazard_pulse.gd   رسم الأخطار
+│   │       ├── World 02: shadow_block · mirror_wall · orbit_ring · black_column · shadow_chaser
+│   │       │            maze_panel · binary_gate · whiteout_zone · timeline (خطوات مشتركة)
 │   │       └── shard · checkpoint · finish_gate
 │   ├── camera/game_camera.gd     Follow + Look-ahead + Shake + get_view_rect
-│   ├── background/               Parallax إجرائي
+│   ├── background/               Parallax إجرائي: background.tscn (أحمر) · background_mono.tscn (أبيض/أسود)
 │   ├── game/
 │   │   ├── game_session.gd       State Machine + الوسيط الوحيد في مشهد اللعب
 │   │   ├── progression.gd        قواعد الفتح (دوال static فوق SaveSystem)
 │   │   ├── progress_tracker.gd   تقدّم المستوى % بالمسافة + عقوبة الموت 25 نقطة
-│   │   ├── autoplay.gd           مفتاح QA (`-- --autoplay`): اللعبة تلعب نفسها بمسار كل مستوى
+│   │   ├── autoplay.gd           مفتاح QA (`-- --autoplay`): اللعبة تلعب نفسها بمسار كل مستوى، في العالمين
+│   │   ├── whiteout_veil.gd      طبقة الـWHITEOUT: أبيض فوق العالم + كل حافة آمنة وكل Hitbox بالأسود
 │   │   ├── tap_input.gd          الإدخال → "tapped" / "pause_requested"
 │   │   ├── score_tracker.gd      منطق النقاط النقي
-│   │   └── game.tscn             المشهد الرئيسي (world = world_01.tres)
-│   └── ui/                       hud · start_overlay + level_card · death_banner · level_complete_panel · pause_menu · screen_fade
+│   │   └── game.tscn             المشهد الرئيسي (worlds = [world_01.tres, world_02.tres])
+│   └── ui/                       hud · start_overlay (تبويبات العوالم) + level_card · death_banner · level_complete_panel · pause_menu · screen_fade
+│                                 ui_look.gd + theme_mono.tres: لبس الواجهة بثيم العالم
 ├── levels/world_01/              level_01…05.tscn/.tres + world_01.tres + world_01_routes.gd (مُولَّدة)
+├── levels/world_02/              نفس البنية لـWorld 02 (مُولَّدة من world_02.py)
 ├── assets/audio/                 sfx/*.wav · ambient/void_drone.ogg · sound_library.tres
 ├── tools/                        (.gdignore — لا يستورده Godot)
-│   ├── levelgen/                 levelgen.py · world_01.py · README.md
+│   ├── levelgen/                 levelgen.py · world_01.py · world_02.py · README.md
 │   ├── audio/gen_sfx.py          توليد الأصوات
 │   └── web/                      build_playtest.py + playtest_page.html (نسخة الويب للتجربة)
 └── tests/
@@ -90,6 +95,11 @@ shape-jump/
 | **Audio** | `audio_manager.gd` | الوحيد الذي يعرف أي صوت لأي حدث. |
 | **Game State** | `game_session.gd` | الوسيط الوحيد: يستقبل Signals ويستدعي الأنظمة. |
 | **Save** | `save_system.gd` | API صغيرة: `record_result` / `get_record`، كتابة ذرية عبر ملف مؤقت. |
+
+### العوالم والثيمات
+- `GameSession.worlds` قائمة `WorldData`. `_use_world(i)` يبدّل كل شيء مرة واحدة قبل بناء المستوى: `Palette.use(world.theme)` (كل الألوان static)، الخلفية (`world.background`)، `player.visual.void_style`، ألوان الـParticles والذيل (`PlayerFx.refresh_colors`)، الجمر، والواجهة (`UiLook.apply` + `theme_mono.tres`).
+- الفتح: العالم مفتوح إن كان `requires == null` أو اكتمل العالم المطلوب. بعد آخر مستوى، **NEXT** يفتح العالم التالي (`_play_next`).
+- نقطة الاستئناف في الويب (`--resume`) صارت 7 حقول: العالم، المستوى، الـCheckpoint، النسبة، المحاولات، الـTiles، الـShards.
 
 ### قاعدة التواصل
 - **Signals للأعلى، استدعاءات للأسفل.**
@@ -198,7 +208,7 @@ completed=true
 
 ## 10. الاختبار
 
-137 اختبارًا (≈ 32 ثانية)، تنجح بنفس النتائج على 20 و30 و60 و144 FPS.
+155 اختبارًا (≈ 52 ثانية)، تنجح بنفس النتائج على 20 و60 FPS. اختبارات المستويات تعمل على العالمين: كل ملف لـWorld 01 له ابن `…_w02` / `test_world_02_playthrough` يغيّر `world_index()` فقط.
 
 | الملف | ماذا يثبت |
 |---|---|
@@ -208,7 +218,8 @@ completed=true
 | integration/test_double_jump (11) | القمة المزدوجة، جدار لا تعبره قفزة واحدة، لا قفزة ثالثة، لمستان في إطار واحد، الاستعادة بعد الهبوط، الحافة والـCoyote، سقف منخفض، Respawn وسط DJ، الهبوط على منصة متحركة |
 | integration/test_obstacles (16) | خط زمن كل نوع، القتل والمرور على الفيزياء الفعلية، الإنذارات، الأصوات داخل اللعب فقط، Hitbox ≤ الرسم دائمًا |
 | integration/test_player_physics (29) | الاستجابة، الارتفاع، الحواف، الفجوات، السقف، Ledge Assist، السحق، المصاعد، منصة متسارعة لا تزيح اللاعب أفقيًا |
-| integration/test_world_01_playthrough | **كل مستوى يُنهى بمساره بلا موت**، الحتمية، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت |
+| integration/test_world_01_playthrough · test_world_02_playthrough | **كل مستوى في العالمين يُنهى بمساره بلا موت**، الحتمية، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت |
+| unit/test_level_integrity_w02 | ثيم `mono` وخلفيته، يُفتح بـWorld 01، لا عائق من World 01، وكل أنظمة World 02 مستخدمة |
 | unit/test_progress_tracker (5) · integration/test_level_progress (2) | التقدّم بالمسافة 0..100، العقوبة 25 نقطة وحدّ الصفر، Checkpointان قرب 33% و66% في كل مستوى، وفي كل مستوى: موتان (≈50% و≈80%) → عقوبة → عودة عند آخر Checkpoint بحالة نظيفة → إنهاء بـ100% |
 | integration/test_progression (6) | قواعد الفتح، وضع الاختبار `--unlock-all`، رفض المستوى المغلق، NEXT LEVEL، WORLD 01 COMPLETE، لوحة الموت وعدّاد المحاولات |
 | integration: camera، game flow، review probes | الكاميرا، تدفق اللعب واللمس، عوائق تُنشأ/تُحذف أثناء اللعب، تسلسل حالات سريع |
@@ -218,8 +229,9 @@ completed=true
 ```bash
 godot --headless --path shape-jump --import
 godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn [-- --filter=obstacles]
-godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --level=5 --windows --exploits
-godot --headless --path shape-jump --fixed-fps 60 -- --autoplay --autoplay-die=50,80 --autoplay-quit   # World 01 كاملًا بموتين في كل مستوى
+godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --world=2 --level=5 --windows --exploits
+godot --headless --path shape-jump --fixed-fps 60 -- --autoplay --autoplay-die=50,80 --autoplay-quit   # العالمان كاملين بموتين في كل مستوى
+godot ... -- --autoplay --autoplay-world=2 --autoplay-one-world --autoplay-quit                          # World 02 وحده
 ```
 صفحة الويب تشغّل نفس الـAutoplay بإضافة `#autoplay` أو `#autoplay-deaths` إلى رابطها، وتطبع الأحداث في Console المتصفح.
 
@@ -232,7 +244,7 @@ godot --headless --path shape-jump --fixed-fps 60 -- --autoplay --autoplay-die=5
 | الإضافة | أين |
 |---|---|
 | مستوى في World 01 | دالة جديدة في `tools/levelgen/world_01.py` + إضافتها إلى `LEVELS` |
-| World 02 | ملف `world_02.py` بنفس الـAPI، و`WorldData` جديد، و`game.tscn` يأخذ `world` مختلفًا |
+| World 03 | ملف `world_03.py` بنفس الـAPI، و`WorldData` (`requires = world_02`، `theme`، `background`)، وإضافته إلى `worlds` في `game.tscn` و`Autoplay.route_for` |
 | نوع عائق جديد | سكربت يرث `Hazard` ويطبق `apply_time(t)`، ونسخة Hitbox مطابقة في `levelgen.py` |
 | صوت جديد | ملف + سطر في `sound_library.tres` |
 | Haptics / Analytics | Listener جديد على `Events` |

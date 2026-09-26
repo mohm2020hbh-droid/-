@@ -795,13 +795,16 @@ def write_routes(routes):
 def write_world(count):
     lines = ['[gd_resource type="Resource" script_class="WorldData" format=3]', "",
              '[ext_resource type="Script" path="res://src/level/world_data.gd" id="1_world"]',
-             '[ext_resource type="Script" path="res://src/level/level_data.gd" id="2_level"]']
+             '[ext_resource type="Script" path="res://src/level/level_data.gd" id="2_level"]',
+             '[ext_resource type="PackedScene" path="res://src/background/background.tscn" id="3_background"]']
     for i in range(1, count + 1):
         lines.append(f'[ext_resource type="Resource" path="res://levels/world_01/level_{i:02d}.tres" id="level_{i:02d}"]')
     refs = ", ".join(f'ExtResource("level_{i:02d}")' for i in range(1, count + 1))
     lines += ["", "[resource]", 'script = ExtResource("1_world")', 'id = &"world_01"', "number = 1",
               'display_name = "The Red Void"', f'levels = Array[ExtResource("2_level")]([{refs}])']
     lines.append('next_world_name = "World 02"')
+    lines.append('theme = &"red"')
+    lines.append('background = ExtResource("3_background")')
     with open(ROOT + "levels/world_01/world_01.tres", "w") as fh:
         fh.write("\n".join(lines) + "\n")
 

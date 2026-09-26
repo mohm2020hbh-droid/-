@@ -1,4 +1,4 @@
-<title>Shape Jump World 01</title>
+<title>Shape Jump</title>
 <meta name="theme-color" content="#07040a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -169,7 +169,7 @@
 <div id="launcher">
   <div class="card" dir="rtl">
     <div>
-      <p class="eyebrow">WORLD 01 · THE RED VOID</p>
+      <p class="eyebrow">WORLD 01 · THE RED VOID &nbsp;/&nbsp; WORLD 02 · THE MONOCHROME VOID</p>
       <h1 class="wordmark"><span>SHAPE</span><span class="red">JUMP</span></h1>
     </div>
 
@@ -181,11 +181,11 @@
     <div class="actions" id="actions" hidden>
       <button type="button" class="primary" id="play-normal">
         <b lang="en">PLAY</b>
-        <small>التقدّم العادي: المرحلة الأولى مفتوحة، وكل مرحلة تفتح التي بعدها</small>
+        <small>التقدّم العادي: المرحلة الأولى مفتوحة، وكل مرحلة تفتح التي بعدها، وإنهاء World 01 يفتح World 02</small>
       </button>
       <button type="button" id="play-test">
         <b lang="en">TEST MODE</b>
-        <small>كل المراحل الخمس مفتوحة لتجربتها بأي ترتيب</small>
+        <small>كل مراحل العالمين مفتوحة: اختر WORLD 01 أو WORLD 02 من أعلى شاشة البداية</small>
       </button>
     </div>
 
@@ -193,9 +193,9 @@
       <li><kbd lang="en">Tap</kbd> أو <kbd lang="en">Click</kbd> أو <kbd lang="en">Space</kbd>: قفزة (وبدء الجري من شاشة البداية)</li>
       <li>لمسة ثانية وأنت في الهواء: <span lang="en">Double Jump</span> (مرة واحدة حتى تهبط)</li>
       <li><kbd lang="en">Esc</kbd> أو <kbd lang="en">P</kbd> أو زر ❚❚: إيقاف مؤقت</li>
-      <li>في شاشة البداية: المس بطاقة المرحلة لاختيارها</li>
+      <li>في شاشة البداية: المس تبويب العالم ثم بطاقة المرحلة لاختيارها</li>
     </ul>
-    <p class="foot">5 مراحل · 12 نوعًا من العوائق · فيزياء 60 Hz. التقدّم وأفضل النتائج تُحفظ في هذا المتصفح. على الهاتف: أدِر الشاشة أفقيًا.</p>
+    <p class="foot">عالمان · 10 مراحل · 22 نوعًا من العوائق · فيزياء 60 Hz. التقدّم وأفضل النتائج تُحفظ في هذا المتصفح. على الهاتف: أدِر الشاشة أفقيًا.</p>
   </div>
 </div>
 
@@ -346,7 +346,10 @@
   }
 
   const hash = (location.hash || '').slice(1);
-  const qa = hash === 'autoplay' || hash === 'autoplay-deaths' || hash === 'stress';
+  // QA: #autoplay, #autoplay-deaths, #stress (both worlds); add -w2 for World 02 only.
+  const qa = hash.indexOf('autoplay') === 0 || hash.indexOf('stress') === 0;
+  const qaWorld2 = /-w2$/.test(hash);
+  const qaDeaths = hash.indexOf('deaths') >= 0 || hash.indexOf('stress') === 0;
 
   let engine = null;
   async function boot() {
@@ -510,10 +513,13 @@
       if (qa) {
         args.push('--autoplay');
       }
-      if (hash === 'autoplay-deaths' || hash === 'stress') {
+      if (qa && qaWorld2) {
+        args.push('--autoplay-world=2', '--autoplay-one-world');
+      }
+      if (qa && qaDeaths) {
         args.push('--autoplay-die=50,80');
       }
-      if (hash === 'stress') {
+      if (hash.indexOf('stress') === 0) {
         args.push('--autoplay-loops=4');
       }
     }
