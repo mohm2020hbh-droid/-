@@ -4,7 +4,8 @@ extends TestCase
 ## exact same obstacle timing. test_world_02_playthrough runs the same tests
 ## on World 02.
 
-const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres"]
+const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres",
+	"res://levels/world_03/world_03.tres"]
 
 var WORLD: WorldData
 

@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_data")
-id = &"w03_l01"
-display_name = "First Flip"
-tagline = "Hard"
-scene_path = "res://levels/world_03/level_01.tscn"
-speed_scale = 1.15
+id = &"w03_l04"
+display_name = "Distortion"
+tagline = "Brutal"
+scene_path = "res://levels/world_03/level_04.tscn"
+speed_scale = 1.24

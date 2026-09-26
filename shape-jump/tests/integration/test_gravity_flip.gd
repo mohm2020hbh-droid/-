@@ -253,3 +253,59 @@ func test_the_drawing_turns_but_the_body_never_does() -> void:
 	assert_near(absf(player.visual.rotation), PI, 0.01, "the entity stands on the ceiling (half a turn)")
 	assert_eq(player.rotation, 0.0, "the body never turns")
 	assert_eq((player.get_node(^"BodyShape") as CollisionShape2D).rotation, 0.0, "nor its collision box")
+
+
+## Edge case: gravity turns just as the player runs off the end of the
+## ground: no coyote jump is left (the floor is gone), it lands on the ceiling.
+func test_a_flip_at_the_edge_of_a_platform_still_lands_on_the_ceiling() -> void:
+	(arena.get_child(0) as Block).size = Vector2(22 * T, T)  # The ground ends at x = 2 tiles.
+	_spawn()
+	await _tick_until(func() -> bool: return player.global_position.x >= 2.0 * T - 2.0, 60)
+	_flip(true)
+	player.request_jump()  # A tap at the very edge: the flip has taken the floor.
+	assert_true(await _tick_until(_on_ceiling, 120), "reaches the ceiling")
+	assert_false(player.is_dead(), "alive")
+	assert_eq(ground_jumps, 0, "no ground jump from a floor that is no longer below")
+
+
+## Edge case: standing on a moving platform when gravity turns: the player
+## leaves it (no platform velocity kept as a floor) and lands on the ceiling.
+func test_a_flip_on_a_moving_platform_leaves_it_cleanly() -> void:
+	var lift := arena.block(Vector2(-2 * T, -2 * T), Vector2(8 * T, T * 0.5), true)
+	_spawn()
+	player.respawn_at(Vector2(0, -2 * T), true)
+	for i in 10:
+		lift.position.y -= 2.0  # Rising under the player.
+		await arena.ticks(1)
+	assert_true(player.is_on_floor(), "carried by the platform")
+	_flip(true)
+	for i in 60:
+		lift.position.y -= 2.0
+		await arena.ticks(1)
+	assert_true(_on_ceiling() or await _tick_until(_on_ceiling, 60), "on the ceiling")
+	assert_false(player.is_dead(), "never squeezed")
+
+
+## Edge case: a flood of taps (every tick) is still one jump and one double
+## jump before the next landing, on either surface.
+func test_very_fast_input_is_two_jumps_until_landing() -> void:
+	_spawn(true)
+	await arena.ticks(3)
+	for i in 30:
+		player.request_jump()
+		await arena.ticks(1)
+		if i > 3 and player.is_on_floor():
+			break
+	assert_eq(ground_jumps, 1, "one jump")
+	assert_eq(air_jumps, 1, "one double jump")
+
+
+## Edge case: upside down, a ceiling ledge a few pixels past the feet is
+## climbed like a step on the ground (the ledge assist works mirrored).
+func test_landing_on_a_ceiling_corner_uses_the_ledge_assist_mirrored() -> void:
+	# A ledge hanging 8 px below the ceiling (a block's thinnest), ahead.
+	arena.block(Vector2(3 * T, CEILING_Y), Vector2(4 * T, 8.0))
+	_spawn(true)
+	assert_true(await _tick_until(func() -> bool: return player.global_position.x > 5 * T, 90), "runs on")
+	assert_false(player.is_dead(), "the small step is not a wall")
+	assert_near(player.get_feet_position().y, CEILING_Y + 8.0, 1.0, "standing on the ledge's underside")

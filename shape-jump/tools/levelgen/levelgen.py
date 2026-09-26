@@ -890,6 +890,10 @@ class Level:
         self.start_up = False    # World 03: gravity at the start
         self.kill_top = None     # World 03: world y (px) above which the player dies
         self.camera_offset = None  # World 03: the view's height above the player (px, negative)
+        # World 03: tune windows as the audit measures them (any jump that
+        # survives counts), so a phase that lets an early tap survive as a
+        # double jump is seen as the wide window it is.
+        self.tune_any_kind = False
         self._gravity = None     # cached gravity events [(x px, up)]
         self._sim = None
         self._path = None
@@ -1426,7 +1430,7 @@ class Level:
             self.notes.append(f"{element.base} x={element.x_range()[0] / T:.1f}: clearance {best:.1f} px")
         return best
 
-    def _survival_window(self, route, j, start, stop_x, limit=24):
+    def _survival_window(self, route, j, start, stop_x, limit=24, any_kind=False):
         """Contiguous tick shifts of tap j around 0 that survive from `start` to stop_x."""
         step = self.tiles_per_tick()
 
@@ -1437,8 +1441,9 @@ class Level:
             r[j] = route[j] + k * step
             if not self._lives(self.simulate(route=sorted(r), start=start, stop_x=stop_x)):
                 return False
-            # A shift only counts while the tap still makes its intended jump.
-            return not intended or self.last_kinds.get(r[j]) == intended
+            # A shift only counts while the tap still makes its intended jump
+            # (unless any surviving jump counts: tune_any_kind).
+            return any_kind or not intended or self.last_kinds.get(r[j]) == intended
         if not ok(0) or not self._as_designed(route, start[0] if start else 0.0, stop_x):
             return None
         lo = hi = 0
@@ -1904,7 +1909,7 @@ class Level:
             if any(self._lives(self.simulate(route=r, start=start, stop_x=stop_x + 8.0)) for r in lazy):
                 reasons["skipping a tap survives"] = reasons.get("skipping a tap survives", 0) + 1
                 continue
-            windows = [self._survival_window(route, j, start, stop_x) for j in js]
+            windows = [self._survival_window(route, j, start, stop_x, any_kind=self.tune_any_kind) for j in js]
             if any(w is None for w in windows):
                 _, death = self.simulate(route=route, start=start, stop_x=stop_x)
                 if death:
@@ -2109,6 +2114,7 @@ class Level:
         spare = [] if only else self.necessity()
         if spare:
             print("  spare taps (level survives without them):", spare)
+        taps = []
         if windows:
             sizes = []
             for j, w in enumerate(self.windows(only=only)):
@@ -2119,11 +2125,13 @@ class Level:
                     continue
                 ms = (w[1] - w[0] + 1) * 1000 / 60
                 sizes.append(ms)
+                taps.append((base[j], ms))
                 kind = kinds[j] if j < len(kinds) else "?"
                 print(f"  T{j + 1:02d} {kind} x={base[j]:7.2f}  [{w[0]:+3d},{w[1]:+3d}] {ms:4.0f} ms")
             if sizes:
                 srt = sorted(sizes)
                 print(f"  windows: min {srt[0]:.0f} ms, median {srt[len(srt) // 2]:.0f} ms")
+        return taps
 
     # --------------------------------------------------------------- write --
     def write(self, root, scene_path, data_path):

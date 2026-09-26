@@ -1,7 +1,7 @@
 class_name Autoplay
 extends Node
 ## QA switch (never on in normal play): `-- --autoplay` makes the game play
-## itself with each level's intended route (World01Routes, World02Routes),
+## itself with each level's intended route (World01Routes .. World03Routes),
 ## the same way the integration tests do, so a real build (the web export
 ## included) can be run from the first level to the last world's end without
 ## a person. After a world's last level it goes on to the next world.

@@ -181,11 +181,11 @@
     <div class="actions" id="actions" hidden>
       <button type="button" class="primary" id="play-normal">
         <b lang="en">PLAY</b>
-        <small>التقدّم العادي: المرحلة الأولى مفتوحة، وكل مرحلة تفتح التي بعدها، وإنهاء World 01 يفتح World 02</small>
+        <small>التقدّم العادي: المرحلة الأولى مفتوحة، وكل مرحلة تفتح التي بعدها، وإنهاء كل عالم يفتح الذي يليه (حتى World 03)</small>
       </button>
       <button type="button" id="play-test">
         <b lang="en">TEST MODE</b>
-        <small>كل مراحل العالمين مفتوحة: اختر WORLD 01 أو WORLD 02 من أعلى شاشة البداية</small>
+        <small>كل مراحل العوالم الثلاثة مفتوحة: اختر WORLD 01 أو 02 أو 03 من أعلى شاشة البداية</small>
       </button>
     </div>
 
@@ -346,9 +346,10 @@
   }
 
   const hash = (location.hash || '').slice(1);
-  // QA: #autoplay, #autoplay-deaths, #stress (both worlds); add -w2 for World 02 only.
+  // QA: #autoplay, #autoplay-deaths, #stress (every world); add -w2 / -w3 for that world only.
   const qa = hash.indexOf('autoplay') === 0 || hash.indexOf('stress') === 0;
-  const qaWorld2 = /-w2$/.test(hash);
+  const qaWorldMatch = /-w(\d)$/.exec(hash);
+  const qaWorld = qaWorldMatch ? parseInt(qaWorldMatch[1], 10) : 0;
   const qaDeaths = hash.indexOf('deaths') >= 0 || hash.indexOf('stress') === 0;
 
   let engine = null;
@@ -513,8 +514,8 @@
       if (qa) {
         args.push('--autoplay');
       }
-      if (qa && qaWorld2) {
-        args.push('--autoplay-world=2', '--autoplay-one-world');
+      if (qa && qaWorld > 0) {
+        args.push('--autoplay-world=' + qaWorld, '--autoplay-one-world');
       }
       if (qa && qaDeaths) {
         args.push('--autoplay-die=50,80');

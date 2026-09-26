@@ -79,7 +79,9 @@ func _draw() -> void:
 			var k := (i + 1) / 5.0
 			var y := lerpf(top * 0.5, toward, k)
 			var w := length * (0.5 - 0.1 * i)
-			draw_arc(Vector2(length * 0.5, y), w * 0.5, PI, TAU if inside_up else PI * 2.0, 24,
+			# Domes toward the ceiling (upper half circles) or bowls toward the ground.
+			var from := PI if inside_up else 0.0
+			draw_arc(Vector2(length * 0.5, y), w * 0.5, from, from + PI, 24,
 				Color(color, 0.25 + 0.1 * i), 2.0, true)
 
 

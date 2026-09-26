@@ -30,7 +30,8 @@ shape-jump/
 ├── src/
 │   ├── autoload/                 events.gd (Signal Bus) · save_system.gd
 │   ├── audio/                    audio_manager.gd (Autoload) · sound_library.gd
-│   ├── core/                     game_const.gd · palette.gd (ثيمات العوالم: red / mono) · neon.gd · soft_light.tres
+│   ├── core/                     game_const.gd · palette.gd (ثيمات العوالم: red / mono / galaxy) · neon.gd · soft_light.tres
+│   ├── gravity/gravity_state.gd  World 03: مصدر الحقيقة الوحيد لحالة الجاذبية (DOWN / UP) ومرحلتها (NORMAL / FLIPPING)
 │   ├── player/
 │   │   ├── movement_config.gd    Resource: أرقام الحركة (ومنها Double Jump)
 │   │   ├── player_motor.gd       قواعد القفز النقية (بلا Nodes): Jump/Double Jump، Coyote، Buffer، طابور اللمسات
@@ -52,26 +53,30 @@ shape-jump/
 │   │       ├── hazard_art.gd · slab_art.gd · hazard_pulse.gd   رسم الأخطار
 │   │       ├── World 02: shadow_block · mirror_wall · orbit_ring · black_column · shadow_chaser
 │   │       │            maze_panel · binary_gate · whiteout_zone · timeline (خطوات مشتركة)
+│   │       ├── galaxy/ (World 03): gravity_gate · flip_field · gravity_mine · falling_asteroid · ceiling_trap
+│   │       │            orbital_hazard · dual_hazard · gravity_echo · gravity_lens · galaxy_block · galaxy_art
 │   │       └── shard · checkpoint · finish_gate
-│   ├── camera/game_camera.gd     Follow + Look-ahead + Shake + get_view_rect
+│   ├── camera/game_camera.gd     Follow + Look-ahead + Shake + get_view_rect + دوران نصف دورة مع الجاذبية
 │   ├── background/               Parallax إجرائي: background.tscn (أحمر) · background_mono.tscn (أبيض/أسود)
+│   │                             background_galaxy.tscn + galaxy_backdrop.gd (مجرة مقطّعة Chunks + متحكم ألوان الجاذبية)
 │   ├── game/
 │   │   ├── game_session.gd       State Machine + الوسيط الوحيد في مشهد اللعب
 │   │   ├── progression.gd        قواعد الفتح (دوال static فوق SaveSystem)
 │   │   ├── progress_tracker.gd   تقدّم المستوى % بالمسافة + عقوبة الموت 25 نقطة
-│   │   ├── autoplay.gd           مفتاح QA (`-- --autoplay`): اللعبة تلعب نفسها بمسار كل مستوى، في العالمين
+│   │   ├── autoplay.gd           مفتاح QA (`-- --autoplay`): اللعبة تلعب نفسها بمسار كل مستوى، في العوالم الثلاثة
 │   │   ├── whiteout_veil.gd      طبقة الـWHITEOUT: أبيض فوق العالم + كل حافة آمنة وكل Hitbox بالأسود
 │   │   ├── tap_input.gd          الإدخال → "tapped" / "pause_requested"
 │   │   ├── score_tracker.gd      منطق النقاط النقي
-│   │   └── game.tscn             المشهد الرئيسي (worlds = [world_01.tres, world_02.tres])
+│   │   └── game.tscn             المشهد الرئيسي (worlds = [world_01.tres, world_02.tres, world_03.tres])
 │   └── ui/                       hud · start_overlay (تبويبات العوالم) + level_card · death_banner · level_complete_panel · pause_menu · screen_fade
-│                                 ui_look.gd + theme_mono.tres: لبس الواجهة بثيم العالم
+│                                 ui_look.gd + theme_mono.tres / theme_galaxy.tres: لبس الواجهة بثيم العالم
 ├── levels/world_01/              level_01…05.tscn/.tres + world_01.tres + world_01_routes.gd (مُولَّدة)
 ├── levels/world_02/              نفس البنية لـWorld 02 (مُولَّدة من world_02.py)
+├── levels/world_03/              نفس البنية لـWorld 03 (مُولَّدة من world_03.py)
 ├── assets/audio/                 sfx/*.wav · ambient/void_drone.ogg · sound_library.tres
 ├── tools/                        (.gdignore — لا يستورده Godot)
-│   ├── levelgen/                 levelgen.py · world_01.py · world_02.py · README.md
-│   ├── audio/gen_sfx.py          توليد الأصوات
+│   ├── levelgen/                 levelgen.py · world_01.py · world_02.py · world_03.py · README.md
+│   ├── audio/gen_sfx.py          توليد الأصوات (gen_sfx_galaxy.py: صوت القلب وإنذاره)
 │   └── web/                      build_playtest.py + playtest_page.html (نسخة الويب للتجربة)
 └── tests/
     ├── test_runner.* · test_case.gd
@@ -156,6 +161,14 @@ PLAYING ──finish──► COMPLETE ──NEXT LEVEL──► READY (المس
 
 ترتيب التنفيذ في كل Tick: `Level` (−10) ← `Player` (0) ← `GameCamera` (+10) عبر `process_physics_priority`.
 
+### الجاذبية (World 03)
+- **مصدر حقيقة واحد:** `GravityState` (RefCounted) يملكه `GameSession`، ويقرؤه `Player` و`GameCamera` و`Level` وعناصر المجرة والخلفية. `up` (DOWN / UP)، `phase` (NORMAL / FLIPPING، 0.4 ث)، `down_sign()`، وإشارة `flipped(up, instant)`. `set_up` بلا أثر إن لم تتغير القيمة: لا قلب مكرر.
+- **الجاذبية دالة نقية للساعة:** مركز اللاعب `x = origin + speed·t` (سرعة الجري ثابتة)، فالبوابة عند x تقلب في زمن ثابت. `Level.gravity_up_at(t)` / `last_gravity_change(t)` / `next_gravity_change(t)` من أحداث البوابات والحقول (`gravity_events()`)، و`GameSession` يضبط خط الجري (`set_run_line`). `rewind_to` يعيد الجاذبية الصحيحة فورًا، والـRespawn يأخذها من الجدول (لا من الحالة الحية: الاستئناف بعد فقد سياق WebGL يصل للـCheckpoint من بداية المستوى).
+- **اللاعب:** الـMotor يعمل في إطار محلي (+y نحو السطح الحالي)؛ `Player` يحوّل بـ`g = down_sign()` ويضبط `up_direction`. عند القلب: نفس السرعة في العالم (`motor.flip()` يعكسها محليًا)، لا أرض ولا Coyote، الـBuffer يسقط، اللمسات في الطابور تبقى، والـDouble Jump يبقى. الرسم يدور نصف دورة؛ جسم التصادم لا يدور أبدًا.
+- **الكاميرا:** `ignore_rotation = false`؛ تدور نصف دورة بـsmoothstep على زمن الانتقال (Snap عند الاستعادة)، دائمًا بالاتجاه نفسه؛ التأطير الأفقي في العالم ثابت فالنظر للأمام يتبع اتجاه اللعب. الإزاحة العمودية وحدود السقوط وخطا الموت (`kill_y` / `kill_top`) كلها بـ`down_sign()`. الـHUD في CanvasLayer لا يدور.
+- **الشكل:** `galaxy_backdrop.gd` يمزج حالتي الألوان (GROUND أزرق/بنفسجي، CEILING برتقالي/كهرماني) على زمن الانتقال: السماء، الطبقات، `level.modulate`، الجمر؛ مع حلقة ضوء عند اللاعب ونبضة شاشة خفيفة. الأخطار ماجنتا ثابتة (`GalaxyArt.DANGER`) مقروءة في الحالتين.
+
+
 **سرعة جري ثابتة:** `Player` يطرح سرعة الأرضية الأفقية من حركته. السرعة تُقرأ من `PhysicsServer2D.body_get_direct_state` للجسم الذي يقف عليه (السرعة **الحالية** في نقطة التلامس)، لا من `get_platform_velocity()` التي تتأخر Tick على المنصات المتسارعة. بذلك يبقى `x(t)` خطيًا تمامًا، والمسار (قائمة مواضع اللمس) يصف حلًا كاملًا للمستوى.
 
 ---
@@ -203,6 +216,7 @@ completed=true
 - لا `instantiate()` أثناء اللعب: كل الـParticles موجودة مسبقًا وتُعاد.
 - لا Post-Processing؛ الخلفية إجرائية بلا Textures كبيرة.
 - الأخطار لا تراقب شيئًا (`monitoring = false`): الـHurtbox وحده يفحص طبقتها.
+- خلفية World 03 طبقات ملفوفة مقطّعة إلى Chunks بعرض 1024 px، كل Chunk عنصر رسم مستقل يُرسم مرة واحدة، فيستبعد الـRenderer ما خارج الشاشة (من 952 Draw Call إلى ≈ 340، ومن 20,880 Primitive إلى ≈ 4,000). كل تغيير الجاذبية يغيّر `modulate` وTransforms فقط؛ السماء وحدها تُعاد رسمًا أثناء الانتقال. لا Render Targets ولا Shaders ولا Textures جديدة.
 
 ---
 

@@ -322,8 +322,9 @@ func _set_state(next: State) -> void:
 
 func _respawn_player() -> void:
 	level.rewind_to(_respawn.level_time)
-	# The saved gravity is the authority; the level's schedule gives the same
-	# state at that time by construction (checkpoints sit on steady ground).
+	# The respawn's gravity is the schedule's at that time (checkpoints sit on
+	# steady ground, never at a gate); rewind_to already applied it, this
+	# makes it explicit for the player and camera snap below.
 	gravity.set_up(_respawn.gravity_up, true)
 	score.restore(_respawn.score)
 	player.respawn_at(_respawn.feet, true)
@@ -457,7 +458,10 @@ func _on_shard_collected(shard: Shard) -> void:
 func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	_respawn = RespawnPoint.new(respawn_feet_at(checkpoint.global_position), 0.0, score.snapshot())
 	_respawn.level_time = time_at(_respawn.feet.x)
-	_respawn.gravity_up = gravity.up
+	# From the level's schedule, not the live state: a resumed run (a fresh
+	# engine after a lost WebGL context) reaches its checkpoint from the start
+	# of the level, with the start's gravity still in place.
+	_respawn.gravity_up = level.gravity_up_at(_respawn.level_time)
 	_last_checkpoint = checkpoint
 	hud.mark_checkpoint(level.get_checkpoints().find(checkpoint))
 	_publish_resume_point()

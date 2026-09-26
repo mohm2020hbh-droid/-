@@ -8,7 +8,8 @@ extends Node
 ##   (all other taps unchanged) and still survive to the next checkpoint.
 ## - --exploits: lazy strategies (never tap, tap on a fixed rhythm) must die.
 
-const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres"]
+const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres",
+	"res://levels/world_03/world_03.tres"]
 const HORIZON_TAPS := 3
 const MAX_SHIFT := 24
 

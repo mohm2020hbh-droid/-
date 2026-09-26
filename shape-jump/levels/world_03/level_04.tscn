@@ -1,0 +1,867 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/level/level.gd" id="level"]
+[ext_resource type="Resource" path="res://levels/world_03/level_04.tres" id="data"]
+[ext_resource type="Script" path="res://src/level/elements/checkpoint.gd" id="checkpoint"]
+[ext_resource type="Script" path="res://src/level/elements/finish_gate.gd" id="finish_gate"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/ceiling_trap.gd" id="galaxy_ceiling_trap"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/dual_hazard.gd" id="galaxy_dual_hazard"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/falling_asteroid.gd" id="galaxy_falling_asteroid"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/flip_field.gd" id="galaxy_flip_field"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/galaxy_block.gd" id="galaxy_galaxy_block"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/gravity_echo.gd" id="galaxy_gravity_echo"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/gravity_gate.gd" id="galaxy_gravity_gate"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/gravity_lens.gd" id="galaxy_gravity_lens"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/gravity_mine.gd" id="galaxy_gravity_mine"]
+[ext_resource type="Script" path="res://src/level/elements/galaxy/orbital_hazard.gd" id="galaxy_orbital_hazard"]
+[ext_resource type="PackedScene" path="res://src/level/elements/shard.tscn" id="shard"]
+
+[node name="Level04" type="Node2D"]
+script = ExtResource("level")
+data = ExtResource("data")
+kill_y = 448
+kill_top = -800
+camera_offset = -140
+
+[node name="SpawnPoint" type="Marker2D" parent="."]
+position = Vector2(256, 0)
+
+[node name="Shard" parent="." instance=ExtResource("shard")]
+position = Vector2(448, -32)
+
+[node name="Shard2" parent="." instance=ExtResource("shard")]
+position = Vector2(576, -32)
+
+[node name="Shard3" parent="." instance=ExtResource("shard")]
+position = Vector2(704, -32)
+
+[node name="Start" type="Node2D" parent="."]
+
+[node name="GravityMine" type="Area2D" parent="Start"]
+position = Vector2(1100.8, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.2
+
+[node name="GravityMine2" type="Area2D" parent="Start"]
+position = Vector2(1299.2, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.7
+
+[node name="GravityMine3" type="Area2D" parent="Start"]
+position = Vector2(1593.6, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="GravityMine4" type="Area2D" parent="Start"]
+position = Vector2(1785.6, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.5
+
+[node name="GravityMine5" type="Area2D" parent="Start"]
+position = Vector2(1977.6, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="OrbitalHazard" type="Area2D" parent="Start"]
+position = Vector2(1785.6, -230.4)
+script = ExtResource("galaxy_orbital_hazard")
+radius = 83.2
+bodies = 2
+body_radius = 18
+spin = 2.5
+phase = 0.4417
+
+[node name="Chain" type="Node2D" parent="."]
+
+[node name="GravityLens" type="Node2D" parent="Chain"]
+position = Vector2(1964.8, -176)
+script = ExtResource("galaxy_gravity_lens")
+radius = 70
+
+[node name="CeilingTrap" type="Area2D" parent="Chain"]
+position = Vector2(2284.8, -0)
+script = ExtResource("galaxy_ceiling_trap")
+width = 166.4
+reach = 83.2
+facing = -1
+period = 1
+hold_ratio = 0.5
+phase = 0.3167
+warning_time = 0.3
+
+[node name="GravityGate" type="Node2D" parent="Chain"]
+position = Vector2(2368, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = true
+top = -352
+
+[node name="CeilingTrap2" type="Area2D" parent="Chain"]
+position = Vector2(2860.8, -352)
+script = ExtResource("galaxy_ceiling_trap")
+width = 192
+reach = 83.2
+facing = 1
+period = 1
+hold_ratio = 0.5
+phase = 0.4333
+warning_time = 0.3
+
+[node name="DualHazard" type="Area2D" parent="Chain"]
+position = Vector2(3417.6, -0)
+script = ExtResource("galaxy_dual_hazard")
+ceiling = -352
+width = 40
+low = 19.2
+high = 140.8
+period = 1
+hold_ratio = 0.5
+phase = 0.525
+alternate = true
+warning_time = 0.3
+
+[node name="GravityGate2" type="Node2D" parent="Chain"]
+position = Vector2(3424, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = false
+top = -352
+
+[node name="GravityMine" type="Area2D" parent="Chain"]
+position = Vector2(3916.8, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.6
+
+[node name="GravityMine2" type="Area2D" parent="Chain"]
+position = Vector2(4115.2, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.1
+
+[node name="CeilingTrap3" type="Area2D" parent="Chain"]
+position = Vector2(4396.8, -0)
+script = ExtResource("galaxy_ceiling_trap")
+width = 166.4
+reach = 83.2
+facing = -1
+period = 0.95
+hold_ratio = 0.5
+phase = 0
+warning_time = 0.3
+
+[node name="GravityGate3" type="Node2D" parent="Chain"]
+position = Vector2(4480, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = true
+top = -352
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="GalaxyBlock" type="StaticBody2D" parent="Walls"]
+position = Vector2(4704, -217.6)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(768, 313.6)
+
+[node name="CeilingTrap" type="Area2D" parent="Walls"]
+position = Vector2(4947.2, -352)
+script = ExtResource("galaxy_ceiling_trap")
+width = 140.8
+reach = 70.4
+facing = 1
+period = 0.95
+hold_ratio = 0.5
+phase = 0.075
+warning_time = 0.3
+
+[node name="CeilingTrap2" type="Area2D" parent="Walls"]
+position = Vector2(5267.2, -352)
+script = ExtResource("galaxy_ceiling_trap")
+width = 140.8
+reach = 70.4
+facing = 1
+period = 0.9
+hold_ratio = 0.5
+phase = 0.0833
+warning_time = 0.3
+
+[node name="GravityGate" type="Node2D" parent="Walls"]
+position = Vector2(5536, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = false
+top = -352
+
+[node name="GravityEcho" type="Node2D" parent="Walls"]
+position = Vector2(5794.16, -51.2)
+script = ExtResource("galaxy_gravity_echo")
+size = Vector2(224, 51.2)
+for_up = false
+
+[node name="GalaxyBlock2" type="StaticBody2D" parent="Walls"]
+position = Vector2(5922.16, -448)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(1831.92, 313.6)
+top_edge = false
+bottom_edge = true
+
+[node name="CeilingTrap3" type="Area2D" parent="Walls"]
+position = Vector2(6133.36, -0)
+script = ExtResource("galaxy_ceiling_trap")
+width = 140.8
+reach = 70.4
+facing = -1
+period = 0.9
+hold_ratio = 0.5
+phase = 0.5833
+warning_time = 0.3
+
+[node name="CeilingTrap4" type="Area2D" parent="Walls"]
+position = Vector2(6453.36, -0)
+script = ExtResource("galaxy_ceiling_trap")
+width = 140.8
+reach = 70.4
+facing = -1
+period = 0.95
+hold_ratio = 0.5
+phase = 0.625
+warning_time = 0.3
+
+[node name="Pit" type="Node2D" parent="."]
+
+[node name="FlipField" type="Node2D" parent="Pit"]
+position = Vector2(7978.08, -0)
+script = ExtResource("galaxy_flip_field")
+length = 640
+top = -352
+inside_up = true
+outside_up = false
+pit = true
+
+[node name="GravityMine" type="Area2D" parent="Pit"]
+position = Vector2(8477.28, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.3
+
+[node name="DualHazard" type="Area2D" parent="Pit"]
+position = Vector2(9279.44, -0)
+script = ExtResource("galaxy_dual_hazard")
+ceiling = -352
+width = 40
+low = 19.2
+high = 140.8
+period = 0.95
+hold_ratio = 0.5
+phase = 0.7965
+alternate = false
+warning_time = 0.3
+
+[node name="Lanes" type="Node2D" parent="."]
+
+[node name="CeilingTrap" type="Area2D" parent="Lanes"]
+position = Vector2(9695.44, -0)
+script = ExtResource("galaxy_ceiling_trap")
+width = 166.4
+reach = 83.2
+facing = -1
+period = 0.95
+hold_ratio = 0.5
+phase = 0.2632
+warning_time = 0.3
+
+[node name="GravityGate" type="Node2D" parent="Lanes"]
+position = Vector2(9778.64, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = true
+top = -352
+
+[node name="GalaxyBlock" type="StaticBody2D" parent="Lanes"]
+position = Vector2(9989.84, -201.6)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(1344, 41.6)
+bottom_edge = true
+
+[node name="GravityMine" type="Area2D" parent="Lanes"]
+position = Vector2(10213.84, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="CeilingTrap2" type="Area2D" parent="Lanes"]
+position = Vector2(10495.44, -352)
+script = ExtResource("galaxy_ceiling_trap")
+width = 128
+reach = 76.8
+facing = 1
+period = 0.9
+hold_ratio = 0.5
+phase = 0.9583
+warning_time = 0.3
+
+[node name="GravityMine2" type="Area2D" parent="Lanes"]
+position = Vector2(10828.24, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.6
+
+[node name="CeilingTrap3" type="Area2D" parent="Lanes"]
+position = Vector2(11109.84, -352)
+script = ExtResource("galaxy_ceiling_trap")
+width = 128
+reach = 76.8
+facing = 1
+period = 0.9
+hold_ratio = 0.5
+phase = 0.9
+warning_time = 0.3
+
+[node name="DoubleChain" type="Node2D" parent="."]
+
+[node name="GalaxyBlock" type="StaticBody2D" parent="DoubleChain"]
+position = Vector2(12293.2, -448)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(268.8, 172.8)
+top_edge = false
+bottom_edge = true
+
+[node name="GalaxyBlock2" type="StaticBody2D" parent="DoubleChain"]
+position = Vector2(13100.0533, -448)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(192, 204.8)
+top_edge = false
+bottom_edge = true
+
+[node name="Turning" type="Node2D" parent="."]
+
+[node name="DualHazard" type="Area2D" parent="Turning"]
+position = Vector2(14803.9733, -0)
+script = ExtResource("galaxy_dual_hazard")
+ceiling = -352
+width = 40
+low = 19.2
+high = 140.8
+period = 0.95
+hold_ratio = 0.5
+phase = 0.2846
+alternate = true
+warning_time = 0.3
+
+[node name="GravityGate" type="Node2D" parent="Turning"]
+position = Vector2(14810.3733, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = false
+top = -352
+
+[node name="GravityMine" type="Area2D" parent="Turning"]
+position = Vector2(15373.5733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="FallingAsteroid" type="Area2D" parent="Turning"]
+position = Vector2(15373.5733, -0)
+script = ExtResource("galaxy_falling_asteroid")
+ceiling = -352
+radius = 20
+period = 1
+phase = 0.3167
+warning_time = 0.45
+speed = 900
+
+[node name="CeilingTrap" type="Area2D" parent="Turning"]
+position = Vector2(15783.1733, -0)
+script = ExtResource("galaxy_ceiling_trap")
+width = 166.4
+reach = 83.2
+facing = -1
+period = 0.9
+hold_ratio = 0.5
+phase = 0.6583
+warning_time = 0.3
+
+[node name="GravityGate2" type="Node2D" parent="Turning"]
+position = Vector2(15866.3733, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = true
+top = -352
+
+[node name="GravityMine2" type="Area2D" parent="Turning"]
+position = Vector2(16429.5733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="OrbitalHazard" type="Area2D" parent="Turning"]
+position = Vector2(16429.5733, -185.6)
+script = ExtResource("galaxy_orbital_hazard")
+radius = 96
+bodies = 3
+body_radius = 18
+spin = -2.6
+phase = 0.6655
+
+[node name="DualHazard2" type="Area2D" parent="Turning"]
+position = Vector2(16915.9733, -0)
+script = ExtResource("galaxy_dual_hazard")
+ceiling = -352
+width = 40
+low = 19.2
+high = 140.8
+period = 0.9
+hold_ratio = 0.5
+phase = 0.7167
+alternate = true
+warning_time = 0.3
+
+[node name="GravityGate3" type="Node2D" parent="Turning"]
+position = Vector2(16922.3733, -0)
+script = ExtResource("galaxy_gravity_gate")
+target_up = false
+top = -352
+
+[node name="DualHazard3" type="Area2D" parent="Turning"]
+position = Vector2(17479.1733, -0)
+script = ExtResource("galaxy_dual_hazard")
+ceiling = -352
+width = 40
+low = 19.2
+high = 140.8
+period = 0.9
+hold_ratio = 0.5
+phase = 0.85
+alternate = false
+warning_time = 0.3
+
+[node name="GravityMine3" type="Area2D" parent="Turning"]
+position = Vector2(17907.9733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="GravityMine4" type="Area2D" parent="Turning"]
+position = Vector2(18099.9733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.5
+
+[node name="GravityMine5" type="Area2D" parent="Turning"]
+position = Vector2(18291.9733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="OrbitalHazard2" type="Area2D" parent="Turning"]
+position = Vector2(18099.9733, -230.4)
+script = ExtResource("galaxy_orbital_hazard")
+radius = 83.2
+bodies = 2
+body_radius = 18
+spin = 2.7
+phase = 0.9903
+
+[node name="GravityMine6" type="Area2D" parent="Turning"]
+position = Vector2(18643.9733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="GravityMine7" type="Area2D" parent="Turning"]
+position = Vector2(18835.9733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0.5
+
+[node name="GravityMine8" type="Area2D" parent="Turning"]
+position = Vector2(19027.9733, -0)
+script = ExtResource("galaxy_gravity_mine")
+ceiling = -352
+radius = 22
+lift = 10
+fall_accel = 2600
+bob = 5
+bob_speed = 3
+phase = 0
+
+[node name="FallingAsteroid2" type="Area2D" parent="Turning"]
+position = Vector2(18835.9733, -0)
+script = ExtResource("galaxy_falling_asteroid")
+ceiling = -352
+radius = 20
+period = 0.95
+phase = 0.3513
+warning_time = 0.45
+speed = 900
+
+[node name="GalaxyBlock" type="StaticBody2D" parent="Turning"]
+position = Vector2(-768, -0)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(8765.28, 96)
+
+[node name="GalaxyBlock2" type="StaticBody2D" parent="Turning"]
+position = Vector2(8842.08, -0)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(11709.0933, 96)
+
+[node name="GalaxyBlock3" type="StaticBody2D" parent="Turning"]
+position = Vector2(-768, -448)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(12345.04, 96)
+top_edge = false
+bottom_edge = true
+
+[node name="GalaxyBlock4" type="StaticBody2D" parent="Turning"]
+position = Vector2(13292.0533, -448)
+script = ExtResource("galaxy_galaxy_block")
+size = Vector2(7259.12, 96)
+top_edge = false
+bottom_edge = true
+
+[node name="FinishGate" type="Area2D" parent="Turning"]
+position = Vector2(19527.1733, -0)
+script = ExtResource("finish_gate")
+
+[node name="Shard" parent="Start" instance=ExtResource("shard")]
+position = Vector2(960, -57)
+
+[node name="Shard2" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1088, -169)
+
+[node name="Shard3" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1216, -189)
+
+[node name="Shard4" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1344, -95)
+
+[node name="Shard5" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1472, -105)
+
+[node name="Shard6" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1600, -186)
+
+[node name="Shard7" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1728, -290)
+
+[node name="Shard8" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1856, -341)
+
+[node name="Shard9" parent="Start" instance=ExtResource("shard")]
+position = Vector2(1984, -288)
+
+[node name="Shard" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(3200, -309)
+
+[node name="Shard2" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(3354, -195)
+
+[node name="Shard3" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(3507, -141)
+
+[node name="Shard4" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(3661, -43)
+
+[node name="Shard5" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(3814, -82)
+
+[node name="Shard6" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(3968, -186)
+
+[node name="Shard7" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(4122, -157)
+
+[node name="Shard8" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(4275, -43)
+
+[node name="Shard9" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(4429, -175)
+
+[node name="Shard10" parent="Chain" instance=ExtResource("shard")]
+position = Vector2(4582, -216)
+
+[node name="Shard" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(4768, -309)
+
+[node name="Shard2" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(4909, -258)
+
+[node name="Shard3" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(5050, -268)
+
+[node name="Shard4" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(5190, -295)
+
+[node name="Shard5" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(5331, -240)
+
+[node name="Shard6" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(5472, -309)
+
+[node name="Shard7" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(5613, -324)
+
+[node name="Shard8" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(5754, -172)
+
+[node name="Shard9" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(5894, -43)
+
+[node name="Shard10" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(6035, -43)
+
+[node name="Shard11" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(6176, -125)
+
+[node name="Shard12" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(6317, -43)
+
+[node name="Shard13" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(6458, -129)
+
+[node name="Shard14" parent="Walls" instance=ExtResource("shard")]
+position = Vector2(6598, -43)
+
+[node name="Shard" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10053.92, -315)
+
+[node name="Shard2" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10155.92, -225)
+
+[node name="Shard3" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10258.92, -236)
+
+[node name="Shard4" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10360.92, -315)
+
+[node name="Shard5" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10463.92, -254)
+
+[node name="Shard6" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10565.92, -225)
+
+[node name="Shard7" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10667.92, -301)
+
+[node name="Shard8" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10770.92, -254)
+
+[node name="Shard9" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10872.92, -221)
+
+[node name="Shard10" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(10975.92, -301)
+
+[node name="Shard11" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(11077.92, -254)
+
+[node name="Shard12" parent="Lanes" instance=ExtResource("shard")]
+position = Vector2(11179.92, -225)
+
+[node name="Shard" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(11589.92, -258)
+
+[node name="Shard2" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(11691.92, -177)
+
+[node name="Shard3" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(11794.92, -160)
+
+[node name="Shard4" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(11896.92, -212)
+
+[node name="Shard5" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(11999.92, -113)
+
+[node name="Shard6" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12101.92, -64)
+
+[node name="Shard7" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12203.92, -79)
+
+[node name="Shard8" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12306.92, -173)
+
+[node name="Shard9" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12408.92, -232)
+
+[node name="Shard10" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12511.92, -160)
+
+[node name="Shard11" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12613.92, -96)
+
+[node name="Shard12" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12715.92, -87)
+
+[node name="Shard13" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12818.92, -145)
+
+[node name="Shard14" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(12920.92, -98)
+
+[node name="Shard15" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(13023.92, -37)
+
+[node name="Shard16" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(13125.92, -38)
+
+[node name="Shard17" parent="DoubleChain" instance=ExtResource("shard")]
+position = Vector2(13227.92, -116)
+
+[node name="Shard" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(16154.84, -309)
+
+[node name="Shard2" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(16294.84, -227)
+
+[node name="Shard3" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(16435.84, -160)
+
+[node name="Shard4" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(16576.84, -212)
+
+[node name="Shard5" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(16717.84, -309)
+
+[node name="Shard6" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(16858.84, -195)
+
+[node name="Shard7" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(16998.84, -152)
+
+[node name="Shard8" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(17139.84, -43)
+
+[node name="Shard9" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(17280.84, -94)
+
+[node name="Shard10" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(17421.84, -186)
+
+[node name="Shard11" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(17562.84, -164)
+
+[node name="Shard12" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(17702.84, -43)
+
+[node name="Shard13" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(17843.84, -157)
+
+[node name="Shard14" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(17984.84, -252)
+
+[node name="Shard15" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(18125.84, -337)
+
+[node name="Shard16" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(18266.84, -305)
+
+[node name="Shard17" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(18406.84, -114)
+
+[node name="Shard18" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(18547.84, -142)
+
+[node name="Shard19" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(18688.84, -248)
+
+[node name="Shard20" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(18829.84, -332)
+
+[node name="Shard21" parent="Turning" instance=ExtResource("shard")]
+position = Vector2(18970.84, -300)
+
+[node name="Checkpoint" type="Area2D" parent="Turning"]
+position = Vector2(6724.992, 0)
+script = ExtResource("checkpoint")
+
+[node name="Checkpoint2" type="Area2D" parent="Turning"]
+position = Vector2(13549.12, -352)
+script = ExtResource("checkpoint")
+rotation = 3.1416

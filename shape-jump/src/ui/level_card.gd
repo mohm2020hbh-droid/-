@@ -44,8 +44,14 @@ func _draw() -> void:
 	var font := get_theme_default_font()
 	var text_color := Palette.UI_TEXT if not locked else Color(Palette.UI_MUTED, 0.5)
 	draw_string(font, Vector2(0, 52), "%02d" % number, HORIZONTAL_ALIGNMENT_CENTER, size.x, 40, text_color)
-	draw_string(font, Vector2(0, size.y - 22), title.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, size.x, 16,
-		Color(text_color, 0.85))
+	var name_text := title.to_upper()
+	if font.get_string_size(name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x <= size.x - 12.0:
+		draw_string(font, Vector2(0, size.y - 22), name_text, HORIZONTAL_ALIGNMENT_CENTER, size.x, 16,
+			Color(text_color, 0.85))
+	else:
+		# A long name (THE HORRIFYING GALAXY) wraps onto two smaller lines.
+		draw_multiline_string(font, Vector2(6, size.y - 36), name_text, HORIZONTAL_ALIGNMENT_CENTER, size.x - 12.0,
+			14, 2, Color(text_color, 0.85))
 	if locked:
 		_draw_lock(Vector2(size.x - 24, 24), Color(Palette.UI_MUTED, 0.7))
 	elif completed:

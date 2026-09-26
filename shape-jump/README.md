@@ -1,8 +1,9 @@
-# Shape Jump — World 01 · World 02
+# Shape Jump — World 01 · World 02 · World 03
 
 لعبة Runner ثنائية الأبعاد بلمسة واحدة: نواة هندسية مضيئة تجري وحدها، وأنت تقرر متى تقفز — ومتى تقفز مرة ثانية في الهواء.
 World 01 "The Red Void": خمسة مستويات صعبة جدًا وعادلة، من AWAKENING إلى RED VOID.
 World 02 "The Monochrome Void": أبيض وأسود فقط، عشرة أنظمة جديدة (ظلال بلا أرض، جدران مرايا، حلقات دوّارة، Whiteout، أعمدة، أرضية منقسمة، منصات عائمة، ظل مطارد، متاهة دوّارة، بوابات ثنائية) وخمسة مستويات أصعب، من INVERSION إلى ABSOLUTE ZERO. يُفتح بإنهاء World 01.
+World 03 "The Horrifying Galaxy" (المجرة المرعبة): رعب كوني بين أرض وسقف عائمين، وميكانيكية واحدة جديدة: **قلب الجاذبية**. بوابات وحقول تقلب الجاذبية فتجري على السقف والكاميرا تدور نصف دورة والعالم يتحول من الأزرق البنفسجي إلى البرتقالي الكهرماني؛ ألغام تسقط مع الجاذبية، صخور، شفرات، شوكتان متقابلتان، أجسام مدارية، ممرات مقسومة وجدران مقلوبة. خمسة مستويات من FIRST FLIP إلى THE HORRIFYING GALAXY، ينتهي آخرها بـFINAL GRAVITY GAUNTLET. يُفتح بإنهاء World 02، وهو العالم الأخير.
 
 - التصميم: [docs/GDD.md](docs/GDD.md)
 - البنية التقنية: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -14,7 +15,7 @@ World 02 "The Monochrome Void": أبيض وأسود فقط، عشرة أنظمة
 
 1. ثبّت **Godot 4.7.2** (النسخة القياسية، ليست .NET): https://godotengine.org/download
 2. افتح Godot ← **Import** ← اختر الملف `shape-jump/project.godot`.
-3. اضغط **F5** (Run Project). تظهر شاشة اختيار المستوى: المستوى الأول مفتوح، وكل مستوى يُفتح بإنهاء الذي قبله، وWorld 02 يُفتح بإنهاء World 01 (تبويبا العالمين أعلى الشاشة).
+3. اضغط **F5** (Run Project). تظهر شاشة اختيار المستوى: المستوى الأول مفتوح، وكل مستوى يُفتح بإنهاء الذي قبله، وكل عالم يُفتح بإنهاء الذي قبله (تبويبات العوالم أعلى الشاشة).
 
 | الإدخال | الفعل |
 |---|---|
@@ -22,7 +23,7 @@ World 02 "The Monochrome Void": أبيض وأسود فقط، عشرة أنظمة
 | لمس بطاقة مستوى في شاشة البداية | اختيار المستوى (إن كان مفتوحًا) |
 | زر ❚❚ أعلى اليمين / Esc / P | إيقاف مؤقت |
 
-**لتجربة مستوى مغلق أثناء التطوير:** شغّل بـ`-- --unlock-all`، أو في `src/game/game.tscn` اضبط `start_world` (0–1) و`start_level` (0–4)، أو امسح الحفظ من `user://save.cfg`.
+**لتجربة مستوى مغلق أثناء التطوير:** شغّل بـ`-- --unlock-all`، أو في `src/game/game.tscn` اضبط `start_world` (0–2) و`start_level` (0–4)، أو امسح الحفظ من `user://save.cfg`.
 
 ## نسخة الويب للتجربة (Playtest)
 
@@ -32,7 +33,7 @@ cd export/playtest && python3 -m http.server 8000           # ثم افتح http
 ```
 
 - يصدّر إعداد **Web** (بدون Threads، فلا يحتاج أي Headers خاصة من السيرفر) ويجمع صفحة واحدة في `export/playtest/`: المحرك مضغوطًا (≈ 10MB)، وبيانات اللعبة مضمّنة في الصفحة.
-- الصفحة تعرض زرّين: **PLAY** (التقدّم العادي) و**TEST MODE** (كل مراحل العالمين مفتوحة). وضع الاختبار يمرّر `-- --unlock-all` للعبة؛ نفس الخيار يعمل على الكمبيوتر: `godot --path shape-jump -- --unlock-all`.
+- الصفحة تعرض زرّين: **PLAY** (التقدّم العادي) و**TEST MODE** (كل مراحل العوالم الثلاثة مفتوحة). وضع الاختبار يمرّر `-- --unlock-all` للعبة؛ نفس الخيار يعمل على الكمبيوتر: `godot --path shape-jump -- --unlock-all`.
 
 ## التصدير إلى Android
 
@@ -71,7 +72,7 @@ godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.
 
 | القيمة | الافتراضي | التأثير |
 |---|---|---|
-| Run Speed | 520 px/s | السرعة المرجعية (كل مستوى يضربها بـ`speed_scale`: World 01: 1.0 → 1.23، World 02: 1.10 → 1.24) |
+| Run Speed | 520 px/s | السرعة المرجعية (كل مستوى يضربها بـ`speed_scale`: World 01: 1.0 → 1.23، World 02: 1.10 → 1.24، World 03: 1.15 → 1.28) |
 | Jump Height / Time To Apex | 150 px / 0.36 s | القفزة؛ الجاذبية تُشتق تلقائيًا |
 | Double Jump Height | 150 px | ارتفاع القفزة الثانية من نقطة إطلاقها |
 | Air Jumps | 1 | عدد القفزات الهوائية (الحد الأقصى 1 = قفزتان إجمالًا) |
@@ -79,11 +80,11 @@ godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.
 | Coyote / Jump Buffer | 0.08 / 0.12 s | التسامح في التوقيت |
 | Ledge Assist | 10 px | التسامح مع حواف المنصات |
 
-⚠️ تغيير أي رقم حركة يغيّر مسارات المستويات العشرة: عدّل الثوابت المطابقة في `tools/levelgen/levelgen.py`، وأعد بناء المستويات، ثم شغّل التدقيق والاختبارات.
+⚠️ تغيير أي رقم حركة يغيّر مسارات المستويات الخمسة عشر: عدّل الثوابت المطابقة في `tools/levelgen/levelgen.py`، وأعد بناء المستويات، ثم شغّل التدقيق والاختبارات.
 
 ## تعديل المستويات
 
-المستويات مكتوبة في `tools/levelgen/world_01.py` و`world_02.py` ومولّدة إلى `levels/world_01/` و`levels/world_02/`:
+المستويات مكتوبة في `tools/levelgen/world_01.py` و`world_02.py` و`world_03.py` ومولّدة إلى `levels/world_0N/`:
 
 ```bash
 cd shape-jump/tools/levelgen && python3 world_01.py 3 --windows

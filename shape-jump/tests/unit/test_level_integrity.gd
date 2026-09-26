@@ -2,7 +2,8 @@ extends TestCase
 ## Structural rules every World 01 level must follow (docs/GDD.md §8);
 ## test_level_integrity_w02 applies them to World 02.
 
-const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres"]
+const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres",
+	"res://levels/world_03/world_03.tres"]
 
 var WORLD: WorldData
 ## GDD §8.2: after a checkpoint the player respawns running, so the next
@@ -81,7 +82,10 @@ func test_checkpoints_are_ordered_and_have_a_safe_runway() -> void:
 				assert_false(reach.y > cx - GameConst.TILE and reach.x < cx + runway,
 					"%s: a hazard reaching x=%.0f..%.0f is inside the runway after the checkpoint at x=%.0f" % [
 						name, reach.x, reach.y, cx])
-			assert_true(_ground_under(cx, cx + runway, cy), "%s: solid ground for the runway after x=%.0f" % [name, cx])
+			# A checkpoint turned upside down (World 03) hangs from a ceiling.
+			var hanging := absf(wrapf(checkpoint.global_rotation, -PI, PI)) > PI * 0.5
+			assert_true(_ground_under(cx, cx + runway, cy, hanging),
+				"%s: solid ground for the runway after x=%.0f" % [name, cx])
 
 
 func test_timed_elements_are_pure_functions_of_level_time() -> void:
@@ -123,6 +127,25 @@ func _x_reach(hazard: Hazard) -> Vector2:
 	if hazard is RotatingArm:
 		lo = minf(lo, x - (hazard as RotatingArm).length)
 		hi = maxf(hi, x + (hazard as RotatingArm).length)
+	# World 03: the whole circle of an orbit, the full width of a trap or of
+	# the dual spires (their boxes shrink while retracted).
+	if hazard is OrbitalHazard:
+		var r := (hazard as OrbitalHazard).radius + (hazard as OrbitalHazard).body_radius
+		lo = minf(lo, x - r)
+		hi = maxf(hi, x + r)
+	if hazard is CeilingTrap:
+		lo = minf(lo, x)
+		hi = maxf(hi, x + (hazard as CeilingTrap).width)
+	var half := 0.0
+	if hazard is DualHazard:
+		half = (hazard as DualHazard).width * 0.5
+	elif hazard is GravityMine:
+		half = (hazard as GravityMine).radius
+	elif hazard is FallingAsteroid:
+		half = (hazard as FallingAsteroid).radius
+	if half > 0.0:
+		lo = minf(lo, x - half)
+		hi = maxf(hi, x + half)
 	var travel := 0.0
 	if hazard is CrushBlock:
 		travel = (hazard as CrushBlock).travel.x
@@ -132,8 +155,9 @@ func _x_reach(hazard: Hazard) -> Vector2:
 	return Vector2(lo + minf(travel, 0.0), hi + maxf(travel, 0.0))
 
 
-## True when static blocks cover every point of [x0, x1] at height [param y].
-func _ground_under(x0: float, x1: float, y: float) -> bool:
+## True when static blocks cover every point of [x0, x1] at height [param y]
+## (their tops; with [param ceiling], their undersides).
+func _ground_under(x0: float, x1: float, y: float, ceiling := false) -> bool:
 	var x := x0
 	while x <= x1:
 		var covered := false
@@ -142,7 +166,8 @@ func _ground_under(x0: float, x1: float, y: float) -> bool:
 				continue
 			var rect: Rect2 = (node as Block).get_rect()
 			rect.position += (node as Block).global_position
-			if x >= rect.position.x and x <= rect.end.x and absf(rect.position.y - y) < 1.0:
+			var face := rect.end.y if ceiling else rect.position.y
+			if x >= rect.position.x and x <= rect.end.x and absf(face - y) < 1.0:
 				covered = true
 				break
 		if not covered:
