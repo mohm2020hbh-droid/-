@@ -102,8 +102,11 @@ class _Flow extends Node2D:
 		queue_redraw()
 
 	func _draw() -> void:
-		var color := Color(GalaxyArt.state_color(up), 0.35)
+		# Every column in one draw command (a field can be dozens of tiles long).
+		var segments := PackedVector2Array()
 		var x := FlipField.SPACING * 0.5
 		while x < length:
-			GalaxyArt.chevrons(self, x, top + 24.0, -24.0, up, color, FlipField.SPACING, 10.0)
+			GalaxyArt.chevron_segments(segments, x, top + 24.0, -24.0, up, FlipField.SPACING, 10.0)
 			x += FlipField.SPACING * (1.5 if not pit else 1.0)
+		if not segments.is_empty():
+			draw_multiline(segments, Color(GalaxyArt.state_color(up), 0.35), 3.0, true)

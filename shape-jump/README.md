@@ -51,20 +51,21 @@ cd export/playtest && python3 -m http.server 8000           # ثم افتح http
 godot --headless --path shape-jump --import          # مرة أولى أو بعد إضافة class_name جديد
 godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn
 godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn -- --filter=playthrough
-godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --level=5 --windows --exploits
+godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --world=3 --level=5 --windows --exploits
 ```
 
-155 اختبارًا في ~52 ثانية (بنفس النتائج على 20 و60 FPS)، منها:
+199 اختبارًا في ~100 ثانية (بنفس النتائج على 20 و60 FPS)، منها:
 - قواعد الـDouble Jump: الارتفاع المزدوج، لا قفزة ثالثة أبدًا، لمستان في إطار واحد، الـCoyote يُبقي الـDJ، الاستعادة عند الهبوط.
 - كل نوع من العوائق الـ12 على الفيزياء الفعلية: متى يقتل، متى يسمح بالمرور، الإنذار، والـHitbox لا يتجاوز الرسم.
-- **لاعب آلي ينهي كل مستوى من العشرة بدون موت**، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت، والحتمية.
+- **لاعب آلي ينهي كل مستوى من الخمسة عشر بدون موت**، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت، والحتمية.
 - الفتح والتقدم، لوحة الموت، WORLD 01 COMPLETE والانتقال إلى World 02 بثيمه.
-- تقدّم المستوى % وعقوبة الموت (25 نقطة) والعودة عند آخر Checkpoint (≈ 33% و≈ 66%) في كل مستوى من العالمين.
+- تقدّم المستوى % وعقوبة الموت (25 نقطة) والعودة عند آخر Checkpoint (≈ 33% و≈ 66%) في كل مستوى من العوالم الثلاثة.
 - World 02: ثيمه وخلفيته وقفله، ولا عائق من World 01 فيه، وكل أنظمته العشرة مستخدمة.
+- World 03: قلب الجاذبية على الفيزياء الفعلية (الحالات A–D، لا Coyote ولا Buffer عبر القلب، 24 قلبًا متتاليًا، حافة منصة، منصة متحركة، زاوية سقف)، والكاميرا التي تدور والـHUD الثابت، والموت والـRestart والـPause أثناء القلب، والعودة على السقف بالجاذبية والكاميرا والألوان الصحيحة، والاستئناف بعد فقد WebGL، وWORLD 03 COMPLETE.
 
-تشغيل العالمين كاملين آليًا (بموتين مقصودين في كل مستوى) على اللعبة نفسها: `godot --headless --path shape-jump --fixed-fps 60 -- --autoplay --autoplay-die=50,80 --autoplay-quit` (وWorld 02 وحده: `--autoplay-world=2 --autoplay-one-world`)، أو في صفحة الويب بإضافة `#autoplay-deaths` (أو `#autoplay-deaths-w2`) إلى الرابط.
+تشغيل العوالم كاملة آليًا (بموتين مقصودين في كل مستوى) على اللعبة نفسها: `godot --headless --path shape-jump --fixed-fps 60 -- --autoplay --autoplay-die=50,80 --autoplay-quit` (وعالم واحد: `--autoplay-world=3 --autoplay-one-world`)، أو في صفحة الويب بإضافة `#autoplay-deaths` (أو `#autoplay-deaths-w3`) إلى الرابط.
 
-أداة `level_audit` (`--world=1|2 --level=N`) تقيس لكل لمسة نافذة التوقيت على المحرك الفعلي (أدنى نافذة في العالمين: 66ms = 4 Ticks)، وتتأكد أن الاستراتيجيات الكسولة تموت مبكرًا.
+أداة `level_audit` (`--world=1|2|3 --level=N`) تقيس لكل لمسة نافذة التوقيت على المحرك الفعلي (أدنى نافذة: 66ms = 4 Ticks في World 02، و83ms في World 03)، وتتأكد أن الاستراتيجيات الكسولة تموت مبكرًا.
 
 ## ضبط الإحساس (Game Feel)
 

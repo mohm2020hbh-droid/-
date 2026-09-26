@@ -442,8 +442,9 @@ def level_03():
 
     lv.group("Orbits")
     x = mine_pair(lv, 15.0, 3.0, 0.2)
-    x = orbit_hop(lv, x + 7.4, False, 135)
-    x = orbit_hop(lv, x + 7.4, False, 125, bodies=3, spin=-1.9)
+    # The first orbit turns slowly: learn it before it tightens.
+    x = orbit_hop(lv, x + 7.4, False, 190, spin=1.7)
+    x = orbit_hop(lv, x + 8.6, False, 150, bodies=3, spin=-1.9)
     lv.shards_along(15.0, x + 6.0, 2.0)
 
     lv.group("Field")
@@ -572,14 +573,13 @@ def level_04():
     lv.shards_along(s0 + 1.0, s0 + 20.0, 1.6, lift=0.2)
 
     lv.group("DoubleChain")
-    x = s0 + 24.0
-    end = dj_gap(lv, top, x, 0.46, True, rise=1.2, ledge=4.2)
-    x2 = end - 1.4
-    end = dj_gap(lv, top, x2, 0.46, True, rise=0.5, ledge=3.0, base=1.2)
-    lv.shards_along(x + 1.0, end, 1.6)
+    x = orbit_dj(lv, s0 + 24.0, True, 95, spin=2.6)
+    x = rock_dj(lv, x + 11.5, 95, period=0.95)
+    end = x + 11.5
+    lv.shards_along(s0 + 23.0, end - 3.0, 1.8)
 
     lv.group("Turning")
-    g = air_gate(lv, end + 3.8, False, 100, kind="dual", period=0.95)
+    g = air_gate(lv, end, False, 100, kind="dual", period=0.95)
     x = rock(lv, g + 5.5, 100, period=1.0)
     g = air_gate(lv, x + 7.7, True, 100, period=0.9)
     x = orbit_hop(lv, g + 5.5, True, 100, bodies=3, spin=-2.6)

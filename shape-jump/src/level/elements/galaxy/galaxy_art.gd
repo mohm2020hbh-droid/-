@@ -43,24 +43,61 @@ static func closed(points: PackedVector2Array) -> PackedVector2Array:
 	return out
 
 
-## A dashed straight line.
+## A dashed straight line (one draw command for all its dashes).
 static func dashed(ci: CanvasItem, from: Vector2, to: Vector2, color: Color, width := 2.0, dash := 10.0) -> void:
 	var length := from.distance_to(to)
 	if length <= 0.0:
 		return
 	var step := (to - from) / length
+	var segments := PackedVector2Array()
 	var at := 0.0
 	while at < length:
-		ci.draw_line(from + step * at, from + step * minf(at + dash, length), color, width)
+		segments.append(from + step * at)
+		segments.append(from + step * minf(at + dash, length))
 		at += dash * 2.0
+	ci.draw_multiline(segments, color, width)
 
 
-## Chevrons along a vertical span, pointing up ([param up]) or down.
+## Chevrons along a vertical span, pointing up ([param up]) or down, in one
+## draw command.
 static func chevrons(ci: CanvasItem, x: float, top: float, bottom: float, up: bool, color: Color,
+		spacing := 48.0, size := 14.0) -> void:
+	var segments := PackedVector2Array()
+	chevron_segments(segments, x, top, bottom, up, spacing, size)
+	if not segments.is_empty():
+		ci.draw_multiline(segments, color, 3.0, true)
+
+
+## Appends the line segments of [method chevrons] to [param out], to draw
+## many columns with a single draw_multiline.
+static func chevron_segments(out: PackedVector2Array, x: float, top: float, bottom: float, up: bool,
 		spacing := 48.0, size := 14.0) -> void:
 	var dir := -1.0 if up else 1.0
 	var y := top + spacing * 0.5
 	while y < bottom:
-		ci.draw_polyline(PackedVector2Array([Vector2(x - size, y - dir * size * 0.5), Vector2(x, y + dir * size * 0.5),
-			Vector2(x + size, y - dir * size * 0.5)]), color, 3.0, true)
+		var tip := Vector2(x, y + dir * size * 0.5)
+		out.append_array([Vector2(x - size, y - dir * size * 0.5), tip, tip, Vector2(x + size, y - dir * size * 0.5)])
 		y += spacing
+
+
+## Fills and outlines several convex polygons with two draw commands (a
+## triangle list and a line list) instead of two per polygon: a canvas
+## polygon is a draw call of its own, and machines made of many shards
+## would otherwise cost dozens.
+static func polygons(ci: CanvasItem, polys: Array[PackedVector2Array], fill: Color, edge: Color, width: float) -> void:
+	var points := PackedVector2Array()
+	var indices := PackedInt32Array()
+	var lines := PackedVector2Array()
+	for poly in polys:
+		var base := points.size()
+		points.append_array(poly)
+		for i in range(1, poly.size() - 1):
+			indices.append_array([base, base + i, base + i + 1])
+		for i in poly.size():
+			lines.append(poly[i])
+			lines.append(poly[(i + 1) % poly.size()])
+	var colors := PackedColorArray()
+	colors.resize(points.size())
+	colors.fill(fill)
+	RenderingServer.canvas_item_add_triangle_array(ci.get_canvas_item(), indices, points, colors)
+	ci.draw_multiline(lines, edge, width, true)

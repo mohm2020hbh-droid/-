@@ -222,7 +222,7 @@ completed=true
 
 ## 10. الاختبار
 
-155 اختبارًا (≈ 52 ثانية)، تنجح بنفس النتائج على 20 و60 FPS. اختبارات المستويات تعمل على العالمين: كل ملف لـWorld 01 له ابن `…_w02` / `test_world_02_playthrough` يغيّر `world_index()` فقط.
+199 اختبارًا (≈ 100 ثانية)، تنجح بنفس النتائج على 20 و60 FPS. اختبارات المستويات تعمل على العوالم الثلاثة: كل ملف لـWorld 01 له ابن `…_w02` / `…_w03` / `test_world_0N_playthrough` يغيّر `world_index()` فقط.
 
 | الملف | ماذا يثبت |
 |---|---|
@@ -232,8 +232,11 @@ completed=true
 | integration/test_double_jump (11) | القمة المزدوجة، جدار لا تعبره قفزة واحدة، لا قفزة ثالثة، لمستان في إطار واحد، الاستعادة بعد الهبوط، الحافة والـCoyote، سقف منخفض، Respawn وسط DJ، الهبوط على منصة متحركة |
 | integration/test_obstacles (16) | خط زمن كل نوع، القتل والمرور على الفيزياء الفعلية، الإنذارات، الأصوات داخل اللعب فقط، Hitbox ≤ الرسم دائمًا |
 | integration/test_player_physics (29) | الاستجابة، الارتفاع، الحواف، الفجوات، السقف، Ledge Assist، السحق، المصاعد، منصة متسارعة لا تزيح اللاعب أفقيًا |
-| integration/test_world_01_playthrough · test_world_02_playthrough | **كل مستوى في العالمين يُنهى بمساره بلا موت**، الحتمية، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت |
+| integration/test_world_01_playthrough · _02 · _03 | **كل مستوى في العوالم الثلاثة يُنهى بمساره بلا موت**، الحتمية، والموت عند كل Checkpoint ثم الإنهاء بنفس التوقيت (وبجاذبية ذلك الـCheckpoint) |
 | unit/test_level_integrity_w02 | ثيم `mono` وخلفيته، يُفتح بـWorld 01، لا عائق من World 01، وكل أنظمة World 02 مستخدمة |
+| unit/test_level_integrity_w03 (9) | ثيم `galaxy` وخلفيته، يُفتح بـWorld 02 وهو الأخير، لا عائق من العالمين السابقين وكل عناصر المجرة مستخدمة، جدول الجاذبية يتبدل فعلًا ويزداد، كل Checkpoint والنهاية على أرضية لحظتها (مقلوبة على السقف)، خطا الموت وتأطير الممر |
+| integration/test_gravity_flip (17) | القلب على الفيزياء الفعلية: الهبوط على السقف والعودة، القفز وارتفاعه مقلوبًا، الحالات A–D، لا Coyote ولا Buffer عبر القلب، لمستان في Tick، 24 قلبًا متتاليًا، خط الموت العلوي، Respawn على السقف، الرسم يدور والجسم لا، القلب عند حافة منصة وفوق منصة متحركة، إدخال سريع جدًا، زاوية سقف (Ledge Assist مقلوب) |
+| integration/test_world_03_gravity (11) | على اللعبة الكاملة: الكاميرا تدور نصف دورة والـHUD ثابت، البوابة تقلب عند x نفسه قفزت أم لا، الموت أثناء القلب، الموت بعد Checkpoint على السقف وعلى الأرض (الجاذبية والكاميرا والألوان)، Restart أثناء القلب، 10 Restarts متتالية بلا تسرب، Pause أثناء القلب، 100% على السقف والتقدم لا يتراجع، الاستئناف بعد فقد WebGL على السقف، World 02 → World 03 وWORLD 03 COMPLETE بلا عالم رابع |
 | unit/test_progress_tracker (5) · integration/test_level_progress (2) | التقدّم بالمسافة 0..100، العقوبة 25 نقطة وحدّ الصفر، Checkpointان قرب 33% و66% في كل مستوى، وفي كل مستوى: موتان (≈50% و≈80%) → عقوبة → عودة عند آخر Checkpoint بحالة نظيفة → إنهاء بـ100% |
 | integration/test_progression (6) | قواعد الفتح، وضع الاختبار `--unlock-all`، رفض المستوى المغلق، NEXT LEVEL، WORLD 01 COMPLETE، لوحة الموت وعدّاد المحاولات |
 | integration: camera، game flow، review probes | الكاميرا، تدفق اللعب واللمس، عوائق تُنشأ/تُحذف أثناء اللعب، تسلسل حالات سريع |
@@ -245,9 +248,9 @@ godot --headless --path shape-jump --import
 godot --headless --path shape-jump --fixed-fps 60 res://tests/test_runner.tscn [-- --filter=obstacles]
 godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --world=2 --level=5 --windows --exploits
 godot --headless --path shape-jump --fixed-fps 60 -- --autoplay --autoplay-die=50,80 --autoplay-quit   # العالمان كاملين بموتين في كل مستوى
-godot ... -- --autoplay --autoplay-world=2 --autoplay-one-world --autoplay-quit                          # World 02 وحده
+godot ... -- --autoplay --autoplay-world=3 --autoplay-one-world --autoplay-quit                          # World 03 وحده
 ```
-صفحة الويب تشغّل نفس الـAutoplay بإضافة `#autoplay` أو `#autoplay-deaths` إلى رابطها، وتطبع الأحداث في Console المتصفح.
+صفحة الويب تشغّل نفس الـAutoplay بإضافة `#autoplay` أو `#autoplay-deaths` (أو `-w2` / `-w3` لعالم واحد، و`#stress-w3` لأربع دورات) إلى رابطها، وتطبع الأحداث في Console المتصفح.
 
 ما **لا** تثبته الاختبارات: الإحساس — يحتاج Playtesting على هاتف (§16 في الـGDD).
 
@@ -258,7 +261,7 @@ godot ... -- --autoplay --autoplay-world=2 --autoplay-one-world --autoplay-quit 
 | الإضافة | أين |
 |---|---|
 | مستوى في World 01 | دالة جديدة في `tools/levelgen/world_01.py` + إضافتها إلى `LEVELS` |
-| World 03 | ملف `world_03.py` بنفس الـAPI، و`WorldData` (`requires = world_02`، `theme`، `background`)، وإضافته إلى `worlds` في `game.tscn` و`Autoplay.route_for` |
+| World 04 | ملف `world_04.py` بنفس الـAPI، و`WorldData` (`requires = world_03`، `theme`، `background`)، وإضافته إلى `worlds` في `game.tscn` و`Autoplay.route_for` (وتعبئة `next_world_name` في World 03) |
 | نوع عائق جديد | سكربت يرث `Hazard` ويطبق `apply_time(t)`، ونسخة Hitbox مطابقة في `levelgen.py` |
 | صوت جديد | ملف + سطر في `sound_library.tres` |
 | Haptics / Analytics | Listener جديد على `Events` |

@@ -99,10 +99,12 @@ class _Teeth extends Node2D:
 	func _draw() -> void:
 		var count := maxi(int(width / CeilingTrap.SHARD_WIDTH), 1)
 		var w := width / count
+		var spikes: Array[PackedVector2Array] = []
+		var cores := PackedVector2Array()
 		for i in count:
 			var base := Vector2(w * (i + 0.5), 0.0)
 			var tall := reach * (1.0 if i % 2 == 0 else 0.8)
-			var spike := GalaxyArt.shard(base, Vector2(0.0, facing), tall, w * 0.9)
-			draw_colored_polygon(spike, GalaxyArt.DANGER_BODY)
-			draw_polyline(GalaxyArt.closed(spike), GalaxyArt.DANGER, 2.0, true)
-			draw_line(base, base + Vector2(0.0, facing * tall * 0.7), Color(GalaxyArt.DANGER_CORE, 0.5), 1.5)
+			spikes.append(GalaxyArt.shard(base, Vector2(0.0, facing), tall, w * 0.9))
+			cores.append_array([base, base + Vector2(0.0, facing * tall * 0.7)])
+		GalaxyArt.polygons(self, spikes, GalaxyArt.DANGER_BODY, GalaxyArt.DANGER, 2.0)
+		draw_multiline(cores, Color(GalaxyArt.DANGER_CORE, 0.5), 1.5)

@@ -83,12 +83,12 @@ class _Mine extends Node2D:
 
 	func _draw() -> void:
 		Neon.soft_light(self, Vector2.ZERO, radius * 2.6, Color(GalaxyArt.DANGER, 0.3))
+		var spikes: Array[PackedVector2Array] = []
 		for i in 8:
 			var dir := Vector2.from_angle(TAU * i / 8.0)
 			var length := radius * (1.0 if i % 2 == 0 else 0.7)
-			var spike := GalaxyArt.shard(dir * radius * 0.35, dir, length * 0.75, radius * 0.45)
-			draw_colored_polygon(spike, GalaxyArt.DANGER_BODY)
-			draw_polyline(GalaxyArt.closed(spike), GalaxyArt.DANGER, 2.0, true)
+			spikes.append(GalaxyArt.shard(dir * radius * 0.35, dir, length * 0.75, radius * 0.45))
+		GalaxyArt.polygons(self, spikes, GalaxyArt.DANGER_BODY, GalaxyArt.DANGER, 2.0)
 		draw_circle(Vector2.ZERO, radius * 0.45, GalaxyArt.DANGER_BODY)
 		draw_arc(Vector2.ZERO, radius * 0.45, 0.0, TAU, 20, GalaxyArt.DANGER, 2.0, true)
 		draw_circle(Vector2.ZERO, radius * 0.18, GalaxyArt.DANGER_CORE)
