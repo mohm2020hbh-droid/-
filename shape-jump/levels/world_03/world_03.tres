@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WorldData" format=3]
+
+[ext_resource type="Script" path="res://src/level/world_data.gd" id="1_world"]
+[ext_resource type="Script" path="res://src/level/level_data.gd" id="2_level"]
+[ext_resource type="PackedScene" path="res://src/background/background_galaxy.tscn" id="3_background"]
+[ext_resource type="Resource" path="res://levels/world_02/world_02.tres" id="4_requires"]
+[ext_resource type="Resource" path="res://levels/world_03/level_01.tres" id="level_01"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_03"
+number = 3
+display_name = "The Horrifying Galaxy"
+levels = Array[ExtResource("2_level")]([ExtResource("level_01")])
+next_world_name = ""
+requires = ExtResource("4_requires")
+theme = &"galaxy"
+background = ExtResource("3_background")
+progress_milestones = Array[float]([50.0, 75.0])

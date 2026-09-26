@@ -39,6 +39,12 @@ func _ready() -> void:
 	_trail.global_position = Vector2.ZERO
 
 
+## Gravity turned (World 03): the emitters face the new floor (the trail
+## lives in world space and needs nothing).
+func face_gravity(up: bool, _instant: bool) -> void:
+	rotation = PI if up else 0.0
+
+
 ## Re-colors the emitters and the trail for the current [Palette] theme.
 func refresh_colors() -> void:
 	for node in [_trail] + find_children("*", "CPUParticles2D", false, false):
@@ -47,7 +53,7 @@ func refresh_colors() -> void:
 			node.set_meta(&"red_gradient", node.get(key))
 		var red: Gradient = node.get_meta(&"red_gradient")
 		if red:
-			node.set(key, UiLook.grey_gradient(red) if Palette.is_mono() else red)
+			node.set(key, red if Palette.theme == &"red" else UiLook.grey_gradient(red))
 	queue_redraw()
 
 

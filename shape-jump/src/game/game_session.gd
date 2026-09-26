@@ -21,6 +21,8 @@ class RespawnPoint:
 	## Level time at which the player's centre was exactly at [member feet].
 	var level_time := 0.0
 	var score := {}
+	## Gravity there (World 03): true when the ceiling was the floor.
+	var gravity_up := false
 
 	func _init(feet_position: Vector2, time: float, score_snapshot: Dictionary) -> void:
 		feet = feet_position
@@ -50,6 +52,10 @@ var state: State = State.READY
 ## The world being played, and its index in [member worlds].
 var world: WorldData
 var world_index := -1
+## The run's gravity: the single source of truth (World 03 turns it; the
+## other worlds leave it pulling down). Shared by the level, the player and
+## the camera.
+var gravity := GravityState.new()
 var level: Level
 var level_index := 0
 var score := ScoreTracker.new()
@@ -100,6 +106,9 @@ func _ready() -> void:
 	start_overlay.level_chosen.connect(_on_level_chosen)
 	start_overlay.world_chosen.connect(_on_world_chosen)
 	whiteout.player = player
+	player.gravity = gravity
+	camera.gravity = gravity
+	gravity.flipped.connect(_on_gravity_flipped)
 	_tap_input.tapped.connect(press_jump)
 	_tap_input.pause_requested.connect(pause)
 	# A fixed start level (tests, development) means World 01 unless a start
@@ -169,9 +178,14 @@ func load_level(index: int = level_index) -> void:
 	level.obstacle_cued.connect(_on_obstacle_cued)
 
 	player.kill_y = level.kill_y
+	player.kill_top = level.kill_top
 	player.set_speed_scale(level.data.speed_scale)
-	camera.set_kill_line(level.kill_y)
+	camera.set_kill_line(level.kill_y, level.kill_top)
+	camera.vertical_offset = level.camera_offset
 	var spawn := level.get_spawn_feet_position()
+	gravity.reset(level.start_gravity_up)
+	level.gravity = gravity
+	level.set_run_line(spawn.x, player.get_run_speed())
 	score.reset(spawn.x)
 	progress.reset(spawn.x, level.get_finish().global_position.x)
 	hud.set_progress(0.0, true)
@@ -179,7 +193,9 @@ func load_level(index: int = level_index) -> void:
 	for checkpoint in level.get_checkpoints():
 		marks.append(progress.percent_at(checkpoint.global_position.x))
 	hud.set_progress_marks(marks)
+	hud.set_progress_milestones(world.progress_milestones)
 	_respawn = RespawnPoint.new(spawn, 0.0, score.snapshot())
+	_respawn.gravity_up = level.start_gravity_up
 	_last_checkpoint = null
 	player.respawn_at(spawn, false)
 	camera.snap_to_target()
@@ -306,6 +322,9 @@ func _set_state(next: State) -> void:
 
 func _respawn_player() -> void:
 	level.rewind_to(_respawn.level_time)
+	# The saved gravity is the authority; the level's schedule gives the same
+	# state at that time by construction (checkpoints sit on steady ground).
+	gravity.set_up(_respawn.gravity_up, true)
 	score.restore(_respawn.score)
 	player.respawn_at(_respawn.feet, true)
 	camera.snap_to_target()
@@ -407,11 +426,17 @@ func _use_world(index: int) -> void:
 			fresh.name = "Background"
 			$World.add_child(fresh)
 			$World.move_child(fresh, 0)
-	player.visual.void_style = Palette.is_mono()
+	# World 01 keeps the tesseract core; later worlds show the trapped void.
+	player.visual.void_style = world.theme != &"red"
 	player.fx.refresh_colors()
 	UiLook.apply(self, world.theme)
 	_embers.color_ramp = _embers_ramp_red if world.theme == &"red" else _embers_ramp_mono
+	_embers.modulate = Color.WHITE
+	_embers.speed_scale = 1.0
 	hud.refresh_look()
+	var background := get_node_or_null(^"World/Background")
+	if background and background.has_method(&"attach"):
+		background.attach(self)  # World 03's look follows gravity.
 
 
 func _on_world_chosen(index: int) -> void:
@@ -432,6 +457,7 @@ func _on_shard_collected(shard: Shard) -> void:
 func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	_respawn = RespawnPoint.new(respawn_feet_at(checkpoint.global_position), 0.0, score.snapshot())
 	_respawn.level_time = time_at(_respawn.feet.x)
+	_respawn.gravity_up = gravity.up
 	_last_checkpoint = checkpoint
 	hud.mark_checkpoint(level.get_checkpoints().find(checkpoint))
 	_publish_resume_point()
@@ -465,6 +491,14 @@ func _on_obstacle_cued(kind: StringName, at: Vector2) -> void:
 			Events.obstacle_warning.emit(at)
 		&"slam":
 			Events.obstacle_slam.emit(at)
+		&"gravity_warning":
+			Events.gravity_warning.emit(at)
+
+
+## A flip in play is heard (restores on respawn and level start are not).
+func _on_gravity_flipped(up: bool, instant: bool) -> void:
+	if not instant and state == State.PLAYING:
+		Events.gravity_flipped.emit(up, player.global_position)
 
 
 func _on_finish_reached() -> void:

@@ -60,6 +60,10 @@ func set_progress_marks(marks: Array[float]) -> void:
 	_progress.set_marks(marks)
 
 
+func set_progress_milestones(milestones: Array[float]) -> void:
+	_progress.set_milestones(milestones)
+
+
 func mark_checkpoint(index: int) -> void:
 	_progress.mark_reached(index)
 

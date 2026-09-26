@@ -13,7 +13,7 @@ func test_world_02_has_its_own_look_and_follows_world_01() -> void:
 	assert_true(WORLD.background != null and WORLD.background.resource_path.ends_with("background_mono.tscn"),
 		"its own background")
 	assert_eq(WORLD.requires.id, &"world_01", "unlocked by finishing World 01")
-	assert_eq(WORLD.next_world_name, "", "the last world for now")
+	assert_eq(WORLD.next_world_name, "World 03", "World 03 follows")
 
 
 func test_every_level_uses_the_new_systems_not_world_01_obstacles() -> void:

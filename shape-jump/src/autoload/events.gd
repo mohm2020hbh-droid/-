@@ -18,6 +18,10 @@ signal checkpoint_reached(position: Vector2)
 signal obstacle_warning(position: Vector2)
 ## A heavy obstacle on screen hit home (e.g. a crush block closing).
 signal obstacle_slam(position: Vector2)
+## Gravity turned in play (World 03): up = the ceiling is now the floor.
+signal gravity_flipped(up: bool, position: Vector2)
+## A gravity gate on screen woke up: a flip is coming.
+signal gravity_warning(position: Vector2)
 signal level_completed(level_id: StringName, score: int, shards: int)
 signal ui_pressed
 @warning_ignore_restore("unused_signal")

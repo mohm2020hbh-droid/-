@@ -25,6 +25,17 @@ const LEDGE_ASSIST_CLEARANCE := 2.0
 
 ## Falling below this world Y kills the player. Set by the game from the level.
 var kill_y := INF
+## Rising above this world Y kills the player (World 03, gravity up).
+var kill_top := -INF
+## The run's gravity (World 03). null: gravity always pulls down.
+var gravity: GravityState:
+	set(value):
+		if gravity and gravity.flipped.is_connected(_on_gravity_flipped):
+			gravity.flipped.disconnect(_on_gravity_flipped)
+		gravity = value
+		if gravity:
+			gravity.flipped.connect(_on_gravity_flipped)
+			_on_gravity_flipped(gravity.up, true)
 ## While true nothing can kill the player. The game session sets it for
 ## every state except PLAYING (start screen, pause, finish).
 var invulnerable := false
@@ -33,6 +44,9 @@ var motor: PlayerMotor
 ## Half extents of the collision box, read from the BodyShape in the scene
 ## (the single source of truth for the player's size).
 var half_size := Vector2.ZERO
+
+## Gravity turned since the last tick: the floor contact is stale.
+var _flipped := false
 
 @onready var _hurtbox: Area2D = $Hurtbox
 @onready var visual: PlayerVisual = $Visual
@@ -55,9 +69,15 @@ func _ready() -> void:
 	_hurtbox.area_entered.connect(_on_hurtbox_area_entered)
 
 
-## Position of the player's feet (bottom-centre of the collision box).
+## Position of the player's feet: the centre of the side facing the floor
+## (the bottom, or the top while gravity pulls up).
 func get_feet_position() -> Vector2:
-	return global_position + Vector2(0.0, half_size.y)
+	return global_position + Vector2(0.0, half_size.y * gravity_sign())
+
+
+## +1 while gravity pulls down, -1 while it pulls up.
+func gravity_sign() -> float:
+	return gravity.down_sign() if gravity else 1.0
 
 
 ## Current horizontal speed while running (px/s), including the level scale.
@@ -89,7 +109,8 @@ func request_jump() -> void:
 
 ## Places the player standing on [param feet_position] and revives it.
 func respawn_at(feet_position: Vector2, run: bool) -> void:
-	global_position = feet_position - Vector2(0.0, half_size.y)
+	_flipped = false
+	global_position = feet_position - Vector2(0.0, half_size.y * gravity_sign())
 	velocity = Vector2.ZERO
 	# Teleport: do not interpolate from the death position.
 	reset_physics_interpolation()
@@ -116,15 +137,20 @@ func die(cause: StringName) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
-	var was_on_floor := is_on_floor()
-	velocity = motor.begin_tick(was_on_floor, delta)
+	# The motor works toward the floor (+y = falling); world y is that times
+	# the gravity sign (1 in every world before World 03).
+	var g := gravity_sign()
+	var was_on_floor := is_on_floor() and not _flipped
+	_flipped = false
+	var local := motor.begin_tick(was_on_floor, delta)
+	velocity = Vector2(local.x, local.y * g)
 	if was_on_floor:
 		# Platforms may carry the player vertically, but never change its run
 		# speed: x(t) stays linear, so every x maps to one fixed level time and
 		# obstacle timing is identical on every attempt.
 		velocity.x -= _floor_velocity().x
 	_apply_ledge_assist(delta)
-	var incoming_fall_speed := velocity.y
+	var incoming_fall_speed := velocity.y * g
 	move_and_slide()
 
 	if _hit_wall_head_on():
@@ -135,7 +161,8 @@ func _physics_process(delta: float) -> void:
 		# the body through one of them.
 		die(&"crush")
 		return
-	velocity = motor.end_tick(velocity, delta, is_on_floor())
+	local = motor.end_tick(Vector2(velocity.x, velocity.y * g), delta, is_on_floor())
+	velocity = Vector2(local.x, local.y * g)
 
 	match motor.jump_this_tick:
 		PlayerMotor.Jump.GROUND:
@@ -146,7 +173,7 @@ func _physics_process(delta: float) -> void:
 			if is_on_floor() and not was_on_floor:
 				landed.emit(maxf(incoming_fall_speed, 0.0))
 
-	if global_position.y > kill_y:
+	if global_position.y > kill_y or global_position.y < kill_top:
 		die(&"fall")
 		return
 	_update_state()
@@ -159,7 +186,7 @@ func _physics_process(delta: float) -> void:
 func _floor_velocity() -> Vector2:
 	for i in get_slide_collision_count():
 		var collision := get_slide_collision(i)
-		if collision.get_normal().y > -0.7:
+		if collision.get_normal().dot(up_direction) < 0.7:
 			continue
 		var state := PhysicsServer2D.body_get_direct_state(collision.get_collider_rid())
 		if state == null:
@@ -182,10 +209,10 @@ func _apply_ledge_assist(delta: float) -> void:
 	var hit := KinematicCollision2D.new()
 	if not test_move(global_transform, motion, hit) or not _is_head_on(hit.get_normal()):
 		return
-	if _nudge_past_corner(Vector2.UP, config.ledge_assist, motion, grounded):
+	if _nudge_past_corner(up_direction, config.ledge_assist, motion, grounded):
 		return
 	if not grounded:
-		_nudge_past_corner(Vector2.DOWN, config.head_clip_assist, motion, false)
+		_nudge_past_corner(-up_direction, config.head_clip_assist, motion, false)
 
 
 ## Tries shifts of growing size along [param direction], up to [param limit]
@@ -232,7 +259,7 @@ func _update_state() -> void:
 	if is_on_floor():
 		next = State.RUN if motor.running else State.IDLE
 	else:
-		next = State.JUMP if velocity.y < 0.0 else State.FALL
+		next = State.JUMP if velocity.y * gravity_sign() < 0.0 else State.FALL
 	_set_state(next)
 
 
@@ -246,3 +273,14 @@ func _set_state(next: State) -> void:
 
 func _on_hurtbox_area_entered(_area: Area2D) -> void:
 	die(&"hazard")
+
+
+## Gravity turned (see [GravityState]). The body keeps its world velocity;
+## the motor re-reads it toward the new floor (see [method PlayerMotor.flip]).
+func _on_gravity_flipped(up: bool, instant: bool) -> void:
+	up_direction = Vector2.DOWN if up else Vector2.UP
+	if not instant and state != State.DEAD:
+		motor.flip()
+		_flipped = true
+	visual.face_gravity(up, instant)
+	fx.face_gravity(up, instant)

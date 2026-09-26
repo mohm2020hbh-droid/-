@@ -81,6 +81,9 @@ var _gaze := Vector2.RIGHT
 var _gaze_target := Vector2.RIGHT
 var _dying := 0.0
 var _settle := 0.0
+## Node rotation that puts the drawing's feet on the current floor (World 03:
+## PI while gravity pulls up). Purely visual: the collision box never turns.
+var _face_target := 0.0
 var _probe: PhysicsShapeQueryParameters2D
 
 
@@ -128,6 +131,8 @@ func _process(delta: float) -> void:
 		_spin += flip
 		_flip_left -= flip
 	_flare = maxf(_flare - delta * 4.0, 0.0)
+	if not is_equal_approx(rotation, _face_target):
+		rotation = rotate_toward(rotation, _face_target, delta * TAU * 1.6)
 	if airborne:
 		_spin = fposmod(_spin + _spin_speed * delta, TAU)
 	else:
@@ -168,6 +173,17 @@ func _step_void(delta: float) -> void:
 		_dying = maxf(_dying - delta, 0.0)
 		if _dying == 0.0:
 			visible = false
+
+
+## Gravity turned (World 03): the entity rolls over to stand on the new
+## floor, with a pulse from inside. [param instant]: a restore, no motion.
+func face_gravity(up: bool, instant: bool) -> void:
+	_face_target = PI if up else 0.0
+	if instant:
+		rotation = _face_target
+	else:
+		_flare = 1.0
+		_twist_left += PI
 
 
 ## The level is complete: the thing inside goes quiet and bright.

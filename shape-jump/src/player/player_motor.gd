@@ -21,6 +21,18 @@ extends RefCounted
 ## - A tap with no jump left is remembered for [member MovementConfig.jump_buffer_time]
 ##   and fires as the ground jump on landing. Several such taps are still one
 ##   jump: mashing before a landing never wastes the double jump.
+##
+## Frame: y is measured toward the surface the player stands on (+y = falling),
+## whatever the world's gravity. The [Player] turns it into world space; in
+## every world before World 03 the two are the same.
+##
+## Gravity flip rules (World 03, [method flip]):
+## - The body keeps its world velocity: rising toward the new floor becomes
+##   falling toward it.
+## - A flip never grants or takes a jump: the double jump left stays, the
+##   ground jump needs a surface (no coyote time across a flip), and a tap
+##   waiting in the jump buffer is dropped (it was meant for the old floor).
+## - Taps already queued still fire, as the double jump if one is left.
 
 enum Jump { NONE, GROUND, AIR }
 
@@ -113,6 +125,14 @@ func end_tick(resolved_velocity: Vector2, delta: float, on_floor: bool) -> Vecto
 		air_jumps_left = config.air_jumps
 	_apply_gravity(delta * 0.5)
 	return velocity
+
+
+## Gravity just reversed (see the class notes).
+func flip() -> void:
+	velocity.y = -velocity.y
+	_grounded = false
+	_coyote_left = 0.0
+	_buffer_left = 0.0
 
 
 func _start_jump(kind: Jump) -> void:

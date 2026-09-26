@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://src/game/game_session.gd" id="1_session"]
 [ext_resource type="Resource" path="res://levels/world_01/world_01.tres" id="2_world"]
 [ext_resource type="Resource" path="res://levels/world_02/world_02.tres" id="13_world2"]
+[ext_resource type="Resource" path="res://levels/world_03/world_03.tres" id="16_world3"]
 [ext_resource type="Script" path="res://src/game/whiteout_veil.gd" id="14_veil"]
 [ext_resource type="Script" path="res://src/level/world_data.gd" id="15_worlddata"]
 [ext_resource type="PackedScene" path="res://src/background/background.tscn" id="3_background"]
@@ -22,7 +23,7 @@ colors = PackedColorArray(1, 0.3, 0.35, 0, 1, 0.3, 0.35, 0.6, 1, 0.2, 0.28, 0.35
 
 [node name="Game" type="Node"]
 script = ExtResource("1_session")
-worlds = Array[ExtResource("15_worlddata")]([ExtResource("2_world"), ExtResource("13_world2")])
+worlds = Array[ExtResource("15_worlddata")]([ExtResource("2_world"), ExtResource("13_world2"), ExtResource("16_world3")])
 
 [node name="TapInput" type="Node" parent="."]
 unique_name_in_owner = true

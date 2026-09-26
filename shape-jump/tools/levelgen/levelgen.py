@@ -610,6 +610,160 @@ class BinaryGate(Element):
                 "warning_time": f(float(self.warning))}
 
 
+# ------------------------------------------------------------- World 03 --
+# Mirrors of src/level/elements/galaxy/*.gd. Positions are world px; `lv`
+# gives the gravity schedule to the machines that follow gravity.
+
+def circle_hull(cx, cy, r, n=12):
+    """A polygon around a circle of radius r (never inside it): conservative."""
+    return circle_poly(cx, cy, r / math.cos(math.pi / n), n)
+
+
+class GravityMine(Element):
+    base, type_, script = "GravityMine", "Area2D", "galaxy/gravity_mine"
+
+    def __init__(self, lv, x, y0, ceiling, radius, phase, lift=10.0, fall_accel=2600.0, bob=5.0, bob_speed=3.0):
+        self.lv, self.x, self.y0, self.ceiling, self.radius, self.phase = lv, x, y0, ceiling, radius, phase
+        self.lift, self.fall_accel, self.bob, self.bob_speed = lift, fall_accel, bob, bob_speed
+
+    def rest(self, up):
+        return self.ceiling + self.radius + self.lift if up else -self.radius - self.lift
+
+    def centre(self, t):
+        up = self.lv.gravity_up_at(t)
+        since = t - self.lv.last_gravity_change(t)
+        y, start = self.rest(up), self.rest(not up)
+        gap = abs(y - start)
+        fallen = 0.5 * self.fall_accel * since * since if since != math.inf else gap
+        if fallen < gap:
+            y = start + math.copysign(fallen, y - start)
+        return y + self.bob * math.sin(t * self.bob_speed + self.phase * math.tau)
+
+    def polys(self, t):
+        return [circle_hull(self.x, self.y0 + self.centre(t), self.radius * 0.72)]
+
+    def x_range(self):
+        return (self.x - self.radius, self.x + self.radius)
+
+    def props(self):
+        return {"position": v2(self.x, self.y0), "ceiling": f(float(self.ceiling)), "radius": f(float(self.radius)),
+                "lift": f(float(self.lift)), "fall_accel": f(float(self.fall_accel)), "bob": f(float(self.bob)),
+                "bob_speed": f(float(self.bob_speed)), "phase": f(float(self.phase % 1.0))}
+
+
+class FallingAsteroid(Element):
+    base, type_, script = "FallingAsteroid", "Area2D", "galaxy/falling_asteroid"
+
+    def __init__(self, lv, x, y0, ceiling, radius, period, phase, warning, speed):
+        self.lv, self.x, self.y0, self.ceiling, self.radius = lv, x, y0, ceiling, radius
+        self.period, self.phase, self.warning, self.speed = period, phase, warning, speed
+
+    def rock(self, t):
+        k = math.floor(t / self.period + self.phase)
+        start = (k - self.phase) * self.period
+        into = t - start
+        up = self.lv.gravity_up_at(start)
+        direction = -1.0 if up else 1.0
+        origin = self.radius if up else self.ceiling - self.radius
+        travel = abs(self.ceiling) + self.radius * 2.0
+        moving = into - self.warning
+        if moving < 0.0 or moving * self.speed > travel:
+            return None
+        return origin + direction * moving * self.speed
+
+    def polys(self, t):
+        y = self.rock(t)
+        return [] if y is None else [circle_hull(self.x, self.y0 + y, self.radius * 0.75)]
+
+    def x_range(self):
+        return (self.x - self.radius, self.x + self.radius)
+
+    def props(self):
+        return {"position": v2(self.x, self.y0), "ceiling": f(float(self.ceiling)), "radius": f(float(self.radius)),
+                "period": f(float(self.period)), "phase": f(float(self.phase % 1.0)),
+                "warning_time": f(float(self.warning)), "speed": f(float(self.speed))}
+
+
+class CeilingTrap(Element):
+    base, type_, script = "CeilingTrap", "Area2D", "galaxy/ceiling_trap"
+
+    def __init__(self, x0, y0, width, reach, facing, period, hold_ratio, phase, warning):
+        self.x0, self.y0, self.width, self.reach, self.facing = x0, y0, width, reach, facing
+        self.period, self.hold_ratio, self.phase, self.warning = period, hold_ratio, phase, warning
+
+    def polys(self, t):
+        out = self.reach * steps_progress((t / self.period + self.phase) % 1.0, self.hold_ratio)
+        deadly = out * 0.65
+        if deadly <= INSET * 2:
+            return []
+        a, b = self.y0 + self.facing * INSET, self.y0 + self.facing * (deadly - INSET)
+        return [rect_poly(self.x0 + INSET, min(a, b), self.x0 + self.width - INSET, max(a, b))]
+
+    def x_range(self):
+        return (self.x0, self.x0 + self.width)
+
+    def props(self):
+        return {"position": v2(self.x0, self.y0), "width": f(float(self.width)), "reach": f(float(self.reach)),
+                "facing": self.facing, "period": f(float(self.period)), "hold_ratio": f(float(self.hold_ratio)),
+                "phase": f(float(self.phase % 1.0)), "warning_time": f(float(self.warning))}
+
+
+class OrbitalHazard(Element):
+    base, type_, script = "OrbitalHazard", "Area2D", "galaxy/orbital_hazard"
+
+    def __init__(self, x, y, radius, bodies, body_radius, spin, phase):
+        self.x, self.y, self.radius, self.bodies = x, y, radius, bodies
+        self.body_radius, self.spin, self.phase = body_radius, spin, phase
+
+    def polys(self, t):
+        out = []
+        for i in range(self.bodies):
+            a = self.phase * math.tau + self.spin * t + math.tau * i / self.bodies
+            out.append(circle_hull(self.x + math.cos(a) * self.radius, self.y + math.sin(a) * self.radius,
+                                   self.body_radius * 0.8))
+        return out
+
+    def x_range(self):
+        r = self.radius + self.body_radius
+        return (self.x - r, self.x + r)
+
+    def props(self):
+        return {"position": v2(self.x, self.y), "radius": f(float(self.radius)), "bodies": self.bodies,
+                "body_radius": f(float(self.body_radius)), "spin": f(float(self.spin)),
+                "phase": f(float(self.phase % 1.0))}
+
+
+class DualHazard(Element):
+    base, type_, script = "DualHazard", "Area2D", "galaxy/dual_hazard"
+    TIP = 14.0
+
+    def __init__(self, x, y0, ceiling, width, low, high, period, hold_ratio, phase, alternate, warning):
+        self.x, self.y0, self.ceiling, self.width, self.low, self.high = x, y0, ceiling, width, low, high
+        self.period, self.hold_ratio, self.phase, self.alternate, self.warning = period, hold_ratio, phase, alternate, warning
+
+    def heights(self, t):
+        a = (t / self.period + self.phase) % 1.0
+        b = (a + (0.5 if self.alternate else 0.0)) % 1.0
+        span = self.high - self.low
+        return (self.low + span * steps_progress(a, self.hold_ratio), self.low + span * steps_progress(b, self.hold_ratio))
+
+    def polys(self, t):
+        hg, hc = self.heights(t)
+        half = (self.width - INSET * 2) / 2
+        down, up = max(hg - self.TIP, 1.0), max(hc - self.TIP, 1.0)
+        return [rect_poly(self.x - half, self.y0 - down, self.x + half, self.y0),
+                rect_poly(self.x - half, self.y0 + self.ceiling, self.x + half, self.y0 + self.ceiling + up)]
+
+    def x_range(self):
+        return (self.x - self.width / 2, self.x + self.width / 2)
+
+    def props(self):
+        return {"position": v2(self.x, self.y0), "ceiling": f(float(self.ceiling)), "width": f(float(self.width)),
+                "low": f(float(self.low)), "high": f(float(self.high)), "period": f(float(self.period)),
+                "hold_ratio": f(float(self.hold_ratio)), "phase": f(float(self.phase % 1.0)),
+                "alternate": "true" if self.alternate else "false", "warning_time": f(float(self.warning))}
+
+
 class SlabGroup:
     """Tuning proxy: setting `phase` moves every slab's oscillator together,
     keeping the half-cycle offsets of a SPLIT FLOOR."""
@@ -682,6 +836,30 @@ class Surface:
         return self.rect(t - DT) if self.osc else self.rect(t)
 
 
+class Mirrored:
+    """A surface seen with gravity pulling up (World 03): y -> -y, so its
+    underside is a top the simulation can stand on."""
+
+    def __init__(self, surface):
+        self.s = surface
+        self.osc = surface.osc
+        self.drop = surface.drop
+
+    def alive(self, t):
+        return self.s.alive(t)
+
+    def bounds(self):
+        return self.s.bounds()
+
+    def rect(self, t):
+        x0, x1, top, bottom = self.s.rect(t)
+        return x0, x1, -bottom, -top
+
+    def solid(self, t):
+        x0, x1, top, bottom = self.s.solid(t)
+        return x0, x1, -bottom, -top
+
+
 # --------------------------------------------------------------------- level --
 
 class Level:
@@ -709,6 +887,10 @@ class Level:
         self.last_kinds = {}     # tap x -> kind it had in the last simulation
         self._names = {}
         self._shadows = []       # (x0, x1, top) of every shadow gap
+        self.start_up = False    # World 03: gravity at the start
+        self.kill_top = None     # World 03: world y (px) above which the player dies
+        self.camera_offset = None  # World 03: the view's height above the player (px, negative)
+        self._gravity = None     # cached gravity events [(x px, up)]
         self._sim = None
         self._path = None
 
@@ -736,6 +918,52 @@ class Level:
             t = air + APEX_T + math.sqrt(max(2.0 * drop / G_DOWN, 0.0))
         return x_takeoff + self.speed * t / T + 0.07
 
+    # ------------------------------------------------------------- gravity --
+    def _gravity_list(self):
+        """Every gravity change as placed, in x order: [(x px, up)] (World 03).
+        Mirrors Level.gravity_events in src/level/level.gd."""
+        if self._gravity is None:
+            events = []
+            for _, _, e in self.entries:
+                if isinstance(e, Plain) and e.base == "GravityGate":
+                    events.append((self._vec(e._props["position"])[0], e._props["target_up"] == "true"))
+                elif isinstance(e, Plain) and e.base == "FlipField":
+                    x0 = self._vec(e._props["position"])[0]
+                    events.append((x0, e._props["inside_up"] == "true"))
+                    events.append((x0 + float(e._props["length"]), e._props["outside_up"] == "true"))
+            self._gravity = sorted(events, key=lambda ev: ev[0])
+        return self._gravity
+
+    def gravity_up_at(self, t):
+        """Gravity at level time t: up once the player's centre reached a gate."""
+        x = self.spawn_px + self.speed * t
+        up = self.start_up
+        for ex, eu in self._gravity_list():
+            if x < ex - 0.001:
+                break
+            up = eu
+        return up
+
+    def last_gravity_change(self, t):
+        """Level time of the last real gravity change at or before t (-inf: none)."""
+        x = self.spawn_px + self.speed * t
+        up, last = self.start_up, -math.inf
+        for ex, eu in self._gravity_list():
+            if x < ex - 0.001:
+                break
+            if eu != up:
+                up, last = eu, (ex - self.spawn_px) / self.speed
+        return last
+
+    def gravity_changes(self):
+        """Real changes only: [(x tiles, up after)]."""
+        up, out = self.start_up, []
+        for ex, eu in self._gravity_list():
+            if eu != up:
+                up = eu
+                out.append((ex / T, eu))
+        return out
+
     # --------------------------------------------------------------- nodes --
     def group(self, name):
         self.groups.append(name)
@@ -750,6 +978,7 @@ class Level:
             self.hazards.append(element)
         self._sim = None
         self._path = None
+        self._gravity = None
         return element
 
     # ------------------------------------------------------------ geometry --
@@ -767,12 +996,13 @@ class Level:
     def ceiling(self, x0, x1, bottom, top=14.0):
         self.block(x0, x1, top, bottom, top_edge=False)
 
-    def mover(self, x0, width, top, travel, period, phase=0.0, wave="sine", hold_ratio=0.6, thickness=0.5):
+    def mover(self, x0, width, top, travel, period, phase=0.0, wave="sine", hold_ratio=0.6, thickness=0.5,
+              script="block", extra=None):
         """Moving platform (AnimatableBody2D + Oscillator); travel in tiles (dx, up)."""
         osc = Osc((travel[0] * T, -travel[1] * T), period, phase, wave, hold_ratio)
-        el = Plain("MovingPlatform", "AnimatableBody2D", "block",
-                   {"position": v2(x0 * T, -top * T), "size": v2(width * T, thickness * T)},
-                   span=(x0 * T, (x0 + width) * T))
+        props = {"position": v2(x0 * T, -top * T), "size": v2(width * T, thickness * T)}
+        props.update(extra or {})
+        el = Plain("MovingPlatform", "AnimatableBody2D", script, props, span=(x0 * T, (x0 + width) * T))
         el.osc = osc
         self.add(el)
         surface = Surface(x0 * T, (x0 + width) * T, -top * T, -(top - thickness) * T, osc=osc)
@@ -894,17 +1124,26 @@ class Level:
             self.group_name = group
             x = x_from
             while x <= x_to + 1e-6:
-                self.shard(x, self.at(x)["h"] / T + 0.375 + lift)
+                st = self.at(x)
+                # Beside the body, on the side away from the floor it runs on.
+                self.shard(x, st["h"] / T + 0.375 + (-lift if st.get("up") else lift))
                 x += step
         self._post = []
 
-    def checkpoint(self, x, height=0.0):
+    def checkpoint(self, x, height=0.0, up=False):
+        """up: on a ceiling (World 03): the beam hangs down from it."""
         self.checkpoints.append((x, height))
-        self.add(Plain("Checkpoint", "Area2D", "checkpoint", {"position": v2(x * T, -height * T)}))
+        props = {"position": v2(x * T, -height * T)}
+        if up:
+            props["rotation"] = f(math.pi)
+        self.add(Plain("Checkpoint", "Area2D", "checkpoint", props))
 
-    def finish(self, x, height=0.0):
+    def finish(self, x, height=0.0, up=False):
         self.finish_x = x
-        self.add(Plain("FinishGate", "Area2D", "finish_gate", {"position": v2(x * T, -height * T)}))
+        props = {"position": v2(x * T, -height * T)}
+        if up:
+            props["rotation"] = f(math.pi)
+        self.add(Plain("FinishGate", "Area2D", "finish_gate", props))
 
     # --------------------------------------------------------------- route --
     def tap(self, *xs, kind="ground"):
@@ -936,6 +1175,13 @@ class Level:
         else:
             x, y = start[0] * T, -start[1] * T
         t0 = (x - self.spawn_px) / self.speed
+        # Gravity (World 03): while it pulls up, everything runs in a mirrored
+        # frame (y -> -y), where the ceiling is a floor and the motor's rules
+        # apply unchanged. y is the feet in that frame; g is +1 or -1.
+        flips = bool(self._gravity_list())
+        g = -1.0 if flips and self.gravity_up_at(t0) else 1.0
+        if g < 0:
+            y = -(y + HALF) + HALF   # Feet on a ceiling at world y: centre y + HALF.
         vy, grounded, coyote, air_jumps, buffer = 0.0, True, 0.0, 1, 0.0
         queued = []          # taps waiting to jump, oldest first
         buffered = None      # the tap in the jump buffer
@@ -952,7 +1198,9 @@ class Level:
             end_x = min(end_x, stop_x * T)
         hz = sorted((h for h in self.hazards if id(h) not in self._pending),
                     key=lambda h: h.x_range()[0]) if hazards else []
-        surfaces = sorted(((s.bounds(), s) for s in self.surfaces), key=lambda b: b[0][0])
+        surf_down = sorted(((s.bounds(), s) for s in self.surfaces), key=lambda b: b[0][0])
+        surf_up = [(b, Mirrored(s)) for b, s in surf_down] if flips else []
+        surfaces = surf_up if g < 0 else surf_down
         out = []
         tick = 0
         while x < end_x and tick < 60 * 300:
@@ -964,6 +1212,17 @@ class Level:
                     buffer, buffered = BUFFER, route[next_tap]
                 next_tap += 1
             t = t0 + (tick + 1) * DT
+            if flips:
+                gn = -1.0 if self.gravity_up_at(t) else 1.0
+                if gn != g:
+                    # PlayerMotor.flip: same world velocity, no floor, no coyote,
+                    # the jump buffer dropped; queued taps stay.
+                    centre = g * (y - HALF)
+                    g = gn
+                    y = g * centre + HALF
+                    vy = -vy
+                    grounded, support, coyote, buffer, buffered = False, None, 0.0, 0.0, None
+                    surfaces = surf_up if g < 0 else surf_down
             # begin_tick
             on_floor = grounded
             if on_floor:
@@ -1080,7 +1339,10 @@ class Level:
                     break
                 if hi < x - 200:
                     continue
-                for poly in h.polys(t):
+                polys = h.polys(t)
+                if g < 0:
+                    polys = [[(px, -py) for px, py in poly] for poly in polys]
+                for poly in polys:
                     sep = separation(poly, box)
                     if sep < clearance:
                         clearance, hit = sep, h
@@ -1088,11 +1350,16 @@ class Level:
             # hit): a route that only grazes a hazard is not a route.
             if death is None and clearance < SAFETY:
                 death = "hazard"
-            if death is None and y > self.kill_y:
+            centre = g * (y - HALF)   # World centre y.
+            if death is None and (centre + HALF > self.kill_y or
+                                  (self.kill_top is not None and centre - HALF < self.kill_top)):
                 death = "fall"
-            out.append({"tick": tick, "t": t, "x": x / T, "y": y, "h": -y, "vy": vy, "grounded": grounded,
-                        "jump": jump, "air_jumps": air_jumps, "clearance": clearance, "near": hit,
-                        "static": grounded and support is not None and support.osc is None})
+            # y / h: the bottom of the box in the world; feet_h: the side that
+            # touches the floor (the top while gravity pulls up).
+            out.append({"tick": tick, "t": t, "x": x / T, "y": centre + HALF, "h": -(centre + HALF), "vy": vy,
+                        "grounded": grounded, "jump": jump, "air_jumps": air_jumps, "clearance": clearance,
+                        "near": hit, "static": grounded and support is not None and support.osc is None,
+                        "up": g < 0, "feet_h": -(centre + g * HALF)})
             if death:
                 self.last_kinds = made
                 return out, (death, x / T, hit)
@@ -1320,6 +1587,92 @@ class Level:
             slabs.append(self.mover(x0 + i * width, width - 0.08, top, (0.0, travel), period, p, "steps", hold_ratio))
         return slabs
 
+    # ------------------------------------------------------- World 03 API --
+    # Heights in tiles above the ground line; "ceiling" = the height of a
+    # ceiling's underside (the surface you run on while gravity pulls up).
+    def gblock(self, x0, x1, top, bottom=-10.0, top_edge=True, bottom_edge=False):
+        """A GalaxyBlock from x0 to x1, from `bottom` up to `top` (tiles)."""
+        if x1 <= x0:
+            raise SystemExit(f"{self.key}: block from x={x0:.2f} to x={x1:.2f} has no width")
+        props = {"position": v2(x0 * T, -top * T), "size": v2((x1 - x0) * T, (top - bottom) * T)}
+        if not top_edge:
+            props["top_edge"] = "false"
+        if bottom_edge:
+            props["bottom_edge"] = "true"
+        self.add(Plain("GalaxyBlock", "StaticBody2D", "galaxy/galaxy_block", props))
+        self.surfaces.append(Surface(x0 * T, x1 * T, -top * T, -bottom * T))
+        self._path = None
+
+    def ground(self, x0, x1, top=0.0):
+        """Ground to run on (lit on top)."""
+        self.gblock(x0, x1, top, top - 10.0)
+
+    def roof(self, x0, x1, underside, thickness=10.0):
+        """A ceiling whose underside you run on while gravity pulls up."""
+        self.gblock(x0, x1, underside + thickness, underside, top_edge=False, bottom_edge=True)
+
+    def slab(self, x0, x1, top, bottom):
+        """A floating INVERTED WALL: lit on both faces (a platform either way up)."""
+        self.gblock(x0, x1, top, bottom, top_edge=True, bottom_edge=True)
+
+    def floater(self, x0, width, top, travel, period, phase=0.0, wave="sine", hold_ratio=0.6, thickness=0.5):
+        """A floating panel lit on both faces (stand on it either way up)."""
+        return self.mover(x0, width, top, travel, period, phase, wave, hold_ratio, thickness,
+                          script="galaxy/galaxy_block", extra={"bottom_edge": "true"})
+
+    def gravity_gate(self, x, up, ceiling, ground=0.0):
+        """GRAVITY GATE at x: gravity becomes `up` when the player's centre gets there."""
+        self.add(Plain("GravityGate", "Node2D", "galaxy/gravity_gate",
+                       {"position": v2(x * T, -ground * T), "target_up": "true" if up else "false",
+                        "top": f(-(ceiling - ground) * T)}, span=(x * T, x * T)))
+
+    def flip_field(self, x0, x1, inside_up, ceiling, outside_up=None, ground=0.0, pit=False):
+        """FLIP FIELD from x0 to x1 (GRAVITY PIT with pit=True)."""
+        outside = (not inside_up) if outside_up is None else outside_up
+        props = {"position": v2(x0 * T, -ground * T), "length": f((x1 - x0) * T), "top": f(-(ceiling - ground) * T),
+                 "inside_up": "true" if inside_up else "false", "outside_up": "true" if outside else "false"}
+        if pit:
+            props["pit"] = "true"
+        self.add(Plain("FlipField", "Node2D", "galaxy/flip_field", props, span=(x0 * T, x1 * T)))
+
+    def mine(self, x, ceiling, radius=22.0, phase=0.0, ground=0.0):
+        """GRAVITY MINE at x, resting on whichever of ground/ceiling is the floor."""
+        return self.add(GravityMine(self, x * T, -ground * T, -(ceiling - ground) * T, radius, phase))
+
+    def asteroid(self, x, ceiling, period=1.6, phase=0.0, warning=0.45, speed=900.0, radius=20.0, ground=0.0):
+        """FALLING ASTEROID column at x, between the ground and the ceiling."""
+        return self.add(FallingAsteroid(self, x * T, -ground * T, -(ceiling - ground) * T, radius, period, phase,
+                                        warning, speed))
+
+    def trap(self, x0, width, surface, facing=1, reach=1.1, period=1.6, hold_ratio=0.5, phase=0.0, warning=0.3):
+        """CEILING TRAP on the surface at height `surface`, biting `reach` tiles
+        down (facing 1, from a ceiling) or up (facing -1, from the ground)."""
+        return self.add(CeilingTrap(x0 * T, -surface * T, width * T, reach * T, facing, period, hold_ratio, phase,
+                                    warning))
+
+    def orbital(self, x, height, radius, bodies=2, body_radius=18.0, spin=1.6, phase=0.0):
+        """ORBITAL HAZARD centred at (x, height); radius in tiles."""
+        return self.add(OrbitalHazard(x * T, -height * T, radius * T, bodies, body_radius, spin, phase))
+
+    def dual(self, x, ceiling, low=0.3, high=2.2, period=1.6, hold_ratio=0.5, phase=0.0, alternate=False,
+             width=40.0, warning=0.3, ground=0.0):
+        """DUAL HAZARD: spires on the ground and the ceiling at x (heights in tiles)."""
+        return self.add(DualHazard(x * T, -ground * T, -(ceiling - ground) * T, width, low * T, high * T, period,
+                                   hold_ratio, phase, alternate, warning))
+
+    def echo(self, x0, x1, bottom, top, for_up, danger=False):
+        """GRAVITY ECHO over x0..x1, bottom..top (tiles): what matters after the flip."""
+        props = {"position": v2(x0 * T, -top * T), "size": v2((x1 - x0) * T, (top - bottom) * T),
+                 "for_up": "true" if for_up else "false"}
+        if danger:
+            props["danger"] = "true"
+        self.add(Plain("GravityEcho", "Node2D", "galaxy/gravity_echo", props, span=(x0 * T, x1 * T)))
+
+    def lens(self, x, height, radius=90.0):
+        """GRAVITY LENS in the background at (x, height)."""
+        self.add(Plain("GravityLens", "Node2D", "galaxy/gravity_lens",
+                       {"position": v2(x * T, -height * T), "radius": f(float(radius))}, span=(x * T, x * T)))
+
     # -------------------------------------------------- progress checkpoints --
     def progress_checkpoints(self, fractions=(1.0 / 3.0, 2.0 / 3.0), runway=1.5):
         """Checkpoints at fixed shares of the level's length (after done()).
@@ -1340,9 +1693,10 @@ class Level:
             # do not move this one: `want` is already a final position.
             want = spawn + share * (final - spawn) - 1.0
             cut = min(self._cut_points(), key=lambda x: abs(x - want))
-            height = self.at(cut)["h"] / T
+            st = self.at(cut)
             self.insert_rest(cut, length)
-            self.checkpoint(cut + 1.0, height)
+            # On the surface the player runs on there (a ceiling in World 03).
+            self.checkpoint(cut + 1.0, st["feet_h"] / T, st["up"])
             self.notes.append(f"checkpoint {100.0 * (cut + 1.0 - spawn) / (final - spawn):.1f}% at x={cut + 1.0:.2f} "
                               f"(rest opened at x={cut:.2f}, {length:.1f} tiles)")
 
@@ -1359,8 +1713,9 @@ class Level:
             x = round(st["x"], 3)
             if x < spawn + 3.0 or x > self.finish_x - 3.0:
                 continue
+            face = (lambda su: su.bottom) if st["up"] else (lambda su: su.top)
             ground = [su for su in self.surfaces if su.x0 / T <= x - 1.0 and su.x1 / T >= x + 1.0
-                      and abs(-su.top / T - st["h"] / T) < 1e-3]
+                      and abs(-face(su) / T - st["feet_h"] / T) < 1e-3]
             if not (st["grounded"] and ground and all(su.osc is None and su.drop is None for su in ground)):
                 continue
             if any(lo < x + 1.0 and hi > x - 1.0 for lo, hi in reach):
@@ -1374,7 +1729,8 @@ class Level:
 
     @staticmethod
     def _inert(e):
-        return isinstance(e, Plain) and e.base in ("Block", "Shard", "Checkpoint", "FinishGate", "WhiteoutZone")
+        return isinstance(e, Plain) and e.base in ("Block", "Shard", "Checkpoint", "FinishGate", "WhiteoutZone",
+                                                   "GalaxyBlock", "GravityEcho", "GravityLens")
 
     @staticmethod
     def _vec(text):
@@ -1392,7 +1748,9 @@ class Level:
         x, _ = self._vec(e._props["position"])
         if e.base == "WhiteoutZone":
             return (x, x + float(e._props["length"]))
-        if e.base in ("Block", "MovingPlatform", "ShadowBlock"):
+        if e.base == "FlipField":
+            return (x, x + float(e._props["length"]))
+        if e.base in ("Block", "MovingPlatform", "ShadowBlock", "GalaxyBlock", "GravityEcho"):
             w = self._vec(e._props["size"])[0]
             lo, hi = e.osc.reach() if e.osc else (0.0, 0.0)
             return (x + lo, x + w + hi)
@@ -1427,7 +1785,9 @@ class Level:
                 if isinstance(e, Plain) and e.base == "WhiteoutZone":
                     e._props["length"] = f(float(e._props["length"]) + dx)
                     continue
-                assert isinstance(e, Plain) and e.base == "Block", f"{e.base} spans the cut at x={x}"
+                if isinstance(e, Plain) and e.base in ("GravityEcho", "GravityLens"):
+                    continue  # Starts before the cut: stays (decoration).
+                assert isinstance(e, Plain) and e.base in ("Block", "GalaxyBlock"), f"{e.base} spans the cut at x={x}"
                 w, h = self._vec(e._props["size"])
                 e._props["size"] = v2(w + dx, h)
                 continue
@@ -1471,6 +1831,20 @@ class Level:
                 e.phase -= dt / e.period
             elif isinstance(e, Spikes):
                 e.__init__(e.x0 + dx, e.y0, e.count, e.down)
+            elif isinstance(e, GravityMine):
+                e.x += dx
+            elif isinstance(e, FallingAsteroid):
+                e.x += dx
+                e.phase -= dt / e.period
+            elif isinstance(e, CeilingTrap):
+                e.x0 += dx
+                e.phase -= dt / e.period
+            elif isinstance(e, OrbitalHazard):
+                e.x += dx
+                e.phase -= e.spin * dt / math.tau
+            elif isinstance(e, DualHazard):
+                e.x += dx
+                e.phase -= dt / e.period
             else:
                 pos(e)
                 if e.span != (0.0, 0.0):
@@ -1498,6 +1872,7 @@ class Level:
         self.finish_x += length
         self._sim = None
         self._path = None
+        self._gravity = None
 
     def _resolve(self, x):
         x = round(x, 3)
@@ -1654,7 +2029,7 @@ class Level:
             # Static ground only: a start cannot know it is being carried.
             if s["grounded"] and s["static"] and s["jump"] is None and \
                     not any(s["x"] - 10 * step <= r <= s["x"] + 2 * step for r in route):
-                start = (s["x"], s["h"] / T)
+                start = (s["x"], s["feet_h"] / T)
         return start
 
     def _as_designed(self, route, x_from, x_to, kinds=None):
@@ -1755,14 +2130,17 @@ class Level:
         scripts = sorted({e.script for _, _, e in self.entries if e.script} |
                          {"oscillator" for _, _, e in self.entries if e.osc})
         ext = [("Script", "res://src/level/level.gd", "level"), ("Resource", "res://" + data_path, "data")]
-        ext += [("Script", GAME_SRC + s + ".gd", s) for s in scripts]
+        ext += [("Script", GAME_SRC + s + ".gd", s.replace("/", "_")) for s in scripts]
         ext.append(("PackedScene", GAME_SRC + "shard.tscn", "shard"))
         out = ["[gd_scene format=3]\n"]
         out += [f'[ext_resource type="{a}" path="{b}" id="{c}"]' for a, b, c in ext]
         out.append("")
         node_name = "".join(p.capitalize() for p in self.key.split("_"))
         out.append(f'[node name="{node_name}" type="Node2D"]\nscript = ExtResource("level")\n'
-                   f'data = ExtResource("data")\nkill_y = {f(self.kill_y)}\n')
+                   f'data = ExtResource("data")\nkill_y = {f(self.kill_y)}\n'
+                   + (f'kill_top = {f(self.kill_top)}\n' if self.kill_top is not None else '')
+                   + ('start_gravity_up = true\n' if self.start_up else '')
+                   + (f'camera_offset = {f(self.camera_offset)}\n' if self.camera_offset is not None else ''))
         out.append(f'[node name="SpawnPoint" type="Marker2D" parent="."]\nposition = {v2(self.spawn_px, 0)}\n')
         written_groups = set()
         for group, name, el in self.entries:
@@ -1777,7 +2155,7 @@ class Level:
             if "position" in props:
                 lines.append(f"position = {props['position']}")
             if el.script:
-                lines.append(f'script = ExtResource("{el.script}")')
+                lines.append(f'script = ExtResource("{el.script.replace("/", "_")}")')
             lines += [f"{k} = {v}" for k, v in props.items() if k != "position"]
             out.append("\n".join(lines) + "\n")
             if el.osc:

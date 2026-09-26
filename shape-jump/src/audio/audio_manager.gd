@@ -37,6 +37,8 @@ func _ready() -> void:
 	Events.ui_pressed.connect(func() -> void: play(&"ui_click"))
 	Events.obstacle_warning.connect(func(_p: Vector2) -> void: play(&"warning", 0.03, -4.0))
 	Events.obstacle_slam.connect(func(_p: Vector2) -> void: play(&"slam", 0.05, -3.0))
+	Events.gravity_flipped.connect(func(_up: bool, _p: Vector2) -> void: play(&"gravity_flip", 0.02))
+	Events.gravity_warning.connect(func(_p: Vector2) -> void: play(&"gravity_warning", 0.02, -3.0))
 	Events.level_started.connect(func(_id: StringName) -> void: _ensure_ambient())
 
 

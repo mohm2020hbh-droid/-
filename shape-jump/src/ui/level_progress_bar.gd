@@ -11,6 +11,7 @@ const LABEL_WIDTH := 64.0
 var _target := 0.0
 var _shown := 0.0
 var _marks: Array[float] = []
+var _milestones: Array[float] = []
 var _reached: Array[bool] = []
 var _flash := 0.0
 var _flash_index := -1
@@ -28,6 +29,12 @@ func set_marks(marks: Array[float]) -> void:
 	_reached.clear()
 	_reached.resize(_marks.size())
 	_reached.fill(false)
+	queue_redraw()
+
+
+## Plain position marks (percent) without a checkpoint behind them.
+func set_milestones(milestones: Array[float]) -> void:
+	_milestones = milestones.duplicate()
 	queue_redraw()
 
 
@@ -71,6 +78,10 @@ func _draw() -> void:
 	var fill := width * _shown / 100.0
 	if fill > 0.5:
 		Neon.line(self, Vector2(0, y), Vector2(fill, y), Palette.NEON, TRACK_HEIGHT, 0.8)
+	for m in _milestones:
+		var mx := width * m / 100.0
+		var passed := _shown >= m
+		draw_circle(Vector2(mx, y), 3.0, Palette.UI_TEXT if passed else Color(Palette.UI_MUTED, 0.6))
 	for i in _marks.size():
 		var x := width * _marks[i] / 100.0
 		var lit := _reached[i]

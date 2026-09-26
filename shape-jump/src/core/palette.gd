@@ -5,6 +5,9 @@ class_name Palette
 ## draw once pick up the world they belong to.
 ##   &"red"  – World 01, The Red Void: black and neon red.
 ##   &"mono" – World 02, The Monochrome Void: black and white only.
+##   &"galaxy" – World 03, The Horrifying Galaxy: a cold base; the two
+##               gravity colours (blue/violet, orange/amber) are layered on
+##               top by GalaxyLook.
 
 const THEMES := {
 	&"red": {
@@ -19,6 +22,19 @@ const THEMES := {
 		"SHARD_EDGE": Color("ff4d6a"), "SHARD_CORE": Color("ffe3ea"),
 		"UI_TEXT": Color("f4e9ec"), "UI_MUTED": Color("b89aa2"), "UI_PANEL": Color(0.043, 0.027, 0.039, 0.86),
 		"UI_ACCENT": Color("ff2340"), "UI_CARD": Color(0.05, 0.03, 0.045),
+	},
+	&"galaxy": {
+		"SKY_TOP": Color("04030c"), "SKY_HORIZON": Color("191135"), "FOG": Color("3b2c70"),
+		"SUN": Color("d6ccff"), "SUN_GLOW": Color("9b7bff"),
+		"SILHOUETTE_FAR": Color("141129"), "SILHOUETTE_MID": Color("0a0918"),
+		"BLOCK_BODY": Color("0b0a17"), "BLOCK_FACE": Color("1c1a33"),
+		"NEON": Color("ebe7ff"), "NEON_DIM": Color("6c6694"),
+		"HAZARD": Color("ff3d8b"), "HAZARD_CORE": Color("ffd6ec"),
+		"HAZARD_BODY": Color("1c0718"), "HAZARD_STRIPE": Color(1.0, 0.24, 0.55, 0.35),
+		"PLAYER_BODY": Color("000000"), "PLAYER_EDGE": Color("ffffff"), "PLAYER_CORE": Color("ffffff"),
+		"SHARD_EDGE": Color("8ff0ff"), "SHARD_CORE": Color("f2feff"),
+		"UI_TEXT": Color("f1edff"), "UI_MUTED": Color("a49ec8"), "UI_PANEL": Color(0.03, 0.025, 0.07, 0.88),
+		"UI_ACCENT": Color("b48cff"), "UI_CARD": Color(0.045, 0.04, 0.085),
 	},
 	&"mono": {
 		"SKY_TOP": Color("000000"), "SKY_HORIZON": Color("262626"), "FOG": Color("d8d8d8"),
@@ -108,3 +124,7 @@ static func use(name: StringName) -> bool:
 
 static func is_mono() -> bool:
 	return theme == &"mono"
+
+
+static func is_galaxy() -> bool:
+	return theme == &"galaxy"

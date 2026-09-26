@@ -14,6 +14,9 @@ extends Resource
 ## Look of the whole world: a [Palette] theme and a background scene.
 @export var theme: StringName = &"red"
 @export var background: PackedScene
+## Extra progress marks on the HUD bar besides the checkpoints (percent),
+## e.g. World 03's 50% and 75%.
+@export var progress_milestones: Array[float] = []
 
 
 func get_level(index: int) -> LevelData:

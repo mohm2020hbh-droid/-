@@ -41,6 +41,8 @@ static func route_for(world_index: int, level_index: int) -> PackedFloat32Array:
 			return World01Routes.get_route(level_index)
 		1:
 			return World02Routes.get_route(level_index)
+		2:
+			return World03Routes.get_route(level_index)
 	return PackedFloat32Array()
 
 

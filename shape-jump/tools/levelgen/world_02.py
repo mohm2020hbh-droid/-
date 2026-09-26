@@ -866,7 +866,7 @@ def write_world(count):
     refs = ", ".join(f'ExtResource("level_{i:02d}")' for i in range(1, count + 1))
     lines += ["", "[resource]", 'script = ExtResource("1_world")', f'id = &"{WORLD}"', "number = 2",
               'display_name = "The Monochrome Void"', f'levels = Array[ExtResource("2_level")]([{refs}])',
-              'next_world_name = ""', 'requires = ExtResource("4_requires")', 'theme = &"mono"',
+              'next_world_name = "World 03"', 'requires = ExtResource("4_requires")', 'theme = &"mono"',
               'background = ExtResource("3_background")']
     with open(ROOT + f"levels/{WORLD}/{WORLD}.tres", "w") as fh:
         fh.write("\n".join(lines) + "\n")

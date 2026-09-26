@@ -130,8 +130,9 @@ func test_world_tabs_open_world_02_once_world_01_is_done() -> void:
 	await h.start(0)
 	var overlay := h.game.start_overlay
 	var tabs: Array[Button] = overlay._tabs
-	assert_eq(tabs.size(), 2, "one tab per world")
+	assert_eq(tabs.size(), 3, "one tab per world")
 	assert_true(tabs[1].disabled, "World 02 is locked on a fresh save")
+	assert_true(tabs[2].disabled, "World 03 is locked on a fresh save")
 	overlay.world_chosen.emit(1)
 	await h.run_ticks(2)
 	assert_eq(h.game.world_index, 0, "a locked world cannot be chosen")
@@ -140,6 +141,7 @@ func test_world_tabs_open_world_02_once_world_01_is_done() -> void:
 		_complete(i)
 	h.game.load_level(0)  # Back on the start screen: the tabs are rebuilt.
 	assert_false(tabs[1].disabled, "World 02 opens once World 01 is complete")
+	assert_true(tabs[2].disabled, "World 03 waits for World 02")
 	overlay.world_chosen.emit(1)
 	await h.run_ticks(2)
 	assert_eq(h.game.world_index, 1, "the World 02 tab switches worlds")
