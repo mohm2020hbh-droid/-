@@ -4,7 +4,7 @@ extends GardenHazard
 ## FLOATING LEAVES, the dangerous kind (World 04): a big leaf with an inked,
 ## razor edge gliding on a figure-of-eight loop through the corridor, tilting
 ## with its flight. Most leaves in the garden are only scenery (pale, soft,
-## behind everything: [LeafStorm]); these are dark and outlined, always
+## behind everything: [GardenWeather]); these are dark and outlined, always
 ## drawn in front of the scenery leaves, and kill on touch.
 ## Origin = the loop's centre. (Mirrored in tools/levelgen/levelgen.py:
 ## LeafGlider.)

@@ -119,6 +119,25 @@ def new_level(key, number, name, tagline, speed, corridor=C):
     return lv
 
 
+def size_hops(lv, roots=(1.0, 1.0), flower=(1.0, 1.0)):
+    """The level's difficulty dial for plain hops: roots and flowers grow by
+    (width, height) factors around their centre, so the spacing of the beats
+    stays and the window of the jump over them shrinks. (Roots kill in their
+    lower 62% only, flowers in their core: a larger one asks for a jump
+    closer to the top of its arc.)"""
+    base_roots, base_flower = lv.roots, lv.flower
+
+    def sized_roots(x0, width, reach, *args, **kw):
+        w = width * roots[0]
+        return base_roots(x0 - (w - width) * 0.5, w, reach * roots[1], *args, **kw)
+
+    def sized_flower(x, *args, **kw):
+        kw["width"] = kw.get("width", 72.0) * flower[0]
+        kw["height"] = kw.get("height", 118.0) * flower[1]
+        return base_flower(x, *args, **kw)
+    lv.roots, lv.flower = sized_roots, sized_flower
+
+
 def start_level(lv):
     for x in (7, 9, 11):
         lv.shard(x, 0.5)
@@ -302,7 +321,8 @@ def level_01():
     that carries the latch to a ceiling too high for a jump (and back down:
     wind acts from your floor); then a last third that keeps crossing, with
     less time for every move."""
-    lv = new_level("level_01", 1, "Blue Bloom", "Hard", 1.16)
+    lv = new_level("level_01", 1, "Blue Bloom", "Hard", 1.16, corridor=5.2)
+    size_hops(lv, roots=(1.8, 1.55), flower=(1.5, 1.25))
     floor, top = start_level(lv)
     plan = Plan(lv, floor, top)
     plan.open(13.0)
@@ -333,13 +353,13 @@ def level_01():
 
     lv.group("Wave")
     x = hop(lv, x, lv.wave(x + 5.0, 6.0, period=2.6), 200)
-    x = hop(lv, after(lv, x), lv.roots(after(lv, x, 2.2), 1.6, 1.6, period=1.5), 200)
+    x = hop(lv, after(lv, x, 0.6), lv.roots(after(lv, x, 2.8), 1.6, 1.6, period=1.5), 200)
     lv.shards_along(x - 9.0, x + 6.0, 2.0)
 
     lv.group("Gust")
     # A ceiling too high for any jump (6 tiles): only the updraft's lift
     # carries the latch up to it.
-    xj = after(lv, x, 1.0)
+    xj = after(lv, x, 1.8)
     top.set(xj - 4.0, xj + 34.0, 6.0)
     wind = lv.wind(xj - 2.2, 10.0, -1100.0, period=1.8, hold_ratio=0.35, c=6.0)
     xl, land = plan.cross(xj, 0.36, 6.0)
@@ -350,7 +370,7 @@ def level_01():
     lv.group("Down")
     # Still six tiles tall: the gust that lifted you up now lifts you away
     # from the ceiling, down to the ground (wind acts from your floor).
-    xj = after(lv, x, 0.5)
+    xj = after(lv, x, 1.2)
     back = lv.wind(xj - 2.0, 10.0, -1100.0, period=1.8, hold_ratio=0.35, c=6.0)
     xl, land = plan.cross(xj, 0.36, 6.0)
     lv.tune(back, [xj, xl], 220)
@@ -380,7 +400,8 @@ def level_02():
     onto the floor you run on, waterfalls swelling into torrents, vines
     letting themselves down, branches swinging across. More crossings, and
     crossings through what is falling, not only to get somewhere."""
-    lv = new_level("level_02", 2, "Falling Garden", "Very hard", 1.19, corridor=5.25)
+    lv = new_level("level_02", 2, "Falling Garden", "Very hard", 1.19, corridor=5.3)
+    size_hops(lv, roots=(1.8, 1.55), flower=(1.5, 1.25))
     floor, top = start_level(lv)
     plan = Plan(lv, floor, top)
     plan.open(13.0)
@@ -475,7 +496,8 @@ def level_03():
     sweeping across the way you cross, a waterfall pouring from the sky
     side. GROUND -> CEILING -> water -> GROUND -> double action -> CEILING:
     the second tap has to be planned."""
-    lv = new_level("level_03", 3, "The Flooded Sky", "Extremely hard", 1.22, corridor=5.3)
+    lv = new_level("level_03", 3, "The Flooded Sky", "Extremely hard", 1.22, corridor=5.4)
+    size_hops(lv, roots=(1.9, 1.6), flower=(1.55, 1.28))
     floor, top = start_level(lv)
     plan = Plan(lv, floor, top)
     plan.open(13.0)
@@ -581,6 +603,7 @@ def level_04():
     of the world is part of the puzzle: flowers bloom on the surface you run
     on and curtains hang from the other, so every flip rearranges them."""
     lv = new_level("level_04", 4, "Painted Storm", "Brutal", 1.25, corridor=5.4)
+    size_hops(lv, roots=(1.5, 1.35), flower=(1.3, 1.15))
     floor, top = start_level(lv)
     plan = Plan(lv, floor, top)
     plan.open(13.0)
@@ -695,6 +718,7 @@ def level_05():
     flower, down again, ink, and one last latch onto the ceiling right
     before the finish."""
     lv = new_level("level_05", 5, "The Inverted Garden", "Brutal but fair", 1.28, corridor=5.45)
+    size_hops(lv, roots=(1.4, 1.3), flower=(1.25, 1.12))
     floor, top = start_level(lv)
     plan = Plan(lv, floor, top)
     plan.open(13.0)

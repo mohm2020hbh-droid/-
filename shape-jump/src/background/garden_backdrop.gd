@@ -28,16 +28,18 @@ const GROUND_STATE := {
 	"sun": Color(1.0, 1.0, 1.0, 0.95), "cloud": Color(1.0, 1.0, 1.0, 0.92),
 	"far": Color(0.62, 0.77, 0.96), "mid": Color(0.42, 0.62, 0.93),
 	"water": Color(0.55, 0.78, 1.0), "fog": Color(1.0, 1.0, 1.0, 0.35),
-	"birds": Color(0.2, 0.36, 0.72), "leaves": Color(1.0, 1.0, 1.0, 0.75),
+	"birds": Color(0.2, 0.36, 0.72, 0.5), "leaves": Color(1.0, 1.0, 1.0, 0.75),
 }
 const CEILING_STATE := {
 	"sky": [Color("ffb800"), Color("ffd84a"), Color("fff1b0")],
 	"sun": Color(0.05, 0.04, 0.02, 0.95), "cloud": Color(0.08, 0.06, 0.02, 0.85),
 	"far": Color(0.96, 0.70, 0.10), "mid": Color(0.86, 0.56, 0.04),
 	"water": Color(0.98, 0.66, 0.02), "fog": Color(1.0, 0.90, 0.45, 0.35),
-	"birds": Color(0.05, 0.04, 0.02), "leaves": Color(0.12, 0.09, 0.03, 0.8),
+	"birds": Color(0.30, 0.20, 0.02, 0.4), "leaves": Color(0.12, 0.09, 0.03, 0.8),
 }
 
+## (The scenery birds stay faint in both states: only the obstacle flocks,
+## inked and solid, are drawn at full strength.)
 ## Parallax of each layer (0 = fixed to the sky, 1 = the world) and its wrap.
 const LAYERS := [
 	["_Sun", 0.0, 0.0, "sun"], ["_Clouds", 0.04, 4096.0, "cloud"], ["_FarHills", 0.1, 3584.0, "far"],

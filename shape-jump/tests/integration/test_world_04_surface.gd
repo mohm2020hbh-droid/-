@@ -116,15 +116,23 @@ func test_the_view_keeps_the_corridor_framed_through_a_latch() -> void:
 	for i in 40:
 		await h.tick()
 		ys.append(camera.global_position.y)
+		var view := camera.get_view_rect()
+		assert_true(view.grow(-40.0).has_point(h.game.player.global_position), "the player stays well inside the view")
+	# The view does not follow the arc of the crossing: it only settles on the
+	# new surface's height (this first ceiling is lower than the level's
+	# corridor), one way, by less than a tile. No bob: never back and forth.
 	var lo: float = ys.min()
 	var hi: float = ys.max()
-	# The arc of the crossing spans the whole corridor (4 to 6 tiles); the view
-	# only settles on the new surface's height (this first ceiling is half a
-	# tile lower than the level's corridor), well under a tile.
-	assert_true(hi - lo < 0.5 * T, "no bob: the view barely moves while the player crosses (%.1f px)" % (hi - lo))
-	var view := camera.get_view_rect()
-	var player := h.game.player.global_position
-	assert_true(view.grow(-40.0).has_point(player), "the player is well inside the view")
+	assert_true(hi - lo < T, "the view barely moves while the player crosses (%.1f px)" % (hi - lo))
+	var turns := 0
+	var heading := 0.0
+	for i in range(1, ys.size()):
+		var step := ys[i] - ys[i - 1]
+		if absf(step) > 0.25:
+			if heading != 0.0 and signf(step) != heading:
+				turns += 1
+			heading = signf(step)
+	assert_eq(turns, 0, "no bob: the view settles one way (%s)" % str(ys))
 
 
 func test_the_world_inverts_its_colours_with_the_surface() -> void:
