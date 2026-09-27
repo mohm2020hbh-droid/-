@@ -125,8 +125,11 @@ def start_level(lv):
     return Band(-12.0, 0.0, 0.0, False), Band(-12.0, 0.0, lv.corridor[1], True)
 
 
-def finish_level(lv, floor, top, end, up=False):
+def finish_level(lv, floor, top, end, up=False, plan=None):
     lv._dbg_floor, lv._dbg_top = floor, top
+    if plan is not None:
+        # The surface left behind at the last crossing is gone to the end too.
+        plan.close(end + 16.0)
     floor.x1 = top.x1 = end + 16.0
     floor.emit(lv)
     top.emit(lv)
@@ -260,6 +263,23 @@ def quick_cross(lv, x, corridor, dt=0.12):
     return cross(lv, x, dt, corridor)
 
 
+def tunnel_inks(lv, t0, period, ms):
+    """The low tunnel (4 tiles, both surfaces): ink floods the ground, then
+    the ceiling, then the ground again, each time long enough to cover the
+    way while you would pass on that surface. Jump and latch at once, three
+    times (up, down, up): skipping any of the six taps meets the ink."""
+    xj = t0 + 1.0
+    xl, land = quick_cross(lv, xj, 4.0)
+    legs = ((GROUND, 7.5, 9.0), (CEILING, 7.5, 9.0), (GROUND, 6.0, 11.0))
+    for i, (anchor, reach, gap) in enumerate(legs):
+        ink = lv.ink(land + gap, reach, anchor=anchor, period=period, hold_ratio=0.55, c=4.0)
+        lv.tune(ink, [xj, xl], ms)
+        if i < len(legs) - 1:
+            xj = land + 8.4
+            xl, land = quick_cross(lv, xj, 4.0)
+    lv._tunnel_land = land
+
+
 def curtain_hop(lv, x, ms, period=1.6, corridor=None):
     """Roots on your floor under a painted curtain hanging from the side
     across: it rolls down into the arc of the jump, so the jump goes while
@@ -352,7 +372,7 @@ def level_01():
     x = hop(lv, land + 2.4, lv.roots(land + 4.6, 1.6, 1.6, period=1.2), 150)
     x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.2, hold_ratio=0.5), 150)
     lv.shards_along(land - 30.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 12.0)
+    return finish_level(lv, floor, top, x + 10.0, plan=plan)
 
 
 def level_02():
@@ -441,10 +461,11 @@ def level_02():
     x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.5, 1.5, anchor=FLOOR, period=1.1), 120)
     x = branch_hop(lv, after(lv, x), 115, True, period=1.3)
     xl, land = plan.cross(after(lv, x), 0.33)
-    x = rock_hop(lv, land + 9.0, 115, period=1.05)
-    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.1, hold_ratio=0.5), 115)
+    x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.5, 1.5, period=1.05), 110)
+    x = rock_hop(lv, after(lv, x), 110, period=1.05)
+    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.05, hold_ratio=0.5), 110)
     lv.shards_along(x - 30.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 12.0)
+    return finish_level(lv, floor, top, x + 9.0, plan=plan)
 
 
 def level_03():
@@ -483,6 +504,11 @@ def level_03():
     lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, period=1.3), xt, 210)
     lv.tune(lv.flock(xt + 3.4, 2.3, 1.4, period=1.8), xt, 150)
     x = xt
+    xt = after(lv, x, 1.2)
+    x = hop(lv, xt, lv.wave(xt + 5.0, 4.5, anchor=FLOOR, period=2.0, speed=400.0), 140)
+    xt = after(lv, x, 0.8)
+    x = hop(lv, xt, lv.ink(xt + 4.2, 3.4, anchor=FLOOR, period=1.4, hold_ratio=0.3), 140)
+    lv.shards_along(xt - 12.0, x + 4.0, 2.2)
 
     lv.group("Rest")
     x = rest(lv, after(lv, x), 8.0)
@@ -493,15 +519,13 @@ def level_03():
     # up, down, up.
     t0 = x
     plan.close(t0 - 1.0)
-    xl, land = quick_cross(lv, t0 + 1.0, 4.0)
-    lv.ink(land + 9.0, 7.5, anchor=GROUND, period=2.4, hold_ratio=0.1, c=4.0)
-    xl, land = quick_cross(lv, land + 8.4, 4.0)
-    lv.ink(land + 9.0, 7.5, anchor=CEILING, period=2.4, hold_ratio=0.1, c=4.0)
-    xl, land = quick_cross(lv, land + 8.4, 4.0)
-    lv.ink(land + 11.0, 6.0, anchor=GROUND, period=2.4, hold_ratio=0.1, c=4.0)
+    tunnel_inks(lv, t0, 2.4, 200)
     plan.up = True
+    land = lv._tunnel_land
     lv.shards_along(t0, land + 3.0, 1.6)
-    xt = land + 3.6
+    # (Past the landing of a jump from the last crossing: a tap here can
+    # not stand in for a missed latch.)
+    xt = land + 6.6
     x = hop(lv, xt, lv.wave(xt + 5.0, 4.5, anchor=FLOOR, period=2.0, speed=380.0, c=4.0), 140)
     x = hop(lv, after(lv, x), lv.roots(after(lv, x, 2.2), 1.6, 1.6, anchor=FLOOR, period=1.2, c=4.0), 140)
     lv.shards_along(x - 12.0, x + 4.0, 2.2)
@@ -538,9 +562,14 @@ def level_03():
     x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.2, hold_ratio=0.5), 120)
     xl, land = plan.cross(after(lv, x), 0.33)
     x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.4, hold_ratio=0.3), 120)
-    x = hop(lv, after(lv, x), lv.roots(after(lv, x, 2.2), 1.6, 1.6, anchor=FLOOR, period=1.2), 120)
-    lv.shards_along(x - 34.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 12.0, up=True)
+    x = hop(lv, after(lv, x), lv.roots(after(lv, x, 2.2), 1.6, 1.6, anchor=FLOOR, period=1.15), 115)
+    # Down through the flock once more, and one last wave.
+    xj = after(lv, x)
+    xl, land = plan.cross(xj, 0.33)
+    lv.tune(lv.flock(xl + 0.8, 2.5, 1.5, period=1.6), [xj, xl], 110, forced=False)
+    x = hop(lv, land + 3.0, lv.wave(land + 7.5, 5.0, anchor=FLOOR, period=1.8, speed=420.0), 110)
+    lv.shards_along(x - 40.0, x + 6.0, 2.4)
+    return finish_level(lv, floor, top, x + 9.0, plan=plan)
 
 
 def level_04():
@@ -557,21 +586,21 @@ def level_04():
     plan.open(13.0)
 
     lv.group("Gale")
-    x = hop(lv, 16.0, lv.flower(19.1, anchor=FLOOR, period=1.2, hold_ratio=0.5), 130)
-    x = curtain_hop(lv, after(lv, x), 120, period=1.4)
+    x = hop(lv, 16.0, lv.flower(19.1, anchor=FLOOR, period=1.3, hold_ratio=0.5), 170)
+    x = curtain_hop(lv, after(lv, x), 160, period=1.6)
     lv.shards_along(14.0, x + 5.0, 2.4)
 
     lv.group("Downdraft")
     # Gusts press you onto the ground: a latch only reaches between them.
     xj = after(lv, x)
     plan.close(xj - 6.0)
-    gust = lv.wind(xj - 3.0, 9.0, 950.0, period=1.3, hold_ratio=0.45)
+    gust = lv.wind(xj - 3.0, 9.0, 950.0, period=1.4, hold_ratio=0.45)
     xl, land = plan.cross(xj, 0.33)
-    lv.tune(gust, [xj, xl], 120, forced=False)
+    lv.tune(gust, [xj, xl], 150, forced=False)
     xt = land + 2.8
     lv.tap(xt)
-    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.3), xt, 190)
-    lv.tune(lv.glider(xt + 3.2, 3.6, loop=(110.0, 50.0), period=2.0), xt, 115)
+    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.3), xt, 200)
+    lv.tune(lv.glider(xt + 3.2, 3.6, loop=(110.0, 50.0), period=2.0), xt, 140)
     x = xt
 
     lv.group("Slick")
@@ -647,9 +676,14 @@ def level_04():
     xl, land = plan.cross(xj, 0.33)
     lv.tune(lv.branch(xl + 0.4, 2.8, anchor=GROUND, amplitude=0.85, period=1.5), [xj, xl], 95, forced=False)
     x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.2, hold_ratio=0.3), 95)
-    lv.weather(xj - 40.0, x + 12.0, "leaves", density=0.7)
-    lv.shards_along(xj - 30.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 12.0, up=True)
+    # Down past a swinging boulder, and the roots at the gate.
+    xj = after(lv, x)
+    xl, land = plan.cross(xj, 0.33)
+    lv.tune(lv.boulder(xl + 1.0, 2.6, radius=38.0, amplitude=0.8, period=1.5), [xj, xl], 95, forced=False)
+    x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.6, 1.6, period=1.0), 90)
+    lv.weather(xj - 50.0, x + 10.0, "leaves", density=0.7)
+    lv.shards_along(xj - 40.0, x + 6.0, 2.4)
+    return finish_level(lv, floor, top, x + 9.0, plan=plan)
 
 
 def level_05():
@@ -709,14 +743,10 @@ def level_05():
     lv.group("Rapids")
     t0 = after(lv, x) - 1.0
     plan.close(t0 - 1.0)
-    xl, land = quick_cross(lv, t0 + 1.0, 4.0)
-    lv.ink(land + 9.0, 7.5, anchor=GROUND, period=2.2, hold_ratio=0.1, c=4.0)
-    xl, land = quick_cross(lv, land + 8.4, 4.0)
-    lv.ink(land + 9.0, 7.5, anchor=CEILING, period=2.2, hold_ratio=0.1, c=4.0)
-    xl, land = quick_cross(lv, land + 8.4, 4.0)
-    lv.ink(land + 11.0, 6.0, anchor=GROUND, period=2.2, hold_ratio=0.1, c=4.0)
+    tunnel_inks(lv, t0, 2.2, 180)
     plan.up = True
-    xt = land + 3.6
+    land = lv._tunnel_land
+    xt = land + 6.6
     x = hop(lv, xt, lv.roots(xt + 2.2, 1.6, 1.6, anchor=FLOOR, period=1.1, c=4.0), 105)
     lv.shards_along(t0, x + 4.0, 1.8)
     tunnel_end = after(lv, x, -1.0)
@@ -765,7 +795,7 @@ def level_05():
     x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.2, hold_ratio=0.3), 90)
     xl, land = plan.cross(after(lv, x), 0.33)
     lv.shards_along(xj - 60.0, land + 1.0, 2.2)
-    return finish_level(lv, floor, top, land + 2.5, up=True)
+    return finish_level(lv, floor, top, land + 2.5, up=True, plan=plan)
 
 
 LEVELS = [level_01, level_02, level_03, level_04, level_05]

@@ -218,8 +218,8 @@ ceiling = -256
 reach = 480
 thickness = 22
 period = 2.2
-hold_ratio = 0.1
-phase = 0.25
+hold_ratio = 0.55
+phase = 0.275
 warning_time = 0.35
 
 [node name="InkFlow2" type="Area2D" parent="Rapids"]
@@ -230,7 +230,7 @@ anchor = 1
 reach = 480
 thickness = 22
 period = 2.2
-hold_ratio = 0.1
+hold_ratio = 0.55
 phase = 0.25
 warning_time = 0.35
 
@@ -241,26 +241,26 @@ ceiling = -256
 reach = 384
 thickness = 22
 period = 2.2
-hold_ratio = 0.1
+hold_ratio = 0.55
 phase = 0.25
 warning_time = 0.35
 
 [node name="RisingRoots" type="Area2D" parent="Rapids"]
-position = Vector2(11772.5867, -0)
+position = Vector2(11964.5867, -0)
 script = ExtResource("garden_rising_roots")
 ceiling = -256
 anchor = 2
 width = 102.4
 reach = 102.4
 period = 1.1
-phase = 0.7
+phase = 0.5
 warning_time = 0.35
 hold_time = 0.35
 
 [node name="Tempest" type="Node2D" parent="."]
 
 [node name="CanvasCurtain" type="Area2D" parent="Tempest"]
-position = Vector2(12435.328, -0)
+position = Vector2(12627.328, -0)
 script = ExtResource("garden_canvas_curtain")
 ceiling = -348.8
 anchor = 3
@@ -269,23 +269,23 @@ short = 32
 long = 153.6
 period = 1.3
 hold_ratio = 0.4
-phase = 0.7391
+phase = 0.7308
 warning_time = 0.35
 
 [node name="RisingRoots" type="Area2D" parent="Tempest"]
-position = Vector2(12912.768, -0)
+position = Vector2(13104.768, -0)
 script = ExtResource("garden_rising_roots")
 ceiling = -348.8
 anchor = 2
 width = 89.6
 reach = 96
 period = 1.3
-phase = 0.7474
+phase = 0.5308
 warning_time = 0.35
 hold_time = 0.35
 
 [node name="CanvasCurtain2" type="Area2D" parent="Tempest"]
-position = Vector2(12906.368, -0)
+position = Vector2(13098.368, -0)
 script = ExtResource("garden_canvas_curtain")
 ceiling = -348.8
 anchor = 3
@@ -294,24 +294,24 @@ short = 38.4
 long = 166.4
 period = 1.3
 hold_ratio = 0.4
-phase = 0.2224
+phase = 0.9808
 warning_time = 0.35
 
 [node name="Gale" type="Node2D" parent="."]
 
 [node name="WindBurst" type="Node2D" parent="Gale"]
-position = Vector2(13515.8869, -0)
+position = Vector2(13707.8869, -0)
 script = ExtResource("garden_wind_burst")
 width = 576
 ceiling = -348.8
 lift = 950
 period = 1.4
 hold_ratio = 0.45
-phase = 0.4548
+phase = 0.5214
 warning_time = 0.35
 
 [node name="ClosingFlower" type="Area2D" parent="Gale"]
-position = Vector2(14392.192, -0)
+position = Vector2(14584.192, -0)
 script = ExtResource("garden_closing_flower")
 ceiling = -348.8
 anchor = 2
@@ -319,11 +319,11 @@ width = 72
 height = 118
 period = 1.15
 hold_ratio = 0.5
-phase = 0.0402
+phase = 0.7819
 warning_time = 0.35
 
 [node name="SweepingBranch" type="Area2D" parent="Gale"]
-position = Vector2(16031.616, -0)
+position = Vector2(16223.616, -0)
 script = ExtResource("garden_sweeping_branch")
 ceiling = -348.8
 length = 179.2
@@ -331,10 +331,10 @@ thickness = 22
 crown = 34
 amplitude = 0.85
 period = 1.6
-phase = 0.9042
+phase = 0.9375
 
 [node name="InkFlow" type="Area2D" parent="Gale"]
-position = Vector2(16553.856, -0)
+position = Vector2(16745.856, -0)
 script = ExtResource("garden_ink_flow")
 ceiling = -348.8
 anchor = 2
@@ -342,25 +342,25 @@ reach = 217.6
 thickness = 22
 period = 1.3
 hold_ratio = 0.3
-phase = 0.7615
+phase = 0.5449
 warning_time = 0.35
 
 [node name="FinalGauntlet" type="Node2D" parent="."]
 
 [node name="RisingRoots" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(17418.88, -0)
+position = Vector2(17610.88, -0)
 script = ExtResource("garden_rising_roots")
 ceiling = -348.8
 anchor = 2
 width = 89.6
 reach = 96
 period = 1.3
-phase = 0.5449
+phase = 0.3282
 warning_time = 0.35
 hold_time = 0.35
 
 [node name="SweepingBranch" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(17463.68, -0)
+position = Vector2(17655.68, -0)
 script = ExtResource("garden_sweeping_branch")
 ceiling = -348.8
 length = 153.6
@@ -368,20 +368,20 @@ thickness = 22
 crown = 34
 amplitude = 0.9
 period = 1.4
-phase = 0.1345
+phase = 0.9179
 
 [node name="BirdFlock" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(18036.864, -0)
+position = Vector2(18228.864, -0)
 script = ExtResource("garden_bird_flock")
 middle = -160
 sweep = 96
 drift = 36
 period = 1.5
-phase = 0.1417
+phase = 0.5833
 span = Vector2(110, 56)
 
 [node name="WaterWave" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(18565.504, -0)
+position = Vector2(18757.504, -0)
 script = ExtResource("garden_water_wave")
 ceiling = -348.8
 anchor = 2
@@ -390,22 +390,22 @@ width = 150
 run = 320
 speed = 440
 period = 1.7
-phase = 0.0338
+phase = 0.8838
 form_time = 0.45
 
 [node name="WindBurst" type="Node2D" parent="FinalGauntlet"]
-position = Vector2(18579.8229, -0)
+position = Vector2(18771.8229, -0)
 script = ExtResource("garden_wind_burst")
 width = 576
 ceiling = -348.8
 lift = 950
 period = 1.3
 hold_ratio = 0.45
-phase = 0.4782
+phase = 0.2449
 warning_time = 0.35
 
 [node name="ClosingFlower" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(19456.128, -0)
+position = Vector2(19648.128, -0)
 script = ExtResource("garden_closing_flower")
 ceiling = -348.8
 anchor = 2
@@ -413,11 +413,11 @@ width = 72
 height = 118
 period = 1.1
 hold_ratio = 0.5
-phase = 0.2833
+phase = 0.025
 warning_time = 0.35
 
 [node name="InkFlow" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(20519.552, -0)
+position = Vector2(20711.552, -0)
 script = ExtResource("garden_ink_flow")
 ceiling = -348.8
 anchor = 2
@@ -425,7 +425,7 @@ reach = 217.6
 thickness = 22
 period = 1.2
 hold_ratio = 0.3
-phase = 0.2833
+phase = 0.025
 warning_time = 0.35
 
 [node name="GardenBlock" type="StaticBody2D" parent="FinalGauntlet"]
@@ -441,27 +441,27 @@ size = Vector2(2572.7531, 96)
 [node name="GardenBlock3" type="StaticBody2D" parent="FinalGauntlet"]
 position = Vector2(8957.2949, -0)
 script = ExtResource("garden_garden_block")
-size = Vector2(3104.8107, 96)
+size = Vector2(3296.8107, 96)
 
 [node name="GardenBlock4" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(12396.9536, -0)
+position = Vector2(12588.9536, -0)
 script = ExtResource("garden_garden_block")
 size = Vector2(1694.4384, 96)
 
 [node name="GardenBlock5" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(15929.1989, -0)
+position = Vector2(16121.1989, -0)
 script = ExtResource("garden_garden_block")
 size = Vector2(1233.6811, 96)
 
 [node name="GardenBlock6" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(17908.8469, -0)
+position = Vector2(18100.8469, -0)
 script = ExtResource("garden_garden_block")
 size = Vector2(1246.4811, 96)
 
 [node name="GardenBlock7" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(19894.8949, -0)
+position = Vector2(20086.8949, -0)
 script = ExtResource("garden_garden_block")
-size = Vector2(2353.6811, 96)
+size = Vector2(1233.6811, 96)
 
 [node name="GardenBlock8" type="StaticBody2D" parent="FinalGauntlet"]
 position = Vector2(-768, -444.8)
@@ -487,47 +487,47 @@ bottom_edge = true
 [node name="GardenBlock11" type="StaticBody2D" parent="FinalGauntlet"]
 position = Vector2(9692.2709, -352)
 script = ExtResource("garden_garden_block")
-size = Vector2(2369.8347, 96)
+size = Vector2(2561.8347, 96)
 top_edge = false
 bottom_edge = true
 
 [node name="GardenBlock12" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(12062.1056, -444.8)
+position = Vector2(12254.1056, -444.8)
 script = ExtResource("garden_garden_block")
 size = Vector2(575.4624, 96)
 top_edge = false
 bottom_edge = true
 
 [node name="GardenBlock13" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(13323.8869, -444.8)
+position = Vector2(13515.8869, -444.8)
 script = ExtResource("garden_garden_block")
 size = Vector2(2845.9691, 96)
 top_edge = false
 bottom_edge = true
 
 [node name="GardenBlock14" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(16922.2229, -444.8)
+position = Vector2(17114.2229, -444.8)
 script = ExtResource("garden_garden_block")
 size = Vector2(1227.2811, 96)
 top_edge = false
 bottom_edge = true
 
 [node name="GardenBlock15" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(18387.8229, -444.8)
+position = Vector2(18579.8229, -444.8)
 script = ExtResource("garden_garden_block")
 size = Vector2(1747.7291, 96)
 top_edge = false
 bottom_edge = true
 
 [node name="GardenBlock16" type="StaticBody2D" parent="FinalGauntlet"]
-position = Vector2(20887.9189, -444.8)
+position = Vector2(21079.9189, -444.8)
 script = ExtResource("garden_garden_block")
 size = Vector2(1360.6571, 96)
 top_edge = false
 bottom_edge = true
 
 [node name="FinishGate" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(21224.576, -348.8)
+position = Vector2(21416.576, -348.8)
 script = ExtResource("finish_gate")
 rotation = 3.1416
 
@@ -682,10 +682,10 @@ position = Vector2(9756.24, -68)
 position = Vector2(9871.24, -43)
 
 [node name="Shard3" parent="Rapids" instance=ExtResource("shard")]
-position = Vector2(9986.24, -157)
+position = Vector2(9986.24, -142)
 
 [node name="Shard4" parent="Rapids" instance=ExtResource("shard")]
-position = Vector2(10102.24, -171)
+position = Vector2(10102.24, -191)
 
 [node name="Shard5" parent="Rapids" instance=ExtResource("shard")]
 position = Vector2(10217.24, -213)
@@ -724,190 +724,196 @@ position = Vector2(11369.24, -189)
 position = Vector2(11484.24, -213)
 
 [node name="Shard17" parent="Rapids" instance=ExtResource("shard")]
-position = Vector2(11599.24, -199)
+position = Vector2(11599.24, -213)
 
 [node name="Shard18" parent="Rapids" instance=ExtResource("shard")]
-position = Vector2(11714.24, -99)
+position = Vector2(11714.24, -213)
 
 [node name="Shard19" parent="Rapids" instance=ExtResource("shard")]
-position = Vector2(11830.24, -63)
+position = Vector2(11830.24, -162)
+
+[node name="Shard20" parent="Rapids" instance=ExtResource("shard")]
+position = Vector2(11945.24, -81)
+
+[node name="Shard21" parent="Rapids" instance=ExtResource("shard")]
+position = Vector2(12060.24, -67)
 
 [node name="Shard" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(13664.24, -43)
+position = Vector2(13856.24, -43)
 
 [node name="Shard2" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(13805.24, -133)
+position = Vector2(13997.24, -169)
 
 [node name="Shard3" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(13945.24, -190)
+position = Vector2(14137.24, -267)
 
 [node name="Shard4" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(14086.24, -306)
+position = Vector2(14278.24, -306)
 
 [node name="Shard5" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(14227.24, -224)
+position = Vector2(14419.24, -244)
 
 [node name="Shard6" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(14368.24, -156)
+position = Vector2(14560.24, -160)
 
 [node name="Shard7" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(14509.24, -200)
+position = Vector2(14701.24, -192)
 
 [node name="Shard8" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(15747.48, -306)
+position = Vector2(15939.48, -306)
 
 [node name="Shard9" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(15888.48, -215)
+position = Vector2(16080.48, -224)
 
 [node name="Shard10" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(16029.48, -156)
+position = Vector2(16221.48, -156)
 
 [node name="Shard11" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(16170.48, -43)
+position = Vector2(16362.48, -43)
 
 [node name="Shard12" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(16311.48, -125)
+position = Vector2(16503.48, -125)
 
 [node name="Shard13" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(16451.48, -191)
+position = Vector2(16643.48, -192)
 
 [node name="Shard14" parent="Gale" instance=ExtResource("shard")]
-position = Vector2(16592.48, -149)
+position = Vector2(16784.48, -149)
 
 [node name="Shard" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(13833.24, -149)
+position = Vector2(14025.24, -183)
 
 [node name="Shard2" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(13974.24, -187)
+position = Vector2(14166.24, -306)
 
 [node name="Shard3" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(14115.24, -306)
+position = Vector2(14307.24, -306)
 
 [node name="Shard4" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(14256.24, -199)
+position = Vector2(14448.24, -215)
 
 [node name="Shard5" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(14397.24, -156)
+position = Vector2(14589.24, -156)
 
 [node name="Shard6" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(14537.24, -230)
+position = Vector2(14729.24, -209)
 
 [node name="Shard7" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(15776.48, -306)
+position = Vector2(15968.48, -306)
 
 [node name="Shard8" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(15917.48, -199)
+position = Vector2(16109.48, -199)
 
 [node name="Shard9" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(16058.48, -159)
+position = Vector2(16250.48, -177)
 
 [node name="Shard10" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(16199.48, -43)
+position = Vector2(16391.48, -43)
 
 [node name="Shard11" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(16339.48, -142)
+position = Vector2(16531.48, -150)
 
 [node name="Shard12" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(16480.48, -193)
+position = Vector2(16672.48, -193)
 
 [node name="Shard13" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(16621.48, -119)
+position = Vector2(16813.48, -119)
 
 [node name="Shard14" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(16762.48, -57)
+position = Vector2(16954.48, -70)
 
 [node name="Shard15" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(16903.48, -175)
+position = Vector2(17095.48, -175)
 
 [node name="Shard16" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(17043.48, -270)
+position = Vector2(17235.48, -270)
 
 [node name="Shard17" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(17184.48, -306)
+position = Vector2(17376.48, -306)
 
 [node name="Shard18" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(17325.48, -267)
+position = Vector2(17517.48, -267)
 
 [node name="Shard19" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(17466.48, -166)
+position = Vector2(17658.48, -170)
 
 [node name="Shard20" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(17607.48, -178)
+position = Vector2(17799.48, -172)
 
 [node name="Shard21" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(17747.48, -306)
+position = Vector2(17939.48, -306)
 
 [node name="Shard22" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(17888.48, -185)
+position = Vector2(18080.48, -192)
 
 [node name="Shard23" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(18029.48, -81)
+position = Vector2(18221.48, -102)
 
 [node name="Shard24" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(18170.48, -43)
+position = Vector2(18362.48, -43)
 
 [node name="Shard25" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(18311.48, -43)
+position = Vector2(18503.48, -43)
 
 [node name="Shard26" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(18451.48, -157)
+position = Vector2(18643.48, -157)
 
 [node name="Shard27" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(18592.48, -192)
+position = Vector2(18784.48, -191)
 
 [node name="Shard28" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(18733.48, -83)
+position = Vector2(18925.48, -86)
 
 [node name="Shard29" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(18874.48, -133)
+position = Vector2(19066.48, -124)
 
 [node name="Shard30" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(19015.48, -190)
+position = Vector2(19207.48, -189)
 
 [node name="Shard31" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(19155.48, -306)
+position = Vector2(19347.48, -306)
 
 [node name="Shard32" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(19296.48, -224)
+position = Vector2(19488.48, -224)
 
 [node name="Shard33" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(19437.48, -156)
+position = Vector2(19629.48, -156)
 
 [node name="Shard34" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(19578.48, -200)
+position = Vector2(19770.48, -209)
 
 [node name="Shard35" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(19719.48, -306)
+position = Vector2(19911.48, -306)
 
 [node name="Shard36" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(19859.48, -179)
+position = Vector2(20051.48, -179)
 
 [node name="Shard37" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20000.48, -121)
+position = Vector2(20192.48, -100)
 
 [node name="Shard38" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20141.48, -43)
+position = Vector2(20333.48, -43)
 
 [node name="Shard39" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20282.48, -134)
+position = Vector2(20474.48, -134)
 
 [node name="Shard40" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20423.48, -192)
+position = Vector2(20615.48, -193)
 
 [node name="Shard41" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20563.48, -140)
+position = Vector2(20755.48, -140)
 
 [node name="Shard42" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20704.48, -43)
+position = Vector2(20896.48, -43)
 
 [node name="Shard43" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20845.48, -150)
+position = Vector2(21037.48, -142)
 
 [node name="Shard44" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(20986.48, -172)
+position = Vector2(21178.48, -172)
 
 [node name="Shard45" parent="FinalGauntlet" instance=ExtResource("shard")]
-position = Vector2(21127.48, -306)
+position = Vector2(21319.48, -306)
 
 [node name="Checkpoint" type="Area2D" parent="FinalGauntlet"]
 position = Vector2(7730.368, -348.8)
@@ -915,6 +921,6 @@ script = ExtResource("checkpoint")
 rotation = 3.1416
 
 [node name="Checkpoint2" type="Area2D" parent="FinalGauntlet"]
-position = Vector2(14674.752, -348.8)
+position = Vector2(14885.568, -348.8)
 script = ExtResource("checkpoint")
 rotation = 3.1416

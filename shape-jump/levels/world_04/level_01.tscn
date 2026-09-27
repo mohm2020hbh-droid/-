@@ -275,7 +275,7 @@ size = Vector2(1102.3435, 96)
 [node name="GardenBlock5" type="StaticBody2D" parent="Pressure"]
 position = Vector2(13820.4703, -0)
 script = ExtResource("garden_garden_block")
-size = Vector2(2550.7915, 96)
+size = Vector2(2422.7915, 96)
 
 [node name="GardenBlock6" type="StaticBody2D" parent="Pressure"]
 position = Vector2(-768, -416)
@@ -308,12 +308,12 @@ bottom_edge = true
 [node name="GardenBlock10" type="StaticBody2D" parent="Pressure"]
 position = Vector2(12478.6058, -416)
 script = ExtResource("garden_garden_block")
-size = Vector2(3892.656, 96)
+size = Vector2(1563.0795, 96)
 top_edge = false
 bottom_edge = true
 
 [node name="FinishGate" type="Area2D" parent="Pressure"]
-position = Vector2(15347.2618, -0)
+position = Vector2(15219.2618, -0)
 script = ExtResource("finish_gate")
 
 [node name="Shard" parent="Garden" instance=ExtResource("shard")]
@@ -461,25 +461,25 @@ position = Vector2(13593.6666, -190)
 position = Vector2(13747.6666, -277)
 
 [node name="Shard13" parent="Pressure" instance=ExtResource("shard")]
-position = Vector2(13900.6666, -178)
+position = Vector2(13900.6666, -137)
 
 [node name="Shard14" parent="Pressure" instance=ExtResource("shard")]
 position = Vector2(14054.6666, -43)
 
 [node name="Shard15" parent="Pressure" instance=ExtResource("shard")]
-position = Vector2(14207.6666, -134)
+position = Vector2(14207.6666, -150)
 
 [node name="Shard16" parent="Pressure" instance=ExtResource("shard")]
-position = Vector2(14361.6666, -191)
+position = Vector2(14361.6666, -185)
 
 [node name="Shard17" parent="Pressure" instance=ExtResource("shard")]
-position = Vector2(14515.6666, -68)
+position = Vector2(14515.6666, -43)
 
 [node name="Shard18" parent="Pressure" instance=ExtResource("shard")]
-position = Vector2(14668.6666, -134)
+position = Vector2(14668.6666, -142)
 
 [node name="Shard19" parent="Pressure" instance=ExtResource("shard")]
-position = Vector2(14822.6666, -192)
+position = Vector2(14822.6666, -191)
 
 [node name="Checkpoint" type="Area2D" parent="Pressure"]
 position = Vector2(4924.416, 0)

@@ -31,6 +31,14 @@ func _start(level: int, with_route := true) -> void:
 	h.game.press_jump()  # Tap to start.
 
 
+## Opens World 04 in the sandboxed save (World 03 complete), so that the
+## restart of a level (through the level select's unlock rules) is allowed.
+func _unlock_world_04() -> void:
+	var w3: WorldData = load("res://levels/world_03/world_03.tres")
+	for data in w3.levels:
+		SaveSystem.record_result(data.id, 100, 1, true)
+
+
 func _gravity() -> GravityState:
 	return h.game.gravity
 
@@ -110,7 +118,10 @@ func test_the_view_keeps_the_corridor_framed_through_a_latch() -> void:
 		ys.append(camera.global_position.y)
 	var lo: float = ys.min()
 	var hi: float = ys.max()
-	assert_true(hi - lo < 24.0, "no bob: the view barely moves while the player crosses (%.1f px)" % (hi - lo))
+	# The arc of the crossing spans the whole corridor (4 to 6 tiles); the view
+	# only settles on the new surface's height (this first ceiling is half a
+	# tile lower than the level's corridor), well under a tile.
+	assert_true(hi - lo < 0.5 * T, "no bob: the view barely moves while the player crosses (%.1f px)" % (hi - lo))
 	var view := camera.get_view_rect()
 	var player := h.game.player.global_position
 	assert_true(view.grow(-40.0).has_point(player), "the player is well inside the view")
@@ -168,9 +179,10 @@ func test_a_second_tap_out_of_reach_is_spent_without_moving_anything() -> void:
 	await h.run_ticks(10)
 	var misses := [0]
 	h.game.player.latch_missed.connect(func() -> void: misses[0] += 1)
-	# Under the open sky at the start: nothing to latch to.
+	# Just after takeoff the ceiling (five tiles up) is still beyond the
+	# reach of a latch (2.5 tiles from the head): nothing to latch to.
 	h.game.press_jump()
-	await h.run_ticks(12)
+	await h.run_ticks(3)
 	h.game.press_jump()
 	await h.run_ticks(1)
 	assert_eq(misses[0], 1, "a miss")
@@ -213,7 +225,9 @@ func test_dying_while_latching_respawns_clean_on_the_start_surface() -> void:
 	assert_false(player.is_latching(), "no crossing carried over")
 	assert_false(_gravity().up, "the start's surface (no checkpoint passed yet)")
 	assert_true(player.is_on_floor(), "standing")
-	assert_eq(player.velocity.y, 0.0, "at rest vertically")
+	var feet := player.global_position.y
+	await h.run_ticks(3)
+	assert_eq(player.global_position.y, feet, "at rest vertically")
 	assert_true(player.has_double_jump(), "the second tap is back")
 	assert_eq(h.game.camera.rotation, 0.0)
 	assert_eq(GardenLook.blend, 0.0, "blue and white again")
@@ -270,10 +284,11 @@ func test_a_respawn_on_a_ground_checkpoint_puts_everything_on_the_ground() -> vo
 
 
 func test_restart_during_a_latch_starts_the_level_clean() -> void:
+	_unlock_world_04()
 	await _start(0)
 	assert_true(await _until_latching(), "latching")
 	h.game.restart_level()
-	await h.run_ticks(3)
+	await h.run_ticks(3)  # (The level is rebuilt at once, behind a fade.)
 	assert_eq(h.game.state, GameSession.State.READY)
 	assert_false(_gravity().up, "the start's surface")
 	assert_eq(_gravity().phase, GravityState.Phase.NORMAL, "no transition left over")
@@ -347,6 +362,7 @@ func test_world_03_opens_world_04_and_world_04_is_the_last() -> void:
 
 
 func test_ten_restarts_in_a_row_leave_nothing_behind() -> void:
+	_unlock_world_04()
 	await _start(0)
 	assert_true(await _until_latching(), "latching")
 	var nodes := 0
@@ -354,6 +370,8 @@ func test_ten_restarts_in_a_row_leave_nothing_behind() -> void:
 	for i in 10:
 		h.game.restart_level()
 		await h.run_ticks(3)
+		assert_eq(h.game.state, GameSession.State.READY, "restarted")
+		assert_eq(h.game.surface_run.latches, 0, "a fresh run")
 		h.game.press_jump()
 		await h.run_ticks(40)
 		if i == 1:
@@ -369,10 +387,14 @@ func test_taps_during_the_death_and_the_respawn_do_nothing() -> void:
 	h.game.player.die(&"test")
 	var jumps := [0]
 	h.game.player.jumped.connect(func() -> void: jumps[0] += 1)
-	for i in 40:
+	# Hammer the screen for as long as the death lasts (pause and fade).
+	var taps := 0
+	while h.game.state == GameSession.State.DYING and taps < 60 * 5:
 		h.game.press_jump()
 		await h.tick()
-	assert_true(await h.run_until(h.is_state(GameSession.State.PLAYING), 60 * 5), "back in play")
+		taps += 1
+	assert_true(taps > 20, "tapped through the whole death (%d taps)" % taps)
+	assert_eq(h.game.state, GameSession.State.PLAYING, "back in play")
 	await h.run_ticks(2)
 	assert_eq(jumps[0], 0, "no jump from a tap while dead or respawning")
 	assert_true(h.game.player.is_on_floor(), "standing, not launched")

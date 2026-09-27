@@ -10,6 +10,10 @@ var host: Node
 var route: PackedFloat32Array
 ## Route indices to skip once (to provoke a death on purpose).
 var skip: PackedInt32Array = []
+## x (tiles, ascending) where the player is killed once when passing (a death
+## on purpose where skipping a tap may not kill: in World 04 a later tap can
+## stand in for a skipped one).
+var kill_at: PackedFloat32Array = []
 var game: GameSession
 var deaths: Array[Dictionary] = []
 var ticks := 0
@@ -94,6 +98,10 @@ func _route_finger() -> void:
 	if game.state != GameSession.State.PLAYING:
 		return
 	var x := player_x()
+	if not kill_at.is_empty() and x >= kill_at[0]:
+		kill_at.remove_at(0)
+		game.player.die(&"test")
+		return
 	# After a respawn the player is behind already-used taps: rewind.
 	while _next > 0 and route[_next - 1] > x + 0.5:
 		_next -= 1
