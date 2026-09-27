@@ -60,6 +60,9 @@ var level: Level
 var level_index := 0
 var score := ScoreTracker.new()
 var progress := ProgressTracker.new()
+## World 04: the run's surface state (which surface is the floor, what the
+## player is doing about it); read-only for everything but this session.
+var surface_run: SurfaceRun
 ## Tries at the current level since it was loaded (1 + deaths).
 var attempts := 1
 
@@ -96,6 +99,8 @@ func _ready() -> void:
 	player.double_jumped.connect(_on_player_double_jumped)
 	player.landed.connect(_on_player_landed)
 	player.died.connect(_on_player_died)
+	player.latched.connect(_on_player_latched)
+	player.latch_missed.connect(_on_player_latch_missed)
 	score.changed.connect(hud.set_score)
 	progress.changed.connect(hud.set_progress)
 	hud.pause_pressed.connect(pause)
@@ -108,6 +113,9 @@ func _ready() -> void:
 	whiteout.player = player
 	player.gravity = gravity
 	camera.gravity = gravity
+	surface_run = SurfaceRun.new(player, gravity)
+	for event in [player.state_changed, player.landed, player.respawned, player.died, player.latched]:
+		event.connect(func(_a: Variant = null, _b: Variant = null) -> void: _sync_surface_run())
 	gravity.flipped.connect(_on_gravity_flipped)
 	_tap_input.tapped.connect(press_jump)
 	_tap_input.pause_requested.connect(pause)
@@ -138,6 +146,7 @@ func _physics_process(_delta: float) -> void:
 	if state == State.PLAYING:
 		score.update_progress(player.global_position.x)
 		progress.update(player.global_position.x)
+	_sync_surface_run()
 
 
 func _notification(what: int) -> void:
@@ -185,6 +194,8 @@ func load_level(index: int = level_index) -> void:
 	var spawn := level.get_spawn_feet_position()
 	gravity.reset(level.start_gravity_up)
 	level.gravity = gravity
+	level.reset_surface(level.start_gravity_up)
+	player.wind_source = level.wind_at if level.surface_latch else Callable()
 	level.set_run_line(spawn.x, player.get_run_speed())
 	score.reset(spawn.x)
 	progress.reset(spawn.x, level.get_finish().global_position.x)
@@ -196,6 +207,7 @@ func load_level(index: int = level_index) -> void:
 	hud.set_progress_milestones(world.progress_milestones)
 	_respawn = RespawnPoint.new(spawn, 0.0, score.snapshot())
 	_respawn.gravity_up = level.start_gravity_up
+	surface_run.reset(level.start_gravity_up, spawn)
 	_last_checkpoint = null
 	player.respawn_at(spawn, false)
 	camera.snap_to_target()
@@ -316,11 +328,15 @@ func _set_state(next: State) -> void:
 	level.running = state == State.PLAYING or state == State.DYING or state == State.COMPLETE
 	hud.set_pause_enabled(state == State.PLAYING or state == State.DYING)
 	hud.visible = state != State.READY  # The level select owns the screen.
+	_sync_surface_run()
 	state_changed.emit(state)
 	_publish_resume_point()
 
 
 func _respawn_player() -> void:
+	# World 04: this attempt's surface log starts over from the checkpoint's
+	# surface, before the elements take their places for its time.
+	level.reset_surface(_respawn.gravity_up)
 	level.rewind_to(_respawn.level_time)
 	# The respawn's gravity is the schedule's at that time (checkpoints sit on
 	# steady ground, never at a gate); rewind_to already applied it, this
@@ -427,9 +443,14 @@ func _use_world(index: int) -> void:
 			fresh.name = "Background"
 			$World.add_child(fresh)
 			$World.move_child(fresh, 0)
-	# World 01 keeps the tesseract core; later worlds show the trapped void.
-	player.visual.void_style = world.theme != &"red"
+	# World 01 keeps the tesseract core; later worlds show the trapped void
+	# (World 04: the seed, which takes the colour of its surface).
+	player.visual.void_style = world.theme != &"red" and not world.surface_latch
+	player.visual.garden_style = world.surface_latch
+	player.set_surface_latch(world.surface_latch)
+	camera.turn_with_gravity = not world.surface_latch
 	player.fx.refresh_colors()
+	player.fx.modulate = Color.WHITE  # (World 04's look tints it per surface.)
 	UiLook.apply(self, world.theme)
 	_embers.color_ramp = _embers_ramp_red if world.theme == &"red" else _embers_ramp_mono
 	_embers.modulate = Color.WHITE
@@ -462,6 +483,12 @@ func _on_checkpoint_reached(checkpoint: Checkpoint) -> void:
 	# engine after a lost WebGL context) reaches its checkpoint from the start
 	# of the level, with the start's gravity still in place.
 	_respawn.gravity_up = level.gravity_up_at(_respawn.level_time)
+	if level.surface_latch:
+		# World 04: the surface the checkpoint stands on (it hangs from a
+		# ceiling). Each one sits where only that surface exists, so it is
+		# also the surface the player reached it on.
+		_respawn.gravity_up = checkpoint_hangs(checkpoint)
+		surface_run.set_respawn(_respawn.feet, _respawn.gravity_up)
 	_last_checkpoint = checkpoint
 	hud.mark_checkpoint(level.get_checkpoints().find(checkpoint))
 	_publish_resume_point()
@@ -476,6 +503,12 @@ func time_at(x: float) -> float:
 	var tick := 1.0 / Engine.physics_ticks_per_second
 	var time := (x - level.get_spawn_feet_position().x) / player.get_run_speed()
 	return roundf(time / tick) * tick
+
+
+## True when [param marker] (a checkpoint or the finish) hangs from a
+## ceiling (World 03 and 04: turned upside down).
+static func checkpoint_hangs(marker: Node2D) -> bool:
+	return absf(wrapf(marker.global_rotation, -PI, PI)) > PI * 0.5
 
 
 ## Where to respawn for a checkpoint at [param marker]: on its ground, at
@@ -500,9 +533,31 @@ func _on_obstacle_cued(kind: StringName, at: Vector2) -> void:
 
 
 ## A flip in play is heard (restores on respawn and level start are not).
+## In World 04 the latch that made it has its own sound.
 func _on_gravity_flipped(up: bool, instant: bool) -> void:
-	if not instant and state == State.PLAYING:
+	if not instant and state == State.PLAYING and not (level and level.surface_latch):
 		Events.gravity_flipped.emit(up, player.global_position)
+
+
+## World 04: the second tap took hold. The level logs the new floor (its
+## elements read it), and the view anchors on the surface being crossed to.
+func _on_player_latched(landing: Vector2) -> void:
+	level.record_surface(gravity.up)
+	camera.anchor_to(landing.y)
+	surface_run.note_latch()
+	if state == State.PLAYING:
+		Events.player_latched.emit(player.global_position, gravity.up)
+
+
+func _on_player_latch_missed() -> void:
+	surface_run.note_miss()
+	if state == State.PLAYING:
+		Events.player_latch_missed.emit(player.global_position)
+
+
+func _sync_surface_run() -> void:
+	if surface_run and world and world.surface_latch:
+		surface_run.update(state)
 
 
 func _on_finish_reached() -> void:

@@ -13,6 +13,11 @@ signal landed(impact_speed: float)
 signal died(cause: StringName)
 signal respawned
 signal state_changed(new_state: State, old_state: State)
+## World 04: the second tap took hold; the player crosses to the other
+## surface and will stand with its centre at [param landing].
+signal latched(landing: Vector2)
+## World 04: the second tap found no surface in reach (it is spent).
+signal latch_missed
 
 enum State { IDLE, RUN, JUMP, FALL, DEAD }
 
@@ -39,6 +44,12 @@ var gravity: GravityState:
 ## While true nothing can kill the player. The game session sets it for
 ## every state except PLAYING (start screen, pause, finish).
 var invulnerable := false
+## World 04: where the wind blows, as a callable (x: float) -> float giving
+## the extra acceleration toward the floor (negative: away from it). Unset:
+## no wind.
+var wind_source := Callable()
+## World 04: the second tap's view of the world (null in other worlds).
+var latch: SurfaceLatch
 var state: State = State.IDLE
 var motor: PlayerMotor
 ## Half extents of the collision box, read from the BodyShape in the scene
@@ -47,6 +58,8 @@ var half_size := Vector2.ZERO
 
 ## Gravity turned since the last tick: the floor contact is stale.
 var _flipped := false
+## A latch is turning gravity itself: the motor already turned its frame.
+var _latch_turning := false
 
 @onready var _hurtbox: Area2D = $Hurtbox
 @onready var visual: PlayerVisual = $Visual
@@ -90,8 +103,26 @@ func is_dead() -> bool:
 
 
 ## True while the double jump is still available (always on the ground).
+## In World 04 the same slot is the surface latch.
 func has_double_jump() -> bool:
 	return motor.air_jumps_left > 0
+
+
+## World 04: the second tap latches instead of jumping again.
+func set_surface_latch(enabled: bool) -> void:
+	motor.air_action = PlayerMotor.AirAction.SURFACE_LATCH if enabled else PlayerMotor.AirAction.DOUBLE_JUMP
+	latch = SurfaceLatch.new(self) if enabled else null
+	if not enabled:
+		wind_source = Callable()
+
+
+func uses_surface_latch() -> bool:
+	return motor.air_action == PlayerMotor.AirAction.SURFACE_LATCH
+
+
+## World 04: on the way to the other surface after a latch.
+func is_latching() -> bool:
+	return motor.latching
 
 
 func set_running(value: bool) -> void:
@@ -142,7 +173,14 @@ func _physics_process(delta: float) -> void:
 	var g := gravity_sign()
 	var was_on_floor := is_on_floor() and not _flipped
 	_flipped = false
-	var local := motor.begin_tick(was_on_floor, delta)
+	var reach := false
+	if latch:
+		motor.external_accel = wind_source.call(global_position.x) if wind_source.is_valid() else 0.0
+		reach = latch.probe(not was_on_floor and not motor.latching and motor.air_jumps_left > 0)
+	var local := motor.begin_tick(was_on_floor, delta, reach)
+	if motor.jump_this_tick == PlayerMotor.Jump.LATCH:
+		_turn_for_latch()
+		g = gravity_sign()
 	velocity = Vector2(local.x, local.y * g)
 	if was_on_floor:
 		# Platforms may carry the player vertically, but never change its run
@@ -169,6 +207,10 @@ func _physics_process(delta: float) -> void:
 			jumped.emit()
 		PlayerMotor.Jump.AIR:
 			double_jumped.emit()
+		PlayerMotor.Jump.LATCH:
+			latched.emit(latch.landing)
+		PlayerMotor.Jump.LATCH_MISS:
+			latch_missed.emit()
 		_:
 			if is_on_floor() and not was_on_floor:
 				landed.emit(maxf(incoming_fall_speed, 0.0))
@@ -275,12 +317,23 @@ func _on_hurtbox_area_entered(_area: Area2D) -> void:
 	die(&"hazard")
 
 
+## World 04: the latch turns the run's gravity (the player owns it there);
+## the motor has already turned its own frame toward the target surface.
+func _turn_for_latch() -> void:
+	if gravity == null:
+		gravity = GravityState.new()
+	_latch_turning = true
+	gravity.set_up(not gravity.up)
+	_latch_turning = false
+
+
 ## Gravity turned (see [GravityState]). The body keeps its world velocity;
 ## the motor re-reads it toward the new floor (see [method PlayerMotor.flip]).
 func _on_gravity_flipped(up: bool, instant: bool) -> void:
 	up_direction = Vector2.DOWN if up else Vector2.UP
 	if not instant and state != State.DEAD:
-		motor.flip()
+		if not _latch_turning:
+			motor.flip()
 		_flipped = true
 	visual.face_gravity(up, instant)
 	fx.face_gravity(up, instant)

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WorldData" format=3]
+
+[ext_resource type="Script" path="res://src/level/world_data.gd" id="1_world"]
+[ext_resource type="Script" path="res://src/level/level_data.gd" id="2_level"]
+[ext_resource type="PackedScene" path="res://src/background/background_garden.tscn" id="3_background"]
+[ext_resource type="Resource" path="res://levels/world_03/world_03.tres" id="4_requires"]
+[ext_resource type="Resource" path="res://levels/world_04/level_01.tres" id="level_01"]
+[ext_resource type="Resource" path="res://levels/world_04/level_02.tres" id="level_02"]
+[ext_resource type="Resource" path="res://levels/world_04/level_03.tres" id="level_03"]
+[ext_resource type="Resource" path="res://levels/world_04/level_04.tres" id="level_04"]
+[ext_resource type="Resource" path="res://levels/world_04/level_05.tres" id="level_05"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_04"
+number = 4
+display_name = "The Inverted Garden"
+levels = Array[ExtResource("2_level")]([ExtResource("level_01"), ExtResource("level_02"), ExtResource("level_03"), ExtResource("level_04"), ExtResource("level_05")])
+next_world_name = ""
+requires = ExtResource("4_requires")
+theme = &"garden"
+background = ExtResource("3_background")
+progress_milestones = Array[float]([50.0, 75.0])
+surface_latch = true

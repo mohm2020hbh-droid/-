@@ -33,8 +33,23 @@ extends RefCounted
 ##   ground jump needs a surface (no coyote time across a flip), and a tap
 ##   waiting in the jump buffer is dropped (it was meant for the old floor).
 ## - Taps already queued still fire, as the double jump if one is left.
+##
+## Surface latch rules (World 04, [member air_action] = SURFACE_LATCH):
+## - The air tap is not a second jump. If the other surface is in reach
+##   (the player checks it: [code]latch_reach[/code] of [method begin_tick]),
+##   it LATCHES: the frame turns (the other surface is the new floor) and the
+##   body sets off toward it at [member MovementConfig.latch_speed].
+## - Out of reach it is a MISS: nothing moves, no teleport. The air tap is
+##   spent all the same (one decision per airtime), and the tap waits in the
+##   jump buffer, so a miss just before landing still jumps on landing.
+## - While latching the body is committed: taps are swallowed (no jump on
+##   arrival, no second latch), wind does not act, and it ends on touching
+##   the new floor, which restores the air tap as any landing does.
 
-enum Jump { NONE, GROUND, AIR }
+enum Jump { NONE, GROUND, AIR, LATCH, LATCH_MISS }
+## What a tap in the air does: the double jump (Worlds 01-03) or the surface
+## latch (World 04).
+enum AirAction { DOUBLE_JUMP, SURFACE_LATCH }
 
 var config: MovementConfig
 var velocity := Vector2.ZERO
@@ -44,8 +59,14 @@ var running := false
 var speed_scale := 1.0
 ## The jump that started during this tick, if any.
 var jump_this_tick: Jump = Jump.NONE
-## Double jumps left before the next landing.
+## Double jumps (or, in World 04, latches) left before the next landing.
 var air_jumps_left := 0
+var air_action: AirAction = AirAction.DOUBLE_JUMP
+## World 04: between a latch and touching the surface it latched to.
+var latching := false
+## World 04: extra acceleration toward the floor (+) or away from it (-),
+## e.g. a gust of wind. Set by the player every tick.
+var external_accel := 0.0
 
 ## On the floor after the last move.
 var _grounded := false
@@ -66,6 +87,8 @@ func reset(on_floor: bool = false) -> void:
 	velocity = Vector2.ZERO
 	jump_this_tick = Jump.NONE
 	air_jumps_left = config.air_jumps
+	latching = false
+	external_accel = 0.0
 	_grounded = on_floor
 	_coyote_left = 0.0
 	_queued_taps = 0
@@ -75,6 +98,8 @@ func reset(on_floor: bool = false) -> void:
 ## Registers a tap. It starts a jump on the next tick if one is available
 ## (after any taps already waiting), otherwise it waits in the jump buffer.
 func request_jump() -> void:
+	if latching:
+		return  # Committed to the latch: the tap is swallowed.
 	if _queued_taps < jumps_available():
 		_queued_taps += 1
 	else:
@@ -83,24 +108,31 @@ func request_jump() -> void:
 
 ## Jumps the player could still make before landing, as of the last tick.
 func jumps_available() -> int:
+	if latching:
+		return 0
 	if _grounded:
 		return 1 + config.air_jumps
 	return (1 if _coyote_left > 0.0 else 0) + air_jumps_left
 
 
-func begin_tick(on_floor: bool, delta: float) -> Vector2:
+## [param latch_reach] (World 04): the other surface is in reach right now,
+## so an air tap this tick latches to it.
+func begin_tick(on_floor: bool, delta: float, latch_reach := false) -> Vector2:
 	jump_this_tick = Jump.NONE
 	velocity.x = config.run_speed * speed_scale if running else 0.0
 	_grounded = on_floor
 	if on_floor:
 		_coyote_left = config.coyote_time
 		air_jumps_left = config.air_jumps
+		latching = false
 
 	var can_ground_jump := on_floor or _coyote_left > 0.0
 	if _queued_taps > 0:
 		_queued_taps -= 1
 		if can_ground_jump:
 			_start_jump(Jump.GROUND)
+		elif air_jumps_left > 0 and air_action == AirAction.SURFACE_LATCH:
+			_air_latch(latch_reach)
 		elif air_jumps_left > 0:
 			_start_jump(Jump.AIR)
 		else:
@@ -123,6 +155,7 @@ func end_tick(resolved_velocity: Vector2, delta: float, on_floor: bool) -> Vecto
 	_grounded = on_floor
 	if on_floor:
 		air_jumps_left = config.air_jumps
+		latching = false
 	_apply_gravity(delta * 0.5)
 	return velocity
 
@@ -133,6 +166,21 @@ func flip() -> void:
 	_grounded = false
 	_coyote_left = 0.0
 	_buffer_left = 0.0
+
+
+## World 04's air tap (see the class notes): a latch or a miss.
+func _air_latch(in_reach: bool) -> void:
+	air_jumps_left -= 1
+	if not in_reach:
+		jump_this_tick = Jump.LATCH_MISS
+		_buffer_left = config.jump_buffer_time
+		return
+	# The other surface becomes the floor: head for it.
+	flip()
+	velocity.y = config.latch_speed
+	latching = true
+	_queued_taps = 0
+	jump_this_tick = Jump.LATCH
 
 
 func _start_jump(kind: Jump) -> void:
@@ -148,4 +196,6 @@ func _start_jump(kind: Jump) -> void:
 
 func _apply_gravity(step: float) -> void:
 	var gravity := config.rise_gravity() if velocity.y < 0.0 else config.fall_gravity()
+	if external_accel != 0.0 and not latching:
+		gravity += external_accel
 	velocity.y = minf(velocity.y + gravity * step, config.max_fall_speed)

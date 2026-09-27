@@ -60,8 +60,13 @@ func run_until(condition: Callable, max_ticks: int = 60 * 120) -> bool:
 
 ## Starts the run already at [param feet] (e.g. a checkpoint): the level clock
 ## is where it would be when the player gets there, and the route resumes.
-func start_run_at(marker: Vector2) -> void:
+## [param up] (World 04): the marker hangs from the ceiling; the run starts
+## on it with a fresh surface log, as a respawn there would.
+func start_run_at(marker: Vector2, up := false) -> void:
 	game.press_jump()  # READY -> PLAYING.
+	if game.level.surface_latch:
+		game.level.reset_surface(up)
+		game.gravity.set_up(up, true)
 	var feet := game.respawn_feet_at(marker)
 	game.level.rewind_to(game.time_at(feet.x))
 	game.player.respawn_at(feet, true)
