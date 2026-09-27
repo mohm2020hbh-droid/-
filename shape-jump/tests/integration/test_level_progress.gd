@@ -3,7 +3,7 @@ extends TestCase
 ## respawn, on the real game scene for every World 01 level.
 
 const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres",
-	"res://levels/world_03/world_03.tres"]
+	"res://levels/world_03/world_03.tres", "res://levels/world_04/world_04.tres"]
 
 var WORLD: WorldData
 
@@ -28,6 +28,14 @@ func after_each() -> void:
 
 func _percent(x_tiles: float) -> float:
 	return h.game.progress.percent_at(x_tiles * GameConst.TILE)
+
+
+## Makes the run die once at each of [param percents] (by skipping the tap
+## there once).
+func _force_deaths(route: PackedFloat32Array, percents: Array[float]) -> void:
+	h.skip = []
+	for p in percents:
+		h.skip.append(_tap_after(route, p))
 
 
 ## Index of the first route tap at or after [param percent] of the level.
@@ -66,7 +74,7 @@ func _die_twice_then_finish(index: int) -> void:
 	await h.start(index, world_index())
 	var name := "level %d" % (index + 1)
 	var cps := h.game.level.get_checkpoints()
-	h.skip = [_tap_after(route, 50.0), _tap_after(route, 80.0)]
+	_force_deaths(route, [50.0, 80.0])
 	var shown: Array[float] = []
 	h.game.progress.changed.connect(func(v: float) -> void: shown.append(v))
 	h.game.press_jump()

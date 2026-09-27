@@ -169,7 +169,7 @@
 <div id="launcher">
   <div class="card" dir="rtl">
     <div>
-      <p class="eyebrow">WORLD 01 · RED VOID &nbsp;/&nbsp; WORLD 02 · MONOCHROME VOID &nbsp;/&nbsp; WORLD 03 · HORRIFYING GALAXY</p>
+      <p class="eyebrow">WORLD 01 · RED VOID &nbsp;/&nbsp; WORLD 02 · MONOCHROME VOID &nbsp;/&nbsp; WORLD 03 · HORRIFYING GALAXY &nbsp;/&nbsp; WORLD 04 · INVERTED GARDEN</p>
       <h1 class="wordmark"><span>SHAPE</span><span class="red">JUMP</span></h1>
     </div>
 
@@ -181,22 +181,23 @@
     <div class="actions" id="actions" hidden>
       <button type="button" class="primary" id="play-normal">
         <b lang="en">PLAY</b>
-        <small>التقدّم العادي: المرحلة الأولى مفتوحة، وكل مرحلة تفتح التي بعدها، وإنهاء كل عالم يفتح الذي يليه (حتى World 03)</small>
+        <small>التقدّم العادي: المرحلة الأولى مفتوحة، وكل مرحلة تفتح التي بعدها، وإنهاء كل عالم يفتح الذي يليه (حتى World 04)</small>
       </button>
       <button type="button" id="play-test">
         <b lang="en">TEST MODE</b>
-        <small>كل مراحل العوالم الثلاثة مفتوحة: اختر WORLD 01 أو 02 أو 03 من أعلى شاشة البداية</small>
+        <small>كل مراحل العوالم الأربعة مفتوحة: اختر WORLD 01 أو 02 أو 03 أو 04 من أعلى شاشة البداية</small>
       </button>
     </div>
 
     <ul class="controls">
       <li><kbd lang="en">Tap</kbd> أو <kbd lang="en">Click</kbd> أو <kbd lang="en">Space</kbd>: قفزة (وبدء الجري من شاشة البداية)</li>
-      <li>لمسة ثانية وأنت في الهواء: <span lang="en">Double Jump</span> (مرة واحدة حتى تهبط)</li>
+      <li>لمسة ثانية وأنت في الهواء: <span lang="en">Double Jump</span> (مرة واحدة حتى تهبط؛ World 01–03)</li>
       <li><kbd lang="en">Esc</kbd> أو <kbd lang="en">P</kbd> أو زر ❚❚: إيقاف مؤقت</li>
       <li>في شاشة البداية: المس تبويب العالم ثم بطاقة المرحلة لاختيارها</li>
       <li><span lang="en">World 03</span>: البوابات تقلب الجاذبية، فتجري على السقف والقفز يدفعك نحو الأرض</li>
+      <li><span lang="en">World 04</span>: اللمسة الثانية في الهواء تلتصق بالسطح المقابل (أرض ↔ سقف) إن كان في المدى؛ وإلا تستمر في السقوط. الجري دائمًا من اليسار إلى اليمين</li>
     </ul>
-    <p class="foot">ثلاثة عوالم · 15 مرحلة · 34 نوعًا من العوائق وقلب الجاذبية · فيزياء 60 Hz. التقدّم وأفضل النتائج تُحفظ في هذا المتصفح. على الهاتف: أدِر الشاشة أفقيًا.</p>
+    <p class="foot">أربعة عوالم · 20 مرحلة · 48 نوعًا من العوائق وقلب الجاذبية والالتصاق بالسطح · فيزياء 60 Hz. التقدّم وأفضل النتائج تُحفظ في هذا المتصفح. على الهاتف: أدِر الشاشة أفقيًا.</p>
   </div>
 </div>
 
@@ -347,7 +348,7 @@
   }
 
   const hash = (location.hash || '').slice(1);
-  // QA: #autoplay, #autoplay-deaths, #stress (every world); add -w2 / -w3 for that world only.
+  // QA: #autoplay, #autoplay-deaths, #stress (every world); add -w2 / -w3 / -w4 for that world only.
   const qa = hash.indexOf('autoplay') === 0 || hash.indexOf('stress') === 0;
   const qaWorldMatch = /-w(\d)$/.exec(hash);
   const qaWorld = qaWorldMatch ? parseInt(qaWorldMatch[1], 10) : 0;

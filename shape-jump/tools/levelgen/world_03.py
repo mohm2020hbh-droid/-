@@ -707,7 +707,7 @@ def write_world(count):
     refs = ", ".join(f'ExtResource("level_{i:02d}")' for i in range(1, count + 1))
     lines += ["", "[resource]", 'script = ExtResource("1_world")', f'id = &"{WORLD}"', "number = 3",
               'display_name = "The Horrifying Galaxy"', f'levels = Array[ExtResource("2_level")]([{refs}])',
-              'next_world_name = ""', 'requires = ExtResource("4_requires")', 'theme = &"galaxy"',
+              'next_world_name = "The Inverted Garden"', 'requires = ExtResource("4_requires")', 'theme = &"galaxy"',
               'background = ExtResource("3_background")', 'progress_milestones = Array[float]([50.0, 75.0])']
     with open(ROOT + f"levels/{WORLD}/{WORLD}.tres", "w") as fh:
         fh.write("\n".join(lines) + "\n")

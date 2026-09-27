@@ -9,7 +9,7 @@ extends Node
 ## - --exploits: lazy strategies (never tap, tap on a fixed rhythm) must die.
 
 const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres",
-	"res://levels/world_03/world_03.tres"]
+	"res://levels/world_03/world_03.tres", "res://levels/world_04/world_04.tres"]
 const HORIZON_TAPS := 3
 const MAX_SHIFT := 24
 
@@ -124,7 +124,7 @@ func _survives(j: int, shift: int) -> bool:
 	await h.start(level_index, world_index)
 	var from := _start_before(route[j])
 	if from >= 0.0:
-		h.start_run_at(Vector2(from * GameConst.TILE, _checkpoint_y(h, from)))
+		h.start_run_at(Vector2(from * GameConst.TILE, _checkpoint_y(h, from)), _checkpoint_hangs(h, from))
 	else:
 		h.game.press_jump()
 	var goal := _horizon(j)
@@ -136,6 +136,13 @@ func _survives(j: int, shift: int) -> bool:
 	h.free_game()
 	await get_tree().physics_frame
 	return ok
+
+
+func _checkpoint_hangs(h: GameHarness, x: float) -> bool:
+	for cp in h.game.level.get_checkpoints():
+		if is_equal_approx(cp.global_position.x / GameConst.TILE, x):
+			return GameSession.checkpoint_hangs(cp)
+	return false
 
 
 func _checkpoint_y(h: GameHarness, x: float) -> float:
@@ -181,7 +188,7 @@ func _windows(args: PackedStringArray) -> void:
 func _exploits() -> void:
 	var finish := 0.0
 	var probe := GameHarness.new(self)
-	await probe.start(level_index)
+	await probe.start(level_index, world_index)
 	finish = probe.game.level.get_finish().global_position.x / GameConst.TILE
 	probe.free_game()
 	await get_tree().physics_frame

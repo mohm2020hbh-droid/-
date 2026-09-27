@@ -8,6 +8,9 @@ class_name Palette
 ##   &"galaxy" – World 03, The Horrifying Galaxy: a cold base; the two
 ##               gravity colours (blue/violet, orange/amber) are layered on
 ##               top by GalaxyLook.
+##   &"garden" – World 04, The Inverted Garden: neutral bases (white ink on
+##               dark, light UI over a bright world); the two surface states
+##               (blue + white, yellow + black) are layered on by GardenLook.
 
 const THEMES := {
 	&"red": {
@@ -35,6 +38,19 @@ const THEMES := {
 		"SHARD_EDGE": Color("8ff0ff"), "SHARD_CORE": Color("f2feff"),
 		"UI_TEXT": Color("f1edff"), "UI_MUTED": Color("a49ec8"), "UI_PANEL": Color(0.03, 0.025, 0.07, 0.88),
 		"UI_ACCENT": Color("b48cff"), "UI_CARD": Color(0.045, 0.04, 0.085),
+	},
+	&"garden": {
+		"SKY_TOP": Color("3e8eeb"), "SKY_HORIZON": Color("d6ecff"), "FOG": Color("ffffff"),
+		"SUN": Color("ffffff"), "SUN_GLOW": Color("cfe6ff"),
+		"SILHOUETTE_FAR": Color("8db8ee"), "SILHOUETTE_MID": Color("5b8fdb"),
+		"BLOCK_BODY": Color("2a4f9c"), "BLOCK_FACE": Color("3b64b8"),
+		"NEON": Color("ffffff"), "NEON_DIM": Color("b8c8e0"),
+		"HAZARD": Color("ffffff"), "HAZARD_CORE": Color("ffffff"),
+		"HAZARD_BODY": Color("091031"), "HAZARD_STRIPE": Color(1.0, 1.0, 1.0, 0.3),
+		"PLAYER_BODY": Color("ffd21f"), "PLAYER_EDGE": Color("ffffff"), "PLAYER_CORE": Color("ffffff"),
+		"SHARD_EDGE": Color("1a73ff"), "SHARD_CORE": Color("ffffff"),
+		"UI_TEXT": Color("ffffff"), "UI_MUTED": Color("dfe9f7"), "UI_PANEL": Color(0.04, 0.07, 0.19, 0.9),
+		"UI_ACCENT": Color("ffd21f"), "UI_CARD": Color(0.05, 0.09, 0.22),
 	},
 	&"mono": {
 		"SKY_TOP": Color("000000"), "SKY_HORIZON": Color("262626"), "FOG": Color("d8d8d8"),
@@ -128,3 +144,7 @@ static func is_mono() -> bool:
 
 static func is_galaxy() -> bool:
 	return theme == &"galaxy"
+
+
+static func is_garden() -> bool:
+	return theme == &"garden"

@@ -17,6 +17,9 @@ extends Resource
 ## Extra progress marks on the HUD bar besides the checkpoints (percent),
 ## e.g. World 03's 50% and 75%.
 @export var progress_milestones: Array[float] = []
+## World 04: the second tap latches to the other surface instead of jumping
+## again, and the view never turns (the run stays left to right).
+@export var surface_latch := false
 
 
 func get_level(index: int) -> LevelData:

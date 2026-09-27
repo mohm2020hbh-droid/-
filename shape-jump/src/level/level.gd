@@ -20,6 +20,19 @@ extends Node2D
 ## line in level time, so gravity is a pure function of the clock too
 ## ([method gravity_up_at]): it rewinds with everything else, and a respawn
 ## restores it exactly. The level writes it into [member gravity] each tick.
+##
+## Surfaces (World 04, [member surface_latch]): the player turns gravity
+## itself, latching from one surface to the other with its second tap, so
+## the level never writes gravity; it keeps a log instead. The game session
+## reports every latch ([method record_surface]) and the level can then say
+## which surface was the floor at any moment of this attempt
+## ([method surface_up_at]): elements that act on "the floor" pick their side
+## from it at the start of each cycle, which keeps them pure functions of
+## the clock and the log. A respawn starts a fresh log from the checkpoint's
+## surface ([method reset_surface]), so what the player sees after it is
+## exactly what the level generator measured from that checkpoint.
+## Wind zones (elements with wind(x, t, up)) add an acceleration toward the
+## floor or away from it: [method wind_at].
 
 signal shard_collected(shard: Shard)
 signal checkpoint_reached(checkpoint: Checkpoint)
@@ -32,6 +45,9 @@ signal obstacle_cued(kind: StringName, position: Vector2)
 const PHYSICS_PRIORITY := -10
 ## A gate at x turns gravity on the tick the player's centre reaches it.
 const GRAVITY_EPSILON := 0.001
+## A latch logged at level time t changes the floor for every moment after
+## t (not at t itself: the elements already took their place for that tick).
+const SURFACE_EPSILON := 0.0001
 
 @export var data: LevelData
 ## Falling below this world Y kills the player.
@@ -43,6 +59,9 @@ const GRAVITY_EPSILON := 0.001
 ## Where the view's centre sits, in px away from the floor from the player
 ## (the camera's vertical offset; a corridor level centres its corridor).
 @export var camera_offset := -90.0
+## World 04: the player turns gravity by latching from surface to surface;
+## the level logs it instead of writing it (see the class notes).
+@export var surface_latch := false
 
 ## Seconds of level time; advances only while [member running].
 var clock := 0.0
@@ -61,6 +80,11 @@ var _gravity_dirty := true
 ## The player's run: x = _run_origin + _run_speed * clock.
 var _run_origin := 0.0
 var _run_speed := 0.0
+## World 04: the floor before the first logged latch, and every latch of
+## this attempt since: Vector2(level time, 1.0 for the ceiling / 0.0 ground).
+var _surface_base := false
+var _surface_log: Array[Vector2] = []
+var _winds: Array[Node] = []
 
 @onready var spawn_point: Marker2D = get_node_or_null(^"SpawnPoint")
 
@@ -223,14 +247,57 @@ func _rebuild_gravity_events() -> void:
 	_gravity_dirty = false
 
 
+## World 04: a latch in play just made [param up] the floor (logged at the
+## current level time).
+func record_surface(up: bool) -> void:
+	_surface_log.append(Vector2(clock, 1.0 if up else 0.0))
+
+
+## World 04: a fresh log, with [param up] the floor until the next latch (a
+## level start or a respawn; call it before [method rewind_to]).
+func reset_surface(up: bool) -> void:
+	_surface_base = up
+	_surface_log.clear()
+
+
+## World 04: true when the ceiling was the floor at level time [param t] of
+## this attempt (the start's or the respawn's surface before any latch).
+func surface_up_at(t: float) -> bool:
+	var up := _surface_base
+	for event in _surface_log:
+		if t <= event.x + SURFACE_EPSILON:
+			break
+		up = event.y > 0.5
+	return up
+
+
+## World 04: every latch of this attempt, in order (tests, diagnostics).
+func get_surface_log() -> Array[Vector2]:
+	return _surface_log
+
+
+## World 04: the wind's acceleration on a body centred at [param x] right
+## now: toward the floor (+) or away from it (-).
+func wind_at(x: float) -> float:
+	if _winds.is_empty():
+		return 0.0
+	var up := gravity.up if gravity else surface_up_at(clock)
+	var push := 0.0
+	for node in _winds:
+		push += node.wind(x, clock, up)
+	return push
+
+
 func _apply_time(instant := false) -> void:
-	if gravity:
+	if gravity and not surface_latch:
 		gravity.set_up(gravity_up_at(clock), instant)
 	for node in _timed:
 		node.apply_time(clock)
 
 
 func _register(element: Node) -> void:
+	if element.has_method(&"wind") and not element in _winds:
+		_winds.append(element)
 	if element.has_method(&"gravity_events") and not element in _gravity_switches:
 		_gravity_switches.append(element)
 		_gravity_dirty = true
@@ -256,6 +323,7 @@ func _register(element: Node) -> void:
 
 func _unregister(element: Node) -> void:
 	_timed.erase(element)
+	_winds.erase(element)
 	if _gravity_switches.has(element):
 		_gravity_switches.erase(element)
 		_gravity_dirty = true

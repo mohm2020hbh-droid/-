@@ -22,6 +22,11 @@ signal obstacle_slam(position: Vector2)
 signal gravity_flipped(up: bool, position: Vector2)
 ## A gravity gate on screen woke up: a flip is coming.
 signal gravity_warning(position: Vector2)
+## World 04: the second tap latched the player to the other surface
+## (up = the ceiling is now the floor).
+signal player_latched(position: Vector2, up: bool)
+## World 04: the second tap found no surface in reach.
+signal player_latch_missed(position: Vector2)
 signal level_completed(level_id: StringName, score: int, shards: int)
 signal ui_pressed
 @warning_ignore_restore("unused_signal")
