@@ -1,11 +1,13 @@
 class_name UiLook
 ## Dresses the UI in the current world's look (see [Palette]): World 01 keeps
-## the scenes' own reds; World 02 gets a black-and-white UI theme and World 03
-## a cold violet one, and every colored label is remapped by role (accent,
-## text, muted) to the palette.
+## the scenes' own reds; World 02 gets a black-and-white UI theme, World 03
+## a cold violet one and World 04 a deep blue one with outlined text (read
+## over a bright world), and every colored label is remapped by role
+## (accent, text, muted) to the palette.
 
 const MONO_THEME := preload("res://src/ui/theme_mono.tres")
 const GALAXY_THEME := preload("res://src/ui/theme_galaxy.tres")
+const GARDEN_THEME := preload("res://src/ui/theme_garden.tres")
 const META := &"ui_look_original"
 
 
@@ -29,6 +31,8 @@ static func _theme_for(look: StringName) -> Theme:
 			return MONO_THEME
 		&"galaxy":
 			return GALAXY_THEME
+		&"garden":
+			return GARDEN_THEME
 	return null
 
 

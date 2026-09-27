@@ -269,7 +269,7 @@ func test_resume_at_a_ceiling_checkpoint_is_upside_down() -> void:
 	assert_true(h.deaths.is_empty(), "with the timing of the first pass")
 
 
-func test_world_02_opens_world_03_and_world_03_is_the_last() -> void:
+func test_world_02_opens_world_03_and_world_03_opens_world_04() -> void:
 	var w2: WorldData = load("res://levels/world_02/world_02.tres")
 	var w3: WorldData = load("res://levels/world_03/world_03.tres")
 	assert_false(Progression.is_world_unlocked(w3), "locked on a fresh save")
@@ -300,5 +300,10 @@ func test_world_02_opens_world_03_and_world_03_is_the_last() -> void:
 	await h.run_ticks(80)
 	panel = h.game.complete_panel
 	assert_eq((panel.get_node(^"%TitleLabel") as Label).text, "WORLD 03 COMPLETE")
-	assert_false((panel.get_node(^"%UnlockLabel") as Label).visible, "nothing more to unlock")
-	assert_false((panel.get_node(^"%NextButton") as Button).visible, "no World 04")
+	assert_eq((panel.get_node(^"%UnlockLabel") as Label).text, "THE INVERTED GARDEN UNLOCKED")
+	assert_true((panel.get_node(^"%NextButton") as Button).visible, "World 04 follows")
+	panel.next_pressed.emit()
+	await h.run_ticks(2)
+	assert_eq(h.game.world_index, 3, "NEXT goes on to World 04")
+	assert_eq(h.game.level.data.id, &"w04_l01", "at its first level")
+	assert_true(Palette.is_garden(), "in the garden's colours")

@@ -35,6 +35,22 @@ HURT_HALF = 18.0     # Half size of the hurtbox.
 LEDGE_ASSIST = 10.0
 INSET = 4.0          # Hazard.HITBOX_INSET
 SAFETY = 2.0         # Closer than this to a hitbox counts as a hit.
+# World 04 (movement_config.gd, Surface Latch): the second tap latches to the
+# other surface within this reach (px, from the body's far side) and sets off
+# at this speed.
+LATCH_REACH = 160.0
+LATCH_SPEED = 1000.0
+
+
+def latch_ticks(distance):
+    """Ticks a latch takes to cover `distance` px (MovementConfig.latch_ticks)."""
+    covered, speed, ticks = 0.0, LATCH_SPEED, 0
+    while covered < distance and ticks < 120:
+        speed = min(speed + G_DOWN * DT * 0.5, MAX_FALL)
+        covered += speed * DT
+        speed = min(speed + G_DOWN * DT * 0.5, MAX_FALL)
+        ticks += 1
+    return ticks
 
 GAME_SRC = "res://src/level/elements/"
 
@@ -764,6 +780,465 @@ class DualHazard(Element):
                 "alternate": "true" if self.alternate else "false", "warning_time": f(float(self.warning))}
 
 
+# ------------------------------------------------------ World 04 elements --
+# Mirrors of src/level/elements/garden/*.gd. Every element sits on the ground
+# line at y0 with the ceiling's underside `ceiling` px above it (negative), and
+# is anchored to a side (GardenHazard.Anchor): GROUND 0, CEILING 1, FLOOR 2
+# (the player's floor at the start of each cycle), SKY 3 (the side across from
+# it). The floor comes from the current simulation's surface log.
+GROUND, CEILING, FLOOR, SKY = 0, 1, 2, 3
+
+
+def cycle_start(t, period, phase):
+    return (math.floor(t / period + phase) - phase) * period
+
+
+class GardenElement(Element):
+    """Base of the World 04 mirrors (GardenHazard)."""
+    anchor = GROUND
+    ceiling = -320.0
+
+    def on_ceiling_at(self, start):
+        if self.anchor == GROUND:
+            return False
+        if self.anchor == CEILING:
+            return True
+        floor_up = self.lv.surface_up_at(start)
+        return floor_up if self.anchor == FLOOR else not floor_up
+
+    def surface(self, up):
+        return self.y0 + (self.ceiling if up else 0.0)
+
+    @staticmethod
+    def into(up):
+        return 1.0 if up else -1.0
+
+    def shift(self, dx, dt):
+        """insert_rest: `dx` px further on, `dt` s later."""
+        self.x += dx
+        self.phase -= dt / self.period
+
+    def base_props(self):
+        p = {"position": v2(self.x, self.y0), "ceiling": f(float(self.ceiling))}
+        if self.anchor != GROUND:
+            p["anchor"] = self.anchor
+        return p
+
+
+class RisingRoots(GardenElement):
+    base, type_, script = "RisingRoots", "Area2D", "garden/rising_roots"
+    GROW, SINK, SOLID = 0.14, 0.26, 0.62
+
+    def __init__(self, lv, x, y0, width, reach, anchor, ceiling, period, phase, warning, hold):
+        self.lv, self.x, self.y0, self.width, self.reach = lv, x, y0, width, reach
+        self.anchor, self.ceiling, self.period, self.phase = anchor, ceiling, period, phase
+        self.warning, self.hold = warning, hold
+
+    def extension(self, into):
+        t = into - self.warning
+        if t < 0.0:
+            return 0.0
+        if t < self.GROW:
+            k = t / self.GROW
+            return 1.0 - (1.0 - k) * (1.0 - k)
+        t -= self.GROW
+        if t < self.hold:
+            return 1.0
+        t -= self.hold
+        if t < self.SINK:
+            return 1.0 - smoothstep(t / self.SINK)
+        return 0.0
+
+    def polys(self, t):
+        start = cycle_start(t, self.period, self.phase)
+        up = self.on_ceiling_at(start)
+        deadly = self.reach * self.extension(t - start) * self.SOLID
+        if deadly <= INSET * 2:
+            return []
+        s, d = self.surface(up), self.into(up)
+        a, b = s, s + d * (deadly - INSET)
+        return [rect_poly(self.x + INSET, min(a, b), self.x + self.width - INSET, max(a, b))]
+
+    def x_range(self):
+        return (self.x, self.x + self.width)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"width": f(float(self.width)), "reach": f(float(self.reach)), "period": f(float(self.period)),
+                  "phase": f(float(self.phase % 1.0)), "warning_time": f(float(self.warning)),
+                  "hold_time": f(float(self.hold))})
+        return p
+
+
+class SweepingBranch(GardenElement):
+    base, type_, script = "SweepingBranch", "Area2D", "garden/sweeping_branch"
+
+    def __init__(self, lv, x, y0, anchor, ceiling, length, thickness, crown, amplitude, period, phase):
+        self.lv, self.x, self.y0, self.anchor, self.ceiling = lv, x, y0, anchor, ceiling
+        self.length, self.thickness, self.crown = length, thickness, crown
+        self.amplitude, self.period, self.phase = amplitude, period, phase
+
+    def polys(self, t):
+        a = self.amplitude * math.sin(math.tau * (t / self.period + self.phase))
+        if self.anchor == CEILING:
+            dx, dy, bx, by = math.sin(a), math.cos(a), self.x, self.y0 + self.ceiling
+        else:
+            dx, dy, bx, by = math.sin(a), -math.cos(a), self.x, self.y0
+        bar = self.length * 0.92
+        angle = math.atan2(dy, dx)
+        return [rotated_rect(bx + dx * bar * 0.5, by + dy * bar * 0.5, bar - INSET * 2,
+                             max(self.thickness - INSET * 2, 4.0), angle),
+                circle_hull(bx + dx * self.length, by + dy * self.length, self.crown * 0.8)]
+
+    def x_range(self):
+        r = self.length + self.crown
+        return (self.x - r, self.x + r)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"length": f(float(self.length)), "thickness": f(float(self.thickness)),
+                  "crown": f(float(self.crown)), "amplitude": f(float(self.amplitude)),
+                  "period": f(float(self.period)), "phase": f(float(self.phase % 1.0))})
+        return p
+
+
+class ClosingFlower(GardenElement):
+    base, type_, script = "ClosingFlower", "Area2D", "garden/closing_flower"
+    HALF, HEIGHT = 0.24, 0.86
+
+    def __init__(self, lv, x, y0, width, height, anchor, ceiling, period, hold_ratio, phase, warning):
+        self.lv, self.x, self.y0, self.width, self.height = lv, x, y0, width, height
+        self.anchor, self.ceiling, self.period, self.hold_ratio = anchor, ceiling, period, hold_ratio
+        self.phase, self.warning = phase, warning
+
+    def closure(self, t):
+        return steps_progress((t / self.period + self.phase) % 1.0, self.hold_ratio)
+
+    def polys(self, t):
+        start = cycle_start(t, self.period, self.phase)
+        up = self.on_ceiling_at(start)
+        deadly = self.height * self.HEIGHT * self.closure(t)
+        if deadly <= INSET * 2:
+            return []
+        s, d = self.surface(up), self.into(up)
+        half = self.width * self.HALF
+        a, b = s, s + d * deadly
+        return [rect_poly(self.x - half, min(a, b), self.x + half, max(a, b))]
+
+    def x_range(self):
+        return (self.x - self.width * 0.5, self.x + self.width * 0.5)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"width": f(float(self.width)), "height": f(float(self.height)), "period": f(float(self.period)),
+                  "hold_ratio": f(float(self.hold_ratio)), "phase": f(float(self.phase % 1.0)),
+                  "warning_time": f(float(self.warning))})
+        return p
+
+
+class WaterWave(GardenElement):
+    base, type_, script = "WaterWave", "Area2D", "garden/water_wave"
+    SINK, TOP = 0.25, 0.34
+
+    def __init__(self, lv, x, y0, height, width, run, speed, anchor, ceiling, period, phase, form):
+        self.lv, self.x, self.y0, self.height, self.width = lv, x, y0, height, width
+        self.run, self.speed, self.anchor, self.ceiling = run, speed, anchor, ceiling
+        self.period, self.phase, self.form = period, phase, form
+
+    def crest(self, into):
+        if into < self.form:
+            return 0.0, self.height * smoothstep(into / self.form)
+        rolling = into - self.form
+        travel = self.run / self.speed
+        if rolling < travel:
+            return -rolling * self.speed, self.height
+        sinking = rolling - travel
+        if sinking < self.SINK:
+            return -self.run, self.height * (1.0 - smoothstep(sinking / self.SINK))
+        return -self.run, 0.0
+
+    def polys(self, t):
+        start = cycle_start(t, self.period, self.phase)
+        up = self.on_ceiling_at(start)
+        cx, h = self.crest(t - start)
+        h -= INSET
+        if h <= INSET:
+            return []
+        s, d = self.surface(up), self.into(up)
+        half = self.width * 0.5 - INSET
+        top = half * self.TOP
+        x = self.x + cx
+        return [[(x - half, s), (x + half, s), (x + top, s + d * h), (x - top, s + d * h)]]
+
+    def x_range(self):
+        return (self.x - self.run - self.width * 0.5, self.x + self.width * 0.5)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"height": f(float(self.height)), "width": f(float(self.width)), "run": f(float(self.run)),
+                  "speed": f(float(self.speed)), "period": f(float(self.period)),
+                  "phase": f(float(self.phase % 1.0)), "form_time": f(float(self.form))})
+        return p
+
+
+class Waterfall(GardenElement):
+    base, type_, script = "Waterfall", "Area2D", "garden/waterfall"
+    THREAD = 7.0
+
+    def __init__(self, lv, x, y0, width, length, deadly, anchor, ceiling, period, hold_ratio, phase, warning):
+        self.lv, self.x, self.y0, self.width, self.length, self.deadly = lv, x, y0, width, length, deadly
+        self.anchor, self.ceiling, self.period, self.hold_ratio = anchor, ceiling, period, hold_ratio
+        self.phase, self.warning = phase, warning
+
+    def polys(self, t):
+        if not self.deadly:
+            return []
+        start = cycle_start(t, self.period, self.phase)
+        up = self.on_ceiling_at(start)
+        w = self.width * steps_progress((t / self.period + self.phase) % 1.0, self.hold_ratio)
+        if w <= INSET * 2 + self.THREAD:
+            return []
+        reach = min(self.length, abs(self.ceiling))
+        y0, y1 = (self.ceiling, self.ceiling + reach) if up else (-reach, 0.0)
+        half = (w - INSET * 2) * 0.5
+        return [rect_poly(self.x - half, self.y0 + y0 + INSET, self.x + half, self.y0 + y1 - INSET)]
+
+    def x_range(self):
+        return (self.x - self.width * 0.5, self.x + self.width * 0.5)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"width": f(float(self.width)), "length": f(float(self.length)), "period": f(float(self.period)),
+                  "hold_ratio": f(float(self.hold_ratio)), "phase": f(float(self.phase % 1.0)),
+                  "warning_time": f(float(self.warning))})
+        if self.deadly:
+            p["deadly"] = "true"
+        return p
+
+
+class WindBurst(GardenElement):
+    base, type_, script = "WindBurst", "Node2D", "garden/wind_burst"
+
+    def __init__(self, lv, x, y0, width, ceiling, lift, period, hold_ratio, phase, warning):
+        self.lv, self.x, self.y0, self.width, self.ceiling, self.lift = lv, x, y0, width, ceiling, lift
+        self.period, self.hold_ratio, self.phase, self.warning = period, hold_ratio, phase, warning
+
+    def push(self, x_px, t, up):
+        local = x_px - self.x
+        if local < 0.0 or local > self.width:
+            return 0.0
+        return self.lift * steps_progress((t / self.period + self.phase) % 1.0, self.hold_ratio)
+
+    def x_range(self):
+        return (self.x, self.x + self.width)
+
+    def props(self):
+        return {"position": v2(self.x, self.y0), "width": f(float(self.width)), "ceiling": f(float(self.ceiling)),
+                "lift": f(float(self.lift)), "period": f(float(self.period)),
+                "hold_ratio": f(float(self.hold_ratio)), "phase": f(float(self.phase % 1.0)),
+                "warning_time": f(float(self.warning))}
+
+
+class FallingRock(GardenElement):
+    base, type_, script = "FallingRock", "Area2D", "garden/falling_rock"
+
+    def __init__(self, lv, x, y0, radius, anchor, ceiling, period, phase, warning, speed, ice):
+        self.lv, self.x, self.y0, self.radius, self.anchor, self.ceiling = lv, x, y0, radius, anchor, ceiling
+        self.period, self.phase, self.warning, self.speed, self.ice = period, phase, warning, speed, ice
+
+    def stone_y(self, into, from_ceiling):
+        moving = into - self.warning
+        travel = abs(self.ceiling) + self.radius * 2.0
+        if moving < 0.0 or moving * self.speed > travel:
+            return None
+        origin = self.ceiling - self.radius if from_ceiling else self.radius
+        return origin + (1.0 if from_ceiling else -1.0) * moving * self.speed
+
+    def polys(self, t):
+        start = cycle_start(t, self.period, self.phase)
+        y = self.stone_y(t - start, self.on_ceiling_at(start))
+        return [] if y is None else [circle_hull(self.x, self.y0 + y, self.radius * 0.75)]
+
+    def x_range(self):
+        return (self.x - self.radius, self.x + self.radius)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"radius": f(float(self.radius)), "period": f(float(self.period)),
+                  "phase": f(float(self.phase % 1.0)), "warning_time": f(float(self.warning)),
+                  "speed": f(float(self.speed))})
+        if self.ice:
+            p["ice"] = "true"
+        return p
+
+
+class HangingVines(GardenElement):
+    base, type_, script = "HangingVines", "Area2D", "garden/hanging_vines"
+    SOLID = 0.8
+
+    def __init__(self, lv, x, y0, width, short, long, anchor, ceiling, period, hold_ratio, phase, warning):
+        self.lv, self.x, self.y0, self.width, self.short, self.long = lv, x, y0, width, short, long
+        self.anchor, self.ceiling, self.period, self.hold_ratio = anchor, ceiling, period, hold_ratio
+        self.phase, self.warning = phase, warning
+
+    def polys(self, t):
+        start = cycle_start(t, self.period, self.phase)
+        up = self.on_ceiling_at(start)
+        hang = self.short + (self.long - self.short) * steps_progress((t / self.period + self.phase) % 1.0,
+                                                                      self.hold_ratio)
+        deadly = hang * self.SOLID
+        s, d = self.surface(up), self.into(up)
+        a, b = s, s + d * (deadly - INSET)
+        return [rect_poly(self.x + INSET, min(a, b), self.x + self.width - INSET, max(a, b))]
+
+    def x_range(self):
+        return (self.x, self.x + self.width)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"width": f(float(self.width)), "short": f(float(self.short)), "long": f(float(self.long)),
+                  "period": f(float(self.period)), "hold_ratio": f(float(self.hold_ratio)),
+                  "phase": f(float(self.phase % 1.0)), "warning_time": f(float(self.warning))})
+        return p
+
+
+class LeafGlider(GardenElement):
+    base, type_, script = "LeafGlider", "Area2D", "garden/leaf_glider"
+
+    def __init__(self, lv, x, y0, loop, period, phase, size):
+        self.lv, self.x, self.y0, self.loop, self.period, self.phase, self.size = lv, x, y0, loop, period, phase, size
+
+    def polys(self, t):
+        a = math.tau * (t / self.period + self.phase)
+        px, py = self.loop[0] * math.sin(a), self.loop[1] * math.sin(a * 2.0)
+        tilt = math.atan2(2.0 * self.loop[1] * math.cos(a * 2.0), self.loop[0] * math.cos(a) + 0.001) * 0.5
+        return [rotated_rect(self.x + px, self.y0 + py, self.size[0] * 0.7 - INSET, self.size[1] * 0.6 - INSET,
+                             tilt)]
+
+    def x_range(self):
+        r = self.size[0] * 0.5
+        return (self.x - self.loop[0] - r, self.x + self.loop[0] + r)
+
+    def props(self):
+        return {"position": v2(self.x, self.y0), "loop": v2(*self.loop), "period": f(float(self.period)),
+                "phase": f(float(self.phase % 1.0)), "size": v2(*self.size)}
+
+
+class InkFlow(GardenElement):
+    base, type_, script = "InkFlow", "Area2D", "garden/ink_flow"
+
+    def __init__(self, lv, x, y0, reach, thickness, anchor, ceiling, period, hold_ratio, phase, warning):
+        self.lv, self.x, self.y0, self.reach, self.thickness = lv, x, y0, reach, thickness
+        self.anchor, self.ceiling, self.period, self.hold_ratio = anchor, ceiling, period, hold_ratio
+        self.phase, self.warning = phase, warning
+
+    def polys(self, t):
+        start = cycle_start(t, self.period, self.phase)
+        up = self.on_ceiling_at(start)
+        flowed = self.reach * steps_progress((t / self.period + self.phase) % 1.0, self.hold_ratio)
+        span = flowed - INSET * 2
+        if span <= INSET:
+            return []
+        s, d = self.surface(up), self.into(up)
+        a, b = s, s + d * (self.thickness - INSET)
+        return [rect_poly(self.x - flowed + INSET, min(a, b), self.x - INSET, max(a, b))]
+
+    def x_range(self):
+        return (self.x - self.reach, self.x + 32.0)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"reach": f(float(self.reach)), "thickness": f(float(self.thickness)),
+                  "period": f(float(self.period)), "hold_ratio": f(float(self.hold_ratio)),
+                  "phase": f(float(self.phase % 1.0)), "warning_time": f(float(self.warning))})
+        return p
+
+
+class CanvasCurtain(GardenElement):
+    base, type_, script = "CanvasCurtain", "Area2D", "garden/canvas_curtain"
+
+    def __init__(self, lv, x, y0, width, short, long, anchor, ceiling, period, hold_ratio, phase, warning):
+        self.lv, self.x, self.y0, self.width, self.short, self.long = lv, x, y0, width, short, long
+        self.anchor, self.ceiling, self.period, self.hold_ratio = anchor, ceiling, period, hold_ratio
+        self.phase, self.warning = phase, warning
+
+    def polys(self, t):
+        start = cycle_start(t, self.period, self.phase)
+        up = self.on_ceiling_at(start)
+        hang = self.short + (self.long - self.short) * steps_progress((t / self.period + self.phase) % 1.0,
+                                                                      self.hold_ratio)
+        s, d = self.surface(up), self.into(up)
+        a, b = s + d * INSET, s + d * (hang - INSET)
+        return [rect_poly(self.x + INSET, min(a, b), self.x + self.width - INSET, max(a, b))]
+
+    def x_range(self):
+        return (self.x, self.x + self.width)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"width": f(float(self.width)), "short": f(float(self.short)), "long": f(float(self.long)),
+                  "period": f(float(self.period)), "hold_ratio": f(float(self.hold_ratio)),
+                  "phase": f(float(self.phase % 1.0)), "warning_time": f(float(self.warning))})
+        return p
+
+
+class HangingBoulder(GardenElement):
+    base, type_, script = "HangingBoulder", "Area2D", "garden/hanging_boulder"
+
+    def __init__(self, lv, x, y0, anchor, ceiling, rope, radius, amplitude, period, phase):
+        self.lv, self.x, self.y0, self.anchor, self.ceiling = lv, x, y0, anchor, ceiling
+        self.rope, self.radius, self.amplitude, self.period, self.phase = rope, radius, amplitude, period, phase
+
+    def centre(self, t):
+        a = self.amplitude * math.sin(math.tau * (t / self.period + self.phase))
+        down = 1.0 if self.anchor == CEILING else -1.0
+        py = self.y0 + (self.ceiling if self.anchor == CEILING else 0.0)
+        return self.x + math.sin(a) * self.rope, py + down * math.cos(a) * self.rope
+
+    def polys(self, t):
+        cx, cy = self.centre(t)
+        return [circle_hull(cx, cy, self.radius * 0.82)]
+
+    def x_range(self):
+        r = self.rope * math.sin(min(self.amplitude, math.pi / 2)) + self.radius
+        return (self.x - r, self.x + r)
+
+    def props(self):
+        p = self.base_props()
+        p.update({"rope": f(float(self.rope)), "radius": f(float(self.radius)),
+                  "amplitude": f(float(self.amplitude)), "period": f(float(self.period)),
+                  "phase": f(float(self.phase % 1.0))})
+        return p
+
+
+class BirdFlock(GardenElement):
+    base, type_, script = "BirdFlock", "Area2D", "garden/bird_flock"
+    CORE = 0.72
+
+    def __init__(self, lv, x, y0, middle, sweep, drift, period, phase, span):
+        self.lv, self.x, self.y0, self.middle, self.sweep, self.drift = lv, x, y0, middle, sweep, drift
+        self.period, self.phase, self.span = period, phase, span
+
+    def centre(self, t):
+        a = math.tau * (t / self.period + self.phase)
+        return self.x + self.drift * math.sin(a * 2.0), self.y0 + self.middle + self.sweep * math.sin(a)
+
+    def polys(self, t):
+        cx, cy = self.centre(t)
+        hw = (self.span[0] * self.CORE - INSET * 2) * 0.5
+        hh = (self.span[1] * self.CORE - INSET * 2) * 0.5
+        return [rect_poly(cx - hw, cy - hh, cx + hw, cy + hh)]
+
+    def x_range(self):
+        r = self.drift + self.span[0] * 0.5
+        return (self.x - r, self.x + r)
+
+    def props(self):
+        return {"position": v2(self.x, self.y0), "middle": f(float(self.middle)), "sweep": f(float(self.sweep)),
+                "drift": f(float(self.drift)), "period": f(float(self.period)),
+                "phase": f(float(self.phase % 1.0)), "span": v2(*self.span)}
+
+
 class SlabGroup:
     """Tuning proxy: setting `phase` moves every slab's oscillator together,
     keeping the half-cycle offsets of a SPLIT FLOOR."""
@@ -814,8 +1289,9 @@ class Surface:
     """A solid top the simulated player can land on: an AABB (px, y down),
     optionally moved by an Osc or only present before `drop` (level time)."""
 
-    def __init__(self, x0, x1, top, bottom, osc=None, drop=None):
+    def __init__(self, x0, x1, top, bottom, osc=None, drop=None, latchable=True):
         self.x0, self.x1, self.top, self.bottom, self.osc, self.drop = x0, x1, top, bottom, osc, drop
+        self.latchable = latchable
 
     def alive(self, t):
         return self.drop is None or t < self.drop
@@ -844,6 +1320,7 @@ class Mirrored:
         self.s = surface
         self.osc = surface.osc
         self.drop = surface.drop
+        self.latchable = surface.latchable
 
     def alive(self, t):
         return self.s.alive(t)
@@ -897,6 +1374,15 @@ class Level:
         self._gravity = None     # cached gravity events [(x px, up)]
         self._sim = None
         self._path = None
+        # World 04: the second tap latches to the other surface (see
+        # latch_probe); gravity belongs to the player, and elements that act
+        # on "the floor" read this simulation's log (surface_up_at).
+        self.latch_mode = False
+        self.winds = []          # World 04: wind zones (push(x, t, up))
+        self.straddles = []      # World 04: latches probed across a slick edge
+        self._surf_base = False
+        self._surf_log = []      # [(level time, up)] latches of the current simulation
+        self._path_log = []      # the same, for the cached path
 
     # ---------------------------------------------------------------- time --
     def clock(self, x_tiles):
@@ -967,6 +1453,77 @@ class Level:
                 up = eu
                 out.append((ex / T, eu))
         return out
+
+    # ------------------------------------------------------------ surfaces --
+    def surface_up_at(self, t):
+        """World 04: the floor at level time t of the current simulation (a
+        latch logged at t changes it for every moment after t). Mirrors
+        Level.surface_up_at in src/level/level.gd."""
+        up = self._surf_base
+        for et, eu in self._surf_log:
+            if t <= et + 0.0001:
+                break
+            up = eu
+        return up
+
+    def wind_at(self, x_px, t, up):
+        """World 04: acceleration toward the floor (+) or away (-) at x (px)."""
+        return sum(w.push(x_px, t, up) for w in self.winds if id(w) not in self._pending)
+
+    @staticmethod
+    def _straddles(x, y, surfaces, t, hit):
+        """True when another face at the same distance with the other
+        latchable flag is under the body too (a slick edge): the engine's
+        choice between the two is not defined, so a route must never latch
+        there."""
+        head = y - 2 * HALF
+        for (blo, bhi), s in surfaces:
+            if s is hit[1] or blo > x + HALF + 64.0 or bhi < x - HALF - 64.0 or not s.alive(t):
+                continue
+            sx0, sx1, stop, sbottom = s.solid(t)
+            if x + HALF > sx0 and x - HALF < sx1 and abs((head - sbottom) - hit[0]) < 1.0 and \
+                    s.latchable != hit[1].latchable:
+                return True
+        return False
+
+    @staticmethod
+    def _face_above(x, y, surfaces, t):
+        """Nearest face over the body's head (current frame, y = feet, y down)
+        within LATCH_REACH: (distance px, surface) or None; also None if the
+        body overlaps something solid there."""
+        head = y - 2 * HALF
+        best = None
+        for (blo, bhi), s in surfaces:
+            if blo > x + HALF + 64.0:
+                break
+            if bhi < x - HALF - 64.0 or not s.alive(t):
+                continue
+            sx0, sx1, stop, sbottom = s.solid(t)
+            if not (x + HALF > sx0 and x - HALF < sx1):
+                continue
+            if sbottom > head + 0.01:
+                if stop < y - 0.5:
+                    return None   # Something solid where the body is.
+                continue
+            d = head - sbottom
+            if d <= LATCH_REACH and (best is None or d < best[0]):
+                best = (d, s)
+        return best
+
+    def latch_probe(self, x, y, surfaces, t):
+        """Mirror of SurfaceLatch.probe (src/player/surface_latch.gd): the
+        distance (px) to the face a latch would land on, or None (a miss)."""
+        hit = self._face_above(x, y, surfaces, t)
+        if hit is not None and self._straddles(x, y, surfaces, t, hit):
+            self.straddles.append((x / T, t))
+        if hit is None or not hit[1].latchable:
+            return None
+        d = hit[0]
+        ahead = self.speed * DT * latch_ticks(d)
+        there = self._face_above(x + ahead, y, surfaces, t)
+        if there is None or not there[1].latchable or abs(there[0] - d) > 2.0:
+            return None
+        return d
 
     # --------------------------------------------------------------- nodes --
     def group(self, name):
@@ -1136,7 +1693,9 @@ class Level:
 
     def checkpoint(self, x, height=0.0, up=False):
         """up: on a ceiling (World 03): the beam hangs down from it."""
-        self.checkpoints.append((x, height))
+        # World 04: a checkpoint also says which surface it stands on (a
+        # simulation that starts there starts on it).
+        self.checkpoints.append((x, height, up) if self.latch_mode else (x, height))
         props = {"position": v2(x * T, -height * T)}
         if up:
             props["rotation"] = f(math.pi)
@@ -1179,14 +1738,32 @@ class Level:
         else:
             x, y = start[0] * T, -start[1] * T
         t0 = (x - self.spawn_px) / self.speed
+        if self.latch_mode and start is not None and len(start) <= 3:
+            # A checkpoint start is a respawn: the engine puts the player on
+            # the tick grid of the first pass (GameSession.time_at).
+            t0 = round(t0 / DT) * DT
+            x = self.spawn_px + self.speed * t0
         # Gravity (World 03): while it pulls up, everything runs in a mirrored
         # frame (y -> -y), where the ceiling is a floor and the motor's rules
         # apply unchanged. y is the feet in that frame; g is +1 or -1.
+        latch_mode = self.latch_mode
         flips = bool(self._gravity_list())
-        g = -1.0 if flips and self.gravity_up_at(t0) else 1.0
+        if latch_mode:
+            # World 04: the player's own surface. A checkpoint start is
+            # (x, h, up): a respawn, a fresh log from its surface. A mid-run
+            # start is (x, h, up, base, log): the log of the run so far.
+            start_up = self.start_up if start is None else (start[2] if len(start) > 2 else self.start_up)
+            g = -1.0 if start_up else 1.0
+            if start is not None and len(start) > 4:
+                self._surf_base, self._surf_log = start[3], list(start[4])
+            else:
+                self._surf_base, self._surf_log = start_up, []
+        else:
+            g = -1.0 if flips and self.gravity_up_at(t0) else 1.0
         if g < 0:
             y = -(y + HALF) + HALF   # Feet on a ceiling at world y: centre y + HALF.
         vy, grounded, coyote, air_jumps, buffer = 0.0, True, 0.0, 1, 0.0
+        latching = False
         queued = []          # taps waiting to jump, oldest first
         buffered = None      # the tap in the jump buffer
         made = {}            # tap x -> "ground" / "air"
@@ -1200,17 +1777,19 @@ class Level:
         end_x = ((self.finish_x if self.finish_x is not None else 1e9) + 1.0) * T
         if stop_x is not None:
             end_x = min(end_x, stop_x * T)
-        hz = sorted((h for h in self.hazards if id(h) not in self._pending),
+        hz = sorted((h for h in self.hazards if id(h) not in self._pending and not isinstance(h, WindBurst)),
                     key=lambda h: h.x_range()[0]) if hazards else []
         surf_down = sorted(((s.bounds(), s) for s in self.surfaces), key=lambda b: b[0][0])
-        surf_up = [(b, Mirrored(s)) for b, s in surf_down] if flips else []
+        surf_up = [(b, Mirrored(s)) for b, s in surf_down] if flips or latch_mode else []
         surfaces = surf_up if g < 0 else surf_down
         out = []
         tick = 0
         while x < end_x and tick < 60 * 300:
             if next_tap < len(route) and x / T >= route[next_tap]:
                 available = 2 if grounded else ((1 if coyote > 0 else 0) + air_jumps)
-                if len(queued) < available:
+                if latching:
+                    made[route[next_tap]] = "swallowed"   # Committed to a latch.
+                elif len(queued) < available:
                     queued.append(route[next_tap])
                 else:
                     buffer, buffered = BUFFER, route[next_tap]
@@ -1231,12 +1810,30 @@ class Level:
             on_floor = grounded
             if on_floor:
                 coyote, air_jumps = COYOTE, 1
+                latching = False
+            wind = self.wind_at(x, t, g < 0) if latch_mode and self.winds else 0.0
             can_ground = on_floor or coyote > 0
             jump = None
             if queued:
                 who = queued.pop(0)
                 if can_ground:
                     jump = "ground"
+                elif air_jumps > 0 and latch_mode:
+                    # PlayerMotor._air_latch: a latch if in reach, else a miss.
+                    air_jumps -= 1
+                    reach = self.latch_probe(x, y, surfaces, t)
+                    if reach is None:
+                        jump = "miss"
+                        buffer, buffered = BUFFER, who
+                    else:
+                        jump = "latch"
+                        centre = g * (y - HALF)
+                        g = -g
+                        y = g * centre + HALF
+                        grounded, support, coyote, buffer, buffered = False, None, 0.0, 0.0, None
+                        surfaces = surf_up if g < 0 else surf_down
+                        vy, latching, queued = LATCH_SPEED, True, []
+                        self._surf_log.append((t, g < 0))
                 elif air_jumps > 0:
                     jump = "air"
                 else:
@@ -1245,7 +1842,10 @@ class Level:
                     made[who] = jump
             elif buffer > 0 and can_ground:
                 jump, buffer = "ground", 0.0
-                made[buffered] = "ground"
+                # (World 04: a tap that already missed a latch stays a miss,
+                # even if it then jumps on landing: a route never relies on it.)
+                if not (latch_mode and made.get(buffered) == "miss"):
+                    made[buffered] = "ground"
             if jump == "ground":
                 vy, coyote = -V_JUMP, 0.0
             elif jump == "air":
@@ -1254,7 +1854,10 @@ class Level:
                 coyote = max(coyote - DT, 0.0)
             if buffer > 0:
                 buffer = max(buffer - DT, 0.0)
-            vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
+            if wind and not latching:
+                vy = min(vy + ((G_UP if vy < 0 else G_DOWN) + wind) * DT * 0.5, MAX_FALL)
+            else:
+                vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
             # move and collide
             nx, ny = x + self.speed * DT, y + vy * DT
             landed, new_support, death = False, None, None
@@ -1329,7 +1932,11 @@ class Level:
             grounded, support = landed, new_support
             if landed:
                 vy = 0.0
-            vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
+                latching = False
+            if wind and not latching:
+                vy = min(vy + ((G_UP if vy < 0 else G_DOWN) + wind) * DT * 0.5, MAX_FALL)
+            else:
+                vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
             if grounded:
                 air_jumps = 1
             x, y = nx, ny
@@ -1363,7 +1970,7 @@ class Level:
             out.append({"tick": tick, "t": t, "x": x / T, "y": centre + HALF, "h": -(centre + HALF), "vy": vy,
                         "grounded": grounded, "jump": jump, "air_jumps": air_jumps, "clearance": clearance,
                         "near": hit, "static": grounded and support is not None and support.osc is None,
-                        "up": g < 0, "feet_h": -(centre + g * HALF)})
+                        "up": g < 0, "feet_h": -(centre + g * HALF), "latching": latching})
             if death:
                 self.last_kinds = made
                 return out, (death, x / T, hit)
@@ -1379,6 +1986,7 @@ class Level:
         """The route's trajectory ignoring hazards (cached)."""
         if self._path is None:
             self._path, _ = self.simulate(hazards=False)
+            self._path_log = list(self._surf_log)
         return self._path
 
     def at(self, x_tiles):
@@ -1678,6 +2286,126 @@ class Level:
         self.add(Plain("GravityLens", "Node2D", "galaxy/gravity_lens",
                        {"position": v2(x * T, -height * T), "radius": f(float(radius))}, span=(x * T, x * T)))
 
+    # ------------------------------------------------------- World 04 API --
+    # x in tiles; heights in tiles above the ground line. Every obstacle lives
+    # in the corridor between `ground` and the ceiling `c` tiles above the
+    # ground line (defaults: self.corridor). Anchors: GROUND, CEILING, FLOOR
+    # (the player's floor at each cycle's start), SKY (the side across).
+    corridor = (0.0, 5.0)
+
+    def _gc(self, ground, c):
+        g0 = self.corridor[0] if ground is None else ground
+        c0 = self.corridor[1] if c is None else c
+        return -g0 * T, -(c0 - g0) * T
+
+    def garden_block(self, x0, x1, top, bottom, top_edge=True, bottom_edge=False, latchable=True):
+        """A GardenBlock from x0 to x1, from `bottom` up to `top` (tiles).
+        latchable=False: slick stone (the second tap cannot hold it)."""
+        if x1 <= x0:
+            raise SystemExit(f"{self.key}: block from x={x0:.2f} to x={x1:.2f} has no width")
+        props = {"position": v2(x0 * T, -top * T), "size": v2((x1 - x0) * T, (top - bottom) * T)}
+        if not top_edge:
+            props["top_edge"] = "false"
+        if bottom_edge:
+            props["bottom_edge"] = "true"
+        if not latchable:
+            props["latchable"] = "false"
+        self.add(Plain("GardenBlock", "StaticBody2D", "garden/garden_block", props))
+        self.surfaces.append(Surface(x0 * T, x1 * T, -top * T, -bottom * T, latchable=latchable))
+        self._path = None
+
+    def garden_mover(self, x0, width, top, travel, period, phase=0.0, wave="sine", hold_ratio=0.6, thickness=0.5,
+                     top_edge=False, bottom_edge=True):
+        """A moving garden slab (AnimatableBody2D + Oscillator); travel (dx, up) tiles."""
+        extra = {"bottom_edge": "true" if bottom_edge else "false"}
+        if not top_edge:
+            extra["top_edge"] = "false"
+        return self.mover(x0, width, top, travel, period, phase, wave, hold_ratio, thickness,
+                          script="garden/garden_block", extra=extra)
+
+    def roots(self, x0, width, reach, anchor=GROUND, period=1.6, phase=0.0, warning=0.35, hold=0.35, ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(RisingRoots(self, x0 * T, y0, width * T, reach * T, anchor, ceil, period, phase, warning, hold))
+
+    def branch(self, x, length, anchor=CEILING, thickness=22.0, crown=34.0, amplitude=0.8, period=2.0, phase=0.0,
+               ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(SweepingBranch(self, x * T, y0, anchor, ceil, length * T, thickness, crown, amplitude,
+                                       period, phase))
+
+    def flower(self, x, width=72.0, height=118.0, anchor=GROUND, period=1.8, hold_ratio=0.6, phase=0.0,
+               warning=0.35, ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(ClosingFlower(self, x * T, y0, width, height, anchor, ceil, period, hold_ratio, phase,
+                                      warning))
+
+    def wave(self, x, run, height=70.0, width=150.0, speed=320.0, anchor=GROUND, period=3.2, phase=0.0, form=0.45,
+             ground=None, c=None):
+        """WATER WAVE forming at x and rolling `run` tiles back toward the start."""
+        y0, ceil = self._gc(ground, c)
+        return self.add(WaterWave(self, x * T, y0, height, width, run * T, speed, anchor, ceil, period, phase, form))
+
+    def waterfall(self, x, width=70.0, length=1000.0, deadly=False, anchor=SKY, period=2.4, hold_ratio=0.5, phase=0.0,
+                  warning=0.4, ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(Waterfall(self, x * T, y0, width, length, deadly, anchor, ceil, period, hold_ratio, phase,
+                                  warning))
+
+    def wind(self, x0, width, lift, period=2.4, hold_ratio=0.4, phase=0.0, warning=0.35, ground=None, c=None):
+        """WIND BURST over x0..x0+width: `lift` px/s² (negative: away from the floor)."""
+        y0, ceil = self._gc(ground, c)
+        w = self.add(WindBurst(self, x0 * T, y0, width * T, ceil, lift, period, hold_ratio, phase, warning))
+        self.winds.append(w)
+        return w
+
+    def rock(self, x, radius=24.0, anchor=SKY, period=1.8, phase=0.0, warning=0.5, speed=900.0, ice=False,
+             ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(FallingRock(self, x * T, y0, radius, anchor, ceil, period, phase, warning, speed, ice))
+
+    def vines(self, x0, width, short, long, anchor=CEILING, period=2.0, hold_ratio=0.5, phase=0.0, warning=0.3,
+              ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(HangingVines(self, x0 * T, y0, width * T, short * T, long * T, anchor, ceil, period,
+                                     hold_ratio, phase, warning))
+
+    def glider(self, x, height, loop=(120.0, 60.0), period=2.6, phase=0.0, size=(84.0, 40.0)):
+        return self.add(LeafGlider(self, x * T, -height * T, loop, period, phase, size))
+
+    def ink(self, x, reach, thickness=22.0, anchor=GROUND, period=2.4, hold_ratio=0.5, phase=0.0, warning=0.35,
+            ground=None, c=None):
+        """INK FLOW from a spring at x back `reach` tiles."""
+        y0, ceil = self._gc(ground, c)
+        return self.add(InkFlow(self, x * T, y0, reach * T, thickness, anchor, ceil, period, hold_ratio, phase, warning))
+
+    def curtain(self, x0, width, short, long, anchor=CEILING, period=2.2, hold_ratio=0.5, phase=0.0, warning=0.35,
+                ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(CanvasCurtain(self, x0 * T, y0, width * T, short * T, long * T, anchor, ceil, period,
+                                      hold_ratio, phase, warning))
+
+    def boulder(self, x, rope, radius=40.0, amplitude=0.7, anchor=CEILING, period=2.2, phase=0.0, ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        return self.add(HangingBoulder(self, x * T, y0, anchor, ceil, rope * T, radius, amplitude, period, phase))
+
+    def flock(self, x, middle, sweep, drift=36.0, period=2.4, phase=0.0, span=(110.0, 56.0), ground=None):
+        """BIRD FLOCK sweeping at x around `middle` tiles up, `sweep` tiles either way."""
+        y0, _ = self._gc(ground, None)
+        g0 = self.corridor[0] if ground is None else ground
+        return self.add(BirdFlock(self, x * T, y0, -(middle - g0) * T, sweep * T, drift, period, phase, span))
+
+    def weather(self, x0, x1, kind="leaves", density=0.5, ground=None, c=None):
+        y0, ceil = self._gc(ground, c)
+        props = {"position": v2(x0 * T, y0), "width": f((x1 - x0) * T), "ceiling": f(float(ceil)),
+                 "density": f(float(density))}
+        if kind == "snow":
+            props["kind"] = 1
+        self.add(Plain("GardenWeather", "Node2D", "garden/garden_weather", props, span=(x0 * T, x1 * T)))
+
+    def latch(self, *xs):
+        """Taps that must latch (World 04's second tap)."""
+        self.tap(*xs, kind="latch")
+
     # -------------------------------------------------- progress checkpoints --
     def progress_checkpoints(self, fractions=(1.0 / 3.0, 2.0 / 3.0), runway=1.5):
         """Checkpoints at fixed shares of the level's length (after done()).
@@ -1727,15 +2455,34 @@ class Level:
                 continue
             if any(x - 12 * tick <= r <= x + 2 * tick for r in route):
                 continue
+            if self.latch_mode and self._other_surface_near(x, st):
+                continue
             out.append(x)
         if not out:
             raise SystemExit(f"{self.key}: nowhere to open a checkpoint runway")
         return out
 
+    def _other_surface_near(self, x, st, margin=2.5):
+        """World 04: is there any surface across the corridor near x? A
+        checkpoint only stands where the surface it is on is the only one
+        (so the player can only reach it, and respawn, on that surface)."""
+        feet = st["feet_h"] / T
+        for su in self.surfaces:
+            lo, hi = su.bounds()
+            if hi / T < x - margin or lo / T > x + margin:
+                continue
+            if st["up"]:
+                if -su.top / T < feet - 0.01 and not (-su.bottom / T > feet - 0.01):
+                    return True
+            elif -su.bottom / T > feet + 0.01:
+                return True
+        return False
+
     @staticmethod
     def _inert(e):
         return isinstance(e, Plain) and e.base in ("Block", "Shard", "Checkpoint", "FinishGate", "WhiteoutZone",
-                                                   "GalaxyBlock", "GravityEcho", "GravityLens")
+                                                   "GalaxyBlock", "GravityEcho", "GravityLens", "GardenBlock",
+                                                   "GardenWeather")
 
     @staticmethod
     def _vec(text):
@@ -1755,7 +2502,9 @@ class Level:
             return (x, x + float(e._props["length"]))
         if e.base == "FlipField":
             return (x, x + float(e._props["length"]))
-        if e.base in ("Block", "MovingPlatform", "ShadowBlock", "GalaxyBlock", "GravityEcho"):
+        if e.base == "GardenWeather":
+            return (x, x + float(e._props["width"]))
+        if e.base in ("Block", "MovingPlatform", "ShadowBlock", "GalaxyBlock", "GravityEcho", "GardenBlock"):
             w = self._vec(e._props["size"])[0]
             lo, hi = e.osc.reach() if e.osc else (0.0, 0.0)
             return (x + lo, x + w + hi)
@@ -1790,9 +2539,10 @@ class Level:
                 if isinstance(e, Plain) and e.base == "WhiteoutZone":
                     e._props["length"] = f(float(e._props["length"]) + dx)
                     continue
-                if isinstance(e, Plain) and e.base in ("GravityEcho", "GravityLens"):
+                if isinstance(e, Plain) and e.base in ("GravityEcho", "GravityLens", "GardenWeather"):
                     continue  # Starts before the cut: stays (decoration).
-                assert isinstance(e, Plain) and e.base in ("Block", "GalaxyBlock"), f"{e.base} spans the cut at x={x}"
+                assert isinstance(e, Plain) and e.base in ("Block", "GalaxyBlock", "GardenBlock"), \
+                    f"{e.base} spans the cut at x={x}"
                 w, h = self._vec(e._props["size"])
                 e._props["size"] = v2(w + dx, h)
                 continue
@@ -1850,6 +2600,8 @@ class Level:
             elif isinstance(e, DualHazard):
                 e.x += dx
                 e.phase -= dt / e.period
+            elif isinstance(e, GardenElement):
+                e.shift(dx, dt)
             else:
                 pos(e)
                 if e.span != (0.0, 0.0):
@@ -1873,7 +2625,7 @@ class Level:
         shift = lambda r: round(r + length, 3) if r > x else r
         self.route = [shift(r) for r in self.route]
         self.kinds = {shift(r): k for r, k in self.kinds.items()}
-        self.checkpoints = [(shift(c), h) for c, h in self.checkpoints]
+        self.checkpoints = [(shift(cp[0]),) + tuple(cp[1:]) for cp in self.checkpoints]
         self.finish_x += length
         self._sim = None
         self._path = None
@@ -1998,7 +2750,12 @@ class Level:
 
     # ------------------------------------------------------------- analysis --
     def check(self):
+        self.straddles = []
+        self._sim = None
         ticks, death = self.run()
+        if self.straddles:
+            raise SystemExit(f"{self.key}: the route latches across a slick edge at "
+                             f"{[round(x, 2) for x, _ in self.straddles]} (ambiguous in the engine)")
         if death:
             cause, x, hit = death
             raise SystemExit(f"{self.key}: simulated death '{cause}' at x={x:.2f} ({type(hit).__name__ if hit else ''})")
@@ -2006,16 +2763,16 @@ class Level:
 
     def _start_before(self, x):
         best = None
-        for cx, ch in self.checkpoints:
-            if cx < x - 1.0:
-                best = (cx, ch)
+        for cp in self.checkpoints:
+            if cp[0] < x - 1.0:
+                best = cp
         return best
 
     def _horizon(self, j, route):
         x = route[min(j + 3, len(route) - 1)] + 1.0 if j + 3 < len(route) else (self.finish_x or 1e9)
-        for cx, _ in self.checkpoints:
-            if cx > route[j]:
-                return min(x, cx - 0.5)
+        for cp in self.checkpoints:
+            if cp[0] > route[j]:
+                return min(x, cp[0] - 0.5)
         return x
 
     def _ground_before(self, route, j, path=None):
@@ -2035,6 +2792,13 @@ class Level:
             if s["grounded"] and s["static"] and s["jump"] is None and \
                     not any(s["x"] - 10 * step <= r <= s["x"] + 2 * step for r in route):
                 start = (s["x"], s["feet_h"] / T)
+                if self.latch_mode:
+                    # Mid-run: the surface, and the latches so far (elements
+                    # that follow the floor read them), as in the full run:
+                    # every latch tick of this path logged its time and the
+                    # surface it made the floor.
+                    log = tuple((p["t"], p["up"]) for p in path if p["jump"] == "latch" and p["t"] < s["t"] - 1e-9)
+                    start += (s["up"], self.start_up, log)
         return start
 
     def _as_designed(self, route, x_from, x_to, kinds=None):
@@ -2148,6 +2912,7 @@ class Level:
                    f'data = ExtResource("data")\nkill_y = {f(self.kill_y)}\n'
                    + (f'kill_top = {f(self.kill_top)}\n' if self.kill_top is not None else '')
                    + ('start_gravity_up = true\n' if self.start_up else '')
+                   + ('surface_latch = true\n' if self.latch_mode else '')
                    + (f'camera_offset = {f(self.camera_offset)}\n' if self.camera_offset is not None else ''))
         out.append(f'[node name="SpawnPoint" type="Marker2D" parent="."]\nposition = {v2(self.spawn_px, 0)}\n')
         written_groups = set()

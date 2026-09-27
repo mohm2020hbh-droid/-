@@ -3,7 +3,7 @@ extends TestCase
 ## test_level_integrity_w02 applies them to World 02.
 
 const WORLDS: Array[String] = ["res://levels/world_01/world_01.tres", "res://levels/world_02/world_02.tres",
-	"res://levels/world_03/world_03.tres"]
+	"res://levels/world_03/world_03.tres", "res://levels/world_04/world_04.tres"]
 
 var WORLD: WorldData
 ## GDD §8.2: after a checkpoint the player respawns running, so the next
@@ -116,6 +116,8 @@ func _snapshot() -> Array:
 ## The x range (px) a hazard can ever cover: its hitboxes, the full reach of
 ## an arm, and the travel of a crush block or an oscillator.
 func _x_reach(hazard: Hazard) -> Vector2:
+	if hazard.has_method(&"x_reach"):
+		return hazard.x_reach()  # World 04's garden: each knows its whole motion.
 	var lo := INF
 	var hi := -INF
 	for child in hazard.get_children(true):

@@ -14,6 +14,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/ambient/void_drone.ogg" id="12_ambient"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/gravity_flip.wav" id="13_gravity_flip"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/gravity_warning.wav" id="14_gravity_warning"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/latch.wav" id="15_latch"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/latch_miss.wav" id="16_latch_miss"]
 
 [resource]
 script = ExtResource("1_library")
@@ -28,6 +30,8 @@ sounds = Dictionary[StringName, AudioStream]({
 &"gravity_warning": ExtResource("14_gravity_warning"),
 &"jump": ExtResource("2_jump"),
 &"land": ExtResource("3_land"),
+&"latch": ExtResource("15_latch"),
+&"latch_miss": ExtResource("16_latch_miss"),
 &"slam": ExtResource("11_slam"),
 &"ui_click": ExtResource("8_click"),
 &"warning": ExtResource("10_warning")

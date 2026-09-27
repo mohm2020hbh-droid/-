@@ -1,13 +1,15 @@
-# Level Generator — World 01 · World 02 · World 03
+# Level Generator — World 01 · World 02 · World 03 · World 04
 
-أداة تطوير (Python 3، بلا مكتبات خارجية) تكتب مستويات العوالم الثلاثة وتتحقق منها. المجلد `tools/` يحتوي `.gdignore`، فلا يستورده Godot ولا يدخل في التصدير.
+أداة تطوير (Python 3، بلا مكتبات خارجية) تكتب مستويات العوالم الأربعة وتتحقق منها. المجلد `tools/` يحتوي `.gdignore`، فلا يستورده Godot ولا يدخل في التصدير.
 
 | الملف | الدور |
 |---|---|
 | `levelgen.py` | الـAPI: الكتل، العوائق (نسخ مطابقة لـHitboxes الـGDScript)، محاكاة حركة اللاعب Tick بـTick، الضبط، التقارير، كتابة المشاهد |
 | `world_01.py` | مستويات World 01 الخمسة كمقاطع (Groups) مقروءة، وكتابة `world_01.tres` والمسارات |
 | `world_02.py` | مستويات World 02 الخمسة (The Monochrome Void)، و`world_02.tres` (ثيم `mono`، خلفية `background_mono.tscn`، يُفتح بإنهاء World 01) و`world_02_routes.gd` |
-| `world_03.py` | مستويات World 03 الخمسة (The Horrifying Galaxy)، مبنية من "Beats" بقلب الجاذبية، و`world_03.tres` (ثيم `galaxy`، خلفية `background_galaxy.tscn`، يُفتح بإنهاء World 02، العالم الأخير) و`world_03_routes.gd`. `--load` يطبع حمل التوقيت (bit/s) |
+| `world_03.py` | مستويات World 03 الخمسة (The Horrifying Galaxy)، مبنية من "Beats" بقلب الجاذبية، و`world_03.tres` (ثيم `galaxy`، خلفية `background_galaxy.tscn`، يُفتح بإنهاء World 02) و`world_03_routes.gd`. `--load` يطبع حمل التوقيت (bit/s) |
+| `world_04.py` | مستويات World 04 الخمسة (The Inverted Garden)، مبنية من Beats بالـSurface Latch وخطة سطوح (`Plan`)، و`world_04.tres` (`surface_latch = true`، ثيم `garden`، خلفية `background_garden.tscn`، يُفتح بإنهاء World 03، العالم الأخير) و`world_04_routes.gd`. يطبع حمل التوقيت ونوع كل لمسة (J قفزة، L Latch) |
+| `noisy_player.py` | لاعب بخطأ توقيت بشري على المحاكاة: `python3 noisy_player.py world_04 3 --trials=300 --sigma=30` → نسبة إنهاء المستوى في محاولة واحدة ونسبة كل مقطع بين Checkpointين |
 
 ## التشغيل
 
@@ -21,6 +23,7 @@ python3 world_02.py              # World 02 كاملًا (≈ 7 دقائق)
 python3 world_02.py 2 4          # مستويات محددة في عملية واحدة
 python3 world_03.py              # World 03 كاملًا (≈ 25 دقيقة، الضبط أثقل)
 python3 world_03.py 5 --load     # Level 05 مع النوافذ وحمل التوقيت
+python3 world_04.py 5 --windows  # World 04: كل مستوى ≈ 2–6 دقائق؛ مستويات مختلفة يمكن بناؤها بالتوازي (قفل على ملف المسارات)
 ```
 
 > لا تشغّل عدة عمليات للعالم نفسه بالتوازي: كل عملية تقرأ ملف المسارات ثم تعيد كتابته.
@@ -92,12 +95,30 @@ lv.shards_along(205, 220, 3.0)           # Shards على المسار النها
 
 وفي `world_03.py` "Beats" جاهزة: `mine_pair`، `slot`، `trap`، `rock`، `orbit_hop`، `orbit_dj`، `rock_dj`، `air_gate` (قلب في قمة قفزة فوق خطر)، `ground_gate`، `low_hops` (تحت جدار)، `dj_gap` (Double Jump متأخر إلى حافة مرتفعة). `orbit_dj` يأخذ اتجاه الدوران من منظور السطح الحالي (الجاذبية للأعلى تعكسه في العالم).
 
+## World 04: الـSurface Latch في المحاكاة
+
+- **`latch_mode`:** اللمسة الهوائية تفحص السطح المقابل كما يفحصه `SurfaceLatch.probe` (المدى 160 px من الرأس، الوجه المواجه، `latchable`، ونقطة الوصول بعد `latch_ticks`)؛ إن كان في المدى تقلب الإطار (نفس إطار World 03 المعكوس) وتنطلق بـ`LATCH_SPEED` نحو السطح الجديد، وإلا فهي `miss` (لا شيء يتحرك، واللمسة في الـBuffer). كل Latch يُسجَّل في سجل سطوح المحاولة، فالعوائق المثبتة على `FLOOR` / `SKY` تقرأ أرضية اللحظة منه كما في `Level.surface_up_at`.
+- **بداية من Checkpoint = Respawn:** (x، الارتفاع، السطح) وسجل جديد، والزمن مقرّب لشبكة الـTicks كما يفعل `GameSession.time_at`.
+- **`check()`** يرفض مسارًا يمسك سطحًا أملس أو يعبر حافته.
+- **خطة السطوح (`Plan` في `world_04.py`):** بعد كل عبور يُقطع السطح المتروك حتى قبيل العبور التالي (و`finish_level(..., plan=plan)` يقطعه حتى النهاية)، فكل Latch ضروري ولكل مقطع أرضية واحدة يقف عليها الـCheckpoint. `close()` / `open()` لمقاطع الاختيار (ممر منخفض، سقف أملس، هبّة، سقف متحرك).
+- **مفاتيح الصعوبة:** ارتفاع الممر (`new_level(..., corridor=)`: نافذة الـLatch 21 Tick عند 5.0 خانات، 12 عند 5.4، 8 عند 5.5)، `size_hops(lv, roots=(w, h), flower=(w, h))` لتكبير الجذور والزهور حول مركزها، وأهداف `tune` لكل Beat.
+- **قانون الحجارة:** الحجر يختار جهته عند بداية دورته ويحتاج ≈ 0.86 ث ليعبر الممر، فعمود حجارة يُوضع ≥ 9 خانات بعد هبوط Latch (`rock_hop`).
+
+| الدالة | العنصر |
+|---|---|
+| `garden_block` / `garden_mover` | كتل الحديقة (أرض/سقف، `latchable=False` = حجر أملس) وسقف متحرك |
+| `roots` · `branch` · `flower` · `wave` · `waterfall` · `wind` · `rock` (`ice=True`) · `vines` · `glider` · `ink` · `curtain` · `boulder` · `flock` | العوائق الأربعة عشر، بمرساة `GROUND` / `CEILING` / `FLOOR` (أرضية اللاعب عند بداية الدورة) / `SKY` (المقابل لها) |
+| `weather(x0, x1, "leaves" / "snow")` | طقس زينة بلا تصادم |
+| `latch(x)` | لمسة يجب أن تكون Latch (والتقرير يفشل إن صارت شيئًا آخر) |
+
+وفي `world_04.py` Beats جاهزة: `cross` (قفزة + Latch بعد `dt`)، `quick_cross` (ممر منخفض: لمستان متلاحقتان)، `tunnel_inks`، `hop`، `rock_hop`، `torrent_hop`، `branch_hop`، `curtain_hop`، `glade`، `rest`، و`after(lv, x)` (أقرب لمسة تالية بعد هبوط قفزة).
+
 ## التحقق على المحرك
 
 المحاكاة محافظة (هامش أمان 2px حول كل Hitbox)، لكن المرجع النهائي هو Godot:
 
 ```bash
-godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --world=3 --level=5 --windows --exploits
+godot --headless --path shape-jump --fixed-fps 60 res://tests/tools/level_audit.tscn -- --world=4 --level=5 --windows --exploits
 godot ... level_audit.tscn -- --world=2 --level=4 --probe=72,75 --probe-contacts --trace-jumps   # تشخيص Tick بـTick
 ```
 

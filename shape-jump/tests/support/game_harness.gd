@@ -10,6 +10,10 @@ var host: Node
 var route: PackedFloat32Array
 ## Route indices to skip once (to provoke a death on purpose).
 var skip: PackedInt32Array = []
+## x (tiles, ascending) where the player is killed once when passing (a death
+## on purpose where skipping a tap may not kill: in World 04 a later tap can
+## stand in for a skipped one).
+var kill_at: PackedFloat32Array = []
 var game: GameSession
 var deaths: Array[Dictionary] = []
 var ticks := 0
@@ -60,8 +64,13 @@ func run_until(condition: Callable, max_ticks: int = 60 * 120) -> bool:
 
 ## Starts the run already at [param feet] (e.g. a checkpoint): the level clock
 ## is where it would be when the player gets there, and the route resumes.
-func start_run_at(marker: Vector2) -> void:
+## [param up] (World 04): the marker hangs from the ceiling; the run starts
+## on it with a fresh surface log, as a respawn there would.
+func start_run_at(marker: Vector2, up := false) -> void:
 	game.press_jump()  # READY -> PLAYING.
+	if game.level.surface_latch:
+		game.level.reset_surface(up)
+		game.gravity.set_up(up, true)
 	var feet := game.respawn_feet_at(marker)
 	game.level.rewind_to(game.time_at(feet.x))
 	game.player.respawn_at(feet, true)
@@ -89,6 +98,10 @@ func _route_finger() -> void:
 	if game.state != GameSession.State.PLAYING:
 		return
 	var x := player_x()
+	if not kill_at.is_empty() and x >= kill_at[0]:
+		kill_at.remove_at(0)
+		game.player.die(&"test")
+		return
 	# After a respawn the player is behind already-used taps: rewind.
 	while _next > 0 and route[_next - 1] > x + 0.5:
 		_next -= 1

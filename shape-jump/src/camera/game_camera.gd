@@ -14,6 +14,13 @@ extends Camera2D
 ##   unchanged in world space, so after the turn the player sits on the right
 ##   and still sees the way ahead (to the left); every "down" above (falls,
 ##   the kill line, the sky offset) follows gravity.
+## - Surfaces (World 04, [member turn_with_gravity] off): the view never
+##   turns, so the run always goes left to right on screen and the way ahead
+##   is always on the right. Gravity only moves the framing: the vertical
+##   offset points away from whichever surface is the floor, so the view
+##   stays on the corridor, and a latch re-anchors the view on the surface
+##   the player is crossing to ([method anchor_to]) before it gets there, so
+##   the crossing itself never makes the view bob.
 
 @export var target: CharacterBody2D
 ## Where the target sits horizontally, as a fraction of the view from the left.
@@ -32,6 +39,13 @@ extends Camera2D
 @export var kill_line_margin := 200.0
 @export var max_shake := 7.0
 @export_range(0.05, 2.0, 0.05, "suffix:s") var shake_duration := 0.35
+## When false (World 04) the view never rotates with gravity: the run stays
+## left to right on screen whatever surface is the floor.
+@export var turn_with_gravity := true:
+	set(value):
+		turn_with_gravity = value
+		if gravity:
+			_on_gravity_flipped(gravity.up, true)
 ## The run's gravity (World 03); null: always down, never turns.
 var gravity: GravityState:
 	set(value):
@@ -110,6 +124,12 @@ func snap_to_target() -> void:
 	reset_physics_interpolation()
 
 
+## Anchors the view on a player centre height of [param y] now (World 04: the
+## surface a latch is heading for), as if the player already stood there.
+func anchor_to(y: float) -> void:
+	_anchor_y = y
+
+
 ## Vertical anchor: the last ground height, pulled down only by real falls.
 func _update_anchor() -> void:
 	var target_y := target.global_position.y
@@ -148,8 +168,8 @@ func _down() -> float:
 ## Gravity turned: the view turns half a circle, always the same way round
 ## (a smooth ease over the flip's transition), or snaps on a restore.
 func _on_gravity_flipped(up: bool, instant: bool) -> void:
-	var goal := PI if up else 0.0
-	if instant:
+	var goal := PI if up and turn_with_gravity else 0.0
+	if instant or not turn_with_gravity:
 		_turn_from = goal
 		_turn_to = goal
 		rotation = goal

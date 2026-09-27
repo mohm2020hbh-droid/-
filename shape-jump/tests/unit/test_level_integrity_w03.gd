@@ -1,6 +1,6 @@
 extends "res://tests/unit/test_level_integrity.gd"
 ## The level structure rules, on World 03, plus its own: the galaxy look,
-## locked until World 02 is complete, the last world; its obstacle language;
+## locked until World 02 is complete, World 04 after it; its obstacle language;
 ## and gravity that is consistent everywhere it is read (checkpoints, the
 ## finish, the schedule).
 
@@ -15,7 +15,7 @@ func test_world_03_has_its_own_look_and_follows_world_02() -> void:
 	assert_true(WORLD.background != null and WORLD.background.resource_path.ends_with("background_galaxy.tscn"),
 		"its own background")
 	assert_eq(WORLD.requires.id, &"world_02", "unlocked by finishing World 02")
-	assert_eq(WORLD.next_world_name, "", "the last world: no World 04")
+	assert_eq(WORLD.next_world_name, "The Inverted Garden", "World 04 follows it")
 	assert_eq(WORLD.progress_milestones, [50.0, 75.0] as Array[float], "50% and 75% marked on the bar")
 
 
