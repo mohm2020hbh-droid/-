@@ -125,6 +125,7 @@ func _rebuild() -> void:
 		_sparks = _make_sparks()
 		add_child(_sparks, false, Node.INTERNAL_MODE_FRONT)
 	var leading := HazardArt.leading_face(travel)
+	_head.art_seed = OrganicArt.seed_of(position, 3)
 	_head.rect = Rect2(Vector2.ZERO, size)
 	_head.hot_face = leading
 	_head.with_teeth = true

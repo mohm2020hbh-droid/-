@@ -30,6 +30,8 @@ var _shapes: Array[CollisionShape2D] = []
 ## Per tile: level time minus its drop time (negative while standing).
 var _ages := PackedFloat32Array()
 var _animating := true
+## Each tile's crystal slab (built once, at the tile's own origin).
+var _art: Array[OrganicArt.Shape] = []
 
 
 func _ready() -> void:
@@ -80,6 +82,7 @@ func apply_time(t: float) -> void:
 func _rebuild() -> void:
 	if not is_inside_tree():
 		return
+	_art.clear()
 	for shape_node in _shapes:
 		shape_node.queue_free()
 	_shapes.clear()
@@ -115,14 +118,25 @@ func _draw() -> void:
 
 
 func _draw_tile(rect: Rect2, index: int, alpha: float, hot: bool) -> void:
-	draw_rect(rect, Color(Palette.BLOCK_BODY, alpha))
+	# A slab of brittle void crystal (its shape built once), a straight lit
+	# top to stand on, and a crack across it: this walkway is not meant to last.
+	if _art.size() != tiles:
+		_art.clear()
+		var seed := OrganicArt.seed_of(position, 10)
+		for i in tiles:
+			_art.append(OrganicArt.build(Rect2(Vector2.ZERO, rect.size), seed + i * 53, OrganicArt.theme_style(),
+				HazardArt.Face.NONE, true, true, 0.9))
+	var art: OrganicArt.Shape = _art[index]
+	draw_set_transform(rect.position)
+	var rim := Palette.HAZARD_CORE if hot else Palette.NEON_DIM
+	OrganicArt.draw_ground(self, art, Color(Palette.BLOCK_BODY, alpha), Color(rim, 0.6 * alpha),
+		Color(rim, (0.8 if hot else 0.3) * alpha))
 	var lip := Palette.HAZARD_CORE if hot else Palette.NEON
-	Neon.line(self, rect.position, Vector2(rect.end.x, rect.position.y), Color(lip, alpha), 3.0, alpha)
-	# A crack across every tile: this walkway is not meant to last.
-	var x := rect.position.x + rect.size.x * (0.3 + 0.4 * fmod(index * 0.618, 1.0))
+	Neon.line(self, Vector2.ZERO, Vector2(rect.size.x, 0.0), Color(lip, alpha), 3.0, alpha)
+	var x := rect.size.x * (0.3 + 0.4 * fmod(index * 0.618, 1.0))
 	var crack := PackedVector2Array([
-		Vector2(x, rect.position.y + 2.0), Vector2(x + 6.0, rect.position.y + rect.size.y * 0.45),
-		Vector2(x - 4.0, rect.position.y + rect.size.y * 0.7), Vector2(x + 3.0, rect.end.y)])
+		Vector2(x, 2.0), Vector2(x + 6.0, rect.size.y * 0.45),
+		Vector2(x - 4.0, rect.size.y * 0.7), Vector2(x + 3.0, rect.size.y)])
 	var crack_color := Color(Palette.HAZARD_CORE, alpha) if hot else Color(Palette.NEON_DIM, 0.8 * alpha)
 	draw_polyline(crack, crack_color, 2.0, true)
-	draw_rect(rect, Color(Palette.NEON_DIM, 0.6 * alpha), false, 1.5)
+	draw_set_transform(Vector2.ZERO)

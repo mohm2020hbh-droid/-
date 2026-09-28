@@ -108,20 +108,25 @@ class _Pic extends Node2D:
 	var rect := Rect2()
 	var white := true
 	var solid := true
+	var _art: OrganicArt.Shape
 
 	func setup(r: Rect2, is_white: bool, is_solid: bool) -> void:
 		rect = r
 		white = is_white
 		solid = is_solid
+		_art = null
 		queue_redraw()
 
+	## Solid: a thick stroke of white or black ink, streaked with the other,
+	## rimmed in white. Passable: only its dashed outline (as every World 02
+	## machine that cannot hurt you now).
 	func _draw() -> void:
 		var ink := Color(0.96, 0.96, 0.96) if white else Color(0.0, 0.0, 0.0)
 		var line := Color(0.0, 0.0, 0.0) if white else Color(1.0, 1.0, 1.0)
 		if solid:
-			draw_rect(rect, ink)
-			HazardArt.stripes(self, rect.grow(-4.0), 20.0, Color(line, 0.35), 3.0)
-			draw_rect(rect, Color(1, 1, 1) if white else Color(1, 1, 1), false, 2.5)
-			draw_rect(rect.grow(-4.0), line, false, 1.5)
+			if _art == null:
+				_art = OrganicArt.build(rect, OrganicArt.seed_of(rect.position, 15 if white else 16), OrganicArt.Style.INK)
+			OrganicArt.draw_hazard(self, _art, ink, Color(1, 1, 1), line, 0.6)
+			draw_polyline(_art.loop, Color(line, 0.8), 1.5, true)
 		else:
 			Neon.dashed_rect(self, rect, Color(1, 1, 1, 0.8), 2.0, 12.0)

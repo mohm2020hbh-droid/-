@@ -190,7 +190,7 @@ func load_level(index: int = level_index) -> void:
 	player.kill_top = level.kill_top
 	player.set_speed_scale(level.data.speed_scale)
 	camera.set_kill_line(level.kill_y, level.kill_top)
-	camera.vertical_offset = level.camera_offset
+	camera.frame_band(level.corridor_height * GameConst.TILE)
 	var spawn := level.get_spawn_feet_position()
 	gravity.reset(level.start_gravity_up)
 	level.gravity = gravity
@@ -448,7 +448,6 @@ func _use_world(index: int) -> void:
 	player.visual.void_style = world.theme != &"red" and not world.surface_latch
 	player.visual.garden_style = world.surface_latch
 	player.set_surface_latch(world.surface_latch)
-	camera.turn_with_gravity = not world.surface_latch
 	player.fx.refresh_colors()
 	player.fx.modulate = Color.WHITE  # (World 04's look tints it per surface.)
 	UiLook.apply(self, world.theme)

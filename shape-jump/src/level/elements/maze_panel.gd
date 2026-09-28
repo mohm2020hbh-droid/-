@@ -26,10 +26,14 @@ extends Hazard
 @export_range(0.0, 1.0, 0.05, "suffix:s") var warning_time := 0.3
 
 var _shape_node: CollisionShape2D
+var _seed := 0
+var _art: OrganicArt.Shape
+var _pivot := PackedVector2Array()
 
 
 func _ready() -> void:
 	super()
+	_seed = OrganicArt.seed_of(position, 12)
 	_rebuild()
 	apply_time(0.0)
 
@@ -62,10 +66,12 @@ func _rebuild() -> void:
 
 func _draw() -> void:
 	var rect := Rect2(-length * 0.5, -thickness * 0.5, length, thickness)
+	if _art == null or _art.rect != rect:
+		_art = OrganicArt.build(rect, _seed, OrganicArt.theme_style())
+		_pivot = OrganicArt.blot(Vector2.ZERO, thickness * 0.32, _seed)
 	# The panel's sweep: a faint circle, so where it can turn is always visible.
 	draw_arc(Vector2.ZERO, length * 0.5, 0.0, TAU, 48, Color(Palette.NEON, 0.08), 2.0, true)
-	draw_rect(rect, Palette.HAZARD_BODY)
-	HazardArt.stripes(self, rect.grow(-4.0), 26.0, Color(Palette.HAZARD_STRIPE, 0.6), 2.0)
-	Neon.rect_outline(self, rect, Palette.HAZARD, 2.0, 0.9)
-	draw_circle(Vector2.ZERO, thickness * 0.32, Palette.HAZARD_CORE)
-	draw_circle(Vector2.ZERO, thickness * 0.16, Palette.HAZARD_BODY)
+	# A long stroke of ink, turning on a blot.
+	OrganicArt.draw_hazard(self, _art, Palette.HAZARD_BODY, Palette.HAZARD, Palette.HAZARD_CORE, 0.9)
+	draw_colored_polygon(_pivot, Palette.HAZARD_CORE)
+	draw_circle(Vector2.ZERO, thickness * 0.14, Palette.HAZARD_BODY)

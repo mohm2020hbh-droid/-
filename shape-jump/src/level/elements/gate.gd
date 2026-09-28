@@ -122,6 +122,8 @@ func _rebuild() -> void:
 		add_child(_lower_art, false, Node.INTERNAL_MODE_FRONT)
 		_upper_shape = add_hitbox(RectangleShape2D.new())
 		_lower_shape = add_hitbox(RectangleShape2D.new())
+	_upper_art.art_seed = OrganicArt.seed_of(position, 1)
+	_lower_art.art_seed = OrganicArt.seed_of(position, 2)
 	_upper_art.rect = Rect2(-width * 0.5, -reach, width, reach)
 	_upper_art.hot_face = HazardArt.Face.BOTTOM
 	_lower_art.rect = Rect2(-width * 0.5, 0.0, width, reach)

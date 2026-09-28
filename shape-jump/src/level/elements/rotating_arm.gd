@@ -29,10 +29,17 @@ extends Hazard
 		_rebuild()
 
 var _shapes: Array[CollisionShape2D] = []
+var _seed := 0
+## The picture, built once per size: one crystal spear per arm (along +x,
+## drawn turned) and a faceted crystal hub.
+var _spears: Array[PackedVector2Array] = []
+var _veins := PackedVector2Array()
+var _hub := PackedVector2Array()
 
 
 func _ready() -> void:
 	super()
+	_seed = OrganicArt.seed_of(position, 9)
 	_rebuild()
 	apply_time(0.0)
 
@@ -63,26 +70,59 @@ func _rebuild() -> void:
 	var hub := CircleShape2D.new()
 	hub.radius = maxf(hub_radius - HITBOX_INSET, 4.0)
 	_shapes.append(add_hitbox(hub))
+	_spears.clear()
 	queue_redraw()
 
 
+## A spear of void crystal along +x: uneven faceted edges (never inside the
+## hitbox's thinner band), a sharp point, a vein of light down its length.
+func _build_art() -> void:
+	_spears.clear()
+	_veins.clear()
+	var half := thickness * 0.5
+	var slack := minf(HITBOX_INSET * 0.8, half * 0.3)
+	for i in arms:
+		var k := _seed + i * 97
+		var top := PackedVector2Array()
+		var bottom := PackedVector2Array()
+		var steps := maxi(int((length - half) / 26.0), 2)
+		for s in steps + 1:
+			var x := lerpf(0.0, length - half, float(s) / steps)
+			top.append(Vector2(x, -half + slack * OrganicArt.rand(k, s * 2)))
+			bottom.append(Vector2(x, half - slack * OrganicArt.rand(k, s * 2 + 1)))
+		var spear := top
+		spear.append(Vector2(length, (OrganicArt.rand(k, 99) - 0.5) * 2.0))
+		bottom.reverse()
+		spear.append_array(bottom)
+		_spears.append(spear)
+		if i == 0:
+			OrganicArt.crooked(_veins, Vector2(hub_radius, 0.0), Vector2(length - half, 0.0), k, half * 0.3, 20.0)
+	var ring := PackedVector2Array()
+	for i in 7:
+		ring.append(Vector2.from_angle(TAU * i / 7.0 + OrganicArt.rand(_seed, 50 + i) * 0.4) * hub_radius
+			* (0.95 + 0.12 * OrganicArt.rand(_seed, 60 + i)))
+	_hub = ring
+
+
 func _draw() -> void:
+	if _spears.is_empty():
+		_build_art()
 	draw_arc(Vector2.ZERO, length, 0.0, TAU, 64, Color(Palette.HAZARD, 0.13), 2.0, true)
+	var half := thickness * 0.5
 	for i in arms:
 		var angle := TAU * i / arms
-		var xf := Transform2D(angle, Vector2.ZERO)
-		var half := thickness * 0.5
-		var bar := PackedVector2Array([
-			xf * Vector2(0, -half), xf * Vector2(length - half, -half),
-			xf * Vector2(length, 0), xf * Vector2(length - half, half), xf * Vector2(0, half)])
-		draw_colored_polygon(bar, Palette.HAZARD_BODY)
-		Neon.polyline(self, bar, Palette.HAZARD, 2.5, 1.0, true)
-		# Hot core line to a bright tip: the tip is what hits first.
-		draw_line(xf * Vector2(hub_radius, 0), xf * Vector2(length - half, 0), Color(Palette.HAZARD_CORE, 0.6), 2.0, true)
-		Neon.soft_light(self, xf * Vector2(length - half, 0), thickness * 1.3, Color(Palette.HAZARD_CORE, 0.5))
-	var hub := PackedVector2Array()
-	for i in 6:
-		hub.append(Vector2.from_angle(TAU * i / 6.0) * hub_radius)
-	draw_colored_polygon(hub, Palette.HAZARD_BODY)
-	Neon.polyline(self, hub, Palette.HAZARD, 3.0, 1.2, true)
+		draw_set_transform(Vector2.ZERO, angle)
+		var spear := _spears[i]
+		draw_colored_polygon(spear, Palette.HAZARD_BODY)
+		# Facets: the ridge of the blade, then its vein of light.
+		draw_line(Vector2(hub_radius, 0), Vector2(length, 0), Color(Palette.HAZARD, 0.3), 1.0, true)
+		draw_multiline(_veins, Color(Palette.HAZARD_CORE, 0.6), 1.5)
+		Neon.polyline(self, spear, Palette.HAZARD, 2.5, 1.0, true)
+		# A bright tip: the tip is what hits first.
+		Neon.soft_light(self, Vector2(length - half, 0), thickness * 1.3, Color(Palette.HAZARD_CORE, 0.5))
+	draw_set_transform(Vector2.ZERO)
+	draw_colored_polygon(_hub, Palette.HAZARD_BODY)
+	for p in _hub:
+		draw_line(p * 0.9, Vector2.ZERO, Color(Palette.HAZARD, 0.35), 1.0, true)
+	Neon.polyline(self, _hub, Palette.HAZARD, 3.0, 1.2, true)
 	draw_circle(Vector2.ZERO, hub_radius * 0.35, Palette.HAZARD_CORE)

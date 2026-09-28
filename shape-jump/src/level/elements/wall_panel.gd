@@ -12,10 +12,13 @@ extends Hazard
 		_rebuild()
 
 var _shape_node: CollisionShape2D
+var _art: OrganicArt.Shape
+var _seed := 0
 
 
 func _ready() -> void:
 	super()
+	_seed = OrganicArt.seed_of(position, 4)  # Where it rests: the same shape every attempt.
 	_rebuild()
 
 
@@ -30,11 +33,14 @@ func _rebuild() -> void:
 		_shape_node = add_hitbox(RectangleShape2D.new())
 	(_shape_node.shape as RectangleShape2D).size = size - Vector2.ONE * HITBOX_INSET * 2.0
 	_shape_node.position = size * 0.5
+	_art = null
 	queue_redraw()
 
 
 func _draw() -> void:
-	HazardArt.slab(self, get_rect())
+	if _art == null:
+		_art = OrganicArt.build(get_rect(), _seed, OrganicArt.theme_style())
+	HazardArt.organic_slab(self, _art)
 	# Chevrons down the middle mark it as a moving machine, not a gate.
 	var mid := size.x * 0.5
 	var y := 24.0

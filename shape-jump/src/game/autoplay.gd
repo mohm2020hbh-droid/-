@@ -86,6 +86,10 @@ func _on_level_loaded() -> void:
 
 
 var _frames := 0
+## Ticks the player has stood on the current surface, and which surfaces'
+## framing this level already logged.
+var _standing := 0
+var _framed := {}
 
 
 func _process(_delta: float) -> void:
@@ -101,6 +105,7 @@ func _process(_delta: float) -> void:
 func _physics_process(_delta: float) -> void:
 	if game.state != GameSession.State.PLAYING:
 		return
+	_log_framing()
 	var x := game.player.global_position.x / GameConst.TILE
 	while _next > 0 and _route[_next - 1] > x + 0.5:
 		_next -= 1  # Back behind used taps after a respawn.
@@ -110,6 +115,21 @@ func _physics_process(_delta: float) -> void:
 		else:
 			game.press_jump()
 		_next += 1
+
+
+## Once per level and surface, after a second of running on it: what the
+## camera shows (the same framing in every world, docs/GDD.md §10).
+func _log_framing() -> void:
+	_standing = _standing + 1 if game.player.is_on_floor() else 0
+	var up := game.gravity.up
+	var key := "%d:%d:%s" % [game.world_index, game.level_index, up]
+	if _standing < 60 or _framed.has(key):
+		return
+	_framed[key] = true
+	var f := game.camera.framing_report()
+	_log("camera on the %s: zoom %s, view %s, rotation %.2f, player at %.1f%% from the left (look-ahead %.0f px), player %s px, floor line at y=%.0f (%.1f%%), %.0f px toward the other surface, %.0f px behind the floor, band %.0f px" % [
+		"ceiling" if up else "ground", f.zoom, f.view, f.rotation, f.anchor_x * 100.0, f.look_ahead_px, f.player_px,
+		f.floor_y, f.floor_frac * 100.0, f.toward_other_px, f.behind_floor_px, f.band_px])
 
 
 func _on_state_changed(state: GameSession.State) -> void:

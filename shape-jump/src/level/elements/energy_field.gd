@@ -2,14 +2,18 @@
 class_name EnergyField
 extends Hazard
 ## ENERGY FIELD (docs/GDD.md §7): a band of energy that switches on and off
-## on a fixed cycle. Off, it is a harmless dashed frame. For
-## [member warning_time] before switching on it flickers hot (the telegraph);
-## on, touching it is deadly. Give it an [Oscillator] child to move it.
-## Origin = top-left corner.
+## on a fixed cycle. Drawn as a curtain of crooked crimson strands arcing
+## between two clusters of void crystal (World 01's organic look): off, only
+## the crystals and a dashed trace of the band remain (harmless); for
+## [member warning_time] before switching on the strands flicker (the
+## telegraph); on, the curtain fills the band and touching it is deadly.
+## Its outer strands run along the band's sides, so its reach reads exactly.
+## Give it an [Oscillator] child to move it. Origin = top-left corner.
 
 enum State { OFF, WARNING, ON }
 
-const SCANLINE_SPACING := 10.0
+## Room (px) the crystal clusters take at each end of the band.
+const CRYSTAL_DEPTH := 14.0
 
 @export var size := Vector2(64, 192):
 	set(value):
@@ -25,10 +29,17 @@ const SCANLINE_SPACING := 10.0
 var _shape_node: CollisionShape2D
 var _state: State = State.ON
 var _flicker_on := false
+var _seed := 0
+## The picture, built once per size: the strands (and a second set for the
+## flicker), and the crystal shards at both ends.
+var _strands := PackedVector2Array()
+var _strands_alt := PackedVector2Array()
+var _crystals: Array[PackedVector2Array] = []
 
 
 func _ready() -> void:
 	super()
+	_seed = OrganicArt.seed_of(position, 6)  # Where it rests: the same picture every attempt.
 	_rebuild()
 	apply_time(0.0)
 
@@ -67,25 +78,60 @@ func _rebuild() -> void:
 		return
 	if _shape_node == null:
 		_shape_node = add_hitbox(RectangleShape2D.new())
+	_crystals.clear()
 	(_shape_node.shape as RectangleShape2D).size = size - Vector2.ONE * HITBOX_INSET * 2.0
 	_shape_node.position = size * 0.5
 	queue_redraw()
 
 
+func _build_art() -> void:
+	_strands.clear()
+	_strands_alt.clear()
+	_crystals.clear()
+	var count := maxi(int(size.x / 12.0), 2)
+	var amp := minf(size.x / count * 0.45, 6.0)
+	for i in count:
+		var x := lerpf(3.0, size.x - 3.0, float(i) / (count - 1))
+		# The outer strands hug the sides; the inner ones wander.
+		var wander := amp * (0.3 if i == 0 or i == count - 1 else 1.0)
+		OrganicArt.crooked(_strands, Vector2(x, CRYSTAL_DEPTH * 0.5), Vector2(x, size.y - CRYSTAL_DEPTH * 0.5),
+			_seed + i * 131, wander, 16.0)
+		OrganicArt.crooked(_strands_alt, Vector2(x, CRYSTAL_DEPTH * 0.5), Vector2(x, size.y - CRYSTAL_DEPTH * 0.5),
+			_seed + i * 131 + 57, wander, 16.0)
+	# Emitters: a few shards grown into each end of the band.
+	var shards := clampi(int(size.x / 18.0), 2, 8)
+	for end in 2:
+		var y := 0.0 if end == 0 else size.y
+		var dir := Vector2.DOWN if end == 0 else Vector2.UP
+		for i in shards:
+			var x := size.x * (i + 0.5) / shards
+			var length := CRYSTAL_DEPTH * (0.8 + 0.7 * OrganicArt.rand(_seed, 40 + end * 16 + i))
+			_crystals.append(OrganicArt.shard(Vector2(x, y), dir, length, size.x / shards * 1.1, _seed + end * 16 + i))
+
+
 func _draw() -> void:
+	if _crystals.is_empty():
+		_build_art()
 	var rect := get_rect()
 	match _state:
 		State.ON:
-			draw_rect(rect, Color(Palette.HAZARD, 0.24))
-			var y := SCANLINE_SPACING * 0.5
-			while y < size.y:
-				draw_line(Vector2(0, y), Vector2(size.x, y), Color(Palette.HAZARD_CORE, 0.18), 2.0)
-				y += SCANLINE_SPACING
-			Neon.rect_outline(self, rect, Palette.HAZARD, 3.0, 1.3)
-			for x in [2.0, size.x - 2.0]:
-				draw_line(Vector2(x, 0), Vector2(x, size.y), Color(Palette.HAZARD_CORE, 0.8), 2.0)
-		State.WARNING when _flicker_on:
 			draw_rect(rect, Color(Palette.HAZARD, 0.1))
-			Neon.rect_outline(self, rect, Color(Palette.HAZARD_CORE, 0.9), 2.0, 0.8)
+			draw_rect(rect.grow(-5.0), Color(Palette.HAZARD, 0.08))
+			draw_multiline(_strands, Color(Palette.HAZARD, 0.3), 5.0)
+			draw_multiline(_strands, Color(Palette.HAZARD_CORE, 0.85), 1.5)
+			_draw_crystals(Palette.HAZARD_CORE, 1.2)
+		State.WARNING when _flicker_on:
+			draw_rect(rect, Color(Palette.HAZARD, 0.05))
+			draw_multiline(_strands_alt, Color(Palette.HAZARD_CORE, 0.45), 1.5)
+			_draw_crystals(Palette.HAZARD_CORE, 1.0)
 		_:
-			Neon.dashed_rect(self, rect, Color(Palette.NEON_DIM, 0.7), 2.0, 12.0)
+			for x: float in [1.0, size.x - 1.0]:
+				draw_dashed_line(Vector2(x, CRYSTAL_DEPTH), Vector2(x, size.y - CRYSTAL_DEPTH),
+					Color(Palette.NEON_DIM, 0.6), 2.0, 12.0)
+			_draw_crystals(Palette.NEON_DIM, 0.4)
+
+
+func _draw_crystals(rim: Color, glow: float) -> void:
+	for crystal in _crystals:
+		draw_colored_polygon(crystal, Palette.HAZARD_BODY)
+		Neon.polyline(self, crystal, rim, 1.5, glow, true)

@@ -245,12 +245,17 @@ func test_respawn_on_the_ceiling_stands_there() -> void:
 	assert_eq(landings, 0, "no fall on the way")
 
 
-func test_the_drawing_turns_but_the_body_never_does() -> void:
+func test_the_drawing_turns_over_but_the_body_never_does_and_nothing_mirrors() -> void:
 	_spawn()
 	await arena.ticks(3)
 	_flip(true)
-	await arena.ticks(40)
-	assert_near(absf(player.visual.rotation), PI, 0.01, "the entity stands on the ceiling (half a turn)")
+	for i in 40:
+		await arena.ticks(1)
+		assert_eq(player.visual.rotation, 0.0, "the drawing flips over, it never turns round")
+		assert_eq(player.visual.scale.x, 1.0, "never mirrored left to right")
+		assert_eq(player.fx.scale.x, 1.0, "nor are its particles")
+	assert_eq(player.visual.scale, Vector2(1.0, -1.0), "the entity stands on the ceiling (top to bottom)")
+	assert_eq(player.fx.scale, Vector2(1.0, -1.0), "the run dust stays behind, under the new floor")
 	assert_eq(player.rotation, 0.0, "the body never turns")
 	assert_eq((player.get_node(^"BodyShape") as CollisionShape2D).rotation, 0.0, "nor its collision box")
 

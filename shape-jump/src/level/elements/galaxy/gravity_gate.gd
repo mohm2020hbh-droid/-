@@ -77,13 +77,17 @@ func apply_time(t: float) -> void:
 
 func _draw() -> void:
 	var color := GalaxyArt.state_color(target_up)
-	# Two emitters set into the floor and the ceiling (drawn over the blocks).
+	# Two emitters set into the floor and the ceiling (drawn over the blocks):
+	# clusters of crystal grown out of the rock, lit in the gate's colour.
+	var seed := OrganicArt.seed_of(position, 22)
 	for y: float in [0.0, top]:
 		var out := 1.0 if y == 0.0 else -1.0
-		var base := PackedVector2Array([Vector2(-WIDTH * 0.5, y), Vector2(WIDTH * 0.5, y),
-			Vector2(WIDTH * 0.2, y + out * 26.0), Vector2(-WIDTH * 0.2, y + out * 26.0)])
-		draw_colored_polygon(base, Palette.BLOCK_BODY)
-		draw_polyline(GalaxyArt.closed(base), color, 2.5, true)
+		for i in 3:
+			var x := (i - 1) * WIDTH * 0.3
+			var tall := (26.0 if i == 1 else 16.0) * (0.85 + 0.3 * OrganicArt.rand(seed, i + int(out) * 5))
+			var crystal := OrganicArt.shard(Vector2(x, y), Vector2((i - 1) * 0.35, out), tall, WIDTH * 0.38, seed + i + int(out) * 5)
+			draw_colored_polygon(crystal, Palette.BLOCK_BODY)
+			draw_polyline(GalaxyArt.closed(crystal), color, 2.0, true)
 		Neon.soft_light(self, Vector2(0.0, y + out * 20.0), 40.0, Color(color, 0.5))
 	# The direction it sends you, large enough to read from far away.
 	var mid := top * 0.5

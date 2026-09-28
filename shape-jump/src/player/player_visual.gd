@@ -96,8 +96,11 @@ var _gaze := Vector2.RIGHT
 var _gaze_target := Vector2.RIGHT
 var _dying := 0.0
 var _settle := 0.0
-## Node rotation that puts the drawing's feet on the current floor (World 03:
-## PI while gravity pulls up). Purely visual: the collision box never turns.
+## How far the drawing is turned over to stand on the ceiling: 0 on the
+## ground, 1 on the ceiling. It is a vertical flip (scale.y = cos(PI * k)),
+## never a rotation: the front stays on the right, so the player never looks
+## back the way it came. Purely visual: the collision box never turns.
+var _face := 0.0
 var _face_target := 0.0
 var _probe: PhysicsShapeQueryParameters2D
 # Seed style state.
@@ -152,9 +155,11 @@ func _process(delta: float) -> void:
 		_spin += flip
 		_flip_left -= flip
 	_flare = maxf(_flare - delta * 4.0, 0.0)
-	if not is_equal_approx(rotation, _face_target):
+	if _face != _face_target:
+		# Same pace as the half turn it replaces: (1 / 2 turn) s per flip.
 		var turn := latch_turn_speed if garden_style else 1.6
-		rotation = rotate_toward(rotation, _face_target, delta * TAU * turn)
+		_face = move_toward(_face, _face_target, delta * 2.0 * turn)
+		_apply_face()
 	if garden_style:
 		_latch_glow = maxf(_latch_glow - delta * 3.0, 0.0)
 		_landing_pulse = maxf(_landing_pulse - delta * 3.2, 0.0)
@@ -177,6 +182,7 @@ func _process(delta: float) -> void:
 	# The core lags behind velocity, as if it floated inside a deeper space.
 	var target_offset := (-player.velocity * inertia_per_speed).limit_length(max_core_offset)
 	target_offset.x *= 0.5
+	target_offset.y *= _face_sign()
 	_core_offset = _core_offset.lerp(target_offset, 1.0 - exp(-10.0 * delta))
 
 	_step_spring(minf(delta, MAX_SPRING_STEP))
@@ -201,15 +207,37 @@ func _step_void(delta: float) -> void:
 			visible = false
 
 
-## Gravity turned (World 03): the entity rolls over to stand on the new
-## floor, with a pulse from inside. [param instant]: a restore, no motion.
+## Gravity turned (Worlds 03 and 04): the body turns over (a vertical flip)
+## to stand on the new floor, with a pulse from inside. [param instant]: a
+## restore, no motion.
 func face_gravity(up: bool, instant: bool) -> void:
-	_face_target = PI if up else 0.0
+	_face_target = 1.0 if up else 0.0
 	if instant:
-		rotation = _face_target
+		_face = _face_target
+		_apply_face()
 	else:
 		_flare = 1.0
 		_twist_left += PI
+
+
+## Upright on the ground, upside down (mirrored top to bottom only) on the
+## ceiling; the drawing is squeezed flat halfway through a flip.
+func _apply_face() -> void:
+	rotation = 0.0
+	var y := cos(PI * _face)
+	if absf(y) < 0.05:
+		y = 0.05 if _face < 0.5 else -0.05  # Never a degenerate (zero-height) transform.
+	scale = Vector2(1.0, y)
+
+
+## True while the body is turned over (or turning) to stand on the ceiling.
+func is_upside_down() -> bool:
+	return _face > 0.5
+
+
+## +1 upright, -1 turned over: world directions seen by the drawing.
+func _face_sign() -> float:
+	return -1.0 if _face > 0.5 else 1.0
 
 
 ## The level is complete: the thing inside goes quiet and bright.
@@ -308,7 +336,7 @@ func _draw_void() -> void:
 	# gaze direction (the nearest hazard, or ahead).
 	var spikes: Array = VOID_SPIKES_ALT if fposmod(_time, GLITCH_EVERY) < GLITCH_TIME else VOID_SPIKES
 	var count := spikes.size()
-	var aim := (_gaze.rotated(-_spin)).angle()
+	var aim := (Vector2(_gaze.x, _gaze.y * _face_sign()).rotated(-_spin)).angle()
 	var base := lerp_angle(_twist, aim, 0.35 + 0.6 * _danger)
 	var star := PackedVector2Array()
 	for i in count * 2:

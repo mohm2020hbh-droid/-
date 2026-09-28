@@ -1,8 +1,8 @@
 extends Node2D
 ## World 03's background and look: THE HORRIFYING GALAXY (docs/GDD.md §9C).
 ##
-## A deep-space backdrop in world space (so it turns with the camera when
-## gravity flips): a sky, stars, nebulae, giant planets, an impossible ruined
+## A deep-space backdrop in world space (the view never turns: the run is
+## left to right whichever surface is the floor): a sky, stars, nebulae, giant planets, an impossible ruined
 ## city both standing and hanging, portals, fog and drifting debris, each
 ## layer with its own parallax (and a horizontal wrap). Every layer is drawn
 ## once in neutral tones; colour comes from modulate.
@@ -185,7 +185,7 @@ func _make_layer(kind: String) -> Node2D:
 	return layer
 
 
-## The sky: a gradient quad around the camera, big enough for any rotation.
+## The sky: a gradient quad around the camera, big enough for any view.
 class _Sky extends Node2D:
 	var _colors: Array = [Color.BLACK, Color.BLACK, Color.BLACK]
 
@@ -489,8 +489,11 @@ class _Pulse extends Control:
 			PackedColorArray([edge, edge, clear, clear]))
 		draw_polygon(PackedVector2Array([Vector2(0.0, view.y - band), Vector2(view.x, view.y - band), Vector2(view.x, view.y),
 			Vector2(0.0, view.y)]), PackedColorArray([clear, clear, edge, edge]))
-		# Streaks sweeping down the screen: the new floor is below.
+		# Streaks sweeping toward the new floor: down the screen, or up it when
+		# the ceiling is the floor (the view never turns).
 		for i in 7:
 			var x := view.x * (0.08 + 0.14 * i)
 			var y := view.y * fmod(k * 1.6 + 0.13 * i, 1.0)
+			if _up:
+				y = view.y - y
 			draw_line(Vector2(x, y - 60.0), Vector2(x, y + 60.0), Color(_color, 0.22 * fade), 2.0)

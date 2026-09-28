@@ -83,16 +83,19 @@ func _rebuild() -> void:
 			var box := RectangleShape2D.new()
 			_boxes.append(box)
 			_shapes.append(add_hitbox(box))
-	(_spires[0] as _Spire).setup(width, high, -1)
-	(_spires[1] as _Spire).setup(width, high, 1)
+	var seed := OrganicArt.seed_of(position, 19)
+	(_spires[0] as _Spire).setup(width, high, -1, seed)
+	(_spires[1] as _Spire).setup(width, high, 1, seed + 1)
 	queue_redraw()
 
 
 func _draw() -> void:
-	# Sockets in both surfaces, and a faint arc between them: one machine.
+	# Sockets in both surfaces (cracked rock round the spire), and a faint
+	# arc between them: one machine.
 	for y: float in [0.0, ceiling]:
-		draw_rect(Rect2(-width * 0.7, y - 4.0, width * 1.4, 8.0), GalaxyArt.DANGER_BODY)
-		draw_line(Vector2(-width * 0.7, y), Vector2(width * 0.7, y), Color(GalaxyArt.DANGER, 0.8), 2.0)
+		var socket := OrganicArt.brush(Vector2(-width * 0.75, y), Vector2(width * 0.75, y), 9.0, int(y) + 3)
+		draw_colored_polygon(socket, GalaxyArt.DANGER_BODY)
+		draw_polyline(GalaxyArt.closed(socket), Color(GalaxyArt.DANGER, 0.8), 1.5, true)
 	GalaxyArt.dashed(self, Vector2(0.0, ceiling), Vector2(0.0, 0.0), Color(GalaxyArt.DANGER, 0.14), 1.5, 10.0)
 
 
@@ -102,21 +105,49 @@ class _Spire extends Node2D:
 	var width := 40.0
 	var tall := 140.0
 	var facing := -1
+	var seed := 0
+	var _body := PackedVector2Array()
+	var _facets := PackedVector2Array()
 
-	func setup(w: float, h: float, f: int) -> void:
+	func setup(w: float, h: float, f: int, s: int) -> void:
 		width = w
 		tall = h
 		facing = f
+		seed = s
+		_body.clear()
 		queue_redraw()
 
-	func _draw() -> void:
-		# facing -1: base at y = tall, tip at 0 (grows up); 1: base at 0... tip at tall.
+	## A spire of cosmic crystal: its sides taper in uneven steps (as wide as
+	## the deadly box all the way up, the narrow tip forgiven), a split near
+	## the tip, and facet lines up its length.
+	func _build() -> void:
 		var base_y := tall if facing < 0 else 0.0
 		var tip_y := 0.0 if facing < 0 else tall
-		var body := PackedVector2Array([Vector2(-width * 0.5, base_y), Vector2(width * 0.5, base_y),
-			Vector2(width * 0.28, tip_y + (8.0 if facing < 0 else -8.0)), Vector2(0.0, tip_y),
-			Vector2(-width * 0.28, tip_y + (8.0 if facing < 0 else -8.0))])
+		var up := -1.0 if facing < 0 else 1.0  # From the base toward the tip.
+		var left := PackedVector2Array()
+		var right := PackedVector2Array()
+		var steps := 5
+		for i in steps:
+			var f := float(i) / steps
+			var w := width * 0.5 * (1.0 - 0.42 * f)
+			var y := base_y + up * (tall - 8.0) * f
+			left.append(Vector2(-w - 1.5 * OrganicArt.rand(seed, i), y))
+			right.append(Vector2(w + 1.5 * OrganicArt.rand(seed, 20 + i), y + up * 4.0 * OrganicArt.rand(seed, 40 + i)))
+		var lean := (OrganicArt.rand(seed, 60) - 0.5) * width * 0.25
+		_body = left
+		_body.append(Vector2(lean, tip_y))
+		right.reverse()
+		_body.append_array(right)
+		_facets.clear()
+		_facets.append_array([Vector2(0.0, base_y), Vector2(lean, tip_y)])
+		_facets.append_array([Vector2(-width * 0.3, base_y), Vector2(lean * 0.5 - width * 0.08, base_y + up * tall * 0.7)])
+		_facets.append_array([Vector2(width * 0.28, base_y), Vector2(lean * 0.5 + width * 0.1, base_y + up * tall * 0.55)])
+
+	func _draw() -> void:
+		if _body.is_empty():
+			_build()
+		var tip_y := 0.0 if facing < 0 else tall
 		Neon.soft_light(self, Vector2(0.0, tip_y), width * 1.6, Color(GalaxyArt.DANGER, 0.3))
-		draw_colored_polygon(body, GalaxyArt.DANGER_BODY)
-		draw_polyline(GalaxyArt.closed(body), GalaxyArt.DANGER, 2.5, true)
-		draw_line(Vector2(0.0, base_y), Vector2(0.0, tip_y), Color(GalaxyArt.DANGER_CORE, 0.45), 1.5)
+		draw_colored_polygon(_body, GalaxyArt.DANGER_BODY)
+		draw_multiline(_facets, Color(GalaxyArt.DANGER_CORE, 0.35), 1.5)
+		draw_polyline(GalaxyArt.closed(_body), GalaxyArt.DANGER, 2.5, true)

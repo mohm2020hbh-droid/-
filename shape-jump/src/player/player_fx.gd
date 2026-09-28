@@ -39,10 +39,13 @@ func _ready() -> void:
 	_trail.global_position = Vector2.ZERO
 
 
-## Gravity turned (World 03): the emitters face the new floor (the trail
-## lives in world space and needs nothing).
+## Gravity turned (Worlds 03 and 04): the emitters face the new floor. A
+## vertical flip, never a turn: the run dust stays behind the player and
+## everything keeps going left to right (the trail lives in world space and
+## needs nothing).
 func face_gravity(up: bool, _instant: bool) -> void:
-	rotation = PI if up else 0.0
+	rotation = 0.0
+	scale = Vector2(1.0, -1.0 if up else 1.0)
 
 
 ## Re-colors the emitters and the trail for the current [Palette] theme.

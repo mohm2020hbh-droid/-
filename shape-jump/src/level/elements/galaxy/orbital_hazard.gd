@@ -56,6 +56,7 @@ func _rebuild() -> void:
 	_shapes.clear()
 	for i in bodies:
 		var moon := _Moon.new()
+		moon.seed = OrganicArt.seed_of(position, 21 + i)
 		moon.radius = body_radius
 		add_child(moon, false, Node.INTERNAL_MODE_FRONT)
 		_moons.append(moon)
@@ -79,16 +80,29 @@ func _draw() -> void:
 
 
 class _Moon extends Node2D:
+	var seed := 0
 	var radius := 18.0:
 		set(value):
 			radius = value
+			_rock.clear()
 			queue_redraw()
+	var _rock := PackedVector2Array()
+	var _craters := PackedVector2Array()
 
+	## A ringed moon of pitted rock: an uneven body (never inside the
+	## hitbox), craters, a lit crescent and its thin ring.
 	func _draw() -> void:
+		if _rock.is_empty():
+			_rock = OrganicArt.blot(Vector2.ZERO, radius * 0.97, seed, 11)
+			_craters.clear()
+			for i in 3:
+				var c := Vector2.from_angle(OrganicArt.rand(seed, 90 + i) * TAU) * radius * (0.2 + 0.4 * OrganicArt.rand(seed, 95 + i))
+				var r := radius * (0.14 + 0.1 * OrganicArt.rand(seed, 99 + i))
+				_craters.append_array([c + Vector2(-r, 0), c + Vector2(0, r * 0.7), c + Vector2(0, r * 0.7), c + Vector2(r, 0)])
 		Neon.soft_light(self, Vector2.ZERO, radius * 2.4, Color(GalaxyArt.DANGER, 0.3))
-		draw_circle(Vector2.ZERO, radius, GalaxyArt.DANGER_BODY)
-		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, GalaxyArt.DANGER, 2.5, true)
-		# A thin ring and a lit crescent: a moon, not a ball.
+		draw_colored_polygon(_rock, GalaxyArt.DANGER_BODY)
+		draw_multiline(_craters, Color(GalaxyArt.DANGER, 0.55), 1.5)
+		draw_polyline(GalaxyArt.closed(_rock), GalaxyArt.DANGER, 2.5, true)
 		draw_arc(Vector2.ZERO, radius * 0.62, -0.6, 1.4, 12, Color(GalaxyArt.DANGER_CORE, 0.7), 2.0, true)
 		draw_line(Vector2(-radius * 1.35, radius * 0.3), Vector2(radius * 1.35, -radius * 0.3),
 			Color(GalaxyArt.DANGER, 0.55), 1.5)

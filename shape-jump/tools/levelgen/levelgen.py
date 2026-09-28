@@ -1366,7 +1366,7 @@ class Level:
         self._shadows = []       # (x0, x1, top) of every shadow gap
         self.start_up = False    # World 03: gravity at the start
         self.kill_top = None     # World 03: world y (px) above which the player dies
-        self.camera_offset = None  # World 03: the view's height above the player (px, negative)
+        self.corridor_height = None  # Worlds 03/04: ground-to-ceiling height (tiles); the camera frames it
         # World 03: tune windows as the audit measures them (any jump that
         # survives counts), so a phase that lets an early tap survive as a
         # double jump is seen as the wide window it is.
@@ -2913,7 +2913,7 @@ class Level:
                    + (f'kill_top = {f(self.kill_top)}\n' if self.kill_top is not None else '')
                    + ('start_gravity_up = true\n' if self.start_up else '')
                    + ('surface_latch = true\n' if self.latch_mode else '')
-                   + (f'camera_offset = {f(self.camera_offset)}\n' if self.camera_offset is not None else ''))
+                   + (f'corridor_height = {f(self.corridor_height)}\n' if self.corridor_height is not None else ''))
         out.append(f'[node name="SpawnPoint" type="Marker2D" parent="."]\nposition = {v2(self.spawn_px, 0)}\n')
         written_groups = set()
         for group, name, el in self.entries:

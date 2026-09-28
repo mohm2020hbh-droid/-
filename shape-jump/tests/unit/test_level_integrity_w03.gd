@@ -91,4 +91,4 @@ func test_kill_lines_bound_both_surfaces() -> void:
 		var name := WORLD.levels[i].display_name
 		assert_true(level.kill_y > 0.0, "%s: kill line under the ground" % name)
 		assert_true(level.kill_top < -6.0 * GameConst.TILE, "%s: kill line above the ceiling" % name)
-		assert_true(level.camera_offset < -90.0, "%s: the view centres the corridor" % name)
+		assert_eq(level.corridor_height, 5.5, "%s: declares its corridor (the camera frames it)" % name)

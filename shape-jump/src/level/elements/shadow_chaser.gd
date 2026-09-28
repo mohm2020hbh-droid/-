@@ -116,7 +116,17 @@ func _rebuild() -> void:
 class _Body extends Node2D:
 	func _draw() -> void:
 		var rect := Rect2(-ShadowChaser.BODY_WIDTH, -ShadowChaser.BODY_HEIGHT + 200.0, ShadowChaser.BODY_WIDTH, ShadowChaser.BODY_HEIGHT)
-		draw_rect(rect, Color(0.0, 0.0, 0.0, 0.96))
+		# Living ink: its front bleeds unevenly (never past the front line).
+		var body := PackedVector2Array([rect.position])
+		var fy := rect.position.y
+		var k := 0
+		while fy < rect.end.y:
+			body.append(Vector2(-10.0 * OrganicArt.rand(31, k) - 4.0 * absf(sin(fy * 0.013)), fy))
+			fy += 18.0 + 22.0 * OrganicArt.rand(37, k)
+			k += 1
+		body.append(Vector2(0.0, rect.end.y))
+		body.append(Vector2(rect.position.x, rect.end.y))
+		draw_colored_polygon(body, Color(0.0, 0.0, 0.0, 0.96))
 		# A ragged front: white fracture lines reaching back into the dark.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
@@ -136,7 +146,16 @@ class _Body extends Node2D:
 class _Tongue extends Node2D:
 	var height := 56.0
 
+	## A lick of ink along the floor: its full height (the hitbox's) nearly to
+	## the tip, where it rounds down like a wave's nose; its back uneven.
 	func _draw() -> void:
-		var poly := PackedVector2Array([Vector2(0, -height), Vector2(92, -height * 0.7), Vector2(100, 0), Vector2(0, 0)])
+		var top := PackedVector2Array()
+		for i in 21:
+			var u := i / 20.0
+			var nose := 1.0 if u <= 0.8 else sqrt(maxf(cos((u - 0.8) / 0.2 * PI * 0.5), 0.0))
+			var ripple := 1.0 + (OrganicArt.rand(41, i) - 0.5) * 0.06 if u <= 0.8 else 1.0
+			top.append(Vector2(u * 100.0, -height * nose * ripple))
+		var poly := top.duplicate()
+		poly.append(Vector2(0, 0))
 		draw_colored_polygon(poly, Color(0.0, 0.0, 0.0, 0.97))
-		draw_polyline(PackedVector2Array([Vector2(0, -height), Vector2(92, -height * 0.7), Vector2(100, 0)]), Palette.HAZARD_CORE, 2.0, true)
+		draw_polyline(top, Palette.HAZARD_CORE, 2.0, true)

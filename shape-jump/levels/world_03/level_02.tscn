@@ -19,7 +19,7 @@ script = ExtResource("level")
 data = ExtResource("data")
 kill_y = 448
 kill_top = -800
-camera_offset = -140
+corridor_height = 5.5
 
 [node name="SpawnPoint" type="Marker2D" parent="."]
 position = Vector2(256, 0)

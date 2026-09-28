@@ -11,9 +11,12 @@ extends Node2D
 @export var size := Vector2(256, 640):
 	set(value):
 		size = value.max(Vector2(16, 16))
+		_art = null
 		queue_redraw()
 
 var _time := 0.0
+## Shaped like the ink ground it imitates ([OrganicArt]); its tells stay.
+var _art: OrganicArt.Shape
 
 
 func _ready() -> void:
@@ -40,10 +43,19 @@ func _draw() -> void:
 	var fade := minf(size.y, 260.0)
 	var top := Color(Palette.BLOCK_BODY, 0.62)
 	var clear := Color(Palette.BLOCK_BODY, 0.18)
-	draw_polygon(PackedVector2Array([Vector2.ZERO, Vector2(size.x, 0.0), Vector2(size.x, fade), Vector2(0.0, fade)]),
-		PackedColorArray([top, top, clear, clear]))
-	if size.y > fade:
-		draw_rect(Rect2(0.0, fade, size.x, size.y - fade), clear)
+	if _art == null:
+		_art = OrganicArt.build(get_rect(), OrganicArt.seed_of(position, 18), OrganicArt.theme_style(),
+			HazardArt.Face.NONE, true, false, 0.45)
+	if _art.fillable:
+		var shades := PackedColorArray()
+		for p in _art.outline:
+			shades.append(top.lerp(clear, clampf(p.y / fade, 0.0, 1.0)))
+		draw_polygon(_art.outline, shades)
+	else:
+		draw_polygon(PackedVector2Array([Vector2.ZERO, Vector2(size.x, 0.0), Vector2(size.x, fade), Vector2(0.0, fade)]),
+			PackedColorArray([top, top, clear, clear]))
+		if size.y > fade:
+			draw_rect(Rect2(0.0, fade, size.x, size.y - fade), clear)
 	var x := 4.0
 	while x < size.x - 4.0:
 		draw_line(Vector2(x, 1.5), Vector2(minf(x + 12.0, size.x - 4.0), 1.5), Color(Palette.NEON, 0.6), 3.0)

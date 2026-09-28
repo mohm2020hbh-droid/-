@@ -1,32 +1,46 @@
 class_name GameCamera
 extends Camera2D
-## Side-scrolling follow camera (docs/GDD.md §10).
+## Side-scrolling follow camera (docs/GDD.md §10). One camera, one framing
+## rule for every world and level: nothing here is tuned per world.
 ##
-## - X is locked to the target plus a look-ahead, so the player stays at a
-##   fixed spot on screen and sees most of the screen ahead.
-## - Y follows the last ground height (not every jump), so jumps never bob
+## - Scale: zoom is always 1 (a world pixel is a view pixel), so the player,
+##   the obstacles and the distance seen ahead are the same size in every
+##   world; the project's stretch (canvas_items, expand) scales the whole
+##   view to the screen the same way for all of them.
+## - X is locked to the target plus a look-ahead: the player stays at
+##   [member screen_anchor_x] of the view from the left and sees the rest of
+##   the screen ahead, to the right.
+## - Y frames the PLAY BAND: the space between the floor and the surface
+##   across from it is centred on screen ([method frame_band]). A level with
+##   a ceiling corridor (Worlds 03 and 04) frames that corridor; an open-sky
+##   level frames the standard band, [constant STANDARD_BAND]. So the floor
+##   line sits at the same height of the screen in every world, and a flip
+##   or a latch to the other surface never moves the view.
+## - Y follows the last floor height (not every jump), so jumps never bob
 ##   the view; it only chases falls past a dead zone.
+## - Direction: the view NEVER rotates or mirrors. The run always goes left
+##   to right on screen and the way ahead is always on the right, whichever
+##   surface is the floor; gravity only chooses which side of the band the
+##   floor is on (every "down" here follows gravity: falls, the kill line).
 ## - Smoothing is exponential and frame-rate independent. Moved in
 ##   _physics_process, so physics interpolation keeps it smooth at any Hz.
 ## - Shake is trauma-based, tiny, and only used for important events.
-## - Gravity (World 03): the view turns 180° with gravity, so the floor the
-##   player runs on is always at the bottom of the screen. The x framing is
-##   unchanged in world space, so after the turn the player sits on the right
-##   and still sees the way ahead (to the left); every "down" above (falls,
-##   the kill line, the sky offset) follows gravity.
-## - Surfaces (World 04, [member turn_with_gravity] off): the view never
-##   turns, so the run always goes left to right on screen and the way ahead
-##   is always on the right. Gravity only moves the framing: the vertical
-##   offset points away from whichever surface is the floor, so the view
-##   stays on the corridor, and a latch re-anchors the view on the surface
-##   the player is crossing to ([method anchor_to]) before it gets there, so
-##   the crossing itself never makes the view bob.
+## - A latch (World 04) re-anchors the view on the surface the player is
+##   crossing to ([method anchor_to]) before it gets there.
+
+## The play band of a level without a ceiling (px): the height of the space
+## above the floor that the view centres, the same as the corridors of the
+## worlds that have one (5.2 to 5.5 tiles), so every world is framed alike.
+const STANDARD_BAND := 5.4 * GameConst.TILE
 
 @export var target: CharacterBody2D
 ## Where the target sits horizontally, as a fraction of the view from the left.
 @export_range(0.1, 0.5, 0.01) var screen_anchor_x := 0.28
-## Camera centre relative to the ground anchor (negative = show more sky).
-@export var vertical_offset := -90.0
+## Camera centre relative to the floor anchor (negative = toward the other
+## surface). Derived from the play band by [method frame_band].
+var vertical_offset := -(STANDARD_BAND * 0.5 - GameConst.TILE * 0.375)
+## Height (px) of the play band being framed.
+var band_height := STANDARD_BAND
 @export_range(0.5, 20.0, 0.1) var follow_speed_y := 4.5
 ## Faster follow when the view must move down (falls), so a fall death is
 ## never below the screen.
@@ -39,14 +53,8 @@ extends Camera2D
 @export var kill_line_margin := 200.0
 @export var max_shake := 7.0
 @export_range(0.05, 2.0, 0.05, "suffix:s") var shake_duration := 0.35
-## When false (World 04) the view never rotates with gravity: the run stays
-## left to right on screen whatever surface is the floor.
-@export var turn_with_gravity := true:
-	set(value):
-		turn_with_gravity = value
-		if gravity:
-			_on_gravity_flipped(gravity.up, true)
-## The run's gravity (World 03); null: always down, never turns.
+## The run's gravity (Worlds 03 and 04): which side of the band is the
+## floor. null: always down.
 var gravity: GravityState:
 	set(value):
 		if gravity and gravity.flipped.is_connected(_on_gravity_flipped):
@@ -54,7 +62,6 @@ var gravity: GravityState:
 		gravity = value
 		if gravity:
 			gravity.flipped.connect(_on_gravity_flipped)
-			_on_gravity_flipped(gravity.up, true)
 
 ## Runs after the player every physics tick (it follows where the player is
 ## now), whatever the scene tree order.
@@ -67,15 +74,18 @@ var top_limit := -INF
 
 var _anchor_y := 0.0
 var _trauma := 0.0
-var _turn_from := 0.0
-var _turn_to := 0.0
+## Half the target's height (its centre's distance from the floor).
+var _target_half := GameConst.TILE * 0.375
 
 
 func _ready() -> void:
 	process_physics_priority = PHYSICS_PRIORITY
 	position_smoothing_enabled = false
-	# The view turns with gravity (World 03); at rotation 0 this changes nothing.
-	ignore_rotation = false
+	# Never turned: the run is left to right on screen in every world.
+	rotation = 0.0
+	ignore_rotation = true
+	zoom = Vector2.ONE
+	frame_band(band_height)
 	# Physics interpolation requires (and would force) the physics callback.
 	process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 
@@ -83,7 +93,6 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
-	_update_turn()
 	_update_anchor()
 	var desired := get_desired_position()
 	global_position.x = desired.x
@@ -117,11 +126,18 @@ func snap_to_target() -> void:
 		return
 	_anchor_y = target.global_position.y
 	global_position = get_desired_position()
-	_turn_from = _turn_to
-	rotation = _turn_to
 	_trauma = 0.0
 	offset = Vector2.ZERO
 	reset_physics_interpolation()
+
+
+## Frames a play band [param height] px tall (0: the standard band): the
+## view centres the space between the floor and [param height] above it.
+func frame_band(height: float) -> void:
+	band_height = height if height > 0.0 else STANDARD_BAND
+	if target and target.get(&"half_size") is Vector2 and (target.get(&"half_size") as Vector2).y > 0.0:
+		_target_half = (target.get(&"half_size") as Vector2).y
+	vertical_offset = -(band_height * 0.5 - _target_half)
 
 
 ## Anchors the view on a player centre height of [param y] now (World 04: the
@@ -145,6 +161,35 @@ func get_view_rect() -> Rect2:
 	return Rect2(get_screen_center_position() - view * 0.5, view)
 
 
+## What the player sees right now, measured (QA: the same framing in every
+## world). Screen values are in view pixels from the top-left.
+func framing_report() -> Dictionary:
+	# From the camera's own position this tick (the viewport's cached screen
+	# centre can lag a tick behind the physics).
+	var size := get_viewport_rect().size / zoom
+	var view := Rect2(global_position + offset - size * 0.5, size)
+	var feet: Vector2 = target.get_feet_position() if target.has_method(&"get_feet_position") else target.global_position
+	var on_screen := target.global_position - view.position
+	var feet_y := feet.y - view.position.y
+	var down := _down()
+	return {
+		"zoom": zoom,
+		"viewport": get_viewport_rect().size,
+		"view": view.size,
+		"rotation": rotation,
+		"camera": global_position,
+		"anchor_x": on_screen.x / view.size.x,
+		"look_ahead_px": view.size.x - on_screen.x,
+		"player_px": (target.get(&"half_size") as Vector2) * 2.0 * zoom if target.get(&"half_size") is Vector2 else Vector2.ZERO,
+		"floor_y": feet_y,
+		"floor_frac": feet_y / view.size.y,
+		# Visible space from the floor line toward the other surface, and beyond it (below the floor).
+		"toward_other_px": feet_y if down > 0.0 else view.size.y - feet_y,
+		"behind_floor_px": view.size.y - feet_y if down > 0.0 else feet_y,
+		"band_px": band_height,
+	}
+
+
 ## Where the camera wants to be for the current anchor (no side effects).
 func get_desired_position() -> Vector2:
 	var view := get_viewport_rect().size / zoom
@@ -156,36 +201,17 @@ func get_desired_position() -> Vector2:
 	return Vector2(target.global_position.x + view.x * (0.5 - screen_anchor_x), y)
 
 
-## True while the view is turning after a flip.
-func is_turning() -> bool:
-	return not is_equal_approx(rotation, _turn_to)
-
-
 func _down() -> float:
 	return gravity.down_sign() if gravity else 1.0
 
 
-## Gravity turned: the view turns half a circle, always the same way round
-## (a smooth ease over the flip's transition), or snaps on a restore.
-func _on_gravity_flipped(up: bool, instant: bool) -> void:
-	var goal := PI if up and turn_with_gravity else 0.0
-	if instant or not turn_with_gravity:
-		_turn_from = goal
-		_turn_to = goal
-		rotation = goal
+## Gravity turned mid-run (a World 03 gate or field, a World 04 latch): the
+## floor is now the other side of the band, so the anchor moves there too.
+## The band's centre, and so the view, stays exactly where it was: a flip
+## never swings the view (a latch then refines the anchor with its real
+## landing, [method anchor_to]). A restore (instant) waits for the
+## respawn's [method snap_to_target].
+func _on_gravity_flipped(_up: bool, instant: bool) -> void:
+	if instant:
 		return
-	_turn_from = rotation
-	_turn_to = _turn_from + wrapf(goal - _turn_from, 0.0, TAU)
-	if is_zero_approx(_turn_to - _turn_from):
-		_turn_to = _turn_from + TAU  # Two flips within one turn: go all the way.
-
-
-func _update_turn() -> void:
-	if gravity == null or is_equal_approx(rotation, _turn_to):
-		return
-	var k := smoothstep(0.0, 1.0, gravity.transition_progress())
-	rotation = lerpf(_turn_from, _turn_to, k)
-	if gravity.phase == GravityState.Phase.NORMAL:
-		rotation = wrapf(_turn_to, 0.0, TAU)
-		_turn_from = rotation
-		_turn_to = rotation
+	_anchor_y += (band_height - 2.0 * _target_half) * _down()

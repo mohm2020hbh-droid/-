@@ -88,18 +88,27 @@ func _draw() -> void:
 class _Panel extends Node2D:
 	var rect := Rect2()
 	var upper := true
+	var _art: OrganicArt.Shape
+	var _streaks: Array[PackedVector2Array] = []
 
 	func setup(r: Rect2, is_upper: bool) -> void:
 		rect = r
 		upper = is_upper
+		_art = null
 		queue_redraw()
 
+	## A pane of ink-glass: a brush-stroke body, two pale reflections swept
+	## across it, and its facing edge (where the passage is) as one bright stroke.
 	func _draw() -> void:
-		draw_rect(rect, Palette.HAZARD_BODY)
-		# Glass: two pale reflection streaks and a bright facing edge.
-		for k: float in [0.25, 0.62]:
-			var x := rect.position.x + rect.size.x * k
-			draw_line(Vector2(x, rect.position.y), Vector2(x + 10.0, rect.end.y), Color(Palette.HAZARD_CORE, 0.14), 6.0)
-		Neon.rect_outline(self, rect, Palette.HAZARD, 2.0, 0.8)
-		var y := rect.end.y if upper else rect.position.y
-		Neon.line(self, Vector2(rect.position.x, y), Vector2(rect.end.x, y), Palette.HAZARD_CORE, 4.0, 1.4)
+		if _art == null:
+			var seed := OrganicArt.seed_of(rect.position, 13 if upper else 14)
+			_art = OrganicArt.build(rect, seed, OrganicArt.theme_style(),
+				HazardArt.Face.BOTTOM if upper else HazardArt.Face.TOP)
+			_streaks.clear()
+			for k: float in [0.25, 0.62]:
+				var x := rect.position.x + rect.size.x * k
+				_streaks.append(OrganicArt.brush(Vector2(x, rect.position.y + 6.0), Vector2(x + 10.0, rect.end.y - 6.0),
+					6.0, seed + int(k * 100.0), 12))
+		OrganicArt.draw_hazard(self, _art, Palette.HAZARD_BODY, Palette.HAZARD, Palette.HAZARD_CORE, 0.8)
+		for streak in _streaks:
+			draw_colored_polygon(streak, Color(Palette.HAZARD_CORE, 0.14))

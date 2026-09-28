@@ -113,8 +113,8 @@ def new_level(key, number, name, tagline, speed, corridor=C):
     lv.corridor = (0.0, corridor)
     lv.kill_y = 7.0 * T
     lv.kill_top = -(corridor + 7.0) * T
-    # Centre the corridor on screen whichever surface is the floor.
-    lv.camera_offset = -(corridor * T * 0.5 - HALF)
+    # The camera centres the corridor whichever surface is the floor.
+    lv.corridor_height = corridor
     lv.tune_any_kind = True
     return lv
 

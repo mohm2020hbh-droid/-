@@ -74,14 +74,15 @@ func _rebuild() -> void:
 		add_child(_teeth, false, Node.INTERNAL_MODE_FRONT)
 		_box = RectangleShape2D.new()
 		_shape = add_hitbox(_box)
-	_teeth.setup(width, reach, facing)
+	_teeth.setup(width, reach, facing, OrganicArt.seed_of(position, 20))
 	queue_redraw()
 
 
 func _draw() -> void:
-	# The socket in the surface the shards come out of.
-	var depth := 10.0 * -facing
-	draw_rect(Rect2(0.0, minf(0.0, depth), width, absf(depth)), GalaxyArt.DANGER_BODY)
+	# The socket in the surface the shards come out of: a crack of rock.
+	var depth := 5.0 * -facing
+	var socket := OrganicArt.brush(Vector2(-4.0, depth), Vector2(width + 4.0, depth), 11.0, int(position.x) + 5)
+	draw_colored_polygon(socket, GalaxyArt.DANGER_BODY)
 	draw_line(Vector2(0.0, 0.0), Vector2(width, 0.0), Color(GalaxyArt.DANGER, 0.8), 2.0)
 
 
@@ -89,22 +90,29 @@ class _Teeth extends Node2D:
 	var width := 128.0
 	var reach := 72.0
 	var facing := 1
+	var seed := 0
+	var _spikes: Array[PackedVector2Array] = []
+	var _cores := PackedVector2Array()
 
-	func setup(w: float, r: float, f: int) -> void:
+	func setup(w: float, r: float, f: int, s: int) -> void:
 		width = w
 		reach = r
 		facing = f
+		seed = s
+		_spikes.clear()
 		queue_redraw()
 
+	## A cluster of crystal shards, each its own length, width and lean
+	## (never shorter than the deadly base they grow from).
 	func _draw() -> void:
-		var count := maxi(int(width / CeilingTrap.SHARD_WIDTH), 1)
-		var w := width / count
-		var spikes: Array[PackedVector2Array] = []
-		var cores := PackedVector2Array()
-		for i in count:
-			var base := Vector2(w * (i + 0.5), 0.0)
-			var tall := reach * (1.0 if i % 2 == 0 else 0.8)
-			spikes.append(GalaxyArt.shard(base, Vector2(0.0, facing), tall, w * 0.9))
-			cores.append_array([base, base + Vector2(0.0, facing * tall * 0.7)])
-		GalaxyArt.polygons(self, spikes, GalaxyArt.DANGER_BODY, GalaxyArt.DANGER, 2.0)
-		draw_multiline(cores, Color(GalaxyArt.DANGER_CORE, 0.5), 1.5)
+		if _spikes.is_empty():
+			var count := maxi(int(width / CeilingTrap.SHARD_WIDTH), 1)
+			var w := width / count
+			for i in count:
+				var base := Vector2(w * (i + 0.5), 0.0)
+				var tall := reach * (0.8 + 0.2 * OrganicArt.rand(seed, i))
+				var lean := Vector2((OrganicArt.rand(seed, 30 + i) - 0.5) * 0.35, facing)
+				_spikes.append(OrganicArt.shard(base, lean, tall, w * (0.85 + 0.15 * OrganicArt.rand(seed, 60 + i)), seed + i))
+				_cores.append_array([base, base + lean.normalized() * tall * 0.7])
+		GalaxyArt.polygons(self, _spikes, GalaxyArt.DANGER_BODY, GalaxyArt.DANGER, 2.0)
+		draw_multiline(_cores, Color(GalaxyArt.DANGER_CORE, 0.5), 1.5)

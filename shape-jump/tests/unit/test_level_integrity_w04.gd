@@ -32,7 +32,8 @@ func test_every_level_is_a_surface_latch_level() -> void:
 		assert_false(level.start_gravity_up, "%s: starts on the ground" % name)
 		assert_true(level.kill_y > 0.0, "%s: kill line under the ground" % name)
 		assert_true(level.kill_top < -6.0 * T, "%s: kill line above the ceiling" % name)
-		assert_true(level.camera_offset < -90.0, "%s: the view centres the corridor" % name)
+		assert_true(level.corridor_height >= 5.0 and level.corridor_height <= 5.5,
+			"%s: declares its corridor (%.2f tiles; the camera frames it)" % [name, level.corridor_height])
 
 
 func test_every_level_speaks_the_garden_language_not_older_obstacles() -> void:

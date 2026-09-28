@@ -1,8 +1,9 @@
 class_name HazardArt
-## Drawing helpers for the deadly-obstacle look (docs/GDD.md §13): a dark red
-## body with diagonal hazard stripes, a red neon outline on every side and a
-## hot pale edge on the face that strikes. Solid platforms light only their
-## top lip, so "outlined all around and striped" always reads as deadly.
+## Drawing helpers for the deadly-obstacle look (docs/GDD.md §13): a dark
+## body in the world's organic language ([OrganicArt]: crystal, ink or rock),
+## a neon rim all around it and a hot pale edge on the face that strikes (its
+## thorns). Solid platforms light only their top lip, so "rimmed all around"
+## always reads as deadly.
 
 enum Face { NONE, TOP, BOTTOM, LEFT, RIGHT }
 
@@ -10,7 +11,16 @@ const STRIPE_SPACING := 22.0
 const TOOTH := Vector2(22, 16)
 
 
-## A deadly slab. [param hot_face] is the face that strikes (lit hottest).
+## A deadly body already built by [method OrganicArt.build]: rimmed all
+## around, its striking face (thorns) lit hottest. [param crusher] adds a
+## second, brighter pass on that face.
+static func organic_slab(ci: CanvasItem, shape: OrganicArt.Shape, crusher := false, glow := 1.0) -> void:
+	OrganicArt.draw_hazard(ci, shape, Palette.HAZARD_BODY, Palette.HAZARD, Palette.HAZARD_CORE, glow)
+	if crusher and shape.hot.size() > 1:
+		ci.draw_polyline(shape.hot, Color(Palette.HAZARD_CORE, 0.9), 4.0, true)
+
+
+## A plain deadly slab (kept for tools): [param hot_face] is lit hottest.
 static func slab(ci: CanvasItem, rect: Rect2, hot_face: Face = Face.NONE, glow := 1.0) -> void:
 	ci.draw_rect(rect, Palette.HAZARD_BODY)
 	stripes(ci, rect.grow(-3.0), STRIPE_SPACING, Palette.HAZARD_STRIPE, 3.0)

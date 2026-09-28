@@ -65,21 +65,33 @@ func _find_checkpoint(hanging: bool) -> Array:
 	return []
 
 
-func test_a_gate_turns_the_view_half_a_circle_and_the_hud_stays_upright() -> void:
+func test_a_gate_flips_gravity_and_the_view_stays_upright_steady_and_ahead() -> void:
 	await _start(0)
 	var camera := h.game.camera
+	var player := h.game.player
 	assert_true(await h.run_until(_flipping(), 60 * 20), "reached the first gate")
 	assert_true(_gravity().up, "gravity pulls up after it")
-	var turning_seen := false
+	var centre_y := camera.get_screen_center_position().y
+	var drift := 0.0
 	var ahead := true
-	for i in 40:
+	var mirrored := false
+	var landed := 0
+	for i in 150:
 		await h.tick()
-		turning_seen = turning_seen or camera.is_turning()
-		ahead = ahead and camera.get_screen_center_position().x > h.game.player.global_position.x
-	assert_true(turning_seen, "the view turned over the flip")
-	assert_false(camera.is_turning(), "and finished turning")
-	assert_near(wrapf(camera.rotation, 0.0, TAU), PI, 0.001, "upside down: half a circle")
-	assert_true(ahead, "the view still looks ahead of the run, in the world")
+		landed = landed + 1 if player.is_on_floor() and _gravity().up else 0
+		if landed > 5 and i >= 40:
+			break
+		assert_eq(camera.rotation, 0.0, "the view never turns")
+		drift = maxf(drift, absf(camera.get_screen_center_position().y - centre_y))
+		ahead = ahead and camera.get_screen_center_position().x > player.global_position.x
+		mirrored = mirrored or player.visual.scale.x < 0.0 or player.visual.rotation != 0.0 \
+			or player.fx.scale.x < 0.0 or player.fx.rotation != 0.0
+		assert_true(player.velocity.x > 0.0, "the run goes on to the right")
+	assert_true(player.is_on_floor(), "standing on the ceiling")
+	assert_true(drift < 8.0, "the view holds the corridor through the flip (moved %.1f px)" % drift)
+	assert_true(ahead, "the view looks ahead, to the right")
+	assert_false(mirrored, "the player is never mirrored left to right")
+	assert_true(player.visual.is_upside_down() and player.visual.scale.y < 0.0, "turned over top to bottom only")
 	assert_eq(h.game.hud.rotation, 0.0, "the HUD never turns")
 	assert_eq(h.game.hud.transform, Transform2D.IDENTITY, "nor moves")
 	assert_true(h.deaths.is_empty())
@@ -119,18 +131,19 @@ func test_dying_during_a_flip_respawns_clean() -> void:
 	var player := h.game.player
 	assert_false(_gravity().up, "the start's gravity (no checkpoint passed yet)")
 	assert_eq(_gravity().phase, GravityState.Phase.NORMAL, "no transition left over")
-	assert_false(h.game.camera.is_turning(), "the view is not turning")
-	assert_near(wrapf(h.game.camera.rotation, -PI, PI), 0.0, 0.001, "upright")
+	assert_eq(h.game.camera.rotation, 0.0, "the view upright")
 	assert_true(player.is_on_floor(), "standing")
 	assert_eq(player.velocity.y, 0.0, "no vertical speed")
 	assert_true(player.has_double_jump(), "both jumps")
-	assert_near(absf(wrapf(player.visual.rotation, -PI, PI)), 0.0, 0.01, "the entity stands on the ground")
+	assert_false(player.visual.is_upside_down(), "the entity stands on the ground")
+	assert_eq(player.visual.scale, Vector2.ONE, "upright")
 	assert_true(await h.run_until(h.is_state(GameSession.State.COMPLETE), 60 * 60), "the run still finishes")
 	assert_eq(h.deaths.size(), 1, "with no other death")
 
 
 ## Edge cases 6 and 20: a death just after a checkpoint on the ceiling comes
-## back there: gravity up, the view upside down, the ceiling colours.
+## back there: gravity up, the body turned over, the ceiling colours; the
+## view stays upright (left to right).
 func test_death_just_after_a_ceiling_checkpoint_respawns_upside_down() -> void:
 	var where := await _find_checkpoint(true)
 	assert_false(where.is_empty(), "World 03 has a checkpoint on the ceiling")
@@ -148,8 +161,9 @@ func test_death_just_after_a_ceiling_checkpoint_respawns_upside_down() -> void:
 	assert_near(player.global_position.x, cp.global_position.x, 12.0, "at the checkpoint")
 	assert_true(player.is_on_floor(), "standing on the ceiling")
 	assert_true(player.global_position.y > cp.global_position.y, "under it")
-	assert_near(wrapf(h.game.camera.rotation, 0.0, TAU), PI, 0.001, "the view upside down")
-	assert_near(absf(wrapf(player.visual.rotation, -PI, PI)), PI, 0.01, "the entity stands on the ceiling")
+	assert_eq(h.game.camera.rotation, 0.0, "the view upright: the run still goes left to right")
+	assert_true(player.visual.is_upside_down(), "the entity stands on the ceiling")
+	assert_eq(player.visual.scale, Vector2(1.0, -1.0), "turned over top to bottom, never mirrored")
 	var background := h.game.get_node(^"World/Background")
 	assert_near(background._blend, 1.0, 0.001, "the ceiling's colours")
 	assert_true(player.has_double_jump(), "both jumps")
@@ -157,7 +171,7 @@ func test_death_just_after_a_ceiling_checkpoint_respawns_upside_down() -> void:
 
 
 ## Edge case 7: a checkpoint on the ground after the ceiling brings back
-## gravity down, the upright view and the ground's colours.
+## gravity down, the upright body and the ground's colours.
 func test_death_after_a_ground_checkpoint_respawns_upright() -> void:
 	var where := await _find_checkpoint(false)
 	assert_false(where.is_empty(), "World 03 has a checkpoint on the ground")
@@ -173,7 +187,8 @@ func test_death_after_a_ground_checkpoint_respawns_upright() -> void:
 		h.game.player.die(&"test")
 	assert_true(await h.run_until(h.is_state(GameSession.State.PLAYING), 60 * 5), "back in play")
 	assert_false(_gravity().up, "gravity pulls down")
-	assert_near(wrapf(h.game.camera.rotation, -PI, PI), 0.0, 0.001, "upright view")
+	assert_eq(h.game.camera.rotation, 0.0, "upright view")
+	assert_false(h.game.player.visual.is_upside_down(), "upright body")
 	assert_true(h.game.player.is_on_floor(), "on the ground")
 	var background := h.game.get_node(^"World/Background")
 	assert_near(background._blend, 0.0, 0.001, "the ground's colours")
@@ -190,7 +205,8 @@ func test_restart_during_a_flip_starts_clean() -> void:
 	assert_eq(h.game.state, GameSession.State.READY, "waiting for the first tap")
 	assert_false(_gravity().up, "gravity down")
 	assert_eq(_gravity().phase, GravityState.Phase.NORMAL, "no transition")
-	assert_near(wrapf(h.game.camera.rotation, -PI, PI), 0.0, 0.001, "upright")
+	assert_eq(h.game.camera.rotation, 0.0, "upright")
+	assert_false(h.game.player.visual.is_upside_down(), "upright body")
 	assert_near(h.game.player.global_position.x, h.game.level.get_spawn_feet_position().x, 1.0, "at the start")
 
 
@@ -228,11 +244,11 @@ func test_pause_during_a_flip_freezes_and_resumes_it() -> void:
 	await h.run_ticks(3)
 	h.game.pause()
 	var progress := _gravity().transition_progress()
-	var rotation := h.game.camera.rotation
+	var view := h.game.camera.global_position
 	for i in 20:
 		await get_tree().physics_frame
 	assert_near(_gravity().transition_progress(), progress, 0.0001, "the transition waits")
-	assert_near(h.game.camera.rotation, rotation, 0.0001, "the view waits")
+	assert_eq(h.game.camera.global_position, view, "the view waits")
 	h.game.resume()
 	assert_true(await h.run_until(h.is_state(GameSession.State.COMPLETE), 60 * 60), "the run goes on to the end")
 	assert_true(h.deaths.is_empty(), "without a death")
@@ -264,7 +280,8 @@ func test_resume_at_a_ceiling_checkpoint_is_upside_down() -> void:
 	h.seek(h.player_x())
 	assert_true(_gravity().up, "gravity up")
 	assert_true(h.game.player.is_on_floor(), "standing on the ceiling")
-	assert_near(wrapf(h.game.camera.rotation, 0.0, TAU), PI, 0.001, "the view upside down")
+	assert_eq(h.game.camera.rotation, 0.0, "the view upright")
+	assert_true(h.game.player.visual.is_upside_down(), "the body turned over")
 	assert_true(await h.run_until(h.is_state(GameSession.State.COMPLETE), 60 * 90), "the resumed run finishes")
 	assert_true(h.deaths.is_empty(), "with the timing of the first pass")
 

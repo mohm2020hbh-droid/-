@@ -56,9 +56,10 @@ const SURFACE_EPSILON := 0.0001
 @export var kill_top := -1.0e7
 ## Gravity when the level starts (true: the ceiling is the floor).
 @export var start_gravity_up := false
-## Where the view's centre sits, in px away from the floor from the player
-## (the camera's vertical offset; a corridor level centres its corridor).
-@export var camera_offset := -90.0
+## Height (tiles) of the corridor between the ground and the ceiling, for
+## levels that have one (Worlds 03 and 04); 0: open sky. Geometry only: the
+## camera frames every level by the same rule ([method GameCamera.frame_band]).
+@export var corridor_height := 0.0
 ## World 04: the player turns gravity by latching from surface to surface;
 ## the level logs it instead of writing it (see the class notes).
 @export var surface_latch := false
