@@ -14,12 +14,17 @@ extends Node2D
 ## With [member void_style] (World 02) the same body is drawn as "The Void":
 ## a clean black shell with something geometric trapped inside (see
 ## [method _draw_void]).
+## With [member galaxy_style] (World 03) it is a WHITE SQUARE: a solid white
+## body with a crisp dark edge and a small heart in the colour of the current
+## gravity (solid while the double jump is available), bright against both
+## of the galaxy's skies (see [method _draw_white_square]).
 ## With [member garden_style] (World 04) it is "The Seed": a faceted shell in
 ## the colour of its surface (yellow on the ground, blue on the ceiling), a
 ## dark or light edge that stands off both worlds, and inside it a diamond
-## in the other surface's colour, solid while the latch is available.
-## A latch turns it over to face the new floor within the crossing, stretches
-## it toward the surface, and lands it with a pulse (see [method _draw_seed]).
+## in the other surface's colour, solid while an attach can start. The first
+## tap of the gesture crouches it and closes a ring on it; an attach turns it
+## over to face the new floor within the crossing, stretches it toward the
+## surface, and lands it with a pulse (see [method _draw_seed]).
 ## Purely cosmetic: nothing here feeds back into gameplay or collision.
 
 ## Longest step the squash spring integrates at once. A frame hitch (app
@@ -60,6 +65,12 @@ const MAX_SPRING_STEP := 1.0 / 30.0
 @export var danger_radius := 110.0
 ## How long the void keeps collapsing on screen after a death.
 @export_range(0.1, 1.0, 0.05, "suffix:s") var void_death_time := 0.42
+@export_group("Galaxy")
+## Draw World 03's white square.
+@export var galaxy_style := false:
+	set(value):
+		galaxy_style = value
+		queue_redraw()
 @export_group("Seed")
 ## Draw the World 04 seed.
 @export var garden_style := false:
@@ -67,8 +78,8 @@ const MAX_SPRING_STEP := 1.0 / 30.0
 		garden_style = value
 		queue_redraw()
 ## Turns per second while the seed turns over to face a new floor (it must
-## finish within a latch's crossing, about 0.12 s).
-@export var latch_turn_speed := 4.5
+## finish within an attach's crossing, about 0.18 s).
+@export var attach_turn_speed := 4.5
 
 ## Spike lengths of the trapped shape (relative to its radius), irregular on
 ## purpose; [member _glitch] briefly swaps to the second set.
@@ -104,9 +115,11 @@ var _face := 0.0
 var _face_target := 0.0
 var _probe: PhysicsShapeQueryParameters2D
 # Seed style state.
-var _latch_glow := 0.0
+var _attach_glow := 0.0
 var _landing_pulse := 0.0
 var _miss_flicker := 0.0
+## The first tap of the gesture is in (fades over the gesture's window).
+var _armed := 0.0
 
 
 func _ready() -> void:
@@ -117,8 +130,10 @@ func _ready() -> void:
 	player.landed.connect(_on_landed)
 	player.died.connect(_on_died)
 	player.respawned.connect(_on_respawned)
-	player.latched.connect(_on_latched)
-	player.latch_missed.connect(_on_latch_missed)
+	player.attach_armed.connect(_on_attach_armed)
+	player.attach_started.connect(_on_attach_started)
+	player.attached.connect(_on_attached)
+	player.attach_failed.connect(_on_attach_failed)
 	# Built once and reused: one small shape query per tick, no allocations.
 	var circle := CircleShape2D.new()
 	circle.radius = danger_radius
@@ -157,13 +172,14 @@ func _process(delta: float) -> void:
 	_flare = maxf(_flare - delta * 4.0, 0.0)
 	if _face != _face_target:
 		# Same pace as the half turn it replaces: (1 / 2 turn) s per flip.
-		var turn := latch_turn_speed if garden_style else 1.6
+		var turn := attach_turn_speed if garden_style else 1.6
 		_face = move_toward(_face, _face_target, delta * 2.0 * turn)
 		_apply_face()
 	if garden_style:
-		_latch_glow = maxf(_latch_glow - delta * 3.0, 0.0)
+		_attach_glow = maxf(_attach_glow - delta * 3.0, 0.0)
 		_landing_pulse = maxf(_landing_pulse - delta * 3.2, 0.0)
 		_miss_flicker = maxf(_miss_flicker - delta * 4.0, 0.0)
+		_armed = maxf(_armed - delta / maxf(player.config.attach_window, 0.05), 0.0) if player.is_attach_pending() else 0.0
 	if airborne:
 		_spin = fposmod(_spin + _spin_speed * delta, TAU)
 	else:
@@ -260,6 +276,9 @@ func _step_spring(step: float) -> void:
 func _draw() -> void:
 	if garden_style:
 		_draw_seed()
+		return
+	if galaxy_style:
+		_draw_white_square()
 		return
 	if void_style:
 		_draw_void()
@@ -401,6 +420,36 @@ func _draw_void() -> void:
 			Color(1, 1, 1, 0.55), 1.2, true)
 
 
+## World 03's player: a white square (see the class notes). Same size as the
+## collision box, same squash, stretch and spin as every world's player.
+func _draw_white_square() -> void:
+	var half := player.half_size.x
+	var xf := Transform2D(0.0, Vector2(0.0, half))
+	xf = xf * Transform2D(0.0, _squash, 0.0, Vector2.ZERO)
+	xf = xf * Transform2D(_spin, Vector2(0.0, -half))
+	draw_set_transform_matrix(xf)
+	var idle := player.state == Player.State.IDLE
+	var breathe := 0.5 + 0.5 * sin(_time * (2.6 if idle else 6.0))
+	# A white glow: the square stands out on the blue sky and the amber one.
+	Neon.soft_light(self, Vector2.ZERO, half * (2.5 + 0.8 * _flare), Color(1.0, 1.0, 1.0, 0.3 + 0.1 * breathe + 0.3 * _flare))
+	var body := Rect2(-half, -half, half * 2.0, half * 2.0)
+	draw_rect(body, Color(1.0, 1.0, 1.0))
+	# A crisp dark edge and a faint bevel, so the silhouette never melts into
+	# a bright background.
+	draw_rect(body, Color(0.07, 0.05, 0.14, 0.9), false, 2.0)
+	draw_rect(body.grow(-5.0), Color(0.75, 0.78, 0.9, 0.55), false, 1.5)
+	# The heart: the colour of the gravity the square stands in; solid while
+	# the double jump is there, a ring once it is spent.
+	var up := player.gravity != null and player.gravity.up
+	var heart := GalaxyArt.state_color(up).darkened(0.25)
+	var r := half * (0.3 + 0.12 * _flare)
+	var core := Rect2(-r, -r, r * 2.0, r * 2.0)
+	if player.has_double_jump():
+		draw_rect(core, heart)
+	else:
+		draw_rect(core, heart, false, 2.5)
+
+
 ## World 04's "Seed": see the class notes. Geometry only: an octagonal shell,
 ## a turning diamond, corner facets; colour and light carry the state.
 func _draw_seed() -> void:
@@ -417,8 +466,8 @@ func _draw_seed() -> void:
 	var idle := player.state == Player.State.IDLE
 	var breathe := 0.5 + 0.5 * sin(_time * (2.6 if idle else 7.0))
 	# A halo in the body's own light: never swallowed by either world.
-	Neon.soft_light(self, Vector2.ZERO, half * (2.4 + 0.8 * _latch_glow + 0.6 * _landing_pulse),
-		Color(glow, 0.38 + 0.12 * breathe + 0.3 * _latch_glow))
+	Neon.soft_light(self, Vector2.ZERO, half * (2.4 + 0.8 * _attach_glow + 0.6 * _landing_pulse + 0.5 * _armed),
+		Color(glow, 0.38 + 0.12 * breathe + 0.3 * _attach_glow + 0.25 * _armed))
 
 	var cut := half * 0.3
 	var shell := PackedVector2Array([
@@ -431,41 +480,61 @@ func _draw_seed() -> void:
 	draw_colored_polygon(PackedVector2Array([shell[3], shell[4], shell[5], Vector2.ZERO]),
 		Color(0.0, 0.0, 0.0, 0.16))
 
-	# The seed: the other surface's colour, turning; solid while the latch
-	# is available, hollow once it is spent.
-	var r := half * (0.42 + 0.12 * _flare + 0.18 * _latch_glow)
+	# The seed: the other surface's colour, turning; solid while an attach
+	# can start, hollow while crossing or off a surface.
+	var r := half * (0.42 + 0.12 * _flare + 0.18 * _attach_glow + 0.14 * _armed)
 	var turn := _core_spin * 0.5
 	var diamond := PackedVector2Array()
 	for i in 4:
 		diamond.append(Vector2.from_angle(turn + PI * 0.5 * i) * r + _core_offset * 0.6)
 	var loop := diamond.duplicate()
 	loop.append(diamond[0])
-	if player.has_double_jump():
+	if player.can_attach() or player.is_attaching():
 		draw_colored_polygon(diamond, seed)
 		draw_polyline(loop, edge, 2.0, true)
 	else:
 		draw_polyline(loop, Color(seed, 0.9), 2.5, true)
 	if _miss_flicker > 0.0:
-		# A missed latch: the seed flickers where it reached for nothing.
+		# A failed attach: the seed flickers where it reached for nothing.
 		draw_polyline(loop, Color(edge, _miss_flicker), 1.5, true)
 
 	var outline := shell.duplicate()
 	outline.append(shell[0])
 	draw_polyline(outline, edge, 3.0, true)
+	# The first tap: a ring closing in on the seed while the second is awaited.
+	if _armed > 0.0:
+		draw_arc(Vector2.ZERO, half * (1.05 + 0.9 * _armed), 0.0, TAU, 28, Color(glow, 0.75 * _armed), 2.5, true)
 	# Landing on a new surface: a ring of the new colour snaps out.
 	if _landing_pulse > 0.0:
 		var ring := half * (1.1 + 1.2 * (1.0 - _landing_pulse))
 		draw_arc(Vector2.ZERO, ring, 0.0, TAU, 32, Color(glow, 0.8 * _landing_pulse), 3.0, true)
 
 
-func _on_latched(_landing: Vector2) -> void:
-	_latch_glow = 1.0
-	# Stretched toward the surface it is crossing to.
-	_squash = Vector2(0.7, 1.4)
+func _on_attach_armed() -> void:
+	_armed = 1.0
+	# A small crouch against the surface: the gesture has begun.
+	_squash = Vector2(1.15, 0.86)
 	_squash_velocity = Vector2.ZERO
 
 
-func _on_latch_missed() -> void:
+## The gesture took hold: stretched toward the surface it is crossing to, and
+## already turning over to stand on it (gravity follows on the touch).
+func _on_attach_started(_landing: Vector2, to_up: bool) -> void:
+	_armed = 0.0
+	_attach_glow = 1.0
+	_squash = Vector2(0.7, 1.4)
+	_squash_velocity = Vector2.ZERO
+	face_gravity(to_up, false)
+
+
+func _on_attached(_up: bool) -> void:
+	_landing_pulse = 1.0  # Locked onto the new surface.
+	_squash = land_squash
+	_squash_velocity = Vector2.ZERO
+
+
+func _on_attach_failed() -> void:
+	_armed = 0.0
 	_miss_flicker = 1.0
 
 
@@ -484,8 +553,8 @@ func _on_double_jumped() -> void:
 
 
 func _on_landed(impact_speed: float) -> void:
-	if garden_style and _latch_glow > 0.0:
-		_landing_pulse = 1.0  # The end of a latch: locked onto the new surface.
+	if garden_style and _attach_glow > 0.0:
+		_landing_pulse = 1.0  # The end of a crossing: locked onto the new surface.
 	var strength := clampf(impact_speed / land_impact_full, 0.25, 1.0)
 	_squash = Vector2.ONE.lerp(land_squash, strength)
 	_squash_velocity = Vector2.ZERO
@@ -509,9 +578,10 @@ func _on_respawned() -> void:
 	_spin = 0.0
 	_flip_left = 0.0
 	_flare = 0.0
-	_latch_glow = 0.0
+	_attach_glow = 0.0
 	_landing_pulse = 0.0
 	_miss_flicker = 0.0
+	_armed = 0.0
 	_core_offset = Vector2.ZERO
 	# Materialise: pop in from a small, stretched core.
 	_squash = Vector2(0.4, 1.5)

@@ -1,9 +1,9 @@
 extends TestCase
-## World 04 on the real game scene (docs/GDD.md §9D): the surface latch with
-## the camera, the colours, the run's bookkeeping, and the edge cases of the
-## spec (a latch during death, restart, pause, a lost WebGL context; respawns
-## on either surface; the run always going left to right). The physics-only
-## cases are in test_surface_latch.
+## World 04 on the real game scene (docs/GDD.md §9D): the TAP TAP surface
+## attach with the camera, the colours, the run's bookkeeping, and the edge
+## cases of the spec (an attach during death, restart, pause, a lost WebGL
+## context; respawns on either surface; the run always going left to right;
+## never a jump). The physics-only cases are in test_surface_attach.
 
 const WORLD := 3
 const T := GameConst.TILE
@@ -51,9 +51,9 @@ func _backdrop() -> Node:
 	return h.game.get_node(^"World/Background")
 
 
-## Runs until the player is latching (the first time after [param count] latches).
-func _until_latching(count := 0) -> bool:
-	return await h.run_until(func() -> bool: return _run().latches > count and h.game.player.is_latching(), 60 * 40)
+## Runs until the player is attaching (the first time after [param count] attaches).
+func _until_attaching(count := 0) -> bool:
+	return await h.run_until(func() -> bool: return _run().attaches > count and h.game.player.is_attaching(), 60 * 40)
 
 
 ## Until the player stands on the surface [param up], transition over.
@@ -81,10 +81,10 @@ func _find_checkpoint(hanging: bool) -> Array:
 	return []
 
 
-func test_a_latch_never_turns_the_view_and_the_run_stays_left_to_right() -> void:
+func test_an_attach_never_turns_the_view_and_the_run_stays_left_to_right() -> void:
 	await _start(0)
 	var camera := h.game.camera
-	assert_true(await _until_latching(), "reached the first latch")
+	assert_true(await _until_attaching(), "reached the first attach")
 	var last_x := h.game.player.global_position.x
 	var anchor_ok := true
 	var ahead_ok := true
@@ -101,17 +101,17 @@ func test_a_latch_never_turns_the_view_and_the_run_stays_left_to_right() -> void
 		anchor_ok = anchor_ok and absf((px - view.position.x) / view.size.x - camera.screen_anchor_x) < 0.02
 		ahead_ok = ahead_ok and camera.get_screen_center_position().x > px
 	assert_true(_gravity().up, "on the ceiling now")
-	assert_true(forward_ok, "moving right on every tick, through the latch")
+	assert_true(forward_ok, "moving right on every tick, through the attach")
 	assert_true(anchor_ok, "at the same place on screen (left), the view looking right")
 	assert_true(ahead_ok, "the view's centre is ahead, to the right")
 	assert_eq(h.game.hud.transform, Transform2D.IDENTITY, "the HUD never moves")
 	assert_true(h.deaths.is_empty())
 
 
-func test_the_view_keeps_the_corridor_framed_through_a_latch() -> void:
+func test_the_view_keeps_the_corridor_framed_through_an_attach() -> void:
 	await _start(0)
 	var camera := h.game.camera
-	assert_true(await _until_latching(), "latching")
+	assert_true(await _until_attaching(), "attaching")
 	var ys: Array[float] = []
 	for i in 40:
 		await h.tick()
@@ -141,7 +141,9 @@ func test_the_world_inverts_its_colours_with_the_surface() -> void:
 	assert_true(GardenLook.player_color("body").is_equal_approx(GardenLook.PLAYER_GROUND.body), "a yellow player")
 	var pivot: Node2D = _backdrop().get(&"_pivot")
 	assert_eq(pivot.scale.y, 1.0, "the landscape upright")
-	assert_true(await _until_latching(), "latching")
+	assert_true(await _until_attaching(), "attaching")
+	assert_eq(GardenLook.blend, 0.0, "the colours hold while the player crosses (gravity turns on the touch)")
+	assert_true(await h.run_until(func() -> bool: return _gravity().up, 60), "touched the ceiling")
 	await h.run_ticks(2)
 	var mid := GardenLook.blend
 	assert_true(mid > 0.0 and mid < 1.0, "the colours cross over the transition (%.2f), no hard cut" % mid)
@@ -163,80 +165,91 @@ func test_the_world_inverts_its_colours_with_the_surface() -> void:
 
 func test_the_run_state_names_every_phase_of_a_crossing() -> void:
 	await _start(0)
-	var phases: Array[SurfaceRun.Phase] = []
+	var phases: Array[SurfaceRun.Phase] = [_run().phase]
+	var targets: Array[SurfaceRun.Surface] = []
 	_run().phase_changed.connect(func(p: SurfaceRun.Phase, _old: SurfaceRun.Phase) -> void:
 		if phases.is_empty() or phases[-1] != p:
-			phases.append(p))
-	assert_true(await _until_standing(true), "up")
-	assert_true(await _until_standing(false), "and down")
-	var want: Array[SurfaceRun.Phase] = [SurfaceRun.Phase.AIRBORNE, SurfaceRun.Phase.LATCHING,
-		SurfaceRun.Phase.CEILING_RUN, SurfaceRun.Phase.RELEASE, SurfaceRun.Phase.LATCHING, SurfaceRun.Phase.GROUND_RUN]
+			phases.append(p)
+			if p == SurfaceRun.Phase.ATTACHING:
+				targets.append(_run().target_surface))
+	var gestures := {}
+	for i in 60 * 40:
+		await h.tick()
+		gestures[_run().gesture] = true
+		if _run().attaches >= 2 and h.game.player.is_on_floor() and not _gravity().up:
+			break
+	var want: Array[SurfaceRun.Phase] = [SurfaceRun.Phase.GROUND_RUN, SurfaceRun.Phase.ATTACHING,
+		SurfaceRun.Phase.CEILING_RUN, SurfaceRun.Phase.ATTACHING, SurfaceRun.Phase.GROUND_RUN]
 	var at := 0
 	for p in phases:
 		if at < want.size() and p == want[at]:
 			at += 1
-	assert_eq(at, want.size(), "ground -> airborne -> latching -> ceiling -> release -> latching -> ground (%s)" % [phases])
+	assert_eq(at, want.size(), "ground run -> attaching -> ceiling run -> attaching -> ground run (%s)" % [phases])
+	assert_false(SurfaceRun.Phase.AIRBORNE in phases, "never airborne: no jump, no release")
+	assert_eq(targets.slice(0, 2), [SurfaceRun.Surface.CEILING, SurfaceRun.Surface.GROUND] as Array[SurfaceRun.Surface],
+		"each attach names its target surface")
+	assert_true(gestures.has(SurfaceRun.Gesture.TAP_PENDING) and gestures.has(SurfaceRun.Gesture.IDLE),
+		"the gesture goes idle -> tap pending (-> request, decided within the tick)")
 	assert_eq(_run().surface, SurfaceRun.Surface.GROUND)
+	assert_eq(_run().target_surface, SurfaceRun.Surface.NONE)
+	assert_eq(_run().action, SurfaceRun.Action.NONE)
 	assert_eq(_run().gravity_direction(), Vector2.DOWN)
 	assert_eq(_run().surface_normal(), Vector2.UP)
-	assert_true(_run().has_second_tap(), "the second tap is back on the ground")
+	assert_true(_run().can_attach(), "ready for the next gesture")
 
 
-func test_a_second_tap_out_of_reach_is_spent_without_moving_anything() -> void:
+func test_a_gesture_with_no_surface_across_fails_without_moving_anything() -> void:
 	await _start(0, false)
-	await h.run_ticks(10)
-	var misses := [0]
-	h.game.player.latch_missed.connect(func() -> void: misses[0] += 1)
-	# Just after takeoff the ceiling (five tiles up) is still beyond the
-	# reach of a latch (2.5 tiles from the head): nothing to latch to.
+	# Level 01 opens onto the sky over the ground from x = 13 to about 17.9.
+	assert_true(await h.run_until(func() -> bool: return h.player_x() >= 14.0, 60 * 5), "under the open sky")
+	var fails := [0]
+	h.game.player.attach_failed.connect(func() -> void: fails[0] += 1)
+	var y := h.game.player.global_position.y
 	h.game.press_jump()
-	await h.run_ticks(3)
+	await h.run_ticks(2)
 	h.game.press_jump()
 	await h.run_ticks(1)
-	assert_eq(misses[0], 1, "a miss")
-	assert_false(_gravity().up, "no flip, no teleport")
-	assert_eq(_run().latches, 0)
-	assert_false(_run().has_second_tap(), "spent until landing")
-	assert_true(await h.run_until(func() -> bool: return h.game.player.is_on_floor(), 60), "lands where it would have")
-	assert_true(_run().has_second_tap(), "restored on landing")
+	assert_eq(fails[0], 1, "a failed attach")
+	assert_false(_gravity().up, "no turn, no teleport")
+	assert_eq(_run().attaches, 0)
+	assert_eq(_run().fails, 1)
+	for i in 10:
+		await h.tick()
+		assert_true(h.game.player.is_on_floor(), "no jump instead: still running on the ground")
+	assert_near(h.game.player.global_position.y, y, 0.5)
 
 
-func test_hammering_the_screen_never_gives_a_third_action_or_a_latch_without_a_surface() -> void:
+func test_hammering_the_screen_never_jumps_and_never_chains_attaches() -> void:
 	await _start(0, false)
 	var events: Array[String] = []
 	h.game.player.jumped.connect(func() -> void: events.append("J"))
-	h.game.player.latched.connect(func(_l: Vector2) -> void: events.append("L"))
-	h.game.player.latch_missed.connect(func() -> void: events.append("m"))
-	h.game.player.landed.connect(func(_s: float) -> void: events.append("_"))
+	h.game.player.double_jumped.connect(func() -> void: events.append("D"))
+	h.game.player.attach_started.connect(func(_l: Vector2, _u: bool) -> void: events.append("A"))
+	h.game.player.attached.connect(func(_u: bool) -> void: events.append("_"))
 	for i in 150:
 		h.game.press_jump()
 		await h.tick()
 		if not h.deaths.is_empty():
 			break
-	var air := 0
-	for e in events:
-		if e == "_" or e == "J":
-			air = 0 if e == "_" else 1
-		else:
-			air += 1
-			assert_true(air <= 2, "at most one air tap per airtime (%s)" % "".join(events))
-	assert_true(events.count("L") == 0 or events.find("L") > events.find("J"), "a latch only after a jump")
+	var s := "".join(events)
+	assert_false("J" in s or "D" in s, "never a jump (%s)" % s)
+	assert_false("AA" in s, "never a second attach before touching down (%s)" % s)
 
 
-func test_dying_while_latching_respawns_clean_on_the_start_surface() -> void:
+func test_dying_while_attaching_respawns_clean_on_the_start_surface() -> void:
 	await _start(0)
-	assert_true(await _until_latching(), "latching")
+	assert_true(await _until_attaching(), "attaching")
 	h.game.player.die(&"test")
 	assert_true(await h.run_until(h.is_state(GameSession.State.PLAYING), 60 * 5), "back in play")
 	await h.run_ticks(2)
 	var player := h.game.player
-	assert_false(player.is_latching(), "no crossing carried over")
+	assert_false(player.is_attaching(), "no crossing carried over")
 	assert_false(_gravity().up, "the start's surface (no checkpoint passed yet)")
 	assert_true(player.is_on_floor(), "standing")
 	var feet := player.global_position.y
 	await h.run_ticks(3)
 	assert_eq(player.global_position.y, feet, "at rest vertically")
-	assert_true(player.has_double_jump(), "the second tap is back")
+	assert_true(player.can_attach(), "ready to attach")
 	assert_eq(h.game.camera.rotation, 0.0)
 	assert_eq(GardenLook.blend, 0.0, "blue and white again")
 	assert_true(h.game.level.get_surface_log().is_empty(), "a fresh surface log")
@@ -259,14 +272,14 @@ func test_a_respawn_on_a_ceiling_checkpoint_puts_everything_on_the_ceiling() -> 
 	var player := h.game.player
 	assert_true(_gravity().up, "gravity toward the ceiling")
 	assert_true(player.is_on_floor(), "standing on the ceiling")
-	assert_eq(player.up_direction, Vector2.DOWN, "jumps push toward the ground")
+	assert_eq(player.up_direction, Vector2.DOWN, "the ceiling is the floor")
 	assert_near(player.get_feet_position().y, cp.global_position.y, 1.0, "at the checkpoint's surface")
 	assert_eq(h.game.camera.rotation, 0.0, "the view upright: left to right")
 	assert_eq(GardenLook.blend, 1.0, "yellow and black")
 	assert_true(GardenLook.player_color("body").is_equal_approx(GardenLook.PLAYER_CEILING.body), "a blue player")
 	assert_eq(_run().surface, SurfaceRun.Surface.CEILING)
 	assert_eq(_run().respawn_surface, SurfaceRun.Surface.CEILING)
-	assert_true(player.has_double_jump(), "the second tap ready")
+	assert_true(player.can_attach(), "ready to attach")
 	assert_true(await h.run_until(h.is_state(GameSession.State.COMPLETE), 60 * 90), "the run finishes from there")
 
 
@@ -280,7 +293,7 @@ func test_a_respawn_on_a_ground_checkpoint_puts_everything_on_the_ground() -> vo
 	assert_true(await h.run_until(func() -> bool: return h.game.player.global_position.x > cp.global_position.x + T,
 		60 * 90), "passed it")
 	# Die later, wherever the run is (maybe on the ceiling).
-	assert_true(await _until_latching(_run().latches), "and latched again after it")
+	assert_true(await _until_attaching(_run().attaches), "and attached again after it")
 	h.game.player.die(&"test")
 	assert_true(await h.run_until(h.is_state(GameSession.State.PLAYING), 60 * 5), "back in play")
 	await h.run_ticks(2)
@@ -291,24 +304,24 @@ func test_a_respawn_on_a_ground_checkpoint_puts_everything_on_the_ground() -> vo
 	assert_true(await h.run_until(h.is_state(GameSession.State.COMPLETE), 60 * 90), "the run finishes from there")
 
 
-func test_restart_during_a_latch_starts_the_level_clean() -> void:
+func test_restart_during_an_attach_starts_the_level_clean() -> void:
 	_unlock_world_04()
 	await _start(0)
-	assert_true(await _until_latching(), "latching")
+	assert_true(await _until_attaching(), "attaching")
 	h.game.restart_level()
 	await h.run_ticks(3)  # (The level is rebuilt at once, behind a fade.)
 	assert_eq(h.game.state, GameSession.State.READY)
 	assert_false(_gravity().up, "the start's surface")
 	assert_eq(_gravity().phase, GravityState.Phase.NORMAL, "no transition left over")
 	assert_eq(GardenLook.blend, 0.0, "the start's colours")
-	assert_false(h.game.player.is_latching())
+	assert_false(h.game.player.is_attaching())
 	assert_true(h.game.level.get_surface_log().is_empty())
-	assert_eq(_run().latches, 0)
+	assert_eq(_run().attaches, 0)
 
 
-func test_pause_during_a_latch_holds_it_and_resume_finishes_it() -> void:
+func test_pause_during_an_attach_holds_it_and_resume_finishes_it() -> void:
 	await _start(0)
-	assert_true(await _until_latching(), "latching")
+	assert_true(await _until_attaching(), "attaching")
 	var at := h.game.player.global_position
 	h.game.pause()
 	await h.run_ticks(20)
@@ -338,15 +351,14 @@ func test_a_resumed_run_after_a_lost_webgl_context_is_back_on_its_ceiling() -> v
 	assert_true(h.deaths.is_empty(), "with the same timing as the first pass")
 
 
-func test_the_last_level_ends_right_after_its_last_latch_at_100_percent() -> void:
+func test_the_last_level_ends_right_after_its_last_attach_at_100_percent() -> void:
 	await _start(4)
-	var last_latch := [-1]
-	h.game.player.latched.connect(func(_l: Vector2) -> void: last_latch[0] = h.ticks)
+	var last_attach := [-1]
+	h.game.player.attached.connect(func(_u: bool) -> void: last_attach[0] = h.ticks)
 	assert_true(await h.run_until(h.is_state(GameSession.State.COMPLETE), 60 * 120), "finished")
 	assert_true(h.deaths.is_empty(), "without dying")
-	assert_true(last_latch[0] >= 0 and h.ticks - last_latch[0] < 60, "the finish comes within a second of a latch")
+	assert_true(last_attach[0] >= 0 and h.ticks - last_attach[0] < 90, "the finish comes right after an attach")
 	assert_eq(h.game.progress.percent, 100.0)
-	assert_true(_gravity().up, "finishing on the ceiling")
 	assert_true(h.game.player.invulnerable, "safe once finished")
 
 
@@ -372,14 +384,14 @@ func test_world_03_opens_world_04_and_world_04_is_the_last() -> void:
 func test_ten_restarts_in_a_row_leave_nothing_behind() -> void:
 	_unlock_world_04()
 	await _start(0)
-	assert_true(await _until_latching(), "latching")
+	assert_true(await _until_attaching(), "attaching")
 	var nodes := 0
 	var inks := 0
 	for i in 10:
 		h.game.restart_level()
 		await h.run_ticks(3)
 		assert_eq(h.game.state, GameSession.State.READY, "restarted")
-		assert_eq(h.game.surface_run.latches, 0, "a fresh run")
+		assert_eq(h.game.surface_run.attaches, 0, "a fresh run")
 		h.game.press_jump()
 		await h.run_ticks(40)
 		if i == 1:
@@ -393,8 +405,9 @@ func test_taps_during_the_death_and_the_respawn_do_nothing() -> void:
 	await _start(0)
 	await h.run_ticks(20)
 	h.game.player.die(&"test")
-	var jumps := [0]
-	h.game.player.jumped.connect(func() -> void: jumps[0] += 1)
+	var moves := [0]
+	h.game.player.jumped.connect(func() -> void: moves[0] += 1)
+	h.game.player.attach_started.connect(func(_l: Vector2, _u: bool) -> void: moves[0] += 1)
 	# Hammer the screen for as long as the death lasts (pause and fade).
 	var taps := 0
 	while h.game.state == GameSession.State.DYING and taps < 60 * 5:
@@ -404,5 +417,5 @@ func test_taps_during_the_death_and_the_respawn_do_nothing() -> void:
 	assert_true(taps > 20, "tapped through the whole death (%d taps)" % taps)
 	assert_eq(h.game.state, GameSession.State.PLAYING, "back in play")
 	await h.run_ticks(2)
-	assert_eq(jumps[0], 0, "no jump from a tap while dead or respawning")
+	assert_eq(moves[0], 0, "no jump and no attach from a tap while dead or respawning")
 	assert_true(h.game.player.is_on_floor(), "standing, not launched")

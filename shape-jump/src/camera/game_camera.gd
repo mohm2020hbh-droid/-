@@ -15,7 +15,7 @@ extends Camera2D
 ##   a ceiling corridor (Worlds 03 and 04) frames that corridor; an open-sky
 ##   level frames the standard band, [constant STANDARD_BAND]. So the floor
 ##   line sits at the same height of the screen in every world, and a flip
-##   or a latch to the other surface never moves the view.
+##   or an attach to the other surface never moves the view.
 ## - Y follows the last floor height (not every jump), so jumps never bob
 ##   the view; it only chases falls past a dead zone.
 ## - Direction: the view NEVER rotates or mirrors. The run always goes left
@@ -25,8 +25,9 @@ extends Camera2D
 ## - Smoothing is exponential and frame-rate independent. Moved in
 ##   _physics_process, so physics interpolation keeps it smooth at any Hz.
 ## - Shake is trauma-based, tiny, and only used for important events.
-## - A latch (World 04) re-anchors the view on the surface the player is
-##   crossing to ([method anchor_to]) before it gets there.
+## - An attach (World 04) re-anchors the view on the surface the player is
+##   crossing to ([method anchor_to]) as it sets off, and holds it there while
+##   it crosses (gravity only turns on arrival).
 
 ## The play band of a level without a ceiling (px): the height of the space
 ## above the floor that the view centres, the same as the corridors of the
@@ -141,13 +142,15 @@ func frame_band(height: float) -> void:
 
 
 ## Anchors the view on a player centre height of [param y] now (World 04: the
-## surface a latch is heading for), as if the player already stood there.
+## surface an attach is heading for), as if the player already stood there.
 func anchor_to(y: float) -> void:
 	_anchor_y = y
 
 
 ## Vertical anchor: the last ground height, pulled down only by real falls.
 func _update_anchor() -> void:
+	if target.has_method(&"is_attaching") and target.is_attaching():
+		return  # Held on the surface the attach is heading for.
 	var target_y := target.global_position.y
 	if target.is_on_floor():
 		_anchor_y = target_y
@@ -205,10 +208,10 @@ func _down() -> float:
 	return gravity.down_sign() if gravity else 1.0
 
 
-## Gravity turned mid-run (a World 03 gate or field, a World 04 latch): the
+## Gravity turned mid-run (a World 03 gate or field, a World 04 attach): the
 ## floor is now the other side of the band, so the anchor moves there too.
 ## The band's centre, and so the view, stays exactly where it was: a flip
-## never swings the view (a latch then refines the anchor with its real
+## never swings the view (an attach then refines the anchor with its real
 ## landing, [method anchor_to]). A restore (instant) waits for the
 ## respawn's [method snap_to_target].
 func _on_gravity_flipped(_up: bool, instant: bool) -> void:

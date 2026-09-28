@@ -324,3 +324,18 @@ func test_world_02_opens_world_03_and_world_03_opens_world_04() -> void:
 	assert_eq(h.game.world_index, 3, "NEXT goes on to World 04")
 	assert_eq(h.game.level.data.id, &"w04_l01", "at its first level")
 	assert_true(Palette.is_garden(), "in the garden's colours")
+
+
+## World 03's player is a white square (never the black entity of World 02),
+## and each world keeps its own player; only the drawing changes.
+func test_the_world_03_player_is_a_white_square() -> void:
+	await _start(0)
+	var visual := h.game.player.visual
+	assert_true(visual.galaxy_style, "World 03 draws the white square")
+	assert_false(visual.void_style, "not World 02's black entity")
+	assert_false(visual.garden_style, "not World 04's seed")
+	assert_eq(h.game.player.half_size, Vector2(24.0, 24.0), "the same 48 px square hitbox")
+	h.game._use_world(1)  # Just the look (World 02 is locked on this save).
+	assert_true(h.game.player.visual.void_style and not h.game.player.visual.galaxy_style, "World 02 keeps its entity")
+	h.game._use_world(0)
+	assert_false(h.game.player.visual.void_style or h.game.player.visual.galaxy_style, "World 01 keeps its core")

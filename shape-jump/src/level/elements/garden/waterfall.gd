@@ -107,10 +107,26 @@ func _draw() -> void:
 	var down := 1.0 if _source_up else -1.0  # Pours away from its source.
 	var body := Color(GardenLook.INK_BODY, 0.9) if deadly else Color(GardenLook.INK_BODY, 0.28)
 	var rim := GardenLook.INK_RIM if deadly else Color(GardenLook.INK_RIM, 0.55)
-	var rect := Rect2(-w * 0.5, range_y.x, w, range_y.y - range_y.x)
-	draw_rect(rect, body)
-	draw_line(Vector2(-w * 0.5, range_y.x), Vector2(-w * 0.5, range_y.y), rim, 2.0)
-	draw_line(Vector2(w * 0.5, range_y.x), Vector2(w * 0.5, range_y.y), rim, 2.0)
+	# Water, not a column: both edges ripple as it falls (a few px either
+	# way, inside what its hitbox allows) and it flares where it lands.
+	var sides := 10
+	var left := PackedVector2Array()
+	var right := PackedVector2Array()
+	for i in sides + 1:
+		var k := float(i) / sides
+		var y := lerpf(range_y.x, range_y.y, k)
+		var near_land := k if _source_up else 1.0 - k
+		var flare := w * 0.12 * near_land * near_land
+		var ripple := 2.5 * sin(y * 0.045 + _time * 7.0 * down)
+		left.append(Vector2(-w * 0.5 - flare + ripple, y))
+		right.append(Vector2(w * 0.5 + flare + ripple * 0.7, y))
+	var water := left.duplicate()
+	right.reverse()
+	water.append_array(right)
+	draw_colored_polygon(water, body)
+	right.reverse()
+	draw_polyline(left, rim, 2.0, true)
+	draw_polyline(right, rim, 2.0, true)
 	# Stripes streaming toward the floor of the moment.
 	var lines := PackedVector2Array()
 	var offset := fposmod(_time * FLOW, STRIPE)

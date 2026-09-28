@@ -13,11 +13,16 @@ signal landed(impact_speed: float)
 signal died(cause: StringName)
 signal respawned
 signal state_changed(new_state: State, old_state: State)
-## World 04: the second tap took hold; the player crosses to the other
-## surface and will stand with its centre at [param landing].
-signal latched(landing: Vector2)
-## World 04: the second tap found no surface in reach (it is spent).
-signal latch_missed
+## World 04: the first tap of the attach gesture (waiting for the second).
+signal attach_armed
+## World 04: the gesture took hold; the player crosses to the surface across
+## and will stand with its centre at [param landing], on the ceiling if
+## [param to_up].
+signal attach_started(landing: Vector2, to_up: bool)
+## World 04: the crossing touched the surface; gravity now points at it.
+signal attached(up: bool)
+## World 04: the gesture found no surface it could reach (nothing moves).
+signal attach_failed
 
 enum State { IDLE, RUN, JUMP, FALL, DEAD }
 
@@ -48,8 +53,8 @@ var invulnerable := false
 ## the extra acceleration toward the floor (negative: away from it). Unset:
 ## no wind.
 var wind_source := Callable()
-## World 04: the second tap's view of the world (null in other worlds).
-var latch: SurfaceLatch
+## World 04: the attach check (null in other worlds).
+var attach: SurfaceAttach
 var state: State = State.IDLE
 var motor: PlayerMotor
 ## Half extents of the collision box, read from the BodyShape in the scene
@@ -58,8 +63,8 @@ var half_size := Vector2.ZERO
 
 ## Gravity turned since the last tick: the floor contact is stale.
 var _flipped := false
-## A latch is turning gravity itself: the motor already turned its frame.
-var _latch_turning := false
+## An attach is turning gravity itself (the motor rests against the new floor).
+var _attach_turning := false
 
 @onready var _hurtbox: Area2D = $Hurtbox
 @onready var visual: PlayerVisual = $Visual
@@ -103,26 +108,36 @@ func is_dead() -> bool:
 
 
 ## True while the double jump is still available (always on the ground).
-## In World 04 the same slot is the surface latch.
+## World 04 has none: its equivalent is [method can_attach].
 func has_double_jump() -> bool:
-	return motor.air_jumps_left > 0
+	return motor.tap_mode == PlayerMotor.TapMode.JUMP and motor.air_jumps_left > 0
 
 
-## World 04: the second tap latches instead of jumping again.
-func set_surface_latch(enabled: bool) -> void:
-	motor.air_action = PlayerMotor.AirAction.SURFACE_LATCH if enabled else PlayerMotor.AirAction.DOUBLE_JUMP
-	latch = SurfaceLatch.new(self) if enabled else null
+## World 04: taps are the surface attach gesture (no jump at all).
+func set_surface_attach(enabled: bool) -> void:
+	motor.tap_mode = PlayerMotor.TapMode.SURFACE_ATTACH if enabled else PlayerMotor.TapMode.JUMP
+	attach = SurfaceAttach.new(self) if enabled else null
 	if not enabled:
 		wind_source = Callable()
 
 
-func uses_surface_latch() -> bool:
-	return motor.air_action == PlayerMotor.AirAction.SURFACE_LATCH
+func uses_surface_attach() -> bool:
+	return motor.tap_mode == PlayerMotor.TapMode.SURFACE_ATTACH
 
 
-## World 04: on the way to the other surface after a latch.
-func is_latching() -> bool:
-	return motor.latching
+## World 04: crossing to the other surface.
+func is_attaching() -> bool:
+	return motor.attaching
+
+
+## World 04: on a surface and free to attach (the gesture would be decided).
+func can_attach() -> bool:
+	return uses_surface_attach() and motor.can_attach()
+
+
+## World 04: the first tap is in, waiting for the second.
+func is_attach_pending() -> bool:
+	return motor.gesture == PlayerMotor.Gesture.TAP_PENDING
 
 
 func set_running(value: bool) -> void:
@@ -134,8 +149,12 @@ func set_speed_scale(value: float) -> void:
 
 
 func request_jump() -> void:
-	if state != State.DEAD:
-		motor.request_jump()
+	if state == State.DEAD:
+		return
+	var was_idle := motor.gesture == PlayerMotor.Gesture.IDLE and not motor.attaching
+	motor.request_jump()
+	if uses_surface_attach() and was_idle and motor.gesture == PlayerMotor.Gesture.TAP_PENDING:
+		attach_armed.emit()
 
 
 ## Places the player standing on [param feet_position] and revives it.
@@ -174,13 +193,11 @@ func _physics_process(delta: float) -> void:
 	var was_on_floor := is_on_floor() and not _flipped
 	_flipped = false
 	var reach := false
-	if latch:
+	if attach:
 		motor.external_accel = wind_source.call(global_position.x) if wind_source.is_valid() else 0.0
-		reach = latch.probe(not was_on_floor and not motor.latching and motor.air_jumps_left > 0)
+		if motor.attach_requested():
+			reach = attach.probe(true)
 	var local := motor.begin_tick(was_on_floor, delta, reach)
-	if motor.jump_this_tick == PlayerMotor.Jump.LATCH:
-		_turn_for_latch()
-		g = gravity_sign()
 	velocity = Vector2(local.x, local.y * g)
 	if was_on_floor:
 		# Platforms may carry the player vertically, but never change its run
@@ -199,6 +216,18 @@ func _physics_process(delta: float) -> void:
 		# the body through one of them.
 		die(&"crush")
 		return
+	var arrived := motor.attaching and is_on_ceiling()
+	if arrived:
+		# The crossing touched the surface across: it is the floor now. Settle
+		# on it within this tick (a touch, not a fall onto it).
+		motor.arrive()
+		_turn_for_attach()
+		g = gravity_sign()
+		var run := velocity.x
+		velocity = -up_direction * 30.0
+		move_and_slide()
+		velocity.x = run
+		_flipped = false
 	local = motor.end_tick(Vector2(velocity.x, velocity.y * g), delta, is_on_floor())
 	velocity = Vector2(local.x, local.y * g)
 
@@ -207,13 +236,15 @@ func _physics_process(delta: float) -> void:
 			jumped.emit()
 		PlayerMotor.Jump.AIR:
 			double_jumped.emit()
-		PlayerMotor.Jump.LATCH:
-			latched.emit(latch.landing)
-		PlayerMotor.Jump.LATCH_MISS:
-			latch_missed.emit()
+		PlayerMotor.Jump.ATTACH:
+			attach_started.emit(attach.landing, not gravity.up if gravity else true)
+		PlayerMotor.Jump.ATTACH_FAIL:
+			attach_failed.emit()
 		_:
-			if is_on_floor() and not was_on_floor:
+			if not arrived and is_on_floor() and not was_on_floor:
 				landed.emit(maxf(incoming_fall_speed, 0.0))
+	if arrived:
+		attached.emit(gravity.up)  # (After attach_started when a short crossing ends on its first tick.)
 
 	if global_position.y > kill_y or global_position.y < kill_top:
 		die(&"fall")
@@ -317,14 +348,14 @@ func _on_hurtbox_area_entered(_area: Area2D) -> void:
 	die(&"hazard")
 
 
-## World 04: the latch turns the run's gravity (the player owns it there);
-## the motor has already turned its own frame toward the target surface.
-func _turn_for_latch() -> void:
+## World 04: the attach turns the run's gravity (the player owns it there)
+## once it touches the surface across; the body already rests against it.
+func _turn_for_attach() -> void:
 	if gravity == null:
 		gravity = GravityState.new()
-	_latch_turning = true
+	_attach_turning = true
 	gravity.set_up(not gravity.up)
-	_latch_turning = false
+	_attach_turning = false
 
 
 ## Gravity turned (see [GravityState]). The body keeps its world velocity;
@@ -332,7 +363,7 @@ func _turn_for_latch() -> void:
 func _on_gravity_flipped(up: bool, instant: bool) -> void:
 	up_direction = Vector2.DOWN if up else Vector2.UP
 	if not instant and state != State.DEAD:
-		if not _latch_turning:
+		if not _attach_turning:
 			motor.flip()
 		_flipped = true
 	visual.face_gravity(up, instant)

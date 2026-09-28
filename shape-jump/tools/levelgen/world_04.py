@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
-"""World 04 — THE INVERTED GARDEN: five levels built on the SURFACE LATCH.
+"""World 04 — THE INVERTED GARDEN: five levels built on the SURFACE ATTACH.
 
     python3 tools/levelgen/world_04.py              # build, check, write all levels
-    python3 tools/levelgen/world_04.py 3 --windows  # one level, with tap windows
+    python3 tools/levelgen/world_04.py 3 --windows  # one level, with its windows
 
 Writes levels/world_04/level_0N.tscn + .tres, levels/world_04/world_04.tres
 and levels/world_04/world_04_routes.gd.
 
 The corridor: floating islands of garden, the ground's top at height 0 and a
-ceiling whose underside is C tiles up. The run is always left to right. A tap
-jumps away from the surface you run on; a tap in the air (the second tap)
-LATCHES to the other surface if it is within reach (160 px of the body's far
-side: from a flat jump, a ceiling up to about 5.6 tiles), and is spent if it
-is not. Gravity belongs to the player: it points at whichever surface it last
-latched to. Heights below are world heights (tiles above the ground line);
-taps are x positions of the player's centre, as in the other worlds.
+ceiling whose underside is C tiles up. The run is always left to right, and
+there is NO JUMP in World 04: TAP TAP (two taps, one gesture) attaches the
+player to the surface across, a fast crossing (about 0.2 s, ~2 tiles on);
+gravity turns when it touches. A gesture that finds no surface it can hold
+(open sky, slick stone, something solid in the way, out of reach) does
+nothing at all.
+
+The player's x is a straight line in time, so every obstacle meets it at a
+fixed moment: the whole game is WHEN to attach. Each beat below is one
+attach (x: its second tap) between an obstacle that says "not yet" (on the
+surface across, at the landing, or crossing the corridor) and one that says
+"no later" (on the surface you run on, or the surface itself ending). Heights
+are world heights (tiles above the ground line).
 """
 import math
 import os
 import sys
 
-from levelgen import (Level, T, DT, HALF, G_UP, G_DOWN, MAX_FALL, V_JUMP, LATCH_REACH, latch_ticks,
+from levelgen import (Level, T, DT, HALF, BASE_SPEED, ATTACH_REACH, GESTURE_GAP, attach_ticks,
                       GROUND, CEILING, FLOOR, SKY)
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..") + "/"
@@ -33,20 +39,11 @@ SLAB = 1.5
 
 # ------------------------------------------------------------------ physics --
 
-def jump_height_at(tau):
-    """Feet height (px) tau s after a flat jump's take-off."""
-    if tau <= 0.36:
-        return V_JUMP * tau - 0.5 * G_UP * tau * tau
-    return 150.0 - 0.5 * G_DOWN * (tau - 0.36) ** 2
-
-
-def latch_window(corridor=C):
-    """(earliest, latest) s after a flat take-off at which a latch reaches a
-    ceiling `corridor` tiles up (None if it never does): the head must be
-    within LATCH_REACH of it."""
-    need = corridor * T - 2 * HALF - LATCH_REACH
-    ts = [i * DT for i in range(1, 60) if jump_height_at(i * DT) >= need]
-    return (ts[0], ts[-1]) if ts else None
+def cross_dx(lv, corridor=None):
+    """How far (tiles) the run carries the player during a crossing of a
+    corridor `corridor` tiles tall (default: the level's)."""
+    corridor = corridor or lv.corridor[1]
+    return attach_ticks(corridor * T - 2 * HALF) * lv.tiles_per_tick()
 
 
 # ------------------------------------------------------------------ terrain --
@@ -106,8 +103,7 @@ class Band:
 
 
 def new_level(key, number, name, tagline, speed, corridor=C):
-    """A World 04 level whose corridor is `corridor` tiles tall (the taller,
-    the nearer the top of the jump a latch has to come)."""
+    """A World 04 level whose corridor is `corridor` tiles tall."""
     lv = Level(key, f"w04_l{number:02d}", name, tagline, speed)
     lv.latch_mode = True
     lv.corridor = (0.0, corridor)
@@ -119,83 +115,51 @@ def new_level(key, number, name, tagline, speed, corridor=C):
     return lv
 
 
-def size_hops(lv, roots=(1.0, 1.0), flower=(1.0, 1.0)):
-    """The level's difficulty dial for plain hops: roots and flowers grow by
-    (width, height) factors around their centre, so the spacing of the beats
-    stays and the window of the jump over them shrinks. (Roots kill in their
-    lower 62% only, flowers in their core: a larger one asks for a jump
-    closer to the top of its arc.)"""
-    base_roots, base_flower = lv.roots, lv.flower
-
-    def sized_roots(x0, width, reach, *args, **kw):
-        w = width * roots[0]
-        return base_roots(x0 - (w - width) * 0.5, w, reach * roots[1], *args, **kw)
-
-    def sized_flower(x, *args, **kw):
-        kw["width"] = kw.get("width", 72.0) * flower[0]
-        kw["height"] = kw.get("height", 118.0) * flower[1]
-        return base_flower(x, *args, **kw)
-    lv.roots, lv.flower = sized_roots, sized_flower
-
-
 def start_level(lv):
     for x in (7, 9, 11):
         lv.shard(x, 0.5)
     return Band(-12.0, 0.0, 0.0, False), Band(-12.0, 0.0, lv.corridor[1], True)
 
 
-def finish_level(lv, floor, top, end, up=False, plan=None):
+def finish_level(lv, floor, top, end, plan):
     lv._dbg_floor, lv._dbg_top = floor, top
-    if plan is not None:
-        # The surface left behind at the last crossing is gone to the end too.
-        plan.close(end + 16.0)
+    # The surface left behind at the last crossing is gone to the end too.
+    plan.close(end + 16.0)
     floor.x1 = top.x1 = end + 16.0
     floor.emit(lv)
     top.emit(lv)
-    lv.finish(end, lv.corridor[1] if up else 0.0, up=up)
+    lv.finish(end, lv.corridor[1] if plan.up else 0.0, up=plan.up)
     lv.done()
     lv.progress_checkpoints()
     return lv
 
 
-# ------------------------------------------------------------------- beats --
-# Each beat is one tap (or a jump and its latch) at x, the player's centre,
-# on the current floor (`up`: the ceiling). Hazards that move are tuned
-# against their tap to a target window (ms).
-
-def land_after_latch(lv, x_jump, x_latch, corridor=None):
-    """Where (x) a jump at x_jump latched at x_latch touches the other surface
-    of a corridor `corridor` tiles tall (default: the level's)."""
-    corridor = corridor or lv.corridor[1]
-    t = (x_latch - x_jump) / lv.tiles_per_second()
-    d = max(corridor * T - 2 * HALF - jump_height_at(t), 0.0)
-    return x_latch + (latch_ticks(d) + 1) * lv.tiles_per_tick()
-
-
-def cross(lv, x, dt=0.33, corridor=None):
-    """Jump at x and latch `dt` s after: over to the other surface. Returns
-    (latch x, landing x)."""
-    lv.tap(x)
-    xl = round(x + dt * lv.tiles_per_second(), 3)
-    lv.latch(xl)
-    return xl, land_after_latch(lv, x, xl, corridor)
-
-
 class Plan:
-    """Which surface exists where. After every crossing the surface you left
-    is cut away until just before the next crossing back needs it, so every
-    latch is necessary, a missed one is a fall, and every stretch has a
-    single floor (a checkpoint can stand anywhere). Choice regions (a low
-    tunnel, a slick patch, a gust, a moving ceiling) keep both surfaces:
-    close() before them, open() after."""
+    """Which surface exists where. The surface across from you exists only
+    around the attaches that need it; after every attach the surface you
+    left is cut away (from `late` tiles on) until the next attach back needs
+    it, so every attach is necessary (skipping one runs off an edge), and
+    every stretch between them has a single floor (a checkpoint can stand
+    anywhere)."""
 
-    def __init__(self, lv, floor, top):
+    def __init__(self, lv, floor, top, early=1.8, late=1.6):
         self.lv, self.floor, self.top = lv, floor, top
         self.up = False
         self.cut_from = None
+        # How much surface a beat leaves around its attach (tiles): the
+        # level's slack, before any obstacle narrows it.
+        self.early, self.late = early, late
 
     def _other(self):
         return self.floor if self.up else self.top
+
+    def here(self):
+        """The anchor of the surface you run on."""
+        return CEILING if self.up else GROUND
+
+    def across(self):
+        """The anchor of the surface across the corridor."""
+        return GROUND if self.up else CEILING
 
     def close(self, x):
         """The surface across from you is there again from x on."""
@@ -208,626 +172,520 @@ class Plan:
         self.close(x)
         self.cut_from = x
 
-    def cross(self, xj, dt=0.33, corridor=None, keep=False):
-        """Jump at xj, latch dt s later; the target surface is there from
-        just before the latch, the one left behind gone after the landing
-        (unless `keep`). Returns (latch x, landing x)."""
-        self.close(xj + dt * self.lv.tiles_per_second() - 1.2)
-        xl, land = cross(self.lv, xj, dt, corridor)
+    def cross(self, x, early=None, late=None):
+        """TAP TAP with its second tap at x. The surface across is there from
+        `early` tiles before the crossing reaches it; the surface left behind
+        ends `late` tiles after x. Returns the x where the crossing lands."""
+        early = self.early if early is None else early
+        late = self.late if late is None else late
+        dx = cross_dx(self.lv)
+        self.close(x + dx - early)
+        self.lv.attach(x)
         self.up = not self.up
-        if not keep:
-            self.open(land + 1.0)
-        return xl, land
+        self.open(x + late)
+        return x + dx
 
 
-def glade(lv, floor, top, x, up, length=8.0):
-    """A calm stretch where only the surface you run on exists (the other
-    side opens onto the sky): no obstacle, no tap, a place for a checkpoint
-    to stand (it can only be reached, and respawned on, on that surface).
-    Returns where it ends."""
-    (floor if up else top).cut(x, x + length)
+def rest(x, length=8.0):
+    """A calm stretch on one surface: a place for a checkpoint to stand."""
     return x + length
 
 
-def after(lv, x, extra=0.0):
-    """The earliest x for the next jump after a flat hop at x: the hop's
-    airtime (0.676 s) and four ticks of margin, plus `extra` tiles."""
-    return x + (0.676 + 4 * DT) * lv.tiles_per_second() + extra
+# ------------------------------------------------------------------- beats --
+# One attach each, x = its second tap. Each returns the landing x. Obstacles
+# that move are tuned against the attach to a target window (ms).
+
+def roots_here(lv, plan, x, ms, period=1.6, gap=1.0, width=1.4, early=None):
+    """ROOTS rise on the surface you run on, just past x: attach before they
+    reach you (the surface goes on past them; a late attach meets them)."""
+    r = lv.roots(x + gap, width, 1.7, anchor=plan.here(), period=period, hold=0.5)
+    land = plan.cross(x, early=early, late=gap + width + 1.5)
+    lv.tune(r, x, ms)
+    return land
 
 
-def hop(lv, x, hazard, ms):
-    """A plain jump at x over `hazard`, tuned to a `ms` window."""
-    lv.tap(x)
-    lv.tune(hazard, x, ms)
-    return x
+def flower_across(lv, plan, x, ms, period=1.6, ahead=0.4, early=3.2, late=None):
+    """A FLOWER on the surface across closes over the landing: attach after
+    it has passed you, while it is closed (it opens again behind you)."""
+    fl = lv.flower(x + cross_dx(lv) - ahead, anchor=plan.across(), period=period, hold_ratio=0.55)
+    land = plan.cross(x, early=early, late=late)
+    lv.tune(fl, x, ms)
+    return land
+
+
+def branch_through(lv, plan, x, ms, period=1.8, amplitude=0.85, length=2.6):
+    """A BRANCH swings from the surface across into the middle of the
+    corridor where the crossing goes: attach while it is swung aside."""
+    b = lv.branch(x + cross_dx(lv) * 0.55, length, anchor=plan.across(), amplitude=amplitude, period=period)
+    land = plan.cross(x)
+    lv.tune(b, x, ms)
+    return land
+
+
+def flock_through(lv, plan, x, ms, period=2.0, sweep=1.4):
+    """A FLOCK sweeps up and down the middle of the corridor where the
+    crossing goes: attach through the gap it leaves."""
+    fk = lv.flock(x + cross_dx(lv) * 0.5, lv.corridor[1] * 0.5, sweep, period=period)
+    land = plan.cross(x)
+    lv.tune(fk, x, ms)
+    return land
+
+
+def rock_through(lv, plan, x, ms, period=1.5, ice=False):
+    """Stones break loose from the sky side and fall across the corridor
+    where the crossing goes: attach between them."""
+    rk = lv.rock(x + cross_dx(lv) * 0.6, anchor=SKY, period=period, ice=ice)
+    land = plan.cross(x)
+    lv.tune(rk, x, ms)
+    return land
+
+
+def waterfall_through(lv, plan, x, ms, period=1.6, hold_ratio=0.4, share=0.62):
+    """A WATERFALL pours from the surface across, `share` of the way down:
+    running under it is safe, crossing through it is not unless it is a
+    thread."""
+    wf = lv.waterfall(x + cross_dx(lv) * 0.5, width=70.0, length=lv.corridor[1] * T * share, deadly=True,
+                      anchor=plan.across(), period=period, hold_ratio=hold_ratio)
+    land = plan.cross(x)
+    lv.tune(wf, x, ms)
+    return land
+
+
+def wave_here(lv, plan, x, ms, period=2.4, speed=380.0, run=5.0):
+    """A WAVE forms on the surface you run on and rolls toward you: attach
+    before it arrives."""
+    wv = lv.wave(x + 2.2 + run, run, anchor=plan.here(), period=period, speed=speed)
+    land = plan.cross(x, late=run + 3.0)
+    lv.tune(wv, x, ms)
+    return land
+
+
+def ink_across(lv, plan, x, ms, period=2.0, reach=3.0):
+    """INK floods along the surface across, from just past the landing:
+    attach after the flood has drawn back."""
+    ik = lv.ink(x + cross_dx(lv) - 0.3, reach, anchor=plan.across(), period=period, hold_ratio=0.45)
+    land = plan.cross(x, early=2.6)
+    lv.tune(ik, x, ms)
+    return land
+
+
+def vines_across(lv, plan, x, ms, period=1.8):
+    """VINES let themselves down from the surface across, over the first half
+    of the crossing: attach while they are drawn up (short, they hang clear
+    of the path and of the landing)."""
+    vn = lv.vines(x + 0.25, 1.0, 0.6, 2.6, anchor=plan.across(), period=period)
+    land = plan.cross(x)
+    lv.tune(vn, x, ms)
+    return land
+
+
+def slick_wait(lv, plan, x, ms, slick=6.0, period=1.5):
+    """The surface across is SLICK STONE (it cannot be held) until just
+    before the landing, and roots rise on yours right after: a blind TAP TAP
+    under the slick stone fails; the attach has to wait for the living
+    garden, and go before the roots."""
+    dx = cross_dx(lv)
+    (plan.floor if plan.up else plan.top).slicken(x + dx - slick, x + dx - 0.9)
+    r = lv.roots(x + 1.0, 1.4, 1.7, anchor=plan.here(), period=period, hold=0.5)
+    land = plan.cross(x, early=slick, late=4.0)
+    lv.tune(r, x, ms)
+    return land
+
+
+def boulder_through(lv, plan, x, ms, period=2.0):
+    """A BOULDER swings on its rope from the ceiling across the crossing."""
+    bd = lv.boulder(x + cross_dx(lv) * 0.5, 2.4, radius=36.0, amplitude=0.8, period=period)
+    land = plan.cross(x)
+    lv.tune(bd, x, ms)
+    return land
+
+
+def curtain_through(lv, plan, x, ms, period=1.8):
+    """A painted CURTAIN rolls down from the surface across over the first
+    half of the crossing: attach while it is rolled up (then it hangs clear
+    of the path and of the landing)."""
+    ct = lv.curtain(x + 0.1, 1.0, 0.5, 2.6, anchor=plan.across(), period=period, hold_ratio=0.45)
+    land = plan.cross(x)
+    lv.tune(ct, x, ms)
+    return land
+
+
+def glider_through(lv, plan, x, ms, period=2.2):
+    """A LEAF rides the wind in loops through the middle of the corridor."""
+    gl = lv.glider(x + cross_dx(lv) * 0.5, lv.corridor[1] * 0.5, loop=(110.0, 70.0), period=period)
+    land = plan.cross(x)
+    lv.tune(gl, x, ms)
+    return land
+
+
+def moving_ceiling(lv, plan, x, ms, period=2.2, ride=7.0):
+    """(From the ground.) The ceiling ahead is a PANEL that rises out of reach
+    and comes back down: a blind TAP TAP while it is up fails. Attach while
+    it is down, ride it (it carries you), and TAP TAP back down to the ground
+    before it ends, again while it is low enough. Returns the landing x of
+    the way back down."""
+    assert not plan.up, "the moving ceiling is reached from the ground"
+    dx = cross_dx(lv)
+    c = lv.corridor[1]
+    x0 = x + dx - 2.5
+    width = 2.5 + ride + 2.0
+    plan.top.cut(x - 6.0, x0 + width + 4.0)   # No fixed ceiling over the ride.
+    # Its underside moves between the corridor's ceiling (in reach) and 1.6
+    # tiles higher (beyond the reach of an attach).
+    mv = lv.garden_mover(x0, width, c + 0.5, (0.0, 1.6), period, thickness=0.5)
+    plan.close(x - 6.0)
+    lv.attach(x)
+    plan.up = True
+    plan.open(x + 1.6)                         # The ground ends: ride the panel.
+    x2 = x + dx + ride
+    plan.close(x2 + dx - 1.8)                  # The ground is back for the way down.
+    lv.attach(x2)
+    plan.up = False
+    plan.open(x2 + 1.6)
+    lv.tune(mv, [x, x2], ms, osc=True)
+    return x2 + dx
 
 
 # ------------------------------------------------------------------ levels --
 
-def rock_hop(lv, x, ms, period=1.4, at=2.6, anchor=SKY, ice=False, corridor=None):
-    """A jump at x past a column where stones fall across the corridor. (A
-    stone picks its side as it breaks loose and takes about 0.9 s to cross
-    the corridor, so a column that can reach you stands at least 9 tiles
-    past the landing of a latch.)"""
-    lv.tap(x)
-    lv.tune(lv.rock(x + at, anchor=anchor, period=period, ice=ice, c=corridor), x, ms)
-    return x
-
-
-def torrent_hop(lv, x, ms, period=1.8, hold_ratio=0.45, phase=0.0, length=2.6, corridor=None):
-    """Roots on your floor under a waterfall pouring from the sky side,
-    `length` tiles down: the jump over the roots rises into the water, so it
-    has to pass while the waterfall is a thread."""
-    lv.tap(x)
-    lv.tune(lv.roots(x + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.3, c=corridor), x, ms + 60)
-    lv.tune(lv.waterfall(x + 2.9, width=76.0, length=length * T, deadly=True, period=period, hold_ratio=hold_ratio,
-                         phase=phase, c=corridor), x, ms)
-    return x
-
-
-def branch_hop(lv, x, ms, up, period=1.8, amplitude=0.9, length=2.6, corridor=None):
-    """Roots on your floor and a branch swinging from the far side into the
-    arc of the jump: jump while it is swung aside (up: you run on the
-    ceiling, so the branch rises from the ground)."""
-    lv.tap(x)
-    lv.tune(lv.roots(x + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.3, c=corridor), x, ms + 60)
-    lv.tune(lv.branch(x + 3.0, length, anchor=GROUND if up else CEILING, amplitude=amplitude, period=period,
-                      c=corridor), x, ms)
-    return x
-
-
-def quick_cross(lv, x, corridor, dt=0.12):
-    """In a low tunnel the other surface is in reach almost at once: jump and
-    latch in quick succession (a double tap, `dt` s apart)."""
-    return cross(lv, x, dt, corridor)
-
-
-def tunnel_inks(lv, t0, period, ms):
-    """The low tunnel (4 tiles, both surfaces): ink floods the ground, then
-    the ceiling, then the ground again, each time long enough to cover the
-    way while you would pass on that surface. Jump and latch at once, three
-    times (up, down, up): skipping any of the six taps meets the ink."""
-    xj = t0 + 1.0
-    xl, land = quick_cross(lv, xj, 4.0)
-    legs = ((GROUND, 7.5, 9.0), (CEILING, 7.5, 9.0), (GROUND, 6.0, 11.0))
-    for i, (anchor, reach, gap) in enumerate(legs):
-        ink = lv.ink(land + gap, reach, anchor=anchor, period=period, hold_ratio=0.55, c=4.0)
-        lv.tune(ink, [xj, xl], ms)
-        if i < len(legs) - 1:
-            xj = land + 8.4
-            xl, land = quick_cross(lv, xj, 4.0)
-    lv._tunnel_land = land
-
-
-def curtain_hop(lv, x, ms, period=1.6, corridor=None):
-    """Roots on your floor under a painted curtain hanging from the side
-    across: it rolls down into the arc of the jump, so the jump goes while
-    it is rolled up."""
-    lv.tap(x)
-    lv.tune(lv.roots(x + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.3, c=corridor), x, ms + 60)
-    lv.tune(lv.curtain(x + 2.2, 1.9, 0.6, 2.6, anchor=SKY, period=period, hold_ratio=0.4, c=corridor), x, ms)
-    return x
-
-
-def rest(lv, x, length=8.0):
-    """A calm stretch: nothing to jump, a place for a checkpoint to stand."""
-    return x + length
+def on_ground(plan):
+    assert not plan.up, "this beat starts from the ground"
 
 
 def level_01():
-    """BLUE BLOOM — hard. Teaches GROUND -> jump -> second tap -> CEILING ->
-    back to the GROUND: a low ceiling for the first latch, roots and flowers
-    that grow where you run, the ceiling ending under you, a wave, a gust
-    that carries the latch to a ceiling too high for a jump (and back down:
-    wind acts from your floor); then a last third that keeps crossing, with
-    less time for every move."""
+    """BLUE BLOOM — hard. Teaches TAP TAP -> CEILING, then TAP TAP -> GROUND,
+    with room to decide: the first attaches have wide windows over long
+    stretches where both surfaces exist (attach now, or run on?). Roots on
+    the ground send you up, flowers on the ceiling send you down, a wave
+    rolls in, a branch swings, stones fall; the last third keeps switching
+    with less time for each."""
     lv = new_level("level_01", 1, "Blue Bloom", "Hard", 1.16, corridor=5.2)
-    size_hops(lv, roots=(1.8, 1.55), flower=(1.5, 1.25))
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top)
+    plan = Plan(lv, floor, top, early=2.2, late=2.0)
     plan.open(13.0)
 
-    lv.group("Garden")
-    x = hop(lv, 16.0, lv.roots(18.1, 1.5, 1.6, period=1.7), 240)
-    x = hop(lv, after(lv, x, 1.0), lv.flower(after(lv, x, 4.1), period=1.9), 220)
-    x = hop(lv, after(lv, x, 0.5), lv.roots(after(lv, x, 2.7), 1.5, 1.6, period=1.6), 220)
-    lv.shards_along(14.0, x + 5.0, 2.5)
-
-    lv.group("FirstLatch")
-    # The first ceiling is low (easy to reach) and the ground ends: go up.
-    xj = after(lv, x, 2.0)
-    top.set(xj - 4.0, xj + 40.0, 4.5)
-    xl, land = plan.cross(xj, 0.30, 4.5)
-    lv.waterfall(land + 9.5, width=46.0, length=180.0, anchor=CEILING, c=4.5)
-    x = hop(lv, land + 3.2, lv.roots(land + 5.5, 1.5, 1.4, anchor=FLOOR, period=1.6, c=4.5), 230)
-    lv.shards_along(xl, x + 8.0, 2.0)
-
+    lv.group("FirstAttach")
+    # Both surfaces from x=16: the ground ends at 28 (attach any time on the way).
+    land = plan.cross(24.0, early=8.0, late=4.0)
+    lv.shards_along(14.0, land + 6.0, 2.0)
     lv.group("BackDown")
-    # The ceiling ends: come back down before it does.
-    xl, land = plan.cross(after(lv, x, 1.5), 0.33, 4.5)
-    x = hop(lv, land + 4.0, lv.flower(land + 7.2, period=1.8), 210)
-    lv.shards_along(xl, x + 4.0, 2.2)
+    x = land + 12.0
+    land = plan.cross(x, early=6.0, late=3.0)
+    lv.shards_along(x - 8.0, land + 6.0, 2.0)
+
+    lv.group("Roots")
+    x = rest(land, 9.0)
+    land = roots_here(lv, plan, x, 420, period=1.8, early=5.0)
+    x = land + 9.0
+    land = flower_across(lv, plan, x, 380, period=1.9)
+    lv.shards_along(x - 16.0, land + 5.0, 2.0)
 
     lv.group("Rest")
-    x = rest(lv, after(lv, x), 8.0)
+    x = rest(land, 10.0)
 
-    lv.group("Wave")
-    x = hop(lv, x, lv.wave(x + 5.0, 6.0, period=2.6), 200)
-    x = hop(lv, after(lv, x, 0.6), lv.roots(after(lv, x, 2.8), 1.6, 1.6, period=1.5), 200)
-    lv.shards_along(x - 9.0, x + 6.0, 2.0)
-
-    lv.group("Gust")
-    # A ceiling too high for any jump (6 tiles): only the updraft's lift
-    # carries the latch up to it.
-    xj = after(lv, x, 1.8)
-    top.set(xj - 4.0, xj + 34.0, 6.0)
-    wind = lv.wind(xj - 2.2, 10.0, -1100.0, period=1.8, hold_ratio=0.35, c=6.0)
-    xl, land = plan.cross(xj, 0.36, 6.0)
-    lv.tune(wind, [xj, xl], 220)
-    x = hop(lv, land + 3.5, lv.flower(land + 6.7, anchor=FLOOR, period=1.8, c=6.0), 200)
-    lv.shards_along(xj, x + 5.0, 2.0)
-
-    lv.group("Down")
-    # Still six tiles tall: the gust that lifted you up now lifts you away
-    # from the ceiling, down to the ground (wind acts from your floor).
-    xj = after(lv, x, 1.2)
-    back = lv.wind(xj - 2.0, 10.0, -1100.0, period=1.8, hold_ratio=0.35, c=6.0)
-    xl, land = plan.cross(xj, 0.36, 6.0)
-    lv.tune(back, [xj, xl], 220)
-    x = hop(lv, land + 3.5, lv.roots(land + 5.6, 1.8, 1.6, period=1.4), 180)
+    lv.group("Garden")
+    land = wave_here(lv, plan, x, 340, period=2.6)
+    x = land + 8.0
+    land = branch_through(lv, plan, x, 320, period=2.0)
+    x = land + 8.0
+    land = rock_through(lv, plan, x, 320, period=1.7)
+    x = land + 8.0
+    land = flower_across(lv, plan, x, 300, period=1.8)
+    x = land + 8.0
+    land = vines_across(lv, plan, x, 300, period=1.9)
+    lv.shards_along(x - 34.0, land + 5.0, 2.0)
 
     lv.group("Rest2")
-    x = rest(lv, after(lv, x), 8.0)
+    x = rest(land, 10.0)
 
     lv.group("Pressure")
-    # The last third: cross, hop, cross, with less time for each.
-    xl, land = plan.cross(x, 0.33)
-    x = hop(lv, land + 2.6, lv.flower(land + 5.7, anchor=FLOOR, period=1.3, hold_ratio=0.5), 170)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.4, lv.wave(land + 6.8, 4.5, period=2.0, speed=380.0), 160)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.6, lv.roots(land + 4.8, 1.6, 1.6, anchor=FLOOR, period=1.2), 160)
-    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), anchor=FLOOR, period=1.3, hold_ratio=0.5), 150)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.4, lv.roots(land + 4.6, 1.6, 1.6, period=1.2), 150)
-    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.2, hold_ratio=0.5), 150)
-    lv.shards_along(land - 30.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 10.0, plan=plan)
+    land = roots_here(lv, plan, x, 300, period=1.6)
+    x = land + 7.0
+    land = flower_across(lv, plan, x, 290, period=1.7)
+    x = land + 7.0
+    land = waterfall_through(lv, plan, x, 280, period=1.7)
+    x = land + 7.0
+    land = roots_here(lv, plan, x, 270, period=1.5)
+    x = land + 7.0
+    land = branch_through(lv, plan, x, 260, period=1.8)
+    lv.shards_along(x - 30.0, land + 4.0, 2.2)
+    return finish_level(lv, floor, top, land + 10.0, plan)
 
 
 def level_02():
-    """FALLING GARDEN — very hard. Everything falls: stones from the sky side
-    onto the floor you run on, waterfalls swelling into torrents, vines
-    letting themselves down, branches swinging across. More crossings, and
-    crossings through what is falling, not only to get somewhere."""
+    """FALLING GARDEN — very hard. The surface is how you get out of the way:
+    roots and waves on the ground send you up, vines, boulders and flowers
+    on the ceiling send you down, stones and waterfalls fall across the way
+    you cross. More attaches, closer together."""
     lv = new_level("level_02", 2, "Falling Garden", "Very hard", 1.19, corridor=5.3)
-    size_hops(lv, roots=(1.8, 1.55), flower=(1.5, 1.25))
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top)
+    plan = Plan(lv, floor, top, early=1.6, late=1.4)
     plan.open(13.0)
 
     lv.group("Stones")
-    x = rock_hop(lv, 16.0, 170, period=1.3)
-    x = hop(lv, after(lv, x), lv.roots(after(lv, x, 2.2), 1.6, 1.6, period=1.3), 160)
-    x = rock_hop(lv, after(lv, x), 160, period=1.2)
-    lv.shards_along(14.0, x + 5.0, 2.4)
-
-    lv.group("Torrent")
-    # A waterfall pours from the sky side into the arc of the jump: jump
-    # while it is a thread.
-    x = torrent_hop(lv, after(lv, x), 150, period=1.5, hold_ratio=0.35)
-
-    lv.group("UpAndAway")
-    # Vines let down from the ceiling right where you latch: go up between
-    # their drops.
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.vines(xl - 1.2, 1.4, 0.9, 2.6, period=1.4), [xj, xl], 150, forced=False)
-    x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.5, 1.5, anchor=FLOOR, period=1.25), 150)
-    lv.shards_along(x - 8.0, x + 6.0, 2.0)
-
-    lv.group("Branch")
-    # A branch swings up from the ground, across the arc of the ceiling
-    # runner's jump: jump while it is swung aside.
-    x = branch_hop(lv, after(lv, x), 140, True, period=1.5)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = rock_hop(lv, land + 9.0, 140, period=1.15)
+    land = roots_here(lv, plan, 18.0, 300, period=1.6, early=4.0)
+    x = land + 7.0
+    land = rock_through(lv, plan, x, 280, period=1.5)
+    x = land + 7.0
+    land = vines_across(lv, plan, x, 270, period=1.8)
+    x = land + 7.0
+    land = flower_across(lv, plan, x, 260, period=1.6)
+    lv.shards_along(14.0, land + 5.0, 2.2)
 
     lv.group("Rest")
-    x = rest(lv, after(lv, x), 8.0)
+    x = rest(land, 9.0)
 
     lv.group("Falls")
-    x = hop(lv, x, lv.flower(x + 3.1, period=1.2, hold_ratio=0.5), 140)
-    x = torrent_hop(lv, after(lv, x), 130, period=1.4, hold_ratio=0.35)
-    x = torrent_hop(lv, after(lv, x), 130, period=1.35, hold_ratio=0.35, phase=0.3)
-    # Up through a waterfall pouring from the ceiling side, and back down
-    # through one pouring from the ground side (it always pours from the sky).
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.waterfall(xl - 0.2, width=70.0, length=140.0, deadly=True, period=1.4, hold_ratio=0.35), [xj, xl], 130,
-            forced=False)
-    x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.5, 1.5, anchor=FLOOR, period=1.2), 135)
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.waterfall(xl - 0.2, width=70.0, length=140.0, deadly=True, period=1.35, hold_ratio=0.35), [xj, xl], 130,
-            forced=False)
-    x = hop(lv, land + 2.8, lv.flower(land + 5.9, period=1.2, hold_ratio=0.5), 135)
-    lv.shards_along(x - 16.0, x + 5.0, 2.2)
-
-    lv.group("Avalanche")
-    # Stones fall through the way up: latch between them.
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    for i in range(2):
-        lv.tune(lv.rock(xl - 0.4 + 1.9 * i, anchor=SKY, period=1.3, warning=0.5), [xj, xl], 140, forced=False)
-    x = hop(lv, land + 11.5, lv.flower(land + 14.6, anchor=FLOOR, period=1.2, hold_ratio=0.5), 135)
-    lv.shards_along(xl, x + 4.0, 2.0)
-
-    lv.group("Swing")
-    # Down again through a branch swinging up from the ground.
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.branch(xl + 0.4, 3.0, anchor=GROUND, amplitude=0.85, period=1.6), [xj, xl], 130, forced=False)
-    x = rock_hop(lv, land + 9.0, 130, period=1.1)
+    land = waterfall_through(lv, plan, x, 250, period=1.6)
+    x = land + 6.5
+    land = boulder_through(lv, plan, x, 250, period=2.0)
+    x = land + 6.5
+    land = wave_here(lv, plan, x, 240, period=2.2, speed=420.0)
+    x = land + 6.5
+    land = rock_through(lv, plan, x, 240, period=1.4)
+    x = land + 6.5
+    land = vines_across(lv, plan, x, 235, period=1.7)
+    lv.shards_along(x - 28.0, land + 4.0, 2.2)
 
     lv.group("Rest2")
-    x = rest(lv, after(lv, x), 8.0)
+    x = rest(land, 9.0)
 
     lv.group("Downpour")
-    x = hop(lv, x, lv.roots(x + 2.2, 1.6, 1.6, period=1.1), 125)
-    x = torrent_hop(lv, after(lv, x), 120, period=1.3, hold_ratio=0.35)
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.vines(xl - 1.2, 1.4, 0.9, 2.6, period=1.25), [xj, xl], 120, forced=False)
-    x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.5, 1.5, anchor=FLOOR, period=1.1), 120)
-    x = branch_hop(lv, after(lv, x), 115, True, period=1.3)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.5, 1.5, period=1.05), 110)
-    x = rock_hop(lv, after(lv, x), 110, period=1.05)
-    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.05, hold_ratio=0.5), 110)
-    lv.shards_along(x - 30.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 9.0, plan=plan)
+    land = roots_here(lv, plan, x, 230, period=1.4)
+    x = land + 6.0
+    land = waterfall_through(lv, plan, x, 220, period=1.5)
+    x = land + 6.0
+    land = flower_across(lv, plan, x, 215, period=1.5)
+    x = land + 6.0
+    land = rock_through(lv, plan, x, 210, period=1.3)
+    x = land + 6.0
+    land = boulder_through(lv, plan, x, 210, period=1.8)
+    x = land + 6.0
+    land = vines_across(lv, plan, x, 205, period=1.6)
+    x = land + 6.0
+    land = roots_here(lv, plan, x, 200, period=1.35)
+    lv.shards_along(x - 38.0, land + 4.0, 2.2)
+    return finish_level(lv, floor, top, land + 10.0, plan)
 
 
 def level_03():
-    """THE FLOODED SKY — extremely hard. Water and ink: waves that form on the
-    surface you run on, ink rivers too long to jump that belong to one
-    surface, a low tunnel where the latch is a quick double tap, flocks
-    sweeping across the way you cross, a waterfall pouring from the sky
-    side. GROUND -> CEILING -> water -> GROUND -> double action -> CEILING:
-    the second tap has to be planned."""
+    """THE FLOODED SKY — extremely hard. Surface management in water, ink and
+    wind: waves roll along the surface you run on, ink floods the one
+    across, waterfalls pour from the sky side, slick stone that cannot be
+    held makes you wait, a ceiling that rises out of reach and comes back,
+    leaves riding the wind through the corridor. Every decision is WHEN to
+    attach."""
     lv = new_level("level_03", 3, "The Flooded Sky", "Extremely hard", 1.22, corridor=5.4)
-    size_hops(lv, roots=(1.9, 1.6), flower=(1.55, 1.28))
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top)
+    plan = Plan(lv, floor, top, early=1.4, late=1.2)
     plan.open(13.0)
 
     lv.group("Tide")
-    x = hop(lv, 16.0, lv.roots(18.2, 1.6, 1.6, period=1.4), 180)
-    xt = after(lv, x)
-    x = hop(lv, xt, lv.wave(xt + 5.0, 5.0, anchor=FLOOR, period=2.3, speed=360.0), 160)
-    lv.shards_along(14.0, x + 5.0, 2.4)
+    land = wave_here(lv, plan, 18.0, 240, period=2.2, speed=420.0)
+    x = land + 6.5
+    land = ink_across(lv, plan, x, 230, period=2.0)
+    x = land + 6.5
+    land = waterfall_through(lv, plan, x, 225, period=1.5)
+    x = land + 6.5
+    land = roots_here(lv, plan, x, 220, period=1.5)
+    lv.shards_along(14.0, land + 4.0, 2.2)
 
-    lv.group("Up")
-    xl, land = plan.cross(after(lv, x), 0.33)
-    xt = land + 2.6
-    x = hop(lv, xt, lv.wave(xt + 5.0, 4.5, anchor=FLOOR, period=2.1, speed=380.0), 150)
-
-    lv.group("InkRiver")
-    # Ink floods the ceiling ahead, too far to jump: back down (and it would
-    # be down there too, had you stayed on the ground).
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.8, lv.flower(land + 5.9, period=1.4, hold_ratio=0.5), 150)
-    lv.shards_along(xl - 6.0, x + 5.0, 2.2)
-
-    lv.group("Flock")
-    xt = after(lv, x)
-    lv.tap(xt)
-    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, period=1.3), xt, 210)
-    lv.tune(lv.flock(xt + 3.4, 2.3, 1.4, period=1.8), xt, 150)
-    x = xt
-    xt = after(lv, x, 1.2)
-    x = hop(lv, xt, lv.wave(xt + 5.0, 4.5, anchor=FLOOR, period=2.0, speed=400.0), 140)
-    xt = after(lv, x, 0.8)
-    x = hop(lv, xt, lv.ink(xt + 4.2, 3.4, anchor=FLOOR, period=1.4, hold_ratio=0.3), 140)
-    lv.shards_along(xt - 12.0, x + 4.0, 2.2)
+    lv.group("SlickStone")
+    x = land + 7.0
+    land = slick_wait(lv, plan, x, 215, period=1.5)
+    x = land + 6.5
+    land = vines_across(lv, plan, x, 210, period=1.6)
 
     lv.group("Rest")
-    x = rest(lv, after(lv, x), 8.0)
+    x = rest(land, 9.0)
 
-    lv.group("DoubleAction")
-    # A low tunnel (4 tiles, both surfaces): ink takes the ground, then the
-    # ceiling, then the ground again. Jump and latch at once, three times:
-    # up, down, up.
-    t0 = x
-    plan.close(t0 - 1.0)
-    tunnel_inks(lv, t0, 2.4, 200)
-    plan.up = True
-    land = lv._tunnel_land
-    lv.shards_along(t0, land + 3.0, 1.6)
-    # (Past the landing of a jump from the last crossing: a tap here can
-    # not stand in for a missed latch.)
-    xt = land + 6.6
-    x = hop(lv, xt, lv.wave(xt + 5.0, 4.5, anchor=FLOOR, period=2.0, speed=380.0, c=4.0), 140)
-    x = hop(lv, after(lv, x), lv.roots(after(lv, x, 2.2), 1.6, 1.6, anchor=FLOOR, period=1.2, c=4.0), 140)
-    lv.shards_along(x - 12.0, x + 4.0, 2.2)
-    # The tunnel ends: the ceiling steps back up to five tiles, and the
-    # ground falls away.
-    tunnel_end = after(lv, x, -1.0)
-    top.set(t0 - 1.0, tunnel_end, 4.0)
-    plan.open(tunnel_end)
-
-    lv.group("Pour")
-    # A waterfall pours from the ground side (the sky, seen from up here)
-    # while you cross down through it: go when it is a thread.
-    xj = tunnel_end + 3.0
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.waterfall(xl + 0.6, width=70.0, length=150.0, deadly=True, period=1.6, hold_ratio=0.4), [xj, xl], 140,
-            forced=False)
-    x = hop(lv, land + 3.0, lv.wave(land + 7.5, 5.0, anchor=FLOOR, period=2.0, speed=380.0), 130)
-
-    lv.group("Rest2")
-    x = rest(lv, after(lv, x), 8.0)
+    lv.group("RisingCeiling")
+    on_ground(plan)
+    land = moving_ceiling(lv, plan, x, 210, period=2.2)
 
     lv.group("Flood")
-    # The last third: flip, flip, flip, each one planned around the water.
-    xl, land = plan.cross(x, 0.33)
-    xt = land + 2.6
-    lv.tap(xt)
-    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.2), xt, 190)
-    lv.tune(lv.flock(xt + 3.4, 2.7, 1.3, period=1.7), xt, 130)
-    x = hop(lv, after(lv, xt), lv.roots(after(lv, xt, 2.2), 1.6, 1.6, anchor=FLOOR, period=1.2), 130)
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.flock(xl + 0.8, 2.5, 1.5, period=1.8), [xj, xl], 120, forced=False)
-    x = hop(lv, land + 3.0, lv.wave(land + 7.5, 5.0, anchor=FLOOR, period=1.9, speed=400.0), 120)
-    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.2, hold_ratio=0.5), 120)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.4, hold_ratio=0.3), 120)
-    x = hop(lv, after(lv, x), lv.roots(after(lv, x, 2.2), 1.6, 1.6, anchor=FLOOR, period=1.15), 115)
-    # Down through the flock once more, and one last wave.
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.flock(xl + 0.8, 2.5, 1.5, period=1.6), [xj, xl], 110, forced=False)
-    x = hop(lv, land + 3.0, lv.wave(land + 7.5, 5.0, anchor=FLOOR, period=1.8, speed=420.0), 110)
-    lv.shards_along(x - 40.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 9.0, plan=plan)
+    x = land + 6.5
+    land = ink_across(lv, plan, x, 205, period=1.8)
+    x = land + 6.0
+    land = wave_here(lv, plan, x, 200, period=2.0, speed=440.0)
+    x = land + 6.0
+    land = waterfall_through(lv, plan, x, 195, period=1.4)
+    x = land + 6.0
+    land = roots_here(lv, plan, x, 195, period=1.4)
+    lv.shards_along(x - 28.0, land + 4.0, 2.2)
+
+    lv.group("Rest2")
+    x = rest(land, 9.0)
+
+    lv.group("Deluge")
+    w0 = x - 2.0
+    land = slick_wait(lv, plan, x, 190, period=1.4)
+    x = land + 6.0
+    land = ink_across(lv, plan, x, 185, period=1.7)
+    x = land + 6.0
+    land = waterfall_through(lv, plan, x, 185, period=1.35)
+    x = land + 6.0
+    land = wave_here(lv, plan, x, 180, period=1.9, speed=460.0)
+    x = land + 6.0
+    land = glider_through(lv, plan, x, 180, period=1.9)
+    x = land + 6.0
+    land = flock_through(lv, plan, x, 175, period=1.9)
+    lv.weather(w0, land + 6.0, "leaves", density=0.7)
+    lv.shards_along(x - 34.0, land + 4.0, 2.2)
+    return finish_level(lv, floor, top, land + 10.0, plan)
 
 
 def level_04():
-    """PAINTED STORM — brutal. The garden turns into a storm of paint: gusts
-    that press you down (no latch while they blow) or lift you (a latch
-    reaches a ceiling no jump can), curtains unrolling from the side across
-    from you, razor leaves gliding through the corridor, a slick ceiling with
-    one place to hold, a ceiling that rises and sinks, boulders. The colour
-    of the world is part of the puzzle: flowers bloom on the surface you run
-    on and curtains hang from the other, so every flip rearranges them."""
+    """PAINTED STORM — brutal. Colours and surface switching: every attach
+    turns the painting over (blue + white <-> yellow + black), and each side
+    has its own dangers: curtains unroll, branches swing, flocks and leaves
+    cross the way, boulders swing, a ceiling rises and falls. The difficulty
+    is timing, reading and choosing the surface, not speed."""
     lv = new_level("level_04", 4, "Painted Storm", "Brutal", 1.25, corridor=5.4)
-    size_hops(lv, roots=(1.5, 1.35), flower=(1.3, 1.15))
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top)
+    plan = Plan(lv, floor, top, early=1.2, late=1.0)
     plan.open(13.0)
 
-    lv.group("Gale")
-    x = hop(lv, 16.0, lv.flower(19.1, anchor=FLOOR, period=1.3, hold_ratio=0.5), 170)
-    x = curtain_hop(lv, after(lv, x), 160, period=1.6)
-    lv.shards_along(14.0, x + 5.0, 2.4)
-
-    lv.group("Downdraft")
-    # Gusts press you onto the ground: a latch only reaches between them.
-    xj = after(lv, x)
-    plan.close(xj - 6.0)
-    gust = lv.wind(xj - 3.0, 9.0, 950.0, period=1.4, hold_ratio=0.45)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(gust, [xj, xl], 150, forced=False)
-    xt = land + 2.8
-    lv.tap(xt)
-    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.3), xt, 200)
-    lv.tune(lv.glider(xt + 3.2, 3.6, loop=(110.0, 50.0), period=2.0), xt, 140)
-    x = xt
-
-    lv.group("Slick")
-    # Down to the ground, then up again under a slick ceiling that holds in
-    # one place only: the latch has to land there.
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.8, lv.flower(land + 5.9, anchor=FLOOR, period=1.2, hold_ratio=0.5), 115)
-    xj = after(lv, x)
-    plan.close(xj - 7.0)
-    xl, land = plan.cross(xj, 0.33)
-    top.slicken(xj - 7.0, xl - 0.9)
-    top.slicken(land + 2.6, land + 9.0)
-    x = hop(lv, land + 2.6, lv.roots(land + 4.8, 1.5, 1.5, anchor=FLOOR, period=1.1), 115)
-    lv.shards_along(xj - 8.0, x + 5.0, 2.0)
+    lv.group("Canvas")
+    w0 = 14.0
+    land = curtain_through(lv, plan, 18.0, 200, period=1.8)
+    x = land + 6.0
+    land = branch_through(lv, plan, x, 195, period=1.7)
+    x = land + 6.0
+    land = glider_through(lv, plan, x, 190, period=2.0)
+    x = land + 6.0
+    land = roots_here(lv, plan, x, 190, period=1.4)
+    x = land + 6.0
+    land = flower_across(lv, plan, x, 185, period=1.5)
+    lv.weather(w0, land + 4.0, "leaves", density=0.6)
+    lv.shards_along(14.0, land + 4.0, 2.2)
 
     lv.group("Rest")
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = rest(lv, land + 2.0, 7.0)
-
-    lv.group("PaintedSwitch")
-    # Flowers bloom where you run, curtains hang from across: flip, and the
-    # garden rearranges itself around you.
-    x = hop(lv, x, lv.flower(x + 3.1, anchor=FLOOR, period=1.15, hold_ratio=0.5), 115)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.6, lv.flower(land + 5.7, anchor=FLOOR, period=1.1, hold_ratio=0.5), 110)
-    x = curtain_hop(lv, after(lv, x), 105, period=1.3)
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.curtain(xl - 0.6, 1.6, 0.5, 2.4, anchor=SKY, period=1.25, hold_ratio=0.4), [xj, xl], 105, forced=False)
-    x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.3, hold_ratio=0.3), 105)
-    lv.shards_along(xj - 30.0, x + 5.0, 2.2)
-
-    lv.group("Rising")
-    # A ceiling that rises out of reach and sinks back: latch as it comes down.
-    m0 = after(lv, x) + 1.0
-    plan.close(m0 - 1.0)
-    top.cut(m0 - 1.0, m0 + 8.0)
-    lift = lv.garden_mover(m0 - 1.0, 9.0, lv.corridor[1] + 0.5, (0.0, 1.3), 1.5, thickness=0.5)
-    xl, land = plan.cross(m0 + 0.4, 0.34)
-    lv.tune(lift, [m0 + 0.4, xl], 110, osc=True, forced=False)
-    x = land
-
-    lv.group("Boulders")
-    # Down from the rising ceiling before it ends (nothing after it up there),
-    # past a swinging boulder.
-    top.cut(m0 + 8.0, m0 + 20.0)
-    xj = max(land + 1.5, m0 + 3.6)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.boulder(xl + 1.0, 2.6, radius=38.0, amplitude=0.8, period=1.7), [xj, xl], 105, forced=False)
-    x = hop(lv, land + 3.0, lv.roots(land + 5.2, 1.6, 1.6, period=1.05), 105)
-
-    lv.group("Rest2")
-    x = rest(lv, after(lv, x), 8.0)
+    x = rest(land, 9.0)
 
     lv.group("Storm")
-    xj = x
-    top.set(xj - 4.0, xj + 20.0, 6.0)
-    lift2 = lv.wind(xj - 3.0, 10.0, -1100.0, period=1.4, hold_ratio=0.35, c=6.0)
-    xl, land = plan.cross(xj, 0.36, 6.0)
-    lv.tune(lift2, [xj, xl], 105, forced=False)
-    xt = land + 2.8
-    lv.tap(xt)
-    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.2, c=6.0), xt, 170)
-    lv.tune(lv.glider(xt + 3.2, 4.2, loop=(110.0, 50.0), period=1.9), xt, 100)
-    x = xt
-    xj = after(lv, x)
-    down = lv.wind(xj - 3.0, 9.0, -1100.0, period=1.3, hold_ratio=0.35, c=6.0)
-    xl, land = plan.cross(xj, 0.36, 6.0)
-    lv.tune(down, [xj, xl], 100, forced=False)
-    x = curtain_hop(lv, land + 3.0, 95, period=1.25)
-    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), anchor=FLOOR, period=1.1, hold_ratio=0.5), 95)
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.branch(xl + 0.4, 2.8, anchor=GROUND, amplitude=0.85, period=1.5), [xj, xl], 95, forced=False)
-    x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.2, hold_ratio=0.3), 95)
-    # Down past a swinging boulder, and the roots at the gate.
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.boulder(xl + 1.0, 2.6, radius=38.0, amplitude=0.8, period=1.5), [xj, xl], 95, forced=False)
-    x = hop(lv, land + 2.8, lv.roots(land + 5.0, 1.6, 1.6, period=1.0), 90)
-    lv.weather(xj - 50.0, x + 10.0, "leaves", density=0.7)
-    lv.shards_along(xj - 40.0, x + 6.0, 2.4)
-    return finish_level(lv, floor, top, x + 9.0, plan=plan)
+    if plan.up:
+        land = flock_through(lv, plan, x, 185, period=1.8)
+        x = land + 6.0
+    land = moving_ceiling(lv, plan, x, 180, period=2.0)
+    x = land + 6.0
+    land = curtain_through(lv, plan, x, 180, period=1.6)
+    x = land + 6.0
+    land = boulder_through(lv, plan, x, 180, period=1.8)
+    x = land + 6.0
+    land = ink_across(lv, plan, x, 175, period=1.6)
+    x = land + 6.0
+    land = branch_through(lv, plan, x, 175, period=1.6)
+    lv.shards_along(x - 32.0, land + 4.0, 2.2)
+
+    lv.group("Rest2")
+    x = rest(land, 9.0)
+
+    lv.group("Tempest")
+    w0 = x - 2.0
+    land = slick_wait(lv, plan, x, 175, period=1.3)
+    x = land + 5.5
+    land = glider_through(lv, plan, x, 170, period=1.8)
+    x = land + 5.5
+    land = wave_here(lv, plan, x, 170, period=1.8, speed=460.0)
+    x = land + 5.5
+    land = curtain_through(lv, plan, x, 165, period=1.5)
+    x = land + 5.5
+    land = flock_through(lv, plan, x, 165, period=1.7)
+    x = land + 5.5
+    land = roots_here(lv, plan, x, 160, period=1.3)
+    x = land + 5.5
+    land = branch_through(lv, plan, x, 160, period=1.5)
+    x = land + 5.5
+    land = curtain_through(lv, plan, x, 155, period=1.45)
+    lv.weather(w0, land + 4.0, "leaves", density=0.8)
+    lv.shards_along(x - 42.0, land + 4.0, 2.2)
+    return finish_level(lv, floor, top, land + 10.0, plan)
 
 
 def level_05():
-    """THE INVERTED GARDEN — brutal but fair. No new ability: the jump, the
-    second tap, timing, reading, and knowing which surface to be on. Every
-    obstacle of the garden, a snowfall where ice falls among the flakes, and
-    the FINAL GAUNTLET (the last stretch, the hardest of the world): up past
-    a swinging branch, down through a flock, a wave, up against a gust, a
-    flower, down again, ink, and one last latch onto the ceiling right
-    before the finish."""
+    """THE INVERTED GARDEN — brutal but fair. No new ability: TAP TAP,
+    timing, reading, and knowing which surface to be on. Every obstacle of
+    the garden, a snowfall where ice falls among the flakes, a ceiling that
+    rises and falls, and the FINAL GAUNTLET: the last stretch, the tightest
+    attaches of the world."""
     lv = new_level("level_05", 5, "The Inverted Garden", "Brutal but fair", 1.28, corridor=5.45)
-    size_hops(lv, roots=(1.4, 1.3), flower=(1.25, 1.12))
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top)
+    plan = Plan(lv, floor, top, early=1.0, late=0.8)
     plan.open(13.0)
 
     lv.group("Mastery")
-    x = hop(lv, 16.0, lv.roots(18.2, 1.6, 1.6, period=1.3), 140)
-    x = hop(lv, after(lv, x), lv.flower(after(lv, x, 3.1), period=1.3, hold_ratio=0.5), 130)
-    x = rock_hop(lv, after(lv, x), 130, period=1.3)
-    lv.shards_along(14.0, x + 5.0, 2.4)
+    land = roots_here(lv, plan, 18.0, 175, period=1.4, early=3.0)
+    x = land + 5.5
+    land = branch_through(lv, plan, x, 170, period=1.6)
+    x = land + 5.5
+    land = ink_across(lv, plan, x, 170, period=1.7)
+    x = land + 5.5
+    land = flock_through(lv, plan, x, 165, period=1.7)
+    x = land + 5.5
+    land = vines_across(lv, plan, x, 165, period=1.6)
+    lv.shards_along(14.0, land + 4.0, 2.2)
 
     lv.group("Snowfall")
-    s0 = after(lv, x) - 3.0
-    x = rock_hop(lv, after(lv, x), 125, period=1.2, ice=True)
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.rock(xl + 0.6, anchor=SKY, period=1.3, ice=True), [xj, xl], 120, forced=False)
-    # (Far enough on for a shard to break loose from the ground after the
-    # latch and reach the ceiling: about 0.9 s.)
-    x = rock_hop(lv, land + 9.0, 120, period=1.2, ice=True)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = rock_hop(lv, land + 9.0, 115, period=1.15, ice=True)
-    lv.weather(s0, x + 8.0, "snow", density=0.8)
-    lv.shards_along(s0, x + 5.0, 2.2)
+    x = land + 5.5
+    s0 = x - 4.0
+    land = rock_through(lv, plan, x, 165, period=1.3, ice=True)
+    x = land + 5.5
+    land = flower_across(lv, plan, x, 160, period=1.4)
+    x = land + 5.5
+    land = rock_through(lv, plan, x, 160, period=1.25, ice=True)
+    x = land + 5.5
+    land = boulder_through(lv, plan, x, 160, period=1.7)
+    lv.weather(s0, land + 6.0, "snow", density=0.8)
+    lv.shards_along(s0, land + 4.0, 2.2)
 
     lv.group("Rest")
-    x = rest(lv, after(lv, x), 7.0)
-
-    lv.group("Flight")
-    xt = x
-    lv.tap(xt)
-    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, period=1.3), xt, 175)
-    lv.tune(lv.flock(xt + 3.4, 2.4, 1.4, period=1.6), xt, 115)
-    xj = after(lv, xt)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.flock(xl + 0.8, 2.5, 1.5, period=1.7), [xj, xl], 110, forced=False)
-    xt = land + 2.8
-    lv.tap(xt)
-    lv.tune(lv.roots(xt + 2.3, 1.4, 1.5, anchor=FLOOR, period=1.2), xt, 170)
-    lv.tune(lv.glider(xt + 3.2, 3.6, loop=(110.0, 50.0), period=2.0), xt, 110)
-    xj = after(lv, xt)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.boulder(xl + 1.0, 2.6, radius=38.0, amplitude=0.8, period=1.8), [xj, xl], 110, forced=False)
-    x = hop(lv, land + 3.0, lv.wave(land + 7.5, 5.0, anchor=FLOOR, period=1.8, speed=420.0), 110)
-    lv.shards_along(xt - 8.0, x + 5.0, 2.2)
+    x = rest(land, 9.0)
 
     lv.group("Rapids")
-    t0 = after(lv, x) - 1.0
-    plan.close(t0 - 1.0)
-    tunnel_inks(lv, t0, 2.2, 180)
-    plan.up = True
-    land = lv._tunnel_land
-    xt = land + 6.6
-    x = hop(lv, xt, lv.roots(xt + 2.2, 1.6, 1.6, anchor=FLOOR, period=1.1, c=4.0), 105)
-    lv.shards_along(t0, x + 4.0, 1.8)
-    tunnel_end = after(lv, x, -1.0)
-    top.set(t0 - 1.0, tunnel_end, 4.0)
-    plan.open(tunnel_end)
-
-    lv.group("Tempest")
-    xj = tunnel_end + 3.0
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.curtain(xl - 0.6, 1.6, 0.5, 2.4, anchor=SKY, period=1.3, hold_ratio=0.4), [xj, xl], 105, forced=False)
-    x = curtain_hop(lv, land + 3.0, 105, period=1.3)
+    land = wave_here(lv, plan, x, 160, period=1.8, speed=480.0)
+    x = land + 5.5
+    land = waterfall_through(lv, plan, x, 155, period=1.3)
+    x = land + 5.5
+    land = slick_wait(lv, plan, x, 155, period=1.3)
+    x = land + 5.5
+    if plan.up:
+        land = glider_through(lv, plan, x, 150, period=1.7)
+        x = land + 5.5
+    land = moving_ceiling(lv, plan, x, 155, period=1.9)
+    lv.shards_along(x - 30.0, land + 4.0, 2.2)
 
     lv.group("Rest2")
-    x = rest(lv, after(lv, x), 7.0)
-
-    lv.group("Gale")
-    xj = x
-    plan.close(xj - 6.0)
-    gust = lv.wind(xj - 3.0, 9.0, 950.0, period=1.4, hold_ratio=0.45)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(gust, [xj, xl], 105, forced=False)
-    x = hop(lv, land + 2.6, lv.flower(land + 5.7, anchor=FLOOR, period=1.15, hold_ratio=0.5), 100)
-    xj = after(lv, x)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.branch(xl + 0.4, 2.8, anchor=GROUND, amplitude=0.85, period=1.6), [xj, xl], 100, forced=False)
-    x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.3, hold_ratio=0.3), 100)
-    lv.shards_along(xj - 16.0, x + 5.0, 2.2)
+    x = rest(land, 9.0)
 
     lv.group("FinalGauntlet")
-    # GROUND -> jump -> latch -> CEILING -> swinging branch -> release ->
-    # latch -> GROUND -> wave -> jump -> latch -> CEILING (against a gust) ->
-    # flower -> flip -> ink -> the last latch, and the finish.
-    xl, land = plan.cross(after(lv, x), 0.33)
-    xt = branch_hop(lv, land + 2.7, 95, True, period=1.4, length=2.4)
-    xj = after(lv, xt)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(lv.flock(xl + 0.8, 2.5, 1.5, period=1.5), [xj, xl], 95, forced=False)
-    x = hop(lv, land + 3.0, lv.wave(land + 7.5, 5.0, anchor=FLOOR, period=1.7, speed=440.0), 95)
-    xj = after(lv, x)
-    plan.close(xj - 6.0)
-    gust = lv.wind(xj - 3.0, 9.0, 950.0, period=1.3, hold_ratio=0.45)
-    xl, land = plan.cross(xj, 0.33)
-    lv.tune(gust, [xj, xl], 95, forced=False)
-    x = hop(lv, land + 2.6, lv.flower(land + 5.7, anchor=FLOOR, period=1.1, hold_ratio=0.5), 90)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    x = hop(lv, land + 2.8, lv.ink(land + 7.0, 3.4, anchor=FLOOR, period=1.2, hold_ratio=0.3), 90)
-    xl, land = plan.cross(after(lv, x), 0.33)
-    lv.shards_along(xj - 60.0, land + 1.0, 2.2)
-    return finish_level(lv, floor, top, land + 2.5, up=True, plan=plan)
+    land = curtain_through(lv, plan, x, 150, period=1.5)
+    x = land + 5.0
+    land = flock_through(lv, plan, x, 145, period=1.6)
+    x = land + 5.0
+    land = roots_here(lv, plan, x, 145, period=1.25)
+    x = land + 5.0
+    land = branch_through(lv, plan, x, 145, period=1.5)
+    x = land + 5.0
+    land = ink_across(lv, plan, x, 140, period=1.5)
+    x = land + 5.0
+    land = wave_here(lv, plan, x, 140, period=1.7, speed=500.0)
+    x = land + 5.0
+    land = waterfall_through(lv, plan, x, 140, period=1.25)
+    x = land + 5.0
+    land = vines_across(lv, plan, x, 140, period=1.4)
+    lv.shards_along(x - 44.0, land + 3.0, 2.2)
+    return finish_level(lv, floor, top, land + 8.0, plan)
 
 
 LEVELS = [level_01, level_02, level_03, level_04, level_05]
+# Each level's run speed in px/s (for the gesture's first tap in the routes).
+SPEEDS = {1: 1.16 * BASE_SPEED, 2: 1.19 * BASE_SPEED, 3: 1.22 * BASE_SPEED, 4: 1.25 * BASE_SPEED, 5: 1.28 * BASE_SPEED}
 
-
-# ------------------------------------------------------------------ output --
 
 def read_routes():
+    """{number: (name, attaches)}: each attach is the second tap of its
+    gesture (the file lists both taps of every gesture)."""
     out = {}
     try:
         with open(ROOT + f"levels/{WORLD}/{WORLD}_routes.gd") as fh:
@@ -838,16 +696,23 @@ def read_routes():
         if line.startswith("const LEVEL_"):
             number = int(line[len("const LEVEL_"):].split(":")[0])
             taps = [float(x) for x in line.split("= [")[1].rstrip("]").split(",")]
-            out[number] = (lines[i - 1].lstrip("# ").strip(), taps)
+            out[number] = (lines[i - 1].lstrip("# ").strip(), taps[1::2])
     return out
 
 
-def write_routes(routes):
+def write_routes(routes, speeds):
+    """The routes as the engine's finger plays them: both taps of every TAP
+    TAP gesture (the first GESTURE_GAP ticks before the second)."""
     lines = ["class_name World04Routes",
              "## Generated by tools/levelgen/world_04.py: the intended solution of each",
-             "## World 04 level, as the player-centre x (tiles) of every tap.", ""]
+             "## World 04 level, as the player-centre x (tiles) of every tap. World 04 has",
+             "## no jump: taps come in pairs, each pair one TAP TAP surface attach.", ""]
     for number in sorted(routes):
-        name, taps = routes[number]
+        name, attaches = routes[number]
+        gap = GESTURE_GAP * speeds[number] * DT / T
+        taps = []
+        for a in attaches:
+            taps += [round(a - gap, 3), a]
         lines.append(f"## {name}")
         lines.append(f"const LEVEL_{number:02d}: PackedFloat32Array = [{', '.join(f'{x:g}' for x in taps)}]")
     names = ", ".join(f"LEVEL_{n:02d}" for n in sorted(routes))
@@ -925,14 +790,15 @@ def main():
         for note in lv.notes:
             print("  " + note)
         ticks, _ = lv.run()
-        kinds = "".join({"ground": "J", "latch": "L", "miss": "m"}.get(s["jump"], "") for s in ticks if s["jump"])
-        print(f"  taps: {kinds}  latches: {kinds.count('L')}")
+        kinds = "".join({"attach": "A", "fail": "f", "ground": "J", "air": "D"}.get(s["jump"], "")
+                        for s in ticks if s["jump"])
+        print(f"  gestures: {kinds}  attaches: {kinds.count('A')}, jumps: {kinds.count('J') + kinds.count('D')}")
         lv.write(ROOT, f"levels/{WORLD}/level_{i:02d}.tscn", f"levels/{WORLD}/level_{i:02d}.tres")
 
         def save(lv=lv, i=i):
             routes = read_routes()
             routes[i] = (lv.name, sorted(lv.route))
-            write_routes(routes)
+            write_routes(routes, SPEEDS)
             write_world(len(LEVELS))
         _locked(save)
 

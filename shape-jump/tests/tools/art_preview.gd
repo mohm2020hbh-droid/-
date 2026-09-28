@@ -2,7 +2,7 @@ extends Node2D
 ## QA tool: every obstacle and ledge of one world side by side, rendered and
 ## saved as a picture (the organic art review, docs/GDD.md §13B).
 ##   godot --path . --rendering-driver opengl3 res://tests/tools/art_preview.tscn -- --theme=red --out=/tmp/red.png
-## Themes: red (World 01), mono (World 02), galaxy (World 03).
+## Themes: red (World 01), mono (World 02), galaxy (World 03), garden (World 04).
 
 const E := "res://src/level/elements/"
 
@@ -20,6 +20,8 @@ func _ready() -> void:
 			_world_02()
 		&"galaxy":
 			_world_03()
+		&"garden":
+			_world_04()
 		_:
 			_world_01()
 	for i in 12:
@@ -102,3 +104,30 @@ func _world_03() -> void:
 	_add(g + "gravity_lens", Vector2(640, 250), {})
 	_add("checkpoint", Vector2(600, 560), {}, "area")
 	_time(0.7)
+
+
+func _world_04() -> void:
+	RenderingServer.set_default_clear_color(Color("9cc8f5"))
+	var g := "garden/"
+	var c := -333.0  # A 5.2-tile corridor: the ceiling's underside.
+	_add(g + "garden_block", Vector2(-20, 560), {"size": Vector2(560, 96)}, "static")
+	_add(g + "garden_block", Vector2(700, 560), {"size": Vector2(620, 96)}, "static")
+	_add(g + "garden_block", Vector2(-20, 560 + c - 96), {"size": Vector2(700, 96), "top_edge": false, "bottom_edge": true}, "static")
+	_add(g + "garden_block", Vector2(760, 560 + c - 96), {"size": Vector2(560, 96), "top_edge": false, "bottom_edge": true,
+		"latchable": false}, "static")
+	var h := {"ceiling": c}
+	_add(g + "rising_roots", Vector2(60, 560), h.merged({"width": 96.0, "reach": 110.0}), "area")
+	_add(g + "closing_flower", Vector2(220, 560), h.merged({"hold_ratio": 0.2}), "area")
+	_add(g + "water_wave", Vector2(430, 560), h.merged({"run": 60.0}), "area")
+	_add(g + "waterfall", Vector2(620, 560), h.merged({"width": 70.0, "length": 200.0, "deadly": true, "anchor": 1}), "area")
+	_add(g + "sweeping_branch", Vector2(760, 560), h.merged({"length": 160.0, "anchor": 1}), "area")
+	_add(g + "falling_rock", Vector2(880, 560), h.merged({}), "area")
+	_add(g + "hanging_vines", Vector2(960, 560), h.merged({"width": 64.0, "long": 150.0, "anchor": 1}), "area")
+	_add(g + "leaf_glider", Vector2(1080, 420), {}, "area")
+	_add(g + "ink_flow", Vector2(1260, 560), h.merged({"reach": 150.0}), "area")
+	_add(g + "canvas_curtain", Vector2(300, 560), h.merged({"width": 70.0, "long": 150.0, "anchor": 1}), "area")
+	_add(g + "hanging_boulder", Vector2(520, 560), h.merged({"rope": 130.0, "anchor": 1}), "area")
+	_add(g + "bird_flock", Vector2(1160, 560), {"middle": -170.0, "sweep": 40.0}, "area")
+	_add("checkpoint", Vector2(20, 560), {}, "area")
+	var t := Autoplay.option("--time")
+	_time(float(t) if t != "" else 0.55)

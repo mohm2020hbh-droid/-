@@ -35,22 +35,33 @@ HURT_HALF = 18.0     # Half size of the hurtbox.
 LEDGE_ASSIST = 10.0
 INSET = 4.0          # Hazard.HITBOX_INSET
 SAFETY = 2.0         # Closer than this to a hitbox counts as a hit.
-# World 04 (movement_config.gd, Surface Latch): the second tap latches to the
-# other surface within this reach (px, from the body's far side) and sets off
-# at this speed.
-LATCH_REACH = 160.0
-LATCH_SPEED = 1000.0
+# World 04 (movement_config.gd, Surface Attach): no jump at all. Two taps are
+# one gesture (the second within ATTACH_WINDOW s of the first); it attaches to
+# the surface across if the crossing reaches one it can hold within
+# ATTACH_REACH px, pulled at attach_speed_at(tick) (no gravity), and gravity
+# turns when it touches. A route's World 04 entry is the second tap; its
+# first tap comes GESTURE_GAP ticks before.
+ATTACH_WINDOW = 0.3
+ATTACH_REACH = 360.0
+ATTACH_SPEED = 1000.0
+ATTACH_ACCEL = 6000.0
+ATTACH_MAX_SPEED = 1800.0
+GESTURE_GAP = 5
 
 
-def latch_ticks(distance):
-    """Ticks a latch takes to cover `distance` px (MovementConfig.latch_ticks)."""
-    covered, speed, ticks = 0.0, LATCH_SPEED, 0
-    while covered < distance and ticks < 120:
-        speed = min(speed + G_DOWN * DT * 0.5, MAX_FALL)
-        covered += speed * DT
-        speed = min(speed + G_DOWN * DT * 0.5, MAX_FALL)
+def attach_speed_at(tick):
+    """Speed (px/s) of a crossing on its tick-th tick (MovementConfig.attach_speed_at)."""
+    return min(ATTACH_SPEED + ATTACH_ACCEL * tick * DT, ATTACH_MAX_SPEED)
+
+
+def attach_ticks(distance):
+    """Ticks a crossing takes to cover `distance` px (MovementConfig.attach_ticks)."""
+    covered, ticks = 0.0, 0
+    while covered < distance and ticks < 240:
+        covered += attach_speed_at(ticks) * DT
         ticks += 1
     return ticks
+
 
 GAME_SRC = "res://src/level/elements/"
 
@@ -1392,6 +1403,11 @@ class Level:
     def tiles_per_tick(self):
         return self.speed * DT / T
 
+    def gesture_lead(self):
+        """World 04: how far (tiles) before its route x a gesture's first tap
+        comes (0 elsewhere: a route x is the whole tap)."""
+        return GESTURE_GAP * self.tiles_per_tick() if self.latch_mode else 0.0
+
     def tiles_per_second(self):
         return self.speed / T
 
@@ -1470,60 +1486,61 @@ class Level:
         """World 04: acceleration toward the floor (+) or away (-) at x (px)."""
         return sum(w.push(x_px, t, up) for w in self.winds if id(w) not in self._pending)
 
-    @staticmethod
-    def _straddles(x, y, surfaces, t, hit):
-        """True when another face at the same distance with the other
-        latchable flag is under the body too (a slick edge): the engine's
-        choice between the two is not defined, so a route must never latch
-        there."""
-        head = y - 2 * HALF
-        for (blo, bhi), s in surfaces:
-            if s is hit[1] or blo > x + HALF + 64.0 or bhi < x - HALF - 64.0 or not s.alive(t):
-                continue
-            sx0, sx1, stop, sbottom = s.solid(t)
-            if x + HALF > sx0 and x - HALF < sx1 and abs((head - sbottom) - hit[0]) < 1.0 and \
-                    s.latchable != hit[1].latchable:
-                return True
-        return False
+    def attach_probe(self, x, y, surfaces, t):
+        """Mirror of SurfaceAttach.probe (src/player/surface_attach.gd): walks
+        the crossing tick by tick from feet (x px, y) in the current frame (y
+        down, toward the floor): the first thing met must be a face looking
+        back (an underside, in this frame) that can be held, within
+        ATTACH_REACH. Returns (distance px, surface, ticks) or None (a failed
+        attach). The side of anything in the way blocks it."""
+        covered = 0.0
+        for k in range(attach_ticks(ATTACH_REACH) + 1):
+            dy = attach_speed_at(k) * DT
+            nx, ny = x + self.speed * DT, y - dy
+            head, nhead = y - 2 * HALF, ny - 2 * HALF
+            best = None
+            for (blo, bhi), su in surfaces:
+                if blo > nx + HALF + 64.0:
+                    break
+                if bhi < x - HALF - 64.0 or not su.alive(t):
+                    continue
+                sx0, sx1, stop, sbottom = su.solid(t)
+                if head >= sbottom - 0.5 and nhead < sbottom:
+                    frac = (head - sbottom) / max(head - nhead, 1e-9)
+                    cx = x + frac * (nx - x)
+                    if cx + HALF > sx0 + 0.01 and cx - HALF < sx1 - 0.01 and (best is None or frac < best[0]):
+                        best = (frac, "face", su)
+                if x + HALF <= sx0 + 0.5 < nx + HALF:
+                    frac = (sx0 - (x + HALF)) / max(nx - x, 1e-9)
+                    cy = y + frac * (ny - y)
+                    if cy > stop + 0.5 and cy - 2 * HALF < sbottom - 0.5 and (best is None or frac < best[0]):
+                        best = (frac, "wall", su)
+            if best is not None:
+                frac, kind, su = best
+                if kind == "wall" or not su.latchable:
+                    return None
+                d = covered + frac * dy
+                if d > ATTACH_REACH:
+                    return None
+                self._check_straddle(x + frac * (nx - x), su, surfaces, t)
+                return (d, su, k + 1)
+            x, y = nx, ny
+            covered += dy
+            if covered > ATTACH_REACH:
+                return None
+        return None
 
-    @staticmethod
-    def _face_above(x, y, surfaces, t):
-        """Nearest face over the body's head (current frame, y = feet, y down)
-        within LATCH_REACH: (distance px, surface) or None; also None if the
-        body overlaps something solid there."""
-        head = y - 2 * HALF
-        best = None
-        for (blo, bhi), s in surfaces:
-            if blo > x + HALF + 64.0:
-                break
-            if bhi < x - HALF - 64.0 or not s.alive(t):
+    def _check_straddle(self, cx, hit, surfaces, t):
+        """Another underside at the same height with the other `latchable`
+        flag under the body too (a slick edge): the engine's choice between
+        them is not defined, so a route must never attach there."""
+        hb = hit.solid(t)[3]
+        for (blo, bhi), su in surfaces:
+            if su is hit or blo > cx + HALF + 64.0 or bhi < cx - HALF - 64.0 or not su.alive(t):
                 continue
-            sx0, sx1, stop, sbottom = s.solid(t)
-            if not (x + HALF > sx0 and x - HALF < sx1):
-                continue
-            if sbottom > head + 0.01:
-                if stop < y - 0.5:
-                    return None   # Something solid where the body is.
-                continue
-            d = head - sbottom
-            if d <= LATCH_REACH and (best is None or d < best[0]):
-                best = (d, s)
-        return best
-
-    def latch_probe(self, x, y, surfaces, t):
-        """Mirror of SurfaceLatch.probe (src/player/surface_latch.gd): the
-        distance (px) to the face a latch would land on, or None (a miss)."""
-        hit = self._face_above(x, y, surfaces, t)
-        if hit is not None and self._straddles(x, y, surfaces, t, hit):
-            self.straddles.append((x / T, t))
-        if hit is None or not hit[1].latchable:
-            return None
-        d = hit[0]
-        ahead = self.speed * DT * latch_ticks(d)
-        there = self._face_above(x + ahead, y, surfaces, t)
-        if there is None or not there[1].latchable or abs(there[0] - d) > 2.0:
-            return None
-        return d
+            sx0, sx1, _, sbottom = su.solid(t)
+            if cx + HALF > sx0 and cx - HALF < sx1 and abs(sbottom - hb) < 1.0 and su.latchable != hit.latchable:
+                self.straddles.append((cx / T, t))
 
     # --------------------------------------------------------------- nodes --
     def group(self, name):
@@ -1763,16 +1780,25 @@ class Level:
         if g < 0:
             y = -(y + HALF) + HALF   # Feet on a ceiling at world y: centre y + HALF.
         vy, grounded, coyote, air_jumps, buffer = 0.0, True, 0.0, 1, 0.0
-        latching = False
+        latching = False     # World 04: crossing to the other surface
         queued = []          # taps waiting to jump, oldest first
         buffered = None      # the tap in the jump buffer
-        made = {}            # tap x -> "ground" / "air"
+        made = {}            # tap x -> "ground" / "air" (World 04: "attach" / "fail")
         support = None
         next_tap = 0
+        # World 04: every route entry is an attach, the gesture's second tap;
+        # its first tap comes GESTURE_GAP ticks before. The motor's gesture:
+        # idle -> pending (ATTACH_WINDOW s) -> request (decided next tick).
+        if latch_mode:
+            first = GESTURE_GAP * self.tiles_per_tick()
+            taps = sorted([(round(a - first, 3), a) for a in route] + [(a, a) for a in route])
+        else:
+            taps = [(a, a) for a in route]
+        gesture, gesture_left, attach_tick, request_by = "idle", 0.0, 0, None
         # Taps registered before the start (the finger checks the position
         # before each tick, so a tap within the last tick is still to come).
         seen = x / T - self.speed * DT / T + 1e-6 if start is not None else x / T
-        while next_tap < len(route) and route[next_tap] < seen:
+        while next_tap < len(taps) and taps[next_tap][0] < seen:
             next_tap += 1
         end_x = ((self.finish_x if self.finish_x is not None else 1e9) + 1.0) * T
         if stop_x is not None:
@@ -1785,14 +1811,22 @@ class Level:
         out = []
         tick = 0
         while x < end_x and tick < 60 * 300:
-            if next_tap < len(route) and x / T >= route[next_tap]:
-                available = 2 if grounded else ((1 if coyote > 0 else 0) + air_jumps)
-                if latching:
-                    made[route[next_tap]] = "swallowed"   # Committed to a latch.
-                elif len(queued) < available:
-                    queued.append(route[next_tap])
+            if next_tap < len(taps) and x / T >= taps[next_tap][0]:
+                who = taps[next_tap][1]
+                if latch_mode:
+                    # PlayerMotor._gesture_tap.
+                    if latching:
+                        made.setdefault(who, "swallowed")   # Committed to a crossing.
+                    elif gesture == "idle":
+                        gesture, gesture_left = "pending", ATTACH_WINDOW
+                    elif gesture == "pending":
+                        gesture, request_by = "request", who
                 else:
-                    buffer, buffered = BUFFER, route[next_tap]
+                    available = 2 if grounded else ((1 if coyote > 0 else 0) + air_jumps)
+                    if len(queued) < available:
+                        queued.append(who)
+                    else:
+                        buffer, buffered = BUFFER, who
                 next_tap += 1
             t = t0 + (tick + 1) * DT
             if flips:
@@ -1810,30 +1844,34 @@ class Level:
             on_floor = grounded
             if on_floor:
                 coyote, air_jumps = COYOTE, 1
-                latching = False
             wind = self.wind_at(x, t, g < 0) if latch_mode and self.winds else 0.0
             can_ground = on_floor or coyote > 0
             jump = None
-            if queued:
+            if latch_mode:
+                # PlayerMotor._begin_attach_tick: no jump at all.
+                if latching:
+                    attach_tick += 1
+                    vy = -attach_speed_at(attach_tick)
+                    if attach_tick > attach_ticks(ATTACH_REACH) + 6:
+                        latching = False
+                elif gesture == "request":
+                    gesture = "idle"
+                    hit = self.attach_probe(x, y, surfaces, t) if can_ground else None
+                    if hit is not None:
+                        latching, attach_tick, coyote = True, 0, 0.0
+                        vy = -attach_speed_at(0)
+                        jump = "attach"
+                    else:
+                        jump = "fail"
+                    made[request_by] = jump
+                elif gesture == "pending":
+                    gesture_left -= DT
+                    if gesture_left <= 0.0:
+                        gesture = "idle"
+            elif queued:
                 who = queued.pop(0)
                 if can_ground:
                     jump = "ground"
-                elif air_jumps > 0 and latch_mode:
-                    # PlayerMotor._air_latch: a latch if in reach, else a miss.
-                    air_jumps -= 1
-                    reach = self.latch_probe(x, y, surfaces, t)
-                    if reach is None:
-                        jump = "miss"
-                        buffer, buffered = BUFFER, who
-                    else:
-                        jump = "latch"
-                        centre = g * (y - HALF)
-                        g = -g
-                        y = g * centre + HALF
-                        grounded, support, coyote, buffer, buffered = False, None, 0.0, 0.0, None
-                        surfaces = surf_up if g < 0 else surf_down
-                        vy, latching, queued = LATCH_SPEED, True, []
-                        self._surf_log.append((t, g < 0))
                 elif air_jumps > 0:
                     jump = "air"
                 else:
@@ -1842,10 +1880,7 @@ class Level:
                     made[who] = jump
             elif buffer > 0 and can_ground:
                 jump, buffer = "ground", 0.0
-                # (World 04: a tap that already missed a latch stays a miss,
-                # even if it then jumps on landing: a route never relies on it.)
-                if not (latch_mode and made.get(buffered) == "miss"):
-                    made[buffered] = "ground"
+                made[buffered] = "ground"
             if jump == "ground":
                 vy, coyote = -V_JUMP, 0.0
             elif jump == "air":
@@ -1854,11 +1889,14 @@ class Level:
                 coyote = max(coyote - DT, 0.0)
             if buffer > 0:
                 buffer = max(buffer - DT, 0.0)
-            if wind and not latching:
+            if latching:
+                pass   # A crossing is a pull, not a fall: no gravity.
+            elif wind:
                 vy = min(vy + ((G_UP if vy < 0 else G_DOWN) + wind) * DT * 0.5, MAX_FALL)
             else:
                 vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
             # move and collide
+            arrived = None
             nx, ny = x + self.speed * DT, y + vy * DT
             landed, new_support, death = False, None, None
             if grounded and jump is None and support is not None:
@@ -1929,11 +1967,23 @@ class Level:
                             death = "wall"
                 elif vy < 0 and y - 2 * HALF >= sbottom - 0.5 and ny - 2 * HALF < sbottom:
                     ny, vy = sbottom + 2 * HALF, 0.0
+                    if latching:
+                        arrived = s
             grounded, support = landed, new_support
             if landed:
                 vy = 0.0
-                latching = False
-            if wind and not latching:
+            if arrived is not None:
+                # The crossing touched the surface across: gravity turns now
+                # (Player._turn_for_attach), the level logs the new floor.
+                centre = g * (ny - HALF)
+                g = -g
+                ny = g * centre + HALF
+                surfaces = surf_up if g < 0 else surf_down
+                latching, vy, grounded, support, coyote, gesture = False, 0.0, False, None, COYOTE, "idle"
+                self._surf_log.append((t, g < 0))
+            if latching:
+                pass
+            elif wind:
                 vy = min(vy + ((G_UP if vy < 0 else G_DOWN) + wind) * DT * 0.5, MAX_FALL)
             else:
                 vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
@@ -1970,7 +2020,8 @@ class Level:
             out.append({"tick": tick, "t": t, "x": x / T, "y": centre + HALF, "h": -(centre + HALF), "vy": vy,
                         "grounded": grounded, "jump": jump, "air_jumps": air_jumps, "clearance": clearance,
                         "near": hit, "static": grounded and support is not None and support.osc is None,
-                        "up": g < 0, "feet_h": -(centre + g * HALF), "latching": latching})
+                        "up": g < 0, "feet_h": -(centre + g * HALF), "latching": latching,
+                        "arrive": arrived is not None, "gesture": gesture})
             if death:
                 self.last_kinds = made
                 return out, (death, x / T, hit)
@@ -2402,9 +2453,9 @@ class Level:
             props["kind"] = 1
         self.add(Plain("GardenWeather", "Node2D", "garden/garden_weather", props, span=(x0 * T, x1 * T)))
 
-    def latch(self, *xs):
-        """Taps that must latch (World 04's second tap)."""
-        self.tap(*xs, kind="latch")
+    def attach(self, *xs):
+        """World 04: TAP TAP gestures that must attach (x: the second tap)."""
+        self.tap(*xs, kind="attach")
 
     # -------------------------------------------------- progress checkpoints --
     def progress_checkpoints(self, fractions=(1.0 / 3.0, 2.0 / 3.0), runway=1.5):
@@ -2453,7 +2504,7 @@ class Level:
                 continue
             if any(lo < x + 1.0 and hi > x - 1.0 for lo, hi in reach):
                 continue
-            if any(x - 12 * tick <= r <= x + 2 * tick for r in route):
+            if any(x - 12 * tick <= r and r - self.gesture_lead() <= x + 2 * tick for r in route):
                 continue
             if self.latch_mode and self._other_surface_near(x, st):
                 continue
@@ -2754,7 +2805,7 @@ class Level:
         self._sim = None
         ticks, death = self.run()
         if self.straddles:
-            raise SystemExit(f"{self.key}: the route latches across a slick edge at "
+            raise SystemExit(f"{self.key}: the route attaches across a slick edge at "
                              f"{[round(x, 2) for x, _ in self.straddles]} (ambiguous in the engine)")
         if death:
             cause, x, hit = death
@@ -2779,10 +2830,12 @@ class Level:
         """A grounded state of the intended path before taps j and j-1 (a fast,
         exact starting point: the path before it does not depend on tap j)."""
         path = path if path is not None else self.path()
-        earliest = route[j] - 24 * self.tiles_per_tick()  # The furthest a window search shifts it.
+        # The furthest a window search shifts it (and, World 04, its first tap).
+        earliest = route[j] - 24 * self.tiles_per_tick() - self.gesture_lead()
         limit = min(earliest, route[j - 1]) - 0.3 if j > 0 else earliest - 0.3
         start = None
         step = self.tiles_per_tick()
+        lead = self.gesture_lead()
         for s in path:
             if s["x"] >= limit:
                 break
@@ -2790,14 +2843,14 @@ class Level:
             # buffer holds a tap for 8 ticks) or about to be.
             # Static ground only: a start cannot know it is being carried.
             if s["grounded"] and s["static"] and s["jump"] is None and \
-                    not any(s["x"] - 10 * step <= r <= s["x"] + 2 * step for r in route):
+                    not any(s["x"] - 10 * step <= r and r - lead <= s["x"] + 2 * step for r in route):
                 start = (s["x"], s["feet_h"] / T)
                 if self.latch_mode:
                     # Mid-run: the surface, and the latches so far (elements
                     # that follow the floor read them), as in the full run:
                     # every latch tick of this path logged its time and the
                     # surface it made the floor.
-                    log = tuple((p["t"], p["up"]) for p in path if p["jump"] == "latch" and p["t"] < s["t"] - 1e-9)
+                    log = tuple((p["t"], p["up"]) for p in path if p.get("arrive") and p["t"] < s["t"] - 1e-9)
                     start += (s["up"], self.start_up, log)
         return start
 
@@ -2872,7 +2925,7 @@ class Level:
         base = sorted(self.route)
         jumps = sum(1 for s in ticks if s["jump"] == "ground")
         doubles = sum(1 for s in ticks if s["jump"] == "air")
-        kinds = [("J" if s["jump"] == "ground" else "D") for s in ticks if s["jump"]]
+        kinds = [{"ground": "J", "air": "D", "attach": "A", "fail": "f"}.get(s["jump"], "?") for s in ticks if s["jump"]]
         print(f"{self.key}: {len(ticks) / 60:.1f} s, {len(base)} taps ({jumps} jumps, {doubles} double), "
               f"{self.shards} shards, finish x={self.finish_x}")
         spare = [] if only else self.necessity()

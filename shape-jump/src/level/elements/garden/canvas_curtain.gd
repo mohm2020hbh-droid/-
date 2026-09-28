@@ -107,8 +107,28 @@ class _Cloth extends Node2D:
 	func _draw() -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		draw_rect(Rect2(0.0, 0.0, width, long), GardenLook.INK_BODY)
-		draw_rect(Rect2(0.0, 0.0, width, long), GardenLook.INK_RIM, false, 2.0)
+		# A banner, not a board: the sides bow a little as the cloth hangs and
+		# the hem is cut in scallops, all inside the cloth's reach (the
+		# hitbox is the full width and length, less a few px).
+		var shape := PackedVector2Array([Vector2(0.0, 0.0)])
+		var steps := 8
+		for i in range(1, steps + 1):
+			var y := long * i / steps
+			shape.append(Vector2(2.5 * sin(PI * i / steps) + rng.randf_range(-0.8, 0.8), y if i < steps else long - 6.0))
+		var scallops := maxi(int(width / 26.0), 2)
+		for i in scallops + 1:
+			var x := width * i / scallops
+			shape.append(Vector2(x, long))
+			if i < scallops:
+				shape.append(Vector2(x + width / scallops * 0.5, long - 11.0))
+		for i in range(steps, 0, -1):
+			var y := long * i / steps
+			shape.append(Vector2(width - 2.5 * sin(PI * i / steps) + rng.randf_range(-0.8, 0.8), y if i < steps else long - 6.0))
+		shape.append(Vector2(width, 0.0))
+		draw_colored_polygon(shape, GardenLook.INK_BODY)
+		var loop := shape.duplicate()
+		loop.append(shape[0])
+		draw_polyline(loop, GardenLook.INK_RIM, 2.0, true)
 		# Painted motif: brush waves and a blossom.
 		var strokes := PackedVector2Array()
 		for row in 3:
@@ -127,9 +147,9 @@ class _Cloth extends Node2D:
 			draw_circle(c + Vector2.from_angle(a) * 12.0, 8.0, Color(GardenLook.INK_RIM, 0.35))
 		draw_circle(c, 5.0, GardenLook.INK_RIM)
 		var fringe := PackedVector2Array()
-		var fx := 4.0
-		while fx < width:
-			fringe.append_array([Vector2(fx, long), Vector2(fx, long - 10.0)])
+		var fx := 6.0
+		while fx < width - 4.0:
+			fringe.append_array([Vector2(fx, long - 4.0), Vector2(fx + 1.5, long - 14.0)])
 			fx += 9.0
 		draw_multiline(fringe, GardenLook.INK_RIM, 1.5)
 

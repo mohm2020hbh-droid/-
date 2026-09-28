@@ -36,13 +36,37 @@ extends Resource
 ## ducks the player under it instead of killing.
 @export_range(0.0, 16.0, 1.0, "suffix:px") var head_clip_assist: float = 6.0
 
-@export_group("Surface Latch (World 04)")
-## The second tap of World 04 does not jump again: it latches to the other
-## surface if that surface is within this distance of the body's far side.
-@export_range(32.0, 400.0, 1.0, "suffix:px") var latch_reach: float = 160.0
-## Speed at which a latch sets off toward the other surface (it then
-## accelerates with the fall gravity until it lands there).
-@export_range(200.0, 2000.0, 10.0, "suffix:px/s") var latch_speed: float = 1000.0
+@export_group("Surface Attach (World 04)")
+## World 04 has no jump at all: two taps are ONE gesture, the SURFACE ATTACH.
+## The second tap must come within this time of the first, or the first is
+## forgotten (a lone tap does nothing).
+@export_range(0.1, 0.8, 0.01, "suffix:s") var attach_window: float = 0.3
+## Farthest surface (px of free space from the body's far side) an attach
+## can reach.
+@export_range(64.0, 800.0, 1.0, "suffix:px") var attach_reach: float = 360.0
+## The crossing: it sets off at this speed toward the other surface...
+@export_range(200.0, 3000.0, 10.0, "suffix:px/s") var attach_speed: float = 1000.0
+## ...and speeds up at this rate (a pull, not a jump)...
+@export_range(0.0, 20000.0, 100.0, "suffix:px/s²") var attach_accel: float = 6000.0
+## ...up to this speed.
+@export_range(200.0, 4000.0, 10.0, "suffix:px/s") var attach_max_speed: float = 1800.0
+
+
+## Speed (px/s) of a crossing on its [param tick]-th physics tick (0: the
+## tick it starts). The player, its attach check and the level generator all
+## use this, so they agree to the tick.
+func attach_speed_at(tick: int, dt: float) -> float:
+	return minf(attach_speed + attach_accel * tick * dt, attach_max_speed)
+
+
+## Physics ticks a crossing of [param distance] px takes.
+func attach_ticks(distance: float, dt: float) -> int:
+	var covered := 0.0
+	var ticks := 0
+	while covered < distance and ticks < 240:
+		covered += attach_speed_at(ticks, dt) * dt
+		ticks += 1
+	return ticks
 
 
 func rise_gravity() -> float:
@@ -71,18 +95,3 @@ func max_jump_height() -> float:
 ## Total airtime of a jump that lands at the same height it started from.
 func flat_jump_airtime() -> float:
 	return time_to_apex + sqrt(2.0 * jump_height / fall_gravity())
-
-
-## Physics ticks a latch takes to cover [param distance] px (World 04): the
-## motor's own integration (half the gravity before the move, half after),
-## so the player, its latch check and the level generator agree to the tick.
-func latch_ticks(distance: float, tick: float) -> int:
-	var covered := 0.0
-	var speed := latch_speed
-	var ticks := 0
-	while covered < distance and ticks < 120:
-		speed = minf(speed + fall_gravity() * tick * 0.5, max_fall_speed)
-		covered += speed * tick
-		speed = minf(speed + fall_gravity() * tick * 0.5, max_fall_speed)
-		ticks += 1
-	return ticks

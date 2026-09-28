@@ -56,7 +56,24 @@ func _draw() -> void:
 	var w := size.x
 	var h := size.y
 	var body := Color(1.0, 1.0, 1.0) if latchable else Color(0.72, 0.74, 0.8)
-	draw_rect(get_rect(), body)
+	# An island, not a box: the corners on its back (the face away from the
+	# corridor, never reached) are worn away in uneven cuts; the face you
+	# stand on keeps its full width, corner to corner.
+	var cut := minf(minf(h * 0.35, w * 0.2), 18.0)
+	var back_top := not top_edge and cut > 3.0     # A ceiling island: its back is the top.
+	var back_bottom := not bottom_edge and cut > 3.0
+	var outline := PackedVector2Array()
+	if back_top:
+		outline.append_array([Vector2(0.0, cut), Vector2(cut * 0.45, cut * 0.35), Vector2(cut, 0.0)])
+		outline.append_array([Vector2(w - cut, 0.0), Vector2(w - cut * 0.4, cut * 0.4), Vector2(w, cut)])
+	else:
+		outline.append_array([Vector2(0.0, 0.0), Vector2(w, 0.0)])
+	if back_bottom:
+		outline.append_array([Vector2(w, h - cut), Vector2(w - cut * 0.35, h - cut * 0.45), Vector2(w - cut, h)])
+		outline.append_array([Vector2(cut, h), Vector2(cut * 0.5, h - cut * 0.3), Vector2(0.0, h - cut)])
+	else:
+		outline.append_array([Vector2(w, h), Vector2(0.0, h)])
+	draw_colored_polygon(outline, body)
 	# Strata: soft darker bands inside the island.
 	var strata := PackedVector2Array()
 	for i in 3:

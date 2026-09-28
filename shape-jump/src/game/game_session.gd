@@ -99,8 +99,10 @@ func _ready() -> void:
 	player.double_jumped.connect(_on_player_double_jumped)
 	player.landed.connect(_on_player_landed)
 	player.died.connect(_on_player_died)
-	player.latched.connect(_on_player_latched)
-	player.latch_missed.connect(_on_player_latch_missed)
+	player.attach_armed.connect(_on_player_attach_armed)
+	player.attach_started.connect(_on_player_attach_started)
+	player.attached.connect(_on_player_attached)
+	player.attach_failed.connect(_on_player_attach_failed)
 	score.changed.connect(hud.set_score)
 	progress.changed.connect(hud.set_progress)
 	hud.pause_pressed.connect(pause)
@@ -114,7 +116,8 @@ func _ready() -> void:
 	player.gravity = gravity
 	camera.gravity = gravity
 	surface_run = SurfaceRun.new(player, gravity)
-	for event in [player.state_changed, player.landed, player.respawned, player.died, player.latched]:
+	for event in [player.state_changed, player.landed, player.respawned, player.died, player.attach_started,
+			player.attached, player.attach_armed, player.attach_failed]:
 		event.connect(func(_a: Variant = null, _b: Variant = null) -> void: _sync_surface_run())
 	gravity.flipped.connect(_on_gravity_flipped)
 	_tap_input.tapped.connect(press_jump)
@@ -443,11 +446,12 @@ func _use_world(index: int) -> void:
 			fresh.name = "Background"
 			$World.add_child(fresh)
 			$World.move_child(fresh, 0)
-	# World 01 keeps the tesseract core; later worlds show the trapped void
-	# (World 04: the seed, which takes the colour of its surface).
-	player.visual.void_style = world.theme != &"red" and not world.surface_latch
+	# World 01 keeps the tesseract core, World 02 shows the trapped void,
+	# World 03 a white square, World 04 the seed (the colour of its surface).
+	player.visual.galaxy_style = world.theme == &"galaxy"
+	player.visual.void_style = world.theme == &"mono"
 	player.visual.garden_style = world.surface_latch
-	player.set_surface_latch(world.surface_latch)
+	player.set_surface_attach(world.surface_latch)
 	player.fx.refresh_colors()
 	player.fx.modulate = Color.WHITE  # (World 04's look tints it per surface.)
 	UiLook.apply(self, world.theme)
@@ -532,26 +536,37 @@ func _on_obstacle_cued(kind: StringName, at: Vector2) -> void:
 
 
 ## A flip in play is heard (restores on respawn and level start are not).
-## In World 04 the latch that made it has its own sound.
+## In World 04 the attach that made it has its own sound.
 func _on_gravity_flipped(up: bool, instant: bool) -> void:
 	if not instant and state == State.PLAYING and not (level and level.surface_latch):
 		Events.gravity_flipped.emit(up, player.global_position)
 
 
-## World 04: the second tap took hold. The level logs the new floor (its
-## elements read it), and the view anchors on the surface being crossed to.
-func _on_player_latched(landing: Vector2) -> void:
-	level.record_surface(gravity.up)
-	camera.anchor_to(landing.y)
-	surface_run.note_latch()
+## World 04: the first tap of the gesture (a soft cue: nothing moves yet).
+func _on_player_attach_armed() -> void:
 	if state == State.PLAYING:
-		Events.player_latched.emit(player.global_position, gravity.up)
+		Events.player_attach_armed.emit(player.global_position)
 
 
-func _on_player_latch_missed() -> void:
-	surface_run.note_miss()
+## World 04: the gesture took hold. The view holds still while the player
+## crosses (it centres the corridor, the same for both surfaces).
+func _on_player_attach_started(_landing: Vector2, to_up: bool) -> void:
+	surface_run.note_attach(to_up)
 	if state == State.PLAYING:
-		Events.player_latch_missed.emit(player.global_position)
+		Events.player_attach_started.emit(player.global_position, to_up)
+
+
+## World 04: the crossing touched the surface; gravity points at it now. The
+## level logs the new floor (its elements read it).
+func _on_player_attached(up: bool) -> void:
+	level.record_surface(up)
+	camera.anchor_to(player.global_position.y)
+
+
+func _on_player_attach_failed() -> void:
+	surface_run.note_fail()
+	if state == State.PLAYING:
+		Events.player_attach_failed.emit(player.global_position)
 
 
 func _sync_surface_run() -> void:

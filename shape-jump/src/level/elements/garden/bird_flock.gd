@@ -111,8 +111,15 @@ class _Flock extends Node2D:
 
 	func _draw() -> void:
 		if wings == 0:
-			var core := Rect2(-span * CORE * 0.5, span * CORE)
-			draw_rect(core.grow(4.0), Color(GardenLook.INK_BODY, 0.55))
+			# The deadly core as a murmuration: a soft, uneven cloud of birds
+			# (an ellipse around the core box, so it covers all of it).
+			var half := span * CORE * 0.5 + Vector2(4.0, 4.0)
+			var cloud := PackedVector2Array()
+			for i in 14:
+				var a := TAU * i / 14.0
+				var r := 1.42 * (0.94 + 0.1 * sin(i * 2.7))
+				cloud.append(Vector2(cos(a) * half.x * r, sin(a) * half.y * r))
+			draw_colored_polygon(cloud, Color(GardenLook.INK_BODY, 0.5))
 			for b in _birds():
 				draw_circle(b, 6.0, GardenLook.INK_BODY)
 				draw_arc(b, 6.0, 0.0, TAU, 10, GardenLook.INK_RIM, 1.5, true)

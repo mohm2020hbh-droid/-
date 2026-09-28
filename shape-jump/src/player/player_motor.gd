@@ -34,22 +34,28 @@ extends RefCounted
 ##   waiting in the jump buffer is dropped (it was meant for the old floor).
 ## - Taps already queued still fire, as the double jump if one is left.
 ##
-## Surface latch rules (World 04, [member air_action] = SURFACE_LATCH):
-## - The air tap is not a second jump. If the other surface is in reach
-##   (the player checks it: [code]latch_reach[/code] of [method begin_tick]),
-##   it LATCHES: the frame turns (the other surface is the new floor) and the
-##   body sets off toward it at [member MovementConfig.latch_speed].
-## - Out of reach it is a MISS: nothing moves, no teleport. The air tap is
-##   spent all the same (one decision per airtime), and the tap waits in the
-##   jump buffer, so a miss just before landing still jumps on landing.
-## - While latching the body is committed: taps are swallowed (no jump on
-##   arrival, no second latch), wind does not act, and it ends on touching
-##   the new floor, which restores the air tap as any landing does.
+## Surface attach rules (World 04, [member tap_mode] = SURFACE_ATTACH). There
+## is no jump at all, and no second jump: two taps are ONE gesture.
+## - Gesture: IDLE --tap--> TAP_PENDING --tap within attach_window-->
+##   ATTACH_REQUEST. A lone tap is forgotten when the window runs out: it
+##   never moves the player.
+## - The request is decided on the next tick. On a surface (or within coyote
+##   time of leaving one) with a valid surface across (the player checks it
+##   along the real crossing path: [code]attach_ok[/code] of
+##   [method begin_tick]) it ATTACHES: the body sets off toward the other
+##   surface at [member MovementConfig.attach_speed], speeding up as it goes,
+##   with no gravity (a pull, not a fall). Otherwise the attach FAILS: nothing
+##   moves, nothing else happens, the gesture is spent.
+## - While attaching, taps are swallowed; the crossing ends on touching the
+##   surface ([method arrive], the player turns gravity then), so every attach
+##   needs a new gesture of its own.
 
-enum Jump { NONE, GROUND, AIR, LATCH, LATCH_MISS }
-## What a tap in the air does: the double jump (Worlds 01-03) or the surface
-## latch (World 04).
-enum AirAction { DOUBLE_JUMP, SURFACE_LATCH }
+enum Jump { NONE, GROUND, AIR, ATTACH, ATTACH_FAIL }
+## What taps do: jumps and the double jump (Worlds 01-03), or the surface
+## attach gesture (World 04).
+enum TapMode { JUMP, SURFACE_ATTACH }
+## World 04's two-tap gesture.
+enum Gesture { IDLE, TAP_PENDING, ATTACH_REQUEST }
 
 var config: MovementConfig
 var velocity := Vector2.ZERO
@@ -59,11 +65,13 @@ var running := false
 var speed_scale := 1.0
 ## The jump that started during this tick, if any.
 var jump_this_tick: Jump = Jump.NONE
-## Double jumps (or, in World 04, latches) left before the next landing.
+## Double jumps left before the next landing (Worlds 01-03).
 var air_jumps_left := 0
-var air_action: AirAction = AirAction.DOUBLE_JUMP
-## World 04: between a latch and touching the surface it latched to.
-var latching := false
+var tap_mode: TapMode = TapMode.JUMP
+## World 04: the two-tap gesture so far.
+var gesture: Gesture = Gesture.IDLE
+## World 04: between the start of an attach and touching the surface.
+var attaching := false
 ## World 04: extra acceleration toward the floor (+) or away from it (-),
 ## e.g. a gust of wind. Set by the player every tick.
 var external_accel := 0.0
@@ -75,6 +83,10 @@ var _coyote_left := 0.0
 var _queued_taps := 0
 ## Time left for a tap that arrived while no jump was available.
 var _buffer_left := 0.0
+## World 04: time left for the second tap of the gesture.
+var _gesture_left := 0.0
+## World 04: ticks since the attach started (its speed follows them).
+var _attach_tick := 0
 
 
 func _init(movement_config: MovementConfig) -> void:
@@ -87,7 +99,10 @@ func reset(on_floor: bool = false) -> void:
 	velocity = Vector2.ZERO
 	jump_this_tick = Jump.NONE
 	air_jumps_left = config.air_jumps
-	latching = false
+	attaching = false
+	gesture = Gesture.IDLE
+	_gesture_left = 0.0
+	_attach_tick = 0
 	external_accel = 0.0
 	_grounded = on_floor
 	_coyote_left = 0.0
@@ -97,9 +112,11 @@ func reset(on_floor: bool = false) -> void:
 
 ## Registers a tap. It starts a jump on the next tick if one is available
 ## (after any taps already waiting), otherwise it waits in the jump buffer.
+## World 04: a step of the attach gesture instead (see the class notes).
 func request_jump() -> void:
-	if latching:
-		return  # Committed to the latch: the tap is swallowed.
+	if tap_mode == TapMode.SURFACE_ATTACH:
+		_gesture_tap()
+		return
 	if _queued_taps < jumps_available():
 		_queued_taps += 1
 	else:
@@ -108,31 +125,41 @@ func request_jump() -> void:
 
 ## Jumps the player could still make before landing, as of the last tick.
 func jumps_available() -> int:
-	if latching:
-		return 0
+	if tap_mode == TapMode.SURFACE_ATTACH:
+		return 0  # World 04 never jumps.
 	if _grounded:
 		return 1 + config.air_jumps
 	return (1 if _coyote_left > 0.0 else 0) + air_jumps_left
 
 
-## [param latch_reach] (World 04): the other surface is in reach right now,
-## so an air tap this tick latches to it.
-func begin_tick(on_floor: bool, delta: float, latch_reach := false) -> Vector2:
+## World 04: a gesture is complete and will be decided on the next tick
+## (the player checks the surface across for it).
+func attach_requested() -> bool:
+	return gesture == Gesture.ATTACH_REQUEST and not attaching
+
+
+## World 04: standing on a surface (or just off one), free to attach.
+func can_attach() -> bool:
+	return not attaching and (_grounded or _coyote_left > 0.0)
+
+
+## [param attach_ok] (World 04): an attach requested now would reach a valid
+## surface (the player checked the crossing path).
+func begin_tick(on_floor: bool, delta: float, attach_ok := false) -> Vector2:
+	if tap_mode == TapMode.SURFACE_ATTACH:
+		return _begin_attach_tick(on_floor, delta, attach_ok)
 	jump_this_tick = Jump.NONE
 	velocity.x = config.run_speed * speed_scale if running else 0.0
 	_grounded = on_floor
 	if on_floor:
 		_coyote_left = config.coyote_time
 		air_jumps_left = config.air_jumps
-		latching = false
 
 	var can_ground_jump := on_floor or _coyote_left > 0.0
 	if _queued_taps > 0:
 		_queued_taps -= 1
 		if can_ground_jump:
 			_start_jump(Jump.GROUND)
-		elif air_jumps_left > 0 and air_action == AirAction.SURFACE_LATCH:
-			_air_latch(latch_reach)
 		elif air_jumps_left > 0:
 			_start_jump(Jump.AIR)
 		else:
@@ -155,8 +182,8 @@ func end_tick(resolved_velocity: Vector2, delta: float, on_floor: bool) -> Vecto
 	_grounded = on_floor
 	if on_floor:
 		air_jumps_left = config.air_jumps
-		latching = false
-	_apply_gravity(delta * 0.5)
+	if not attaching:
+		_apply_gravity(delta * 0.5)
 	return velocity
 
 
@@ -168,19 +195,60 @@ func flip() -> void:
 	_buffer_left = 0.0
 
 
-## World 04's air tap (see the class notes): a latch or a miss.
-func _air_latch(in_reach: bool) -> void:
-	air_jumps_left -= 1
-	if not in_reach:
-		jump_this_tick = Jump.LATCH_MISS
-		_buffer_left = config.jump_buffer_time
-		return
-	# The other surface becomes the floor: head for it.
-	flip()
-	velocity.y = config.latch_speed
-	latching = true
-	_queued_taps = 0
-	jump_this_tick = Jump.LATCH
+## World 04: the attach touched the surface across. The player turns
+## gravity now (that surface is the floor); the body rests against it.
+func arrive() -> void:
+	attaching = false
+	velocity.y = 0.0
+	_grounded = false
+	_coyote_left = config.coyote_time  # A gesture on the landing tick counts as on a surface.
+	gesture = Gesture.IDLE
+
+
+## World 04's tick (see the class notes): run, the gesture, the crossing.
+func _begin_attach_tick(on_floor: bool, delta: float, attach_ok: bool) -> Vector2:
+	jump_this_tick = Jump.NONE
+	velocity.x = config.run_speed * speed_scale if running else 0.0
+	_grounded = on_floor
+	if on_floor:
+		_coyote_left = config.coyote_time
+	if attaching:
+		_attach_tick += 1
+		velocity.y = -config.attach_speed_at(_attach_tick, delta)
+		if _attach_tick > config.attach_ticks(config.attach_reach, delta) + 6:
+			# Nothing met (a surface that moved away): let go; gravity, still
+			# the old one, brings the body back.
+			attaching = false
+	elif gesture == Gesture.ATTACH_REQUEST:
+		gesture = Gesture.IDLE
+		if attach_ok and (on_floor or _coyote_left > 0.0):
+			attaching = true
+			_attach_tick = 0
+			_coyote_left = 0.0
+			velocity.y = -config.attach_speed_at(0, delta)
+			jump_this_tick = Jump.ATTACH
+		else:
+			jump_this_tick = Jump.ATTACH_FAIL
+	elif gesture == Gesture.TAP_PENDING:
+		_gesture_left -= delta
+		if _gesture_left <= 0.0:
+			gesture = Gesture.IDLE  # A lone tap: forgotten.
+	if not on_floor:
+		_coyote_left = maxf(_coyote_left - delta, 0.0)
+	if not attaching:
+		_apply_gravity(delta * 0.5)
+	return velocity
+
+
+func _gesture_tap() -> void:
+	if attaching:
+		return  # Committed to the crossing: swallowed.
+	match gesture:
+		Gesture.IDLE:
+			gesture = Gesture.TAP_PENDING
+			_gesture_left = config.attach_window
+		Gesture.TAP_PENDING:
+			gesture = Gesture.ATTACH_REQUEST
 
 
 func _start_jump(kind: Jump) -> void:
@@ -196,6 +264,6 @@ func _start_jump(kind: Jump) -> void:
 
 func _apply_gravity(step: float) -> void:
 	var gravity := config.rise_gravity() if velocity.y < 0.0 else config.fall_gravity()
-	if external_accel != 0.0 and not latching:
+	if external_accel != 0.0:
 		gravity += external_accel
 	velocity.y = minf(velocity.y + gravity * step, config.max_fall_speed)

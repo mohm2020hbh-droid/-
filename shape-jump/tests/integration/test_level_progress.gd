@@ -101,7 +101,9 @@ func _die_twice_then_finish(index: int) -> void:
 		assert_near(player.global_position.x, last_cp.global_position.x, 12.0, "%s: respawned at the last checkpoint" % name)
 		assert_true(player.is_on_floor(), "%s: on the ground" % name)
 		assert_eq(player.velocity.y, 0.0, "%s: no vertical speed" % name)
-		assert_true(player.has_double_jump(), "%s: double jump restored" % name)
+		# (World 04 has no jump: its tap is ready as a new attach gesture.)
+		assert_true(player.can_attach() if player.uses_surface_attach() else player.has_double_jump(),
+			"%s: double jump (or attach) restored" % name)
 		await h.run_ticks(1)
 		assert_near(h.game.progress.percent, maxf(before - 25.0, _percent(player.global_position.x / GameConst.TILE)), 0.6,
 			"%s: progress kept the penalty" % name)
