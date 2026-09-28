@@ -22,9 +22,9 @@ extends Node2D
 ## restores it exactly. The level writes it into [member gravity] each tick.
 ##
 ## Surfaces (World 04, [member surface_latch]): the player turns gravity
-## itself, latching from one surface to the other with its second tap, so
+## itself, attaching from one surface to the other with a TAP TAP, so
 ## the level never writes gravity; it keeps a log instead. The game session
-## reports every latch ([method record_surface]) and the level can then say
+## reports every attach ([method record_surface]) and the level can then say
 ## which surface was the floor at any moment of this attempt
 ## ([method surface_up_at]): elements that act on "the floor" pick their side
 ## from it at the start of each cycle, which keeps them pure functions of
@@ -45,7 +45,7 @@ signal obstacle_cued(kind: StringName, position: Vector2)
 const PHYSICS_PRIORITY := -10
 ## A gate at x turns gravity on the tick the player's centre reaches it.
 const GRAVITY_EPSILON := 0.001
-## A latch logged at level time t changes the floor for every moment after
+## An attach logged at level time t changes the floor for every moment after
 ## t (not at t itself: the elements already took their place for that tick).
 const SURFACE_EPSILON := 0.0001
 
@@ -60,7 +60,7 @@ const SURFACE_EPSILON := 0.0001
 ## levels that have one (Worlds 03 and 04); 0: open sky. Geometry only: the
 ## camera frames every level by the same rule ([method GameCamera.frame_band]).
 @export var corridor_height := 0.0
-## World 04: the player turns gravity by latching from surface to surface;
+## World 04: the player turns gravity by attaching from surface to surface;
 ## the level logs it instead of writing it (see the class notes).
 @export var surface_latch := false
 
@@ -81,7 +81,7 @@ var _gravity_dirty := true
 ## The player's run: x = _run_origin + _run_speed * clock.
 var _run_origin := 0.0
 var _run_speed := 0.0
-## World 04: the floor before the first logged latch, and every latch of
+## World 04: the floor before the first logged attach, and every attach of
 ## this attempt since: Vector2(level time, 1.0 for the ceiling / 0.0 ground).
 var _surface_base := false
 var _surface_log: Array[Vector2] = []
@@ -248,13 +248,13 @@ func _rebuild_gravity_events() -> void:
 	_gravity_dirty = false
 
 
-## World 04: a latch in play just made [param up] the floor (logged at the
+## World 04: an attach in play just made [param up] the floor (logged at the
 ## current level time).
 func record_surface(up: bool) -> void:
 	_surface_log.append(Vector2(clock, 1.0 if up else 0.0))
 
 
-## World 04: a fresh log, with [param up] the floor until the next latch (a
+## World 04: a fresh log, with [param up] the floor until the next attach (a
 ## level start or a respawn; call it before [method rewind_to]).
 func reset_surface(up: bool) -> void:
 	_surface_base = up
@@ -262,7 +262,7 @@ func reset_surface(up: bool) -> void:
 
 
 ## World 04: true when the ceiling was the floor at level time [param t] of
-## this attempt (the start's or the respawn's surface before any latch).
+## this attempt (the start's or the respawn's surface before any attach).
 func surface_up_at(t: float) -> bool:
 	var up := _surface_base
 	for event in _surface_log:
@@ -272,7 +272,7 @@ func surface_up_at(t: float) -> bool:
 	return up
 
 
-## World 04: every latch of this attempt, in order (tests, diagnostics).
+## World 04: every attach of this attempt, in order (tests, diagnostics).
 func get_surface_log() -> Array[Vector2]:
 	return _surface_log
 

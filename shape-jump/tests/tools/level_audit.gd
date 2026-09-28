@@ -190,6 +190,7 @@ func _exploits() -> void:
 	var probe := GameHarness.new(self)
 	await probe.start(level_index, world_index)
 	finish = probe.game.level.get_finish().global_position.x / GameConst.TILE
+	var attach_world := probe.game.player.uses_surface_attach()
 	probe.free_game()
 	await get_tree().physics_frame
 	var strategies: Array[Array] = [["never tap", 0, 0]]
@@ -197,6 +198,10 @@ func _exploits() -> void:
 		strategies.append(["tap every %d ticks" % every, every, 0])
 	for every in [30, 40, 50]:
 		strategies.append(["jump + double jump every %d ticks" % every, every, 16])
+	if attach_world:
+		# World 04: a whole TAP TAP gesture on a fixed rhythm.
+		for every in [20, 25, 30, 36, 42, 50, 60, 75, 90]:
+			strategies.append(["TAP TAP every %d ticks" % every, every, 5])
 	var worst := 0.0
 	for strategy in strategies:
 		var h := GameHarness.new(self)
@@ -204,18 +209,22 @@ func _exploits() -> void:
 		h.game.press_jump()
 		var every: int = strategy[1]
 		var second: int = strategy[2]
-		var tick := 0
+		# Lambdas capture locals by value: counters live in arrays.
+		var tick := [0]
+		var attaches := [0]
+		h.game.player.attach_started.connect(func(_landing: Vector2, _to_up: bool) -> void: attaches[0] += 1)
 		await h.run_until(func() -> bool:
-			tick += 1
-			if every > 0 and tick % every == 0:
+			tick[0] += 1
+			if every > 0 and tick[0] % every == 0:
 				h.game.press_jump()
-			if second > 0 and tick % every == second:
+			if second > 0 and tick[0] % every == second:
 				h.game.press_jump()
 			return not h.deaths.is_empty() or h.game.state == GameSession.State.COMPLETE, 60 * 400)
 		var reached := h.player_x() / finish
 		worst = maxf(worst, reached)
-		print("  EXPLOIT %-34s %s at %3d%%" % [strategy[0],
-			"COMPLETES" if h.game.state == GameSession.State.COMPLETE else "dies", int(reached * 100.0)])
+		print("  EXPLOIT %-34s %s at %3d%%%s" % [strategy[0],
+			"COMPLETES" if h.game.state == GameSession.State.COMPLETE else "dies", int(reached * 100.0),
+			"  (%d attaches)" % attaches[0] if h.game.player.uses_surface_attach() else ""])
 		h.free_game()
 		await get_tree().physics_frame
 	print("  EXPLOITS furthest %d%% of the level" % int(worst * 100.0))

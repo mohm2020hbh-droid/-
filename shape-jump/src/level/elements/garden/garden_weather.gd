@@ -6,7 +6,7 @@ extends Node2D
 ## every obstacle and the terrain's faces ([constant LAYER]), soft and pale,
 ## so it can never hide a hazard or be mistaken for one: the dangerous
 ## leaves ([LeafGlider]) and ice ([FallingRock] with ice) are dark and inked.
-## Its particles fall toward the floor of the moment (they turn with a latch).
+## Its particles fall toward the floor of the moment (they turn with an attach).
 ##
 ## At most [constant MAX_FLAKES] shapes, redrawn only while on screen.
 

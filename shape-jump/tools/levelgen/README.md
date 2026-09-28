@@ -8,7 +8,7 @@
 | `world_01.py` | مستويات World 01 الخمسة كمقاطع (Groups) مقروءة، وكتابة `world_01.tres` والمسارات |
 | `world_02.py` | مستويات World 02 الخمسة (The Monochrome Void)، و`world_02.tres` (ثيم `mono`، خلفية `background_mono.tscn`، يُفتح بإنهاء World 01) و`world_02_routes.gd` |
 | `world_03.py` | مستويات World 03 الخمسة (The Horrifying Galaxy)، مبنية من "Beats" بقلب الجاذبية، و`world_03.tres` (ثيم `galaxy`، خلفية `background_galaxy.tscn`، يُفتح بإنهاء World 02) و`world_03_routes.gd`. `--load` يطبع حمل التوقيت (bit/s) |
-| `world_04.py` | مستويات World 04 الخمسة (The Inverted Garden)، مبنية من Beats بالـSurface Latch وخطة سطوح (`Plan`)، و`world_04.tres` (`surface_latch = true`، ثيم `garden`، خلفية `background_garden.tscn`، يُفتح بإنهاء World 03، العالم الأخير) و`world_04_routes.gd`. يطبع حمل التوقيت ونوع كل لمسة (J قفزة، L Latch) |
+| `world_04.py` | مستويات World 04 الخمسة (The Inverted Garden)، مبنية من Beats بالـSurface Attach (TAP + TAP، بلا قفز) وخطة سطوح (`Plan`)، و`world_04.tres` (`surface_latch = true`، ثيم `garden`، خلفية `background_garden.tscn`، يُفتح بإنهاء World 03، العالم الأخير) و`world_04_routes.gd`. يطبع حمل التوقيت ونوع كل إيماءة (A عبور، f فشل؛ J/D لا يجب أن تظهر) |
 | `noisy_player.py` | لاعب بخطأ توقيت بشري على المحاكاة: `python3 noisy_player.py world_04 3 --trials=300 --sigma=30` → نسبة إنهاء المستوى في محاولة واحدة ونسبة كل مقطع بين Checkpointين |
 
 ## التشغيل
@@ -95,23 +95,22 @@ lv.shards_along(205, 220, 3.0)           # Shards على المسار النها
 
 وفي `world_03.py` "Beats" جاهزة: `mine_pair`، `slot`، `trap`، `rock`، `orbit_hop`، `orbit_dj`، `rock_dj`، `air_gate` (قلب في قمة قفزة فوق خطر)، `ground_gate`، `low_hops` (تحت جدار)، `dj_gap` (Double Jump متأخر إلى حافة مرتفعة). `orbit_dj` يأخذ اتجاه الدوران من منظور السطح الحالي (الجاذبية للأعلى تعكسه في العالم).
 
-## World 04: الـSurface Latch في المحاكاة
+## World 04: TAP + TAP = Surface Attach في المحاكاة
 
-- **`latch_mode`:** اللمسة الهوائية تفحص السطح المقابل كما يفحصه `SurfaceLatch.probe` (المدى 160 px من الرأس، الوجه المواجه، `latchable`، ونقطة الوصول بعد `latch_ticks`)؛ إن كان في المدى تقلب الإطار (نفس إطار World 03 المعكوس) وتنطلق بـ`LATCH_SPEED` نحو السطح الجديد، وإلا فهي `miss` (لا شيء يتحرك، واللمسة في الـBuffer). كل Latch يُسجَّل في سجل سطوح المحاولة، فالعوائق المثبتة على `FLOOR` / `SKY` تقرأ أرضية اللحظة منه كما في `Level.surface_up_at`.
-- **بداية من Checkpoint = Respawn:** (x، الارتفاع، السطح) وسجل جديد، والزمن مقرّب لشبكة الـTicks كما يفعل `GameSession.time_at`.
-- **`check()`** يرفض مسارًا يمسك سطحًا أملس أو يعبر حافته.
-- **خطة السطوح (`Plan` في `world_04.py`):** بعد كل عبور يُقطع السطح المتروك حتى قبيل العبور التالي (و`finish_level(..., plan=plan)` يقطعه حتى النهاية)، فكل Latch ضروري ولكل مقطع أرضية واحدة يقف عليها الـCheckpoint. `close()` / `open()` لمقاطع الاختيار (ممر منخفض، سقف أملس، هبّة، سقف متحرك).
-- **مفاتيح الصعوبة:** ارتفاع الممر (`new_level(..., corridor=)`: نافذة الـLatch 21 Tick عند 5.0 خانات، 12 عند 5.4، 8 عند 5.5)، `size_hops(lv, roots=(w, h), flower=(w, h))` لتكبير الجذور والزهور حول مركزها، وأهداف `tune` لكل Beat.
-- **قانون الحجارة:** الحجر يختار جهته عند بداية دورته ويحتاج ≈ 0.86 ث ليعبر الممر، فعمود حجارة يُوضع ≥ 9 خانات بعد هبوط Latch (`rock_hop`).
+- **`latch_mode`:** لا قفز. كل مدخل في المسار هو **اللمسة الثانية** للإيماءة، والمحاكاة تضع اللمسة الأولى قبلها بـ`GESTURE_GAP` (5 Ticks)؛ الإيماءة `idle → pending → request` كما في `PlayerMotor` (نافذة `ATTACH_WINDOW` = 0.3 ث). الطلب يُفحص بـ`attach_probe` كما يفحصه `SurfaceAttach.probe`: يمشي مسار العبور الحقيقي (الجري + `attach_speed_at(k)` نحو السطح المقابل) حتى `ATTACH_REACH` = 360 px، وأول ما يلمسه يجب أن يكون وجه سطح قابل للإمساك. إن صح: عبور بلا جاذبية يتسارع من 1000 إلى 1800 px/s، والوصول (لمس السطح) يقلب الإطار ويُسجَّل في سجل سطوح المحاولة (`"arrive"`)؛ وإلا فشل (`"fail"`) بلا حركة. العوائق المثبتة على `FLOOR` / `SKY` تقرأ أرضية اللحظة من السجل كما في `Level.surface_up_at`.
+- **بداية من Checkpoint = Respawn:** (x، الارتفاع، السطح) وسجل جديد، والزمن مقرّب لشبكة الـTicks كما يفعل `GameSession.time_at`؛ ونقطة إعادة المحاولة (`_ground_before`، `_cut_points`) لا تقع أبدًا بين لمستي إيماءة (`Level.gesture_lead()`).
+- **`check()`** يرفض مسارًا يعبر إلى حافة سطح أملس (حالة ملتبسة في المحرك).
+- **خطة السطوح (`Plan` في `world_04.py`):** السطح المقابل موجود فقط حول العبورات التي تحتاجه (`early` قبل الوصول)، وبعد كل عبور يُقطع السطح المتروك (`late` بعد اللمسة)، فكل عبور ضروري (تخطيه = سقوط) ولكل مقطع أرضية واحدة يقف عليها الـCheckpoint. `early` / `late` لكل مستوى هما "هامشه" قبل أن تضيّقه العوائق.
+- **مفاتيح الصعوبة:** أهداف `tune` لنافذة كل Beat (ms)، الهامش (`Plan(early, late)`)، والمسافة بين الـBeats (فواصل غير متساوية تكسر الإيقاع الثابت).
 
 | الدالة | العنصر |
 |---|---|
-| `garden_block` / `garden_mover` | كتل الحديقة (أرض/سقف، `latchable=False` = حجر أملس) وسقف متحرك |
-| `roots` · `branch` · `flower` · `wave` · `waterfall` · `wind` · `rock` (`ice=True`) · `vines` · `glider` · `ink` · `curtain` · `boulder` · `flock` | العوائق الأربعة عشر، بمرساة `GROUND` / `CEILING` / `FLOOR` (أرضية اللاعب عند بداية الدورة) / `SKY` (المقابل لها) |
+| `garden_block` / `garden_mover` | كتل الحديقة (أرض/سقف، `latchable=False` = حجر أملس؛ في `world_04.py`: `Band.slicken(x0, x1)` و`Band.cut`) وسقف متحرك |
+| `roots` · `branch` · `flower` · `wave` · `waterfall` · `wind` · `rock` (`ice=True`) · `vines` · `glider` · `ink` · `curtain` · `boulder` · `flock` | العوائق، بمرساة `GROUND` / `CEILING` / `FLOOR` (أرضية اللاعب عند بداية الدورة) / `SKY` (المقابل لها) |
 | `weather(x0, x1, "leaves" / "snow")` | طقس زينة بلا تصادم |
-| `latch(x)` | لمسة يجب أن تكون Latch (والتقرير يفشل إن صارت شيئًا آخر) |
+| `attach(x)` | إيماءة يجب أن تنتهي بعبور (والتقرير يفشل إن فشلت أو صارت شيئًا آخر) |
 
-وفي `world_04.py` Beats جاهزة: `cross` (قفزة + Latch بعد `dt`)، `quick_cross` (ممر منخفض: لمستان متلاحقتان)، `tunnel_inks`، `hop`، `rock_hop`، `torrent_hop`، `branch_hop`، `curtain_hop`، `glade`، `rest`، و`after(lv, x)` (أقرب لمسة تالية بعد هبوط قفزة).
+وفي `world_04.py` Beats جاهزة، كل واحد عبور واحد وسؤال "متى؟": `roots_here` و`wave_here` (خطر على سطحك: اعبر قبله)، `flower_across` و`ink_across` (خطر على المقابل: اعبر بعده)، `vines_across` و`curtain_through` (ستارة فوق نصف المسار الأول)، `branch_through` و`boulder_through` و`flock_through` و`glider_through` و`rock_through` و`waterfall_through` (شيء يعبر طريق العبور)، `slick_wait` (سقف أملس: انتظر)، `moving_ceiling` (سقف يعلو خارج المدى وينزل: عبوران)، و`rest`.
 
 ## التحقق على المحرك
 

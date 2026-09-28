@@ -4,7 +4,7 @@ extends GardenHazard
 ## BIRD FLOCK (World 04): a tight V of birds sweeping up and down across the
 ## corridor at one place, on a fixed, calm rhythm: a moving barrier. It
 ## closes part of the way while it passes; read its sweep and go under or
-## over it, latch past it, or time the gap. Flying into the flock is fatal.
+## over it, attach past it, or time the gap. Flying into the flock is fatal.
 ## It is on screen long before you reach it (it enters from the right as the
 ## view moves on), and its sweep is traced faintly.
 ## Where it flies is the same whichever surface you run on: over the ground

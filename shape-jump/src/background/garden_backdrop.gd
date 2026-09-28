@@ -7,12 +7,12 @@ extends Node2D
 ## own parallax and a horizontal wrap. Everything is drawn once in neutral
 ## tones (white and greys) and coloured through modulate.
 ##
-## It is also the world's look controller. Each latch turns the world over:
+## It is also the world's look controller. Each attach turns the world over:
 ##   GROUND  (the ground is the floor):  a BLUE + WHITE world, sky above;
 ##   CEILING (the ceiling is the floor): a YELLOW + BLACK world, the whole
 ##           landscape hanging upside down (the sky below, the lake above,
 ##           trees growing down, waterfalls pouring up, leaves falling up).
-## Over the latch's transition the landscape turns over its horizon (a
+## Over the attach's transition the landscape turns over its horizon (a
 ## vertical mirror: the run still reads left to right, nothing is mirrored
 ## sideways), every colour crosses from one state to the other (sky, clouds,
 ## hills, water, light, fog, particles, the level's terrain, obstacles and
@@ -70,7 +70,7 @@ func _ready() -> void:
 	_sky = _Sky.new()
 	add_child(_sky)
 	# Everything but the sky hangs from a pivot at the view's centre, which
-	# turns the landscape over its horizon (scale.y 1 -> -1) on a latch.
+	# turns the landscape over its horizon (scale.y 1 -> -1) on an attach.
 	_pivot = Node2D.new()
 	add_child(_pivot)
 	for spec: Array in LAYERS:
@@ -93,7 +93,7 @@ func _ready() -> void:
 
 
 ## Called by the game session when this world starts: the look follows the
-## session's gravity (the player's latches) and its levels.
+## session's gravity (the player's attaches) and its levels.
 func attach(session: Node) -> void:
 	_session = session
 	_gravity = session.gravity
@@ -450,7 +450,7 @@ class _Birds extends _Wrapped:
 			ci.draw_multiline(lines, Color.WHITE, 2.5, true)
 
 
-## A ring of the new state's colour breaking out of the player at a latch.
+## A ring of the new state's colour breaking out of the player at an attach.
 class _Burst extends Node2D:
 	const TIME := 0.45
 	var _left := 0.0
@@ -481,7 +481,7 @@ class _Burst extends Node2D:
 		draw_arc(Vector2.ZERO, r * 0.7, 0.0, TAU, 40, Color(1.0, 1.0, 1.0, 0.45 * (1.0 - k)), 2.0, true)
 
 
-## A soft ripple over the screen at a latch: the edges breathe in the new
+## A soft ripple over the screen at an attach: the edges breathe in the new
 ## colour and a wave line sweeps across. Faint and short; never a flash.
 class _Ripple extends Control:
 	const TIME := 0.42

@@ -5,7 +5,7 @@ class_name GardenLook
 ##   GROUND  (the ground is the floor):  a BLUE + WHITE world, a YELLOW player
 ##   CEILING (the ceiling is the floor): a YELLOW + BLACK world, a BLUE player
 ##
-## [member blend] runs 0 (ground) -> 1 (ceiling) over each latch's transition
+## [member blend] runs 0 (ground) -> 1 (ceiling) over each attach's transition
 ## (the backdrop drives it). Everything in a level is drawn once, in neutral
 ## base colours chosen per role, and tinted by one modulate per role, so a
 ## flip recolours the whole world by changing a few hundred modulates and

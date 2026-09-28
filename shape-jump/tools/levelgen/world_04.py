@@ -384,14 +384,15 @@ def level_01():
     x = rest(land, 10.0)
 
     lv.group("Garden")
+    # Uneven gaps: no fixed tapping rhythm lines up with the beats.
     land = wave_here(lv, plan, x, 340, period=2.6)
     x = land + 8.0
     land = branch_through(lv, plan, x, 320, period=2.0)
-    x = land + 8.0
+    x = land + 11.5
     land = rock_through(lv, plan, x, 320, period=1.7)
-    x = land + 8.0
+    x = land + 6.5
     land = flower_across(lv, plan, x, 300, period=1.8)
-    x = land + 8.0
+    x = land + 10.0
     land = vines_across(lv, plan, x, 300, period=1.9)
     lv.shards_along(x - 34.0, land + 5.0, 2.0)
 
@@ -400,13 +401,13 @@ def level_01():
 
     lv.group("Pressure")
     land = roots_here(lv, plan, x, 300, period=1.6)
-    x = land + 7.0
+    x = land + 9.5
     land = flower_across(lv, plan, x, 290, period=1.7)
-    x = land + 7.0
+    x = land + 6.0
     land = waterfall_through(lv, plan, x, 280, period=1.7)
-    x = land + 7.0
+    x = land + 8.5
     land = roots_here(lv, plan, x, 270, period=1.5)
-    x = land + 7.0
+    x = land + 6.5
     land = branch_through(lv, plan, x, 260, period=1.8)
     lv.shards_along(x - 30.0, land + 4.0, 2.2)
     return finish_level(lv, floor, top, land + 10.0, plan)

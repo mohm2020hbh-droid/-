@@ -7,7 +7,7 @@ extends GardenHazard
 ## will hit, dust trickles where it will break loose, a crack opens, and the
 ## level hears it (the "warning" cue); only then does it fall.
 ## With the default anchor SKY it falls from the side across from the floor
-## you run on (read at the start of each cycle, then kept: a latch mid-fall
+## you run on (read at the start of each cycle, then kept: an attach mid-fall
 ## never turns a rock around), so on the ceiling it comes up from below.
 ## [member ice] makes it an ice shard (the snow sections): same rules.
 ## Origin = on the ground line at the column's x. (Mirrored in

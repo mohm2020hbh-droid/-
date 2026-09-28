@@ -8,9 +8,9 @@ extends Block
 ## [member bottom_edge] for the ceiling side) and a ragged fringe of soil and
 ## roots on its back.
 ##
-## [member latchable] false makes it SLICK STONE: wet, glazed rock the second
-## tap cannot hold (it streams with water and grows nothing), so a latch
-## toward it misses. You can still run on it.
+## [member latchable] false makes it SLICK STONE: wet, glazed rock an attach
+## cannot hold (it streams with water and grows nothing), so a TAP TAP
+## toward it fails. You can still run on it.
 ##
 ## Colours come from [GardenLook]: the body is the soil role, the faces the
 ## bloom role (a child node), slick glaze the water role.
@@ -21,7 +21,7 @@ extends Block
 		queue_redraw()
 		if _face:
 			_face.queue_redraw()
-## False: slick stone, not a surface the latch can hold.
+## False: slick stone, not a surface an attach can hold.
 @export var latchable := true:
 	set(value):
 		latchable = value

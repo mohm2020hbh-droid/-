@@ -7,7 +7,7 @@ extends Node2D
 ## it, a little ([member lift]), so jumps carry higher or fall short and a
 ## surface that was out of reach comes within it, or goes out of it. On the
 ## ceiling the same wind blows the other way in the world: it acts relative
-## to the floor you run on. A latch in progress ignores it.
+## to the floor you run on. An attach in progress ignores it.
 ##
 ## Each cycle (the Timeline STEPS curve): calm, a rising gust with streaks
 ## and whirling leaves as the warning, the gust at full strength, easing off.

@@ -14,6 +14,7 @@ extends Node
 ##   --autoplay-loops=N     play the whole world N times (stress runs).
 ##   --autoplay-quit        quit when done (headless runs).
 ##   --autoplay-shots=DIR   save a screenshot every 1.5 s of play into DIR
+##   --autoplay-shot-every=N  (with --autoplay-shots) every N frames instead
 ##                          (needs a rendering run, not --headless).
 ## Every event is printed with an [autoplay] prefix (the browser console on
 ## the web), ending with "[autoplay] WORLD COMPLETE".
@@ -95,9 +96,10 @@ var _framed := {}
 func _process(_delta: float) -> void:
 	_frames += 1
 	var shots := option("--autoplay-shots")
-	if shots != "" and _frames % 90 == 0 and game.state == GameSession.State.PLAYING:
+	var every := int(option("--autoplay-shot-every")) if option("--autoplay-shot-every") != "" else 90
+	if shots != "" and _frames % every == 0 and game.state == GameSession.State.PLAYING:
 		var image := get_viewport().get_texture().get_image()
-		image.save_png("%s/w%d_l%d_%04d.png" % [shots, game.world_index + 1, game.level_index + 1, _frames / 90])
+		image.save_png("%s/w%d_l%d_%04d.png" % [shots, game.world_index + 1, game.level_index + 1, _frames / every])
 	if _frames % 300 == 0 and game.state == GameSession.State.PLAYING:
 		_log("level %d at %.0f%%" % [game.level_index + 1, game.progress.percent])
 

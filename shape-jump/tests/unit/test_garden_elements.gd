@@ -128,8 +128,8 @@ func test_elements_are_pure_functions_of_time_and_the_surface_log() -> void:
 
 
 ## A floor-anchored element keeps the side it chose at the start of its
-## cycle: a latch in the middle of a cycle never moves it across.
-func test_a_latch_mid_cycle_never_moves_an_element_across_the_corridor() -> void:
+## cycle: an attach in the middle of a cycle never moves it across.
+func test_an_attach_mid_cycle_never_moves_an_element_across_the_corridor() -> void:
 	var flower := ClosingFlower.new()
 	flower.anchor = GardenHazard.Anchor.FLOOR
 	flower.ceiling = CEILING
@@ -142,7 +142,7 @@ func test_a_latch_mid_cycle_never_moves_an_element_across_the_corridor() -> void
 	var heart := flower.get(&"_heart") as Node2D
 	var before := heart.position
 	level.clock = 0.5
-	level.record_surface(true)  # The player latches to the ceiling mid-cycle.
+	level.record_surface(true)  # The player attaches to the ceiling mid-cycle.
 	level.rewind_to(1.2)
 	assert_eq(heart.position, before, "still on the ground for the rest of this cycle")
 	level.rewind_to(2.3)  # Next cycle: it opens where the player is now.
@@ -157,7 +157,7 @@ func test_surface_log_reads_like_the_level_generator() -> void:
 	level.clock = 2.5
 	level.record_surface(false)
 	assert_false(level.surface_up_at(0.5))
-	assert_false(level.surface_up_at(1.0), "a latch logged at t changes the floor only after t")
+	assert_false(level.surface_up_at(1.0), "an attach logged at t changes the floor only after t")
 	assert_true(level.surface_up_at(1.0 + 1.0 / 60.0))
 	assert_true(level.surface_up_at(2.5))
 	assert_false(level.surface_up_at(3.0))

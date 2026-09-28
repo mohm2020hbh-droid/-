@@ -32,13 +32,13 @@ shape-jump/
 │   ├── audio/                    audio_manager.gd (Autoload) · sound_library.gd
 │   ├── core/                     game_const.gd · palette.gd (ثيمات العوالم: red / mono / galaxy / garden) · neon.gd · soft_light.tres
 │   ├── gravity/gravity_state.gd  World 03: مصدر الحقيقة الوحيد لحالة الجاذبية (DOWN / UP) ومرحلتها (NORMAL / FLIPPING)
-│   ├── surface/surface_run.gd    World 04: SurfaceRun — حالة الجري على السطحين (GROUND_RUN / AIRBORNE / LATCHING / CEILING_RUN …)
+│   ├── surface/surface_run.gd    World 04: SurfaceRun — CurrentSurface / TargetSurface / SurfaceAction / InputGesture والمرحلة (GROUND_RUN / ATTACHING / CEILING_RUN …)
 │   ├── player/
-│   │   ├── movement_config.gd    Resource: أرقام الحركة (ومنها Double Jump، ومدى وسرعة الـLatch)
-│   │   ├── player_motor.gd       قواعد القفز النقية (بلا Nodes): Jump/Double Jump أو Surface Latch، Coyote، Buffer، طابور اللمسات
-│   │   ├── surface_latch.gd      World 04: SurfaceLatch.probe — هل السطح المقابل في المدى وصالح للإمساك هذا الـTick
+│   │   ├── movement_config.gd    Resource: أرقام الحركة (ومنها Double Jump، ونافذة الإيماءة ومدى وسرعة الـSurface Attach)
+│   │   ├── player_motor.gd       قواعد الحركة النقية (بلا Nodes): Jump/Double Jump، أو إيماءة TAP TAP والعبور (World 04)، Coyote، Buffer، طابور اللمسات
+│   │   ├── surface_attach.gd     World 04: SurfaceAttach.probe — يمشي مسار العبور الحقيقي Tick بـTick: هل يصل إلى وجه سطح صالح؟
 │   │   ├── player.gd             CharacterBody2D: يطبق الـMotor، التصادم، الموت، التعويض الأفقي فوق المنصات
-│   │   ├── player_visual.gd      الرسم والـAnimations (قلبة الـDJ، النواة المجوفة)؛ `void_style` = كيان World 02؛ `garden_style` = بذرة World 04
+│   │   ├── player_visual.gd      الرسم والـAnimations (قلبة الـDJ، النواة المجوفة)؛ `void_style` = كيان World 02؛ `galaxy_style` = المربع الأبيض (World 03)؛ `garden_style` = بذرة World 04
 │   │   ├── player_fx.gd          Particles، الذيل، حلقة الـDJ، التحطم
 │   │   └── player.tscn · default_movement.tres
 │   ├── level/
@@ -84,7 +84,7 @@ shape-jump/
 ├── assets/audio/                 sfx/*.wav · ambient/void_drone.ogg · sound_library.tres
 ├── tools/                        (.gdignore — لا يستورده Godot)
 │   ├── levelgen/                 levelgen.py · world_01.py … world_04.py · noisy_player.py · README.md
-│   ├── audio/gen_sfx.py          توليد الأصوات (gen_sfx_galaxy.py: صوت القلب وإنذاره؛ gen_sfx_garden.py: صوتا الـLatch والـMiss)
+│   ├── audio/gen_sfx.py          توليد الأصوات (gen_sfx_galaxy.py: صوت القلب وإنذاره؛ gen_sfx_garden.py: صوتا العبور وفشله)
 │   └── web/                      build_playtest.py + playtest_page.html (نسخة الويب للتجربة)
 └── tests/
     ├── test_runner.* · test_case.gd
@@ -97,8 +97,8 @@ shape-jump/
 
 | النظام | المسؤول | ما لا يفعله |
 |---|---|---|
-| **Movement** | `player_motor.gd` + `movement_config.gd` | لا يلمس Nodes. يقرر كل Tick: لا قفزة / Jump / Double Jump، ويرجع السرعة العمودية. |
-| **Player** | `player.gd` | لا يعرف Score أو UI أو Audio. يطلق `jumped` / `double_jumped` / `landed` / `died`. |
+| **Movement** | `player_motor.gd` + `movement_config.gd` | لا يلمس Nodes. يقرر كل Tick: لا قفزة / Jump / Double Jump (أو في World 04: الإيماءة / Attach / فشل)، ويرجع السرعة العمودية. |
+| **Player** | `player.gd` | لا يعرف Score أو UI أو Audio. يطلق `jumped` / `double_jumped` / `landed` / `died` (وفي World 04: `attach_armed` / `attach_started` / `attached` / `attach_failed`). |
 | **Visual / FX** | `player_visual.gd`, `player_fx.gd` | لا يؤثر على اللعب. |
 | **Level** | `level.gd` | لا يعرف اللاعب. يحرك العناصر بالساعة، ويطلق: Shard، Checkpoint، النهاية، `obstacle_cued`. |
 | **Obstacles** | `hazard.gd` وأبناؤه | بيانات + شكل + Hitbox + `apply_time(t)`. لا منطق موت داخلها (الـHurtbox هو من يرى الطبقة). |
@@ -176,15 +176,18 @@ PLAYING ──finish──► COMPLETE ──NEXT LEVEL──► READY (المس
 - **الكاميرا:** لا تدور (كل العوالم): اللعب من اليسار لليمين دائمًا. الإزاحة العمودية وحدود السقوط وخطا الموت (`kill_y` / `kill_top`) كلها بـ`down_sign()`؛ عند القلب (`flipped` غير فوري) تنتقل المرساة إلى الجهة الأخرى من الشريط (`band_height − 2·half`) فيبقى مركز الإطار مكانه. الـHUD في CanvasLayer لا يدور.
 - **الشكل:** `galaxy_backdrop.gd` يمزج حالتي الألوان (GROUND أزرق/بنفسجي، CEILING برتقالي/كهرماني) على زمن الانتقال: السماء، الطبقات، `level.modulate`، الجمر؛ مع حلقة ضوء عند اللاعب ونبضة شاشة خفيفة. الأخطار ماجنتا ثابتة (`GalaxyArt.DANGER`) مقروءة في الحالتين.
 
-### السطح (World 04: Surface Latch)
-- **مفتاح واحد:** `WorldData.surface_latch` → `Level.surface_latch` و`Player.set_surface_latch` (يضبط `motor.air_action = SURFACE_LATCH`). في العوالم الأخرى المفتاح مطفأ والسلوك كما كان حرفيًا (Double Jump، والجاذبية من البوابات).
-- **القرار داخل الـMotor:** اللمسة الهوائية في وضع الـLatch تستهلك `air_jumps_left` مثل الـDJ، لكن نتيجتها `Jump.LATCH` (قلب السرعة محليًا ثم `latch_speed` نحو السطح الجديد، `latching = true`، مسح طابور اللمسات) أو `Jump.LATCH_MISS` (لا شيء يتحرك ولا Teleport؛ اللمسة تنتظر في الـBuffer، فالـMiss قبيل الهبوط يصير قفزة عند الهبوط كأي لمسة مبكرة). `latching` ينتهي بالهبوط؛ أثناءه لا لمسات ولا رياح (`external_accel`).
-- **الفحص:** `SurfaceLatch.probe(can_latch)` كل Tick في `Player._physics_process` قبل `motor.begin_tick(on_floor, delta, in_reach)`: `test_move` نحو `up_direction` بطول `latch_reach`، الوجه يواجه اللاعب (`normal·up < −0.7`)، `latchable != false`، ونقطة الوصول بعد `latch_ticks(distance)` على نفس السطح (±2 px).
-- **الجاذبية يقودها اللاعب:** عند `Jump.LATCH` يقلب `Player` الـ`GravityState` بنفسه (`_latch_turning` يمنع قلب السرعة مرتين)، و`GameSession._on_player_latched` يسجل السطح في سجل المحاولة (`Level.record_surface(up)` بزمن الساعة) ويثبت الكاميرا (`camera.anchor_to(landing.y)`). `Level.surface_up_at(t)` يعطي أرضية أي لحظة من السجل (حدث عند t يسري بعد t)، فعناصر "أرضية اللحظة" (`GardenHazard.Anchor.FLOOR / SKY`) تبقى دوال نقية للساعة. `Level._apply_time` لا يكتب الجاذبية في World 04.
+### السطح (World 04: TAP + TAP = Surface Attach)
+- **مفتاح واحد:** `WorldData.surface_latch` → `Level.surface_latch` و`Player.set_surface_attach` (يضبط `motor.tap_mode = SURFACE_ATTACH`). في العوالم الأخرى المفتاح مطفأ والسلوك كما كان حرفيًا (Jump + Double Jump، والجاذبية من البوابات).
+- **لا قفز في هذا الوضع:** `request_jump()` لا يضع لمسة في طابور القفز بل يخطو خطوة في الإيماءة (`_gesture_tap`): `IDLE → TAP_PENDING` (نافذة `attach_window` = 0.3 ث) `→ ATTACH_REQUEST`. `jumps_available()` = 0 دائمًا، ولا `jump_count` ولا سرعة قفزة ثانية؛ الطريق الوحيد لتحريك الجسم عموديًا هو العبور.
+- **القرار في `_begin_attach_tick`:** طلب مكتمل + على سطح أو خلال Coyote + `attach_ok` → `Jump.ATTACH` (`attaching = true`، السرعة `attach_speed_at(tick)` = min(1000 + 6000·t, 1800) px/s نحو السطح المقابل، بلا جاذبية)؛ وإلا `Jump.ATTACH_FAIL` (لا شيء يتحرك، الإيماءة مستهلكة). أثناء العبور تُبتلع اللمسات، وإن لم يلمس الجسم شيئًا خلال `attach_ticks(reach) + 6` (سطح تحرك بعيدًا) يُفلت وتعيده الجاذبية القديمة.
+- **الفحص:** `SurfaceAttach.probe()` يُستدعى فقط حين `motor.attach_requested()`، ويمشي المسار الحقيقي: لكل Tick k خطوة = الجري للأمام + `attach_speed_at(k)·dt` نحو السطح، بـ`test_move`. أول اصطدام يجب أن يكون **وجه** السطح المقابل (`normal·toward ≤ −0.7`؛ جانب كتلة أو عائق صلب = محجوب) و`latchable != false` (الحجر الأملس)، وضمن `attach_reach` (360 px). النتيجة `in_reach`، `distance`، `landing`، `ticks`.
+- **الوصول:** بعد `move_and_slide`، إن كان `motor.attaching and is_on_ceiling()`: `motor.arrive()` (الإيماءة `IDLE`، Coyote جديد)، `_turn_for_attach()` يقلب `GravityState` (`_attach_turning` يمنع قلب السرعة مرتين)، ثم `move_and_slide` قصير نحو الأرضية الجديدة فيقف الجسم عليها في نفس الـTick (لا Tick هوائي)، وتُستعاد سرعة الجري. `attached(up)` يُطلق بعدها، لا `landed`.
+- **الجاذبية يقودها اللاعب:** `GameSession._on_player_attached(up)` يسجل السطح في سجل المحاولة (`Level.record_surface(up)` بزمن الساعة) وينقل مرساة الكاميرا (`camera.anchor_to(player.y)`). `Level.surface_up_at(t)` يعطي أرضية أي لحظة من السجل (حدث عند t يسري بعد t)، فعناصر "أرضية اللحظة" (`GardenHazard.Anchor.FLOOR / SKY`) تبقى دوال نقية للساعة. `Level._apply_time` لا يكتب الجاذبية في World 04.
+- **الحالة:** `SurfaceRun.update()` يقرأ من اللاعب كل Tick: `surface` (GROUND / CEILING / NONE)، `target_surface`، `action` (NONE / ATTACHING)، `gesture`، والمرحلة؛ `note_attach` / `note_fail` تعدّ العبورات والفشل.
 - **Respawn:** `level.reset_surface(respawn.gravity_up)` قبل `rewind_to` (سجل جديد من سطح الـCheckpoint)، ثم `gravity.set_up(..., true)`، فالعالم والألوان واللاعب والكاميرا تعود كلها لحالة ذلك السطح. `GameSession.checkpoint_hangs(marker)` يقرر سطح الـCheckpoint من دورانه.
-- **الكاميرا:** نفس الكاميرا المشتركة (لا دوران ولا Mirror)؛ الإزاحة العمودية بـ`down_sign()` فالممر يبقى في منتصف الشاشة؛ `anchor_to(landing.y)` بعد الـLatch؛ اللعب دائمًا من اليسار لليمين.
+- **الكاميرا:** نفس الكاميرا المشتركة (لا دوران ولا Mirror)؛ الإزاحة العمودية بـ`down_sign()` فالممر يبقى في منتصف الشاشة؛ `_update_anchor` لا يتحرك ما دام الهدف `is_attaching()` (لا تتبع القوس)، و`anchor_to` عند الوصول؛ اللعب دائمًا من اليسار لليمين.
 - **الألوان:** `GardenLook` يربط أدوار العقد (`garden_ink`، `garden_soil`، `garden_bloom`، `garden_water`، `garden_leaf`، `garden_mark`، `garden_shard`) بلوني الحالتين ويمزجها بـ`self_modulate` (والـShards بـ`modulate`)؛ `garden_backdrop.gd` يقود المزج على زمن القلب ويقلب المنظر عموديًا (`pivot.scale.y = cos(π·blend)`) مع حلقة وتموّج بلا وميض.
-- **الرياح:** `Level.wind_at(x)` يجمع `wind(x, t, up)` من عناصر `WindBurst`، و`Player.wind_source` يمررها للـMotor كتسارع عمودي بالنسبة لأرضية اللاعب (x(t) خطي دائمًا: لا دفع أفقي).
+- **الرياح:** `Level.wind_at(x)` يجمع `wind(x, t, up)` من عناصر `WindBurst`، و`Player.wind_source` يمررها للـMotor كتسارع عمودي بالنسبة لأرضية اللاعب (x(t) خطي دائمًا: لا دفع أفقي). العبور لا يتأثر بها؛ ولأن World 04 بلا قفز لم تعد مستويات World 04 تستخدم `WindBurst` (العنصر باقٍ ومختبَر).
 
 
 **سرعة جري ثابتة:** `Player` يطرح سرعة الأرضية الأفقية من حركته. السرعة تُقرأ من `PhysicsServer2D.body_get_direct_state` للجسم الذي يقف عليه (السرعة **الحالية** في نقطة التلامس)، لا من `get_platform_velocity()` التي تتأخر Tick على المنصات المتسارعة. بذلك يبقى `x(t)` خطيًا تمامًا، والمسار (قائمة مواضع اللمس) يصف حلًا كاملًا للمستوى.
@@ -241,7 +244,7 @@ completed=true
 
 ## 10. الاختبار
 
-253 اختبارًا (≈ 135 ثانية)، تنجح بنفس النتائج على 20 و60 FPS. اختبارات المستويات تعمل على العوالم الأربعة: كل ملف لـWorld 01 له ابن `…_w02` / `…_w03` / `…_w04` / `test_world_0N_playthrough` يغيّر `world_index()` فقط (وفي World 04 يُفرض الموت بـ`GameHarness.kill_at` حيث كانت اللمسة، لأن لمسة لاحقة قد تنوب عن لمسة متروكة).
+261 اختبارًا (≈ 190 ثانية)، تنجح بنفس النتائج على 20 و60 FPS. اختبارات المستويات تعمل على العوالم الأربعة: كل ملف لـWorld 01 له ابن `…_w02` / `…_w03` / `…_w04` / `test_world_0N_playthrough` يغيّر `world_index()` فقط (وفي World 04 يُفرض الموت بـ`GameHarness.kill_at` حيث كانت اللمسة، لأن لمسة لاحقة قد تنوب عن لمسة متروكة).
 
 | الملف | ماذا يثبت |
 |---|---|
@@ -255,14 +258,13 @@ completed=true
 | unit/test_level_integrity_w02 | ثيم `mono` وخلفيته، يُفتح بـWorld 01، لا عائق من World 01، وكل أنظمة World 02 مستخدمة |
 | unit/test_level_integrity_w03 (9) | ثيم `galaxy` وخلفيته، يُفتح بـWorld 02 ويفتح World 04، لا عائق من العالمين السابقين وكل عناصر المجرة مستخدمة، جدول الجاذبية يتبدل فعلًا ويزداد، كل Checkpoint والنهاية على أرضية لحظتها (مقلوبة على السقف)، خطا الموت وتأطير الممر |
 | integration/test_gravity_flip (17) | القلب على الفيزياء الفعلية: الهبوط على السقف والعودة، القفز وارتفاعه مقلوبًا، الحالات A–D، لا Coyote ولا Buffer عبر القلب، لمستان في Tick، 24 قلبًا متتاليًا، خط الموت العلوي، Respawn على السقف، الرسم ينقلب عموديًا بلا Mirror والجسم لا يدور، القلب عند حافة منصة وفوق منصة متحركة، إدخال سريع جدًا، زاوية سقف (Ledge Assist مقلوب) |
-| integration/test_world_03_gravity (11) | على اللعبة الكاملة: الكاميرا لا تدور ولا تتحرك عند القلب (< 8 px)، اللاعب لا يُعكس أفقيًا ويتقدم لليمين، والـHUD ثابت، البوابة تقلب عند x نفسه قفزت أم لا، الموت أثناء القلب، الموت بعد Checkpoint على السقف وعلى الأرض (الجاذبية والكاميرا والألوان)، Restart أثناء القلب، 10 Restarts متتالية بلا تسرب، Pause أثناء القلب، 100% على السقف والتقدم لا يتراجع، الاستئناف بعد فقد WebGL على السقف، World 02 → World 03، وWORLD 03 COMPLETE يفتح World 04 |
-| unit/test_level_integrity_w04 (9) | ثيم `garden` وخلفيته، يُفتح بـWorld 03 وهو الأخير، كل مستوى `surface_latch`، لا عائق من العوالم السابقة وكل عناصر الحديقة مستخدمة، كل Checkpoint والنهاية حيث لا يوجد إلا سطحهما، العبورات تزداد، ترتيب الـCheckpoints ومدرجها الآمن، الحتمية |
-| unit/test_garden_elements (5) | كل عنصر يُبنى ويعمل على السطحين، دوال نقية للزمن وسجل السطوح، Latch في منتصف الدورة لا ينقل عنصرًا عبر الممر، قراءة السجل مطابقة للمولّد، الرياح داخل منطقتها وأثناء هبوبها فقط |
-| integration/test_surface_latch (16) | الـLatch على الفيزياء الفعلية: قرب القمة إلى السقف ومن السقف إلى الأرض، العبور سريع ويحفظ سرعة الجري، الـMiss المبكر مستهلك، لمستان في إطار واحد، 12 عبورًا متتاليًا، سقف أعلى من المدى، اللمسات أثناء العبور تُبتلع، سطح ينتهي قبل الوصول، كتلة في الطريق، سطح أملس = Miss، Miss قبيل الهبوط يقفز عند الهبوط، سقف متحرك، الرياح ترفع القفزة لا الـLatch، الموت أثناء العبور |
-| integration/test_surface_attach_ceiling (10) | من السقف على الفيزياء الفعلية: CEILING_RUN ← AIRBORNE ← LATCHING ← GROUND_RUN بلا Double Jump ولا Teleport، اللمسة الثانية بعد 1..43 Tick تلتصق فقط إن كانت الأرض في المدى، الضغط المتواصل (لا قفزة ثالثة ولا Latch ثانٍ)، مباشرة بعد الوصول للسقف، لمسة في Tick الهبوط، اللمسات أثناء العبور، أرض تنتهي قبل الوصول، لا أرض (حفرة)، كتلة في الطريق، الموت والـRespawn على السقف؛ وفي كل Tick: x يزيد، `velocity.x > 0`، لا Mirror ولا دوران |
+| integration/test_world_03_gravity (12) | على اللعبة الكاملة: الكاميرا لا تدور ولا تتحرك عند القلب (< 8 px)، اللاعب لا يُعكس أفقيًا ويتقدم لليمين، والـHUD ثابت، البوابة تقلب عند x نفسه قفزت أم لا، الموت أثناء القلب، الموت بعد Checkpoint على السقف وعلى الأرض (الجاذبية والكاميرا والألوان)، Restart أثناء القلب، 10 Restarts متتالية بلا تسرب، Pause أثناء القلب، 100% على السقف والتقدم لا يتراجع، الاستئناف بعد فقد WebGL على السقف، World 02 → World 03، وWORLD 03 COMPLETE يفتح World 04، واللاعب مربع أبيض (`galaxy_style`) في World 03 وحدها |
+| unit/test_level_integrity_w04 (9) | ثيم `garden` وخلفيته، يُفتح بـWorld 03 وهو الأخير، كل مستوى Surface Attach (لا قفزة في أي مسار: كل مدخل إيماءة من لمستين بفارق 2–8 Ticks، والإيماءات متباعدة > 20 Tick)، لا عائق من العوالم السابقة وكل عناصر الحديقة المستخدمة، كل Checkpoint والنهاية حيث لا يوجد إلا سطحهما، العبورات تزداد، ترتيب الـCheckpoints ومدرجها الآمن، الحتمية |
+| unit/test_garden_elements (5) | كل عنصر يُبنى ويعمل على السطحين، دوال نقية للزمن وسجل السطوح، عبور في منتصف الدورة لا ينقل عنصرًا عبر الممر، قراءة السجل مطابقة للمولّد، الرياح داخل منطقتها وأثناء هبوبها فقط |
+| integration/test_surface_attach (18) | TAP + TAP على الفيزياء الفعلية، مصفوفة الإدخال: لمسة واحدة لا تحرك شيئًا، TAP TAP على الأرض ← السقف وعلى السقف ← الأرض، TAP TAP سريع جدًا = عبور واحد، اللمس أثناء العبور يُبتلع، TAP TAP لحظة الوصول يعود مباشرة، اللمس حول الموت والـRespawn، 12 تبديلًا متتاليًا، الضغط المتواصل لا يسلسل العبورات، لا سطح مقابل = فشل بلا حركة، لوح بين السطحين يُلمس أولًا، جدار في الطريق يحجب، حجر أملس، سقف ينتهي قبل الوصول، المدى (بعيد يفشل، قريب سريع)، لمسة بعد النافذة تبدأ إيماءة جديدة، سقف متحرك، حافة السطح (Coyote ثم فشل)؛ وفي كل Tick: x يزيد، `velocity.x > 0`، لا Mirror، ولا قفزة أبدًا |
 | integration/test_camera_framing (2) | الكاميرا مقاسة أثناء اللعب في W01 وW02 وW03 وW04 L1 وW04 L5: Zoom 1، لا دوران، نفس حجم اللاعب ونفس الـLook-ahead، اللاعب عند 28%، خط الأرضية عند 72-76% من الارتفاع؛ وعلى السقف (W03 وW04) الإطار نفسه معكوسًا عموديًا |
 | unit/test_tap_input (3) | لمسة واحدة لكل ضغطة: الإفلات لا يُحسب، والضغط المطوّل (تكرار المفتاح) لا يُحسب، والنقرة المحاكاة من اللمس لا تُحسب |
-| integration/test_world_04_surface (16) | على اللعبة الكاملة: لا دوران ولا Mirror واللعب من اليسار لليمين في كل Tick، الإطار لا يتبع قوس العبور، تبدّل ألوان العالم واللاعب، أسماء حالات `SurfaceRun`، الـMiss بلا حركة، الضغط المتواصل، الموت والـRestart والـPause أثناء الـLatch، Respawn على Checkpoint سقف وأرض، الاستئناف بعد فقد WebGL على السقف، آخر Latch ثم 100%، World 03 → World 04 وWORLD 04 COMPLETE، 10 Restarts بلا تسرب، اللمس أثناء الموت |
+| integration/test_world_04_surface (16) | على اللعبة الكاملة: لا دوران ولا Mirror واللعب من اليسار لليمين في كل Tick، الإطار لا يتبع قوس العبور، الألوان تتبدل عند الوصول لا عند اللمسة، مراحل `SurfaceRun` (GROUND_RUN ← ATTACHING ← CEILING_RUN ← ATTACHING ← GROUND_RUN بلا AIRBORNE)، إيماءة بلا سطح مقابل تفشل بلا حركة، الضغط المتواصل لا يقفز ولا يسلسل، الموت والـRestart والـPause أثناء العبور، Respawn على Checkpoint سقف وأرض، الاستئناف بعد فقد WebGL على السقف، آخر عبور ثم 100%، World 03 → World 04 وWORLD 04 COMPLETE، 10 Restarts بلا تسرب، اللمس أثناء الموت |
 | unit/test_progress_tracker (5) · integration/test_level_progress (2) | التقدّم بالمسافة 0..100، العقوبة 25 نقطة وحدّ الصفر، Checkpointان قرب 33% و66% في كل مستوى، وفي كل مستوى: موتان (≈50% و≈80%) → عقوبة → عودة عند آخر Checkpoint بحالة نظيفة → إنهاء بـ100% |
 | integration/test_progression (7) | قواعد الفتح، وضع الاختبار `--unlock-all`، رفض المستوى المغلق، NEXT LEVEL، WORLD 01 COMPLETE، لوحة الموت وعدّاد المحاولات |
 | integration: camera، game flow، review probes | الكاميرا، تدفق اللعب واللمس، عوائق تُنشأ/تُحذف أثناء اللعب، تسلسل حالات سريع |

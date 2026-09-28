@@ -6,7 +6,7 @@ extends GardenHazard
 ## draws back up to open it, on a fixed rhythm; the leaves shiver before it
 ## moves. The foliage mass kills; the loose strands below it do not.
 ## Swaying with the wind is only drawn; the gusts follow the floor you run
-## on, so after a latch the vines sway the other way.
+## on, so after an attach the vines sway the other way.
 ## Origin = on the ground line at the left end. (Mirrored in
 ## tools/levelgen/levelgen.py: HangingVines.)
 

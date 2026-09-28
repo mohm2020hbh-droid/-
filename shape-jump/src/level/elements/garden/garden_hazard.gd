@@ -13,7 +13,7 @@ extends Hazard
 ##                     cycle (a rock falls from the sky onto your floor).
 ## The side is read from the level's surface log ([method Level.surface_up_at])
 ## once per cycle and kept for the whole cycle, so what the warning showed is
-## what happens, a latch mid-cycle never makes an obstacle jump across the
+## what happens, an attach mid-cycle never makes an obstacle jump across the
 ## corridor, and the element stays a pure function of the clock and the log
 ## (a respawn replays it exactly).
 ##
