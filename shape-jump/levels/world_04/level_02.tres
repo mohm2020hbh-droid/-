@@ -8,4 +8,4 @@ id = &"w04_l02"
 display_name = "Falling Garden"
 tagline = "Very hard"
 scene_path = "res://levels/world_04/level_02.tscn"
-speed_scale = 1.19
+speed_scale = 1.24

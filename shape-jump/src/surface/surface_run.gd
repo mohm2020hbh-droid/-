@@ -7,9 +7,10 @@ extends RefCounted
 ## [GravityState]); this model reads them every physics tick, names the
 ## state, and is what the look, the tests and the diagnostics ask.
 ##
-##   GROUND_RUN ──tap, tap──► ATTACHING (target CEILING) ──touch──► CEILING_RUN
-##   CEILING_RUN ──tap, tap──► ATTACHING (target GROUND) ──touch──► GROUND_RUN
-##   GROUND_RUN / CEILING_RUN ──tap, tap (no surface it can reach)──► same (a failed attach)
+##   GROUND_RUN / CEILING_RUN ──tap──► HOPPING ──landing──► the same surface
+##   GROUND_RUN ──tap (hop), tap──► ATTACHING (target CEILING) ──touch──► CEILING_RUN
+##   CEILING_RUN ──tap (hop), tap──► ATTACHING (target GROUND) ──touch──► GROUND_RUN
+##   HOPPING ──second tap, no surface it can reach──► HOPPING (a failed attach: the hop goes on)
 ##   GROUND_RUN / CEILING_RUN ──off an edge──► AIRBORNE ──► the kill line or a lower floor
 ##   any ──hit──► DEAD ──fade──► RESPAWNING ──► GROUND_RUN / CEILING_RUN (the checkpoint's surface)
 ##   any ──finish──► LEVEL_COMPLETE
@@ -20,9 +21,9 @@ extends RefCounted
 signal phase_changed(phase: Phase, previous: Phase)
 
 enum Surface { GROUND, CEILING, NONE }
-enum Phase { IDLE, GROUND_RUN, CEILING_RUN, ATTACHING, AIRBORNE, DEAD, RESPAWNING, LEVEL_COMPLETE }
+enum Phase { IDLE, GROUND_RUN, CEILING_RUN, ATTACHING, AIRBORNE, DEAD, RESPAWNING, LEVEL_COMPLETE, HOPPING }
 ## What the player is doing about surfaces.
-enum Action { NONE, ATTACHING }
+enum Action { NONE, ATTACHING, HOPPING }
 ## The two-tap gesture as the motor sees it (mirrors [enum PlayerMotor.Gesture]).
 enum Gesture { IDLE, TAP_PENDING, ATTACH_REQUEST }
 
@@ -36,9 +37,10 @@ var gesture: Gesture = Gesture.IDLE
 ## Where the next respawn happens, and on which surface.
 var respawn_surface: Surface = Surface.GROUND
 var respawn_position := Vector2.ZERO
-## Attaches made since the level started, and failed gestures.
+## Attaches made since the level started, failed gestures, and hops.
 var attaches := 0
 var fails := 0
+var hops := 0
 
 var _player: Player
 var _gravity: GravityState
@@ -81,6 +83,7 @@ func set_respawn(position: Vector2, up: bool) -> void:
 func reset(up: bool, spawn: Vector2) -> void:
 	attaches = 0
 	fails = 0
+	hops = 0
 	surface = surface_of(up)
 	target_surface = Surface.NONE
 	action = Action.NONE
@@ -93,7 +96,11 @@ func reset(up: bool, spawn: Vector2) -> void:
 ## [param session_state]: the game's state, for the phases it owns.
 func update(session_state: GameSession.State) -> void:
 	surface = surface_of(_gravity.up)
-	action = Action.ATTACHING if _player.is_attaching() else Action.NONE
+	action = Action.NONE
+	if _player.is_attaching():
+		action = Action.ATTACHING
+	elif _player.is_hopping():
+		action = Action.HOPPING
 	target_surface = surface_of(not _gravity.up) if action == Action.ATTACHING else Surface.NONE
 	gesture = _player.motor.gesture as Gesture
 	match session_state:
@@ -112,6 +119,8 @@ func update(session_state: GameSession.State) -> void:
 		_set_phase(Phase.DEAD)
 	elif action == Action.ATTACHING:
 		_set_phase(Phase.ATTACHING)
+	elif action == Action.HOPPING:
+		_set_phase(Phase.HOPPING)
 	elif _player.is_on_floor():
 		_set_phase(Phase.CEILING_RUN if surface == Surface.CEILING else Phase.GROUND_RUN)
 	else:
@@ -124,6 +133,10 @@ func note_attach(_to_up: bool) -> void:
 
 func note_fail() -> void:
 	fails += 1
+
+
+func note_hop() -> void:
+	hops += 1
 
 
 func _set_phase(next: Phase) -> void:

@@ -41,6 +41,9 @@ func open(worlds: Array[WorldData], world_index: int, index: int) -> void:
 	var data := world.levels[index]
 	var record := SaveSystem.get_record(data.id)
 	_level_label.text = "%s  —  %s" % [data.display_name.to_upper(), data.tagline.to_upper()]
+	if world.surface_latch:
+		# World 04 has its own two moves.
+		_level_label.text += "\nTAP: HOP   ·   TAP TAP: ATTACH ACROSS"
 	_best_label.text = "BEST  %s" % UiFormat.thousands(record.best_score) if record.completed else ""
 	var done := Progression.is_world_completed(world)
 	_unlock_label.text = ""

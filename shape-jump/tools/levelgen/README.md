@@ -8,7 +8,7 @@
 | `world_01.py` | مستويات World 01 الخمسة كمقاطع (Groups) مقروءة، وكتابة `world_01.tres` والمسارات |
 | `world_02.py` | مستويات World 02 الخمسة (The Monochrome Void)، و`world_02.tres` (ثيم `mono`، خلفية `background_mono.tscn`، يُفتح بإنهاء World 01) و`world_02_routes.gd` |
 | `world_03.py` | مستويات World 03 الخمسة (The Horrifying Galaxy)، مبنية من "Beats" بقلب الجاذبية، و`world_03.tres` (ثيم `galaxy`، خلفية `background_galaxy.tscn`، يُفتح بإنهاء World 02) و`world_03_routes.gd`. `--load` يطبع حمل التوقيت (bit/s) |
-| `world_04.py` | مستويات World 04 الخمسة (The Inverted Garden)، مبنية من Beats بالـSurface Attach (TAP + TAP، بلا قفز) وخطة سطوح (`Plan`)، و`world_04.tres` (`surface_latch = true`، ثيم `garden`، خلفية `background_garden.tscn`، يُفتح بإنهاء World 03، العالم الأخير) و`world_04_routes.gd`. يطبع حمل التوقيت ونوع كل إيماءة (A عبور، f فشل؛ J/D لا يجب أن تظهر) |
+| `world_04.py` | مستويات World 04 الخمسة (The Inverted Garden)، مبنية من Beats بالـHop (لمسة) والـSurface Attach (TAP + TAP) وخطة سطوح (`Plan`)، و`world_04.tres` (`surface_latch = true`، ثيم `garden`، خلفية `background_garden.tscn`، يُفتح بإنهاء World 03، العالم الأخير) و`world_04_routes.gd`. يطبع حمل التوقيت والأفعال (H قفزة قصيرة، A عبور) |
 | `noisy_player.py` | لاعب بخطأ توقيت بشري على المحاكاة: `python3 noisy_player.py world_04 3 --trials=300 --sigma=30` → نسبة إنهاء المستوى في محاولة واحدة ونسبة كل مقطع بين Checkpointين |
 
 ## التشغيل
@@ -95,22 +95,27 @@ lv.shards_along(205, 220, 3.0)           # Shards على المسار النها
 
 وفي `world_03.py` "Beats" جاهزة: `mine_pair`، `slot`، `trap`، `rock`، `orbit_hop`، `orbit_dj`، `rock_dj`، `air_gate` (قلب في قمة قفزة فوق خطر)، `ground_gate`، `low_hops` (تحت جدار)، `dj_gap` (Double Jump متأخر إلى حافة مرتفعة). `orbit_dj` يأخذ اتجاه الدوران من منظور السطح الحالي (الجاذبية للأعلى تعكسه في العالم).
 
-## World 04: TAP + TAP = Surface Attach في المحاكاة
+## World 04: TAP = Hop · TAP + TAP = Surface Attach في المحاكاة
 
-- **`latch_mode`:** لا قفز. كل مدخل في المسار هو **اللمسة الثانية** للإيماءة، والمحاكاة تضع اللمسة الأولى قبلها بـ`GESTURE_GAP` (5 Ticks)؛ الإيماءة `idle → pending → request` كما في `PlayerMotor` (نافذة `ATTACH_WINDOW` = 0.3 ث). الطلب يُفحص بـ`attach_probe` كما يفحصه `SurfaceAttach.probe`: يمشي مسار العبور الحقيقي (الجري + `attach_speed_at(k)` نحو السطح المقابل) حتى `ATTACH_REACH` = 360 px، وأول ما يلمسه يجب أن يكون وجه سطح قابل للإمساك. إن صح: عبور بلا جاذبية يتسارع من 1000 إلى 1800 px/s، والوصول (لمس السطح) يقلب الإطار ويُسجَّل في سجل سطوح المحاولة (`"arrive"`)؛ وإلا فشل (`"fail"`) بلا حركة. العوائق المثبتة على `FLOOR` / `SKY` تقرأ أرضية اللحظة من السجل كما في `Level.surface_up_at`.
-- **بداية من Checkpoint = Respawn:** (x، الارتفاع، السطح) وسجل جديد، والزمن مقرّب لشبكة الـTicks كما يفعل `GameSession.time_at`؛ ونقطة إعادة المحاولة (`_ground_before`، `_cut_points`) لا تقع أبدًا بين لمستي إيماءة (`Level.gesture_lead()`).
-- **`check()`** يرفض مسارًا يعبر إلى حافة سطح أملس (حالة ملتبسة في المحرك).
-- **خطة السطوح (`Plan` في `world_04.py`):** السطح المقابل موجود فقط حول العبورات التي تحتاجه (`early` قبل الوصول)، وبعد كل عبور يُقطع السطح المتروك (`late` بعد اللمسة)، فكل عبور ضروري (تخطيه = سقوط) ولكل مقطع أرضية واحدة يقف عليها الـCheckpoint. `early` / `late` لكل مستوى هما "هامشه" قبل أن تضيّقه العوائق.
-- **مفاتيح الصعوبة:** أهداف `tune` لنافذة كل Beat (ms)، الهامش (`Plan(early, late)`)، والمسافة بين الـBeats (فواصل غير متساوية تكسر الإيقاع الثابت).
+- **`latch_mode`:** المسار قائمة **كل** اللمسات: الـHop لمسة واحدة (`lv.hop(x)`)، والعبور لمستان (`lv.attach(x, gap=6)`: الأولى قبل الثانية بـ`gap` Tick). المحاكاة تتبع قواعد `PlayerMotor` حرفيًا: لمسة على سطح → Hop في نفس الـTick (`V_HOP`، وجاذبية World 04 هي جاذبية الـHop `G_HOP_UP` / `G_HOP_DOWN`) وتفتح نافذة `ATTACH_WINDOW` = 0.3 ث؛ لمسة ثانية فيها → طلب عبور يُفحص بـ`attach_probe` (مثل `SurfaceAttach.probe`: يمشي مسار العبور الحقيقي من موضع الـHop حتى `ATTACH_REACH` = 360 px، وأول ما يلمسه يجب أن يكون وجه سطح قابل للإمساك)؛ نجاح = عبور بلا جاذبية يتسارع من 1000 إلى 1800 px/s ويقلب الإطار عند اللمس (`"arrive"`)، فشل = الـHop مستمر؛ لمسة في الهواء بلا إيماءة مفتوحة → Buffer (حتى لمستين) يُلعب عند الهبوط. العوائق المثبتة على `FLOOR` / `SKY` تقرأ أرضية اللحظة من سجل السطوح كما في `Level.surface_up_at`.
+- **العبور حركة واحدة:** النوافذ (`_survival_window`، `windows`)، والتوسيط (`recenter_route`، ينقل اللمسة الأمامية أولًا)، والضرورة (`necessity`: العبور يُحذف كاملًا، ويُقصّ إلى الـHop وحده — كلاهما يجب أن يموت)، واللاعب البشري (`noisy_player.py`) تحرك لمستي العبور معًا (`_partner` / `_shift`). `kinds`: اللمسة الأولى "hop" والثانية "attach"؛ `actions()` يعطي المسار كأفعال.
+- **بداية من Checkpoint = Respawn:** (x، الارتفاع، السطح) وسجل جديد، والزمن مقرّب لشبكة الـTicks؛ نقاط البداية وقطع الـCheckpoints لا تقع قرب أي لمسة (`gesture_lead()` = نافذة الإيماءة كاملة).
+- **الأفق:** في World 04 لا يقل عن 6 خانات بعد اللمسة، و`_lives` يعدّ السقوط بعيدًا عن السقف موتًا (حافة السقف يُرى السقوط منها متأخرًا).
+- **خطة السطوح (`Plan`):** السطح المقابل موجود فقط حول العبورات التي تحتاجه (`early` قبل الوصول)، والسطح المتروك يُقطع بعد `late` من اللمسة الثانية، فكل عبور ضروري وبين العبورات لا سطح مقابل (TAP TAP هناك = Hop فقط). `early` / `late` صغيران في المستويات الصعبة: الـHop يمنح اللمسة الثانية وقتًا إضافيًا بعد الحافة، فالهامش الهندسي هو ما يضيّق النافذة.
+- **مفاتيح الصعوبة:** `ms_scale` لكل مستوى (يضرب كل أهداف النوافذ)، أهداف `tune` لكل Beat، عرض الفجوات (`hop_gap` يحسبه من النافذة المطلوبة: كلما اتسعت الفجوة ضاقت لحظة الإقلاع)، الهامش، والمسافات بين الـBeats.
 
 | الدالة | العنصر |
 |---|---|
 | `garden_block` / `garden_mover` | كتل الحديقة (أرض/سقف، `latchable=False` = حجر أملس؛ في `world_04.py`: `Band.slicken(x0, x1)` و`Band.cut`) وسقف متحرك |
 | `roots` · `branch` · `flower` · `wave` · `waterfall` · `wind` · `rock` (`ice=True`) · `vines` · `glider` · `ink` · `curtain` · `boulder` · `flock` | العوائق، بمرساة `GROUND` / `CEILING` / `FLOOR` (أرضية اللاعب عند بداية الدورة) / `SKY` (المقابل لها) |
 | `weather(x0, x1, "leaves" / "snow")` | طقس زينة بلا تصادم |
-| `attach(x)` | إيماءة يجب أن تنتهي بعبور (والتقرير يفشل إن فشلت أو صارت شيئًا آخر) |
+| `hop(x)` · `attach(x, gap=6)` | Hop يجب أن يبقى Hop · إيماءة يجب أن تنتهي بعبور |
+| `guard_attach(element, hop_x, reach)` | يختار طور عنصر يحرس السطح المقابل فوق Hop: أي TAP TAP مكانه (اللمسة الثانية بعد 3..17 Tick) إما يموت أو لا يجد سطحًا |
 
-وفي `world_04.py` Beats جاهزة، كل واحد عبور واحد وسؤال "متى؟": `roots_here` و`wave_here` (خطر على سطحك: اعبر قبله)، `flower_across` و`ink_across` (خطر على المقابل: اعبر بعده)، `vines_across` و`curtain_through` (ستارة فوق نصف المسار الأول)، `branch_through` و`boulder_through` و`flock_through` و`glider_through` و`rock_through` و`waterfall_through` (شيء يعبر طريق العبور)، `slick_wait` (سقف أملس: انتظر)، `moving_ceiling` (سقف يعلو خارج المدى وينزل: عبوران)، و`rest`.
+وفي `world_04.py` Beats جاهزة، كل واحد فعل واحد:
+- **Hop** (على سطحك): `hop_roots` (جذور صغيرة، خانة واحدة)، `hop_gap` (فجوة ثابتة: عرضها هو التوقيت)، `hop_ink` (حبر رقيق يزحف نحوك)، `hop_wave` (موجة منخفضة تتدحرج نحوك)، `hop_pinch` (جذور صغيرة وزهرة تنغلق على السطح المقابل: الـHop وحده ينجو).
+- **Attach:** `roots_here` و`wave_here` (جذور 2.1 خانة وموجة 100 px على سطحك: لا يقفزها Hop)، `flower_across` و`ink_across` (خطر على المقابل: اعبر بعده)، `vines_across` و`curtain_through`، `branch_through` و`boulder_through` و`flock_through` و`glider_through` و`rock_through` و`waterfall_through`، `slick_wait`، `moving_ceiling` (عبوران).
+- **مركّب:** `hop_attach` (Hop فوق جذور صغيرة ثم عبور من الـHop نفسه بلمسة ثانية متأخرة، 12 Tick).
 
 ## التحقق على المحرك
 

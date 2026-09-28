@@ -36,10 +36,17 @@ extends Resource
 ## ducks the player under it instead of killing.
 @export_range(0.0, 16.0, 1.0, "suffix:px") var head_clip_assist: float = 6.0
 
+@export_group("Hop (World 04)")
+## World 04's single tap: a short, snappy hop over small obstacles (never a
+## second one in the air). Authored like the jump, as a height at the feet
+## and a time to apex; World 04's gravity is derived from them.
+@export_range(24.0, 200.0, 1.0, "suffix:px") var hop_height: float = 72.0
+@export_range(0.1, 0.5, 0.01, "suffix:s") var hop_time_to_apex: float = 0.22
+
 @export_group("Surface Attach (World 04)")
-## World 04 has no jump at all: two taps are ONE gesture, the SURFACE ATTACH.
-## The second tap must come within this time of the first, or the first is
-## forgotten (a lone tap does nothing).
+## Two taps are ONE gesture, the SURFACE ATTACH: the first tap hops, and a
+## second one within this time turns the hop into the crossing to the
+## surface across (a later tap is a new first tap).
 @export_range(0.1, 0.8, 0.01, "suffix:s") var attach_window: float = 0.3
 ## Farthest surface (px of free space from the body's far side) an attach
 ## can reach.
@@ -85,6 +92,25 @@ func jump_speed() -> float:
 ## Initial upward speed of a double jump (positive number).
 func double_jump_speed() -> float:
 	return sqrt(2.0 * rise_gravity() * double_jump_height)
+
+
+## World 04: gravity while rising / falling (the hop's, for every fall there).
+func hop_rise_gravity() -> float:
+	return 2.0 * hop_height / (hop_time_to_apex * hop_time_to_apex)
+
+
+func hop_fall_gravity() -> float:
+	return hop_rise_gravity() * fall_gravity_multiplier
+
+
+## World 04: initial speed of the hop, away from the floor (positive number).
+func hop_speed() -> float:
+	return 2.0 * hop_height / hop_time_to_apex
+
+
+## World 04: airtime of a hop that lands at the height it started from.
+func hop_airtime() -> float:
+	return hop_time_to_apex + sqrt(2.0 * hop_height / hop_fall_gravity())
 
 
 ## Highest the feet can get above the take-off point: double jump at the apex.

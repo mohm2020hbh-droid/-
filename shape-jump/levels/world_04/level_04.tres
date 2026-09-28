@@ -8,4 +8,4 @@ id = &"w04_l04"
 display_name = "Painted Storm"
 tagline = "Brutal"
 scene_path = "res://levels/world_04/level_04.tscn"
-speed_scale = 1.25
+speed_scale = 1.35

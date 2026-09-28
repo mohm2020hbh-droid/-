@@ -8,4 +8,4 @@ id = &"w04_l01"
 display_name = "Blue Bloom"
 tagline = "Hard"
 scene_path = "res://levels/world_04/level_01.tscn"
-speed_scale = 1.16
+speed_scale = 1.18

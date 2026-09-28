@@ -13,7 +13,8 @@ signal landed(impact_speed: float)
 signal died(cause: StringName)
 signal respawned
 signal state_changed(new_state: State, old_state: State)
-## World 04: the first tap of the attach gesture (waiting for the second).
+## World 04: the first tap of the attach gesture: the hop is on its way and
+## the second tap is awaited.
 signal attach_armed
 ## World 04: the gesture took hold; the player crosses to the surface across
 ## and will stand with its centre at [param landing], on the ceiling if
@@ -108,12 +109,12 @@ func is_dead() -> bool:
 
 
 ## True while the double jump is still available (always on the ground).
-## World 04 has none: its equivalent is [method can_attach].
+## World 04 has none (a tap hops, two taps attach): see [method can_attach].
 func has_double_jump() -> bool:
 	return motor.tap_mode == PlayerMotor.TapMode.JUMP and motor.air_jumps_left > 0
 
 
-## World 04: taps are the surface attach gesture (no jump at all).
+## World 04: a tap is the hop, two taps the surface attach (no double jump).
 func set_surface_attach(enabled: bool) -> void:
 	motor.tap_mode = PlayerMotor.TapMode.SURFACE_ATTACH if enabled else PlayerMotor.TapMode.JUMP
 	attach = SurfaceAttach.new(self) if enabled else null
@@ -130,9 +131,15 @@ func is_attaching() -> bool:
 	return motor.attaching
 
 
-## World 04: on a surface and free to attach (the gesture would be decided).
+## World 04: an attach could still come of a gesture (on a surface, or the
+## hop of an open gesture).
 func can_attach() -> bool:
 	return uses_surface_attach() and motor.can_attach()
+
+
+## World 04: in the air after a hop.
+func is_hopping() -> bool:
+	return uses_surface_attach() and motor.is_hopping()
 
 
 ## World 04: the first tap is in, waiting for the second.
@@ -232,7 +239,7 @@ func _physics_process(delta: float) -> void:
 	velocity = Vector2(local.x, local.y * g)
 
 	match motor.jump_this_tick:
-		PlayerMotor.Jump.GROUND:
+		PlayerMotor.Jump.GROUND, PlayerMotor.Jump.HOP:
 			jumped.emit()
 		PlayerMotor.Jump.AIR:
 			double_jumped.emit()

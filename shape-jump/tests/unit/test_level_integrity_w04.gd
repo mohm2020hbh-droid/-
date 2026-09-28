@@ -3,7 +3,8 @@ extends "res://tests/unit/test_level_integrity.gd"
 ## the garden look, locked until World 03 is complete, the last world; its
 ## organic obstacle language (no geometric obstacle of an older world); every
 ## checkpoint standing where only its own surface exists; the surface attach
-## set up on every level, and routes made only of TAP TAP gestures.
+## set up on every level, and routes that mix both moves: hops and TAP TAP
+## surface attaches, up and down.
 
 const T := GameConst.TILE
 
@@ -96,22 +97,35 @@ func test_checkpoints_and_the_finish_stand_where_only_their_surface_exists() -> 
 				assert_false(across, "%s: nothing across from the checkpoint at x=%.0f (%s)" % [name, x, block.name])
 
 
-## Every level turns the world over more often than the one before it, and
-## its route is made of TAP TAP gestures only: pairs of taps a few ticks
-## apart (no lone tap, no jump).
-func test_levels_use_more_crossings_as_they_go() -> void:
+## Every level asks for both moves, and more of them than the one before:
+## single taps (hops, never within an attach window of another tap, or they
+## would be one gesture) and TAP TAP gestures (two taps a few ticks apart)
+## that turn the world over, up and down alike.
+func test_levels_mix_hops_and_attaches_and_ask_for_more_as_they_go() -> void:
 	var previous := 0
 	for i in WORLD.levels.size():
 		var route := Autoplay.route_for(world_index(), i)
-		assert_true(route.size() >= 20, "level %d: a real route (%d taps)" % [i + 1, route.size()])
-		assert_eq(route.size() % 2, 0, "level %d: taps come in pairs" % (i + 1))
 		var tick := 520.0 * WORLD.levels[i].speed_scale / 60.0 / T
-		for k in range(0, route.size(), 2):
-			var gap := (route[k + 1] - route[k]) / tick
-			assert_true(gap > 2.0 and gap < 8.0, "level %d: taps %d-%d are one TAP TAP (%.1f ticks apart)" % [
-				i + 1, k + 1, k + 2, gap])
-			if k + 2 < route.size():
-				# The next gesture starts after the crossing (about 12 ticks) is over.
-				assert_true((route[k + 2] - route[k + 1]) / tick > 20.0, "level %d: gestures well apart" % (i + 1))
-		assert_true(route.size() / 2 >= previous, "level %d: no fewer attaches than the one before" % (i + 1))
-		previous = route.size() / 2
+		var window := 0.3 * 60.0
+		var hops := 0
+		var attaches := 0
+		var k := 0
+		while k < route.size():
+			if k + 1 < route.size() and (route[k + 1] - route[k]) / tick < window:
+				var gap := (route[k + 1] - route[k]) / tick
+				assert_true(gap >= 2.0, "level %d: taps %d-%d are one TAP TAP (%.1f ticks apart)" % [i + 1, k + 1, k + 2, gap])
+				if k + 2 < route.size():
+					# (A tap during the crossing would be swallowed: the next
+					# move comes once it has touched down.)
+					assert_true((route[k + 2] - route[k + 1]) / tick > 8.0,
+						"level %d: the next move after the TAP TAP at %d comes after its crossing" % [i + 1, k + 2])
+				attaches += 1
+				k += 2
+			else:
+				hops += 1
+				k += 1
+		var name := WORLD.levels[i].display_name
+		assert_true(hops >= 10, "%s: the hop is a real move (%d hops)" % [name, hops])
+		assert_true(attaches >= 10, "%s: TAP TAP attaches (%d)" % [name, attaches])
+		assert_true(hops + attaches >= previous, "%s: no fewer moves than the level before (%d)" % [name, hops + attaches])
+		previous = hops + attaches

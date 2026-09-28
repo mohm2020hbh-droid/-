@@ -35,18 +35,25 @@ HURT_HALF = 18.0     # Half size of the hurtbox.
 LEDGE_ASSIST = 10.0
 INSET = 4.0          # Hazard.HITBOX_INSET
 SAFETY = 2.0         # Closer than this to a hitbox counts as a hit.
-# World 04 (movement_config.gd, Surface Attach): no jump at all. Two taps are
-# one gesture (the second within ATTACH_WINDOW s of the first); it attaches to
-# the surface across if the crossing reaches one it can hold within
-# ATTACH_REACH px, pulled at attach_speed_at(tick) (no gravity), and gravity
-# turns when it touches. A route's World 04 entry is the second tap; its
-# first tap comes GESTURE_GAP ticks before.
+# World 04 (movement_config.gd, Hop + Surface Attach): a tap is a short HOP
+# (World 04's gravity is the hop's); a second tap within ATTACH_WINDOW s turns
+# the hop into the attach to the surface across, if the crossing reaches one
+# it can hold within ATTACH_REACH px, pulled at attach_speed_at(tick) (no
+# gravity); gravity turns when it touches. Never a second jump: a tap in the
+# air with no gesture open waits for the landing (BUFFER s). A World 04 route
+# lists every tap: a hop is one, an attach two (GESTURE_GAP ticks apart by
+# default).
+HOP_H = 72.0
+HOP_APEX = 0.22
+G_HOP_UP = 2.0 * HOP_H / HOP_APEX ** 2
+G_HOP_DOWN = G_HOP_UP * FALL_MULT
+V_HOP = 2.0 * HOP_H / HOP_APEX
 ATTACH_WINDOW = 0.3
 ATTACH_REACH = 360.0
 ATTACH_SPEED = 1000.0
 ATTACH_ACCEL = 6000.0
 ATTACH_MAX_SPEED = 1800.0
-GESTURE_GAP = 5
+GESTURE_GAP = 6
 
 
 def attach_speed_at(tick):
@@ -61,6 +68,30 @@ def attach_ticks(distance):
         covered += attach_speed_at(ticks) * DT
         ticks += 1
     return ticks
+
+
+def hop_rise(ticks):
+    """World 04: how high (px) the feet are `ticks` ticks after a hop started
+    on flat ground (the motor's half-step integration), 0 once landed."""
+    vy, h = -V_HOP, 0.0
+    for k in range(ticks):
+        if k:
+            vy = min(vy + (G_HOP_UP if vy < 0 else G_HOP_DOWN) * DT * 0.5, MAX_FALL)
+        else:
+            vy = vy + G_HOP_UP * DT * 0.5
+        h -= vy * DT
+        if h <= 0.0:
+            return 0.0
+        vy = min(vy + (G_HOP_UP if vy < 0 else G_HOP_DOWN) * DT * 0.5, MAX_FALL)
+    return h
+
+
+def hop_ticks():
+    """World 04: ticks a hop spends in the air over flat ground."""
+    k = 1
+    while hop_rise(k) > 0.0:
+        k += 1
+    return k
 
 
 GAME_SRC = "res://src/level/elements/"
@@ -1404,9 +1435,10 @@ class Level:
         return self.speed * DT / T
 
     def gesture_lead(self):
-        """World 04: how far (tiles) before its route x a gesture's first tap
-        comes (0 elsewhere: a route x is the whole tap)."""
-        return GESTURE_GAP * self.tiles_per_tick() if self.latch_mode else 0.0
+        """World 04: the longest a gesture's first tap can come before its
+        second (the attach window), in tiles (0 elsewhere). Starting points
+        and checkpoint cuts keep this far from any tap."""
+        return round(ATTACH_WINDOW / DT) * self.tiles_per_tick() if self.latch_mode else 0.0
 
     def tiles_per_second(self):
         return self.speed / T
@@ -1781,19 +1813,18 @@ class Level:
             y = -(y + HALF) + HALF   # Feet on a ceiling at world y: centre y + HALF.
         vy, grounded, coyote, air_jumps, buffer = 0.0, True, 0.0, 1, 0.0
         latching = False     # World 04: crossing to the other surface
+        hopping = False      # World 04: in the air after a hop
+        hop_by = None        # World 04: the tap whose hop starts next tick
+        held = []            # World 04: taps remembered in the air (at most 2)
         queued = []          # taps waiting to jump, oldest first
         buffered = None      # the tap in the jump buffer
-        made = {}            # tap x -> "ground" / "air" (World 04: "attach" / "fail")
+        made = {}            # tap x -> "ground" / "air" (World 04: "hop" / "attach" / "fail")
         support = None
         next_tap = 0
-        # World 04: every route entry is an attach, the gesture's second tap;
-        # its first tap comes GESTURE_GAP ticks before. The motor's gesture:
-        # idle -> pending (ATTACH_WINDOW s) -> request (decided next tick).
-        if latch_mode:
-            first = GESTURE_GAP * self.tiles_per_tick()
-            taps = sorted([(round(a - first, 3), a) for a in route] + [(a, a) for a in route])
-        else:
-            taps = [(a, a) for a in route]
+        # World 04: the route lists every tap. The motor's gesture: idle -tap
+        # on a surface (a hop)-> pending (ATTACH_WINDOW s) -tap-> request
+        # (decided next tick).
+        taps = [(a, a) for a in route]
         gesture, gesture_left, attach_tick, request_by = "idle", 0.0, 0, None
         # Taps registered before the start (the finger checks the position
         # before each tick, so a tap within the last tick is still to come).
@@ -1817,10 +1848,15 @@ class Level:
                     # PlayerMotor._gesture_tap.
                     if latching:
                         made.setdefault(who, "swallowed")   # Committed to a crossing.
-                    elif gesture == "idle":
-                        gesture, gesture_left = "pending", ATTACH_WINDOW
                     elif gesture == "pending":
                         gesture, request_by = "request", who
+                    elif gesture == "request":
+                        made.setdefault(who, "extra")       # Already asked.
+                    elif grounded or coyote > 0:
+                        hop_by, gesture, gesture_left = who, "pending", ATTACH_WINDOW
+                    else:
+                        held = (held + [who])[-2:] if len(held) < 2 else held
+                        buffer = BUFFER
                 else:
                     available = 2 if grounded else ((1 if coyote > 0 else 0) + air_jumps)
                     if len(queued) < available:
@@ -1848,26 +1884,46 @@ class Level:
             can_ground = on_floor or coyote > 0
             jump = None
             if latch_mode:
-                # PlayerMotor._begin_attach_tick: no jump at all.
+                # PlayerMotor._begin_attach_tick: the hop, the gesture, the crossing.
+                if on_floor:
+                    hopping = False
+                can_hop = can_ground and not latching
                 if latching:
                     attach_tick += 1
                     vy = -attach_speed_at(attach_tick)
                     if attach_tick > attach_ticks(ATTACH_REACH) + 6:
                         latching = False
+                elif hop_by is not None:
+                    if can_hop:
+                        jump = "hop"
+                        made[hop_by] = jump
+                    else:
+                        held = [hop_by] + ([request_by] if gesture == "request" else [])
+                        buffer, gesture = BUFFER, "idle"
+                    hop_by = None
                 elif gesture == "request":
                     gesture = "idle"
-                    hit = self.attach_probe(x, y, surfaces, t) if can_ground else None
+                    hit = self.attach_probe(x, y, surfaces, t)
                     if hit is not None:
-                        latching, attach_tick, coyote = True, 0, 0.0
+                        latching, attach_tick, coyote, hopping = True, 0, 0.0, False
                         vy = -attach_speed_at(0)
                         jump = "attach"
                     else:
                         jump = "fail"
                     made[request_by] = jump
-                elif gesture == "pending":
+                elif held and can_hop:
+                    jump = "hop"
+                    made[held[0]] = jump
+                    gesture, gesture_left = ("request" if len(held) > 1 else "pending"), ATTACH_WINDOW
+                    if len(held) > 1:
+                        request_by = held[1]
+                    held, buffer = [], 0.0
+                if gesture == "pending":
                     gesture_left -= DT
                     if gesture_left <= 0.0:
                         gesture = "idle"
+                if jump == "hop":
+                    vy, coyote, hopping = -V_HOP, 0.0, True
             elif queued:
                 who = queued.pop(0)
                 if can_ground:
@@ -1887,14 +1943,21 @@ class Level:
                 vy, air_jumps = -V_DOUBLE, air_jumps - 1
             if not on_floor:
                 coyote = max(coyote - DT, 0.0)
-            if buffer > 0:
+            if latch_mode and held:
+                buffer -= DT
+                if buffer <= 0.0:
+                    for w in held:
+                        made.setdefault(w, "lost")
+                    held = []
+            elif buffer > 0:
                 buffer = max(buffer - DT, 0.0)
+            g_up, g_down = (G_HOP_UP, G_HOP_DOWN) if latch_mode else (G_UP, G_DOWN)
             if latching:
                 pass   # A crossing is a pull, not a fall: no gravity.
             elif wind:
-                vy = min(vy + ((G_UP if vy < 0 else G_DOWN) + wind) * DT * 0.5, MAX_FALL)
+                vy = min(vy + ((g_up if vy < 0 else g_down) + wind) * DT * 0.5, MAX_FALL)
             else:
-                vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
+                vy = min(vy + (g_up if vy < 0 else g_down) * DT * 0.5, MAX_FALL)
             # move and collide
             arrived = None
             nx, ny = x + self.speed * DT, y + vy * DT
@@ -1980,13 +2043,14 @@ class Level:
                 ny = g * centre + HALF
                 surfaces = surf_up if g < 0 else surf_down
                 latching, vy, grounded, support, coyote, gesture = False, 0.0, False, None, COYOTE, "idle"
+                hopping, held = False, []
                 self._surf_log.append((t, g < 0))
             if latching:
                 pass
             elif wind:
-                vy = min(vy + ((G_UP if vy < 0 else G_DOWN) + wind) * DT * 0.5, MAX_FALL)
+                vy = min(vy + ((g_up if vy < 0 else g_down) + wind) * DT * 0.5, MAX_FALL)
             else:
-                vy = min(vy + (G_UP if vy < 0 else G_DOWN) * DT * 0.5, MAX_FALL)
+                vy = min(vy + (g_up if vy < 0 else g_down) * DT * 0.5, MAX_FALL)
             if grounded:
                 air_jumps = 1
             x, y = nx, ny
@@ -2021,7 +2085,7 @@ class Level:
                         "grounded": grounded, "jump": jump, "air_jumps": air_jumps, "clearance": clearance,
                         "near": hit, "static": grounded and support is not None and support.osc is None,
                         "up": g < 0, "feet_h": -(centre + g * HALF), "latching": latching,
-                        "arrive": arrived is not None, "gesture": gesture})
+                        "arrive": arrived is not None, "gesture": gesture, "hopping": hopping})
             if death:
                 self.last_kinds = made
                 return out, (death, x / T, hit)
@@ -2094,15 +2158,19 @@ class Level:
         step = self.tiles_per_tick()
 
         intended = self.kinds.get(round(route[j], 3))
+        partner = self._partner(route, j)
 
         def ok(k):
-            r = list(route)
-            r[j] = route[j] + k * step
+            r = self._shift(route, j, k)
             if not self._lives(self.simulate(route=sorted(r), start=start, stop_x=stop_x)):
                 return False
             # A shift only counts while the tap still makes its intended jump
-            # (unless any surviving jump counts: tune_any_kind).
-            return any_kind or not intended or self.last_kinds.get(r[j]) == intended
+            # (unless any surviving jump counts: tune_any_kind); a gesture's
+            # first tap must still hop.
+            if any_kind or not intended:
+                return True
+            return self.last_kinds.get(r[j]) == intended and \
+                (partner is None or self.last_kinds.get(r[partner]) == "hop")
         if not ok(0) or not self._as_designed(route, start[0] if start else 0.0, stop_x):
             return None
         lo = hi = 0
@@ -2453,9 +2521,90 @@ class Level:
             props["kind"] = 1
         self.add(Plain("GardenWeather", "Node2D", "garden/garden_weather", props, span=(x0 * T, x1 * T)))
 
-    def attach(self, *xs):
-        """World 04: TAP TAP gestures that must attach (x: the second tap)."""
-        self.tap(*xs, kind="attach")
+    def attach(self, *xs, gap=GESTURE_GAP):
+        """World 04: TAP TAP gestures that must attach (x: the second tap; the
+        first, `gap` ticks before, starts the hop the attach takes over)."""
+        for x in xs:
+            self.tap(x - gap * self.tiles_per_tick(), kind="hop")
+            self.tap(x, kind="attach")
+
+    def hop(self, *xs):
+        """World 04: single taps that must hop (and stay hops)."""
+        self.tap(*xs, kind="hop")
+
+    def guard_attach(self, element, tap, reach, gaps=range(3, 18, 2), steps=120):
+        """World 04: `element` guards the surface across a hop at `tap`. Its
+        phase is chosen (when the level is done) so that turning that hop
+        into a TAP TAP, a second tap any of `gaps` ticks later, never attaches
+        and lives (it dies before `reach` tiles past the tap, or its attach
+        finds nothing and it stays a hop), while the route itself keeps as
+        far from it as it can."""
+        def place():
+            x = self._resolve(tap)
+            route = sorted(self.route)
+            start = self._ground_before(route, route.index(x))
+            stop = x + reach
+            extra = [round(x + k * self.tiles_per_tick(), 3) for k in gaps]
+            variants = [sorted(route + [e]) for e in extra]
+
+            def attaches_and_lives(v, e):
+                # A TAP TAP whose attach finds nothing is only the hop: harmless.
+                alive = self._lives(self.simulate(route=v, start=start, stop_x=stop))
+                return alive and self.last_kinds.get(e) == "attach"
+            best = None
+            for i in range(steps):
+                element.phase = i / steps
+                if any(attaches_and_lives(v, e) for v, e in zip(variants, extra)):
+                    continue
+                ticks, death = self.simulate(route=route, start=start, stop_x=stop + 4.0)
+                if death is not None:
+                    continue
+                clear = self._clearance(element, ticks)
+                if best is None or clear > best[0]:
+                    best = (clear, i / steps)
+            if best is None:
+                raise SystemExit(f"{self.key}: no phase of {element.base} at x={element.x_range()[0] / T:.1f} "
+                                 f"stops a TAP TAP at x={x:.2f} and lets the hop through")
+            element.phase = best[1]
+            self._sim = None
+            self._path = None
+            self.notes.append(f"{element.base} x={element.x_range()[0] / T:.1f}: guards the hop at {x:.2f} "
+                              f"(clearance {best[0]:.0f} px)")
+        self._steps.append(("place", element, place))
+        return tap
+
+    def _partner(self, route, j):
+        """World 04: index of the first tap of the gesture whose second tap is
+        route[j] (None: route[j] is not a gesture's second tap)."""
+        if j > 0 and self.kinds.get(round(route[j], 3)) == "attach":
+            return j - 1
+        return None
+
+    def _leads(self, route, j):
+        """World 04: route[j] is the first tap of a gesture (its hop)."""
+        return j + 1 < len(route) and self._partner(route, j + 1) == j
+
+    def _shift(self, route, j, k):
+        """The route with tap j (and, World 04, its gesture partner) moved by k
+        ticks: a gesture moves as one."""
+        step = self.tiles_per_tick()
+        r = list(route)
+        r[j] = route[j] + k * step
+        p = self._partner(route, j)
+        if p is not None:
+            r[p] = route[p] + k * step
+        return r
+
+    def actions(self, route=None):
+        """World 04: the route as actions [(kind, x)]: ("hop", x) or ("attach",
+        x of the second tap)."""
+        route = sorted(self.route if route is None else route)
+        out = []
+        for j, x in enumerate(route):
+            if self._leads(route, j):
+                continue
+            out.append(("attach" if self._partner(route, j) is not None else "hop", x))
+        return out
 
     # -------------------------------------------------- progress checkpoints --
     def progress_checkpoints(self, fractions=(1.0 / 3.0, 2.0 / 3.0), runway=1.5):
@@ -2704,6 +2853,12 @@ class Level:
         start = self._ground_before(route, min(js), path)
         stop_x = max(element.x_range()[1] / T + stop_after, max(taps) + 2.0)
         lazy = [sorted(route[:j] + route[j + 1:]) for j in js] if forced else []
+        if forced and self.latch_mode:
+            # A gesture skipped whole must die too (not only cut to its hop).
+            for j in js:
+                p = self._partner(route, j)
+                if p is not None:
+                    lazy.append([x for i, x in enumerate(route) if i not in (j, p)])
         best = None
         reasons = {}
         for i in range(steps):
@@ -2772,21 +2927,34 @@ class Level:
             base = sorted(self.route)
             path = self.path()
             for j in range(len(base)):
+                if self._leads(base, j):
+                    continue  # Moves with its gesture's second tap.
                 start = self._ground_before(base, j, path)
                 w = self._survival_window(base, j, start, self._horizon(j, base))
                 if w is None:
-                    raise SystemExit(f"{self.key}: route dies or changes around tap {j + 1} at x={base[j]:.2f}")
+                    _, death = self.simulate(route=base, start=start, stop_x=self._horizon(j, base))
+                    wrong = {x: (self.kinds.get(x), self.last_kinds.get(x)) for x in base
+                             if self.kinds.get(x) and self.last_kinds.get(x) != self.kinds.get(x)
+                             and (start[0] if start else 0.0) <= x <= self._horizon(j, base) - 0.3}
+                    raise SystemExit(f"{self.key}: route dies or changes around tap {j + 1} at x={base[j]:.2f}: "
+                                     f"death {death[:2] if death else None}, wrong {wrong}")
                 shift = (w[0] + w[1]) // 2
                 if not shift:
                     continue
-                moved = list(base)
-                moved[j] = round(base[j] + shift * step, 3)
+                moved = [round(v, 3) for v in self._shift(base, j, shift)]
                 kinds = dict(self.kinds)
-                kinds[moved[j]] = kinds.pop(base[j], None)
+                changed = [i for i in range(len(base)) if moved[i] != base[i]]
+                for i in changed:
+                    kinds.pop(base[i], None)
+                for i in changed:
+                    kinds[moved[i]] = self.kinds.get(base[i])
                 # Keep the move only if the rest of the level still works as designed.
                 _, death = self.simulate(route=sorted(moved), start=start)
                 if death is None and self._as_designed(sorted(moved), start[0] if start else 0.0, 1e9, kinds):
-                    self._move_tap(base[j], moved[j])
+                    # The tap ahead first: a gesture moved by its own gap puts
+                    # its first tap where its second was.
+                    for i in sorted(changed, key=lambda i: -base[i] if shift > 0 else base[i]):
+                        self._move_tap(base[i], moved[i])
                     base = sorted(self.route)
                     self._sim = None
                     self._path = None
@@ -2823,7 +2991,12 @@ class Level:
         x = route[min(j + 3, len(route) - 1)] + 1.0 if j + 3 < len(route) else (self.finish_x or 1e9)
         for cp in self.checkpoints:
             if cp[0] > route[j]:
-                return min(x, cp[0] - 0.5)
+                x = min(x, cp[0] - 0.5)
+                break
+        if self.latch_mode:
+            # World 04: far enough to see a hop off an edge fall away (a
+            # checkpoint just ahead would otherwise hide it).
+            x = max(x, route[j] + 6.0)
         return x
 
     def _ground_before(self, route, j, path=None):
@@ -2866,12 +3039,22 @@ class Level:
                 return False
         return True
 
-    @staticmethod
-    def _lives(result):
+    def _lives(self, result):
         """A run cut at a horizon survived if it did not die and is not already
-        falling through a pit (a fall is only detected well below the ground)."""
+        falling through a pit (a fall is only detected well below the ground,
+        or, World 04, well above the ceiling)."""
         ticks, death = result
-        return death is None and (not ticks or ticks[-1]["y"] < 1.0 * T)
+        if death is not None:
+            return False
+        if not ticks:
+            return True
+        if ticks[-1]["y"] >= 1.0 * T:
+            return False
+        corridor = getattr(self, "corridor", None)
+        if self.latch_mode and corridor:
+            # The box's top more than a tile above the ceiling: falling off it.
+            return ticks[-1]["y"] - 2 * HALF > -(corridor[1] + 1.0) * T
+        return True
 
     def survives(self, route, j, start="checkpoint"):
         if start == "checkpoint":
@@ -2885,8 +3068,8 @@ class Level:
         base = sorted(self.route)
         path = self.path()
         for j in range(len(base)):
-            if only and j + 1 not in only:
-                out.append(None)
+            if (only and j + 1 not in only) or self._leads(base, j):
+                out.append(None)   # (A gesture's first tap moves with its second.)
                 continue
             start = self._ground_before(base, j, path)
             if not self.survives(base, j, start):
@@ -2894,30 +3077,34 @@ class Level:
                 continue
             lo = hi = 0
             for k in range(1, max_shift + 1):
-                r = list(base)
-                r[j] -= k * step
-                if not self.survives(sorted(r), j, start):
+                if not self.survives(sorted(self._shift(base, j, -k)), j, start):
                     break
                 lo = -k
             for k in range(1, max_shift + 1):
-                r = list(base)
-                r[j] += k * step
-                if not self.survives(sorted(r), j, start):
+                if not self.survives(sorted(self._shift(base, j, k)), j, start):
                     break
                 hi = k
             out.append((lo, hi))
         return out
 
     def necessity(self):
-        """Taps that can be dropped without dying before the horizon (should be none)."""
+        """Taps that can be dropped without dying before the horizon (should be
+        none). World 04: every action; a gesture is dropped whole, and also
+        cut to its hop (the attach, not a hop, must be what saves you)."""
         base = sorted(self.route)
         spare = []
         for j in range(len(base)):
-            r = base[:j] + base[j + 1:]
-            start = self._start_before(base[j])
-            _, death = self.simulate(route=r, start=start, stop_x=self._horizon(j, base))
-            if death is None:
-                spare.append((j + 1, base[j]))
+            if self._leads(base, j):
+                continue
+            p = self._partner(base, j)
+            variants = [[i for i in range(len(base)) if i != j and i != p]]
+            if p is not None:
+                variants.append([i for i in range(len(base)) if i != j])
+            for keep in variants:
+                r = [base[i] for i in keep]
+                start = self._start_before(base[j] if p is None else base[p])
+                if self._lives(self.simulate(route=r, start=start, stop_x=self._horizon(j, base))):
+                    spare.append((j + 1, base[j], "whole" if keep is variants[0] else "as a hop"))
         return spare
 
     def report(self, windows=True, only=None):
@@ -2925,9 +3112,16 @@ class Level:
         base = sorted(self.route)
         jumps = sum(1 for s in ticks if s["jump"] == "ground")
         doubles = sum(1 for s in ticks if s["jump"] == "air")
-        kinds = [{"ground": "J", "air": "D", "attach": "A", "fail": "f"}.get(s["jump"], "?") for s in ticks if s["jump"]]
-        print(f"{self.key}: {len(ticks) / 60:.1f} s, {len(base)} taps ({jumps} jumps, {doubles} double), "
-              f"{self.shards} shards, finish x={self.finish_x}")
+        kinds = [{"ground": "J", "air": "D", "attach": "A", "fail": "f", "hop": "H"}.get(s["jump"], "?")
+                 for s in ticks if s["jump"]]
+        if self.latch_mode:
+            acts = self.actions()
+            hops = sum(1 for k, _ in acts if k == "hop")
+            print(f"{self.key}: {len(ticks) / 60:.1f} s, {len(base)} taps: {hops} hops, {len(acts) - hops} attaches "
+                  f"({jumps} jumps, {doubles} double), {self.shards} shards, finish x={self.finish_x}")
+        else:
+            print(f"{self.key}: {len(ticks) / 60:.1f} s, {len(base)} taps ({jumps} jumps, {doubles} double), "
+                  f"{self.shards} shards, finish x={self.finish_x}")
         spare = [] if only else self.necessity()
         if spare:
             print("  spare taps (level survives without them):", spare)
@@ -2937,6 +3131,8 @@ class Level:
             for j, w in enumerate(self.windows(only=only)):
                 if only and j + 1 not in only:
                     continue
+                if w is None and self.latch_mode and self._leads(base, j):
+                    continue   # A gesture's first tap: measured with its second.
                 if w is None:
                     print(f"  T{j + 1:02d} x={base[j]:7.2f}  FAILS")
                     continue
@@ -2944,7 +3140,12 @@ class Level:
                 sizes.append(ms)
                 taps.append((base[j], ms))
                 kind = kinds[j] if j < len(kinds) else "?"
-                print(f"  T{j + 1:02d} {kind} x={base[j]:7.2f}  [{w[0]:+3d},{w[1]:+3d}] {ms:4.0f} ms")
+                if self.latch_mode:
+                    kind = "A" if self._partner(base, j) is not None else "H"
+                # The intended tap within a tick of its window's edge: one
+                # tick of error kills (unfair).
+                edge = "  EDGE" if min(-w[0], w[1]) < 1 else ""
+                print(f"  T{j + 1:02d} {kind} x={base[j]:7.2f}  [{w[0]:+3d},{w[1]:+3d}] {ms:4.0f} ms{edge}")
             if sizes:
                 srt = sorted(sizes)
                 print(f"  windows: min {srt[0]:.0f} ms, median {srt[len(srt) // 2]:.0f} ms")

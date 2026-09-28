@@ -117,7 +117,7 @@ func _ready() -> void:
 	camera.gravity = gravity
 	surface_run = SurfaceRun.new(player, gravity)
 	for event in [player.state_changed, player.landed, player.respawned, player.died, player.attach_started,
-			player.attached, player.attach_armed, player.attach_failed]:
+			player.attached, player.attach_armed, player.attach_failed, player.jumped]:
 		event.connect(func(_a: Variant = null, _b: Variant = null) -> void: _sync_surface_run())
 	gravity.flipped.connect(_on_gravity_flipped)
 	_tap_input.tapped.connect(press_jump)
@@ -376,6 +376,8 @@ func _on_back_requested() -> void:
 
 
 func _on_player_jumped() -> void:
+	if surface_run and player.uses_surface_attach():
+		surface_run.note_hop()
 	Events.player_jumped.emit(player.global_position)
 
 
@@ -542,7 +544,8 @@ func _on_gravity_flipped(up: bool, instant: bool) -> void:
 		Events.gravity_flipped.emit(up, player.global_position)
 
 
-## World 04: the first tap of the gesture (a soft cue: nothing moves yet).
+## World 04: the first tap of the gesture (its hop has begun; the ring shows
+## the time left for the second tap).
 func _on_player_attach_armed() -> void:
 	if state == State.PLAYING:
 		Events.player_attach_armed.emit(player.global_position)

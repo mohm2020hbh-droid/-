@@ -26,8 +26,8 @@ import math
 import os
 import sys
 
-from levelgen import (Level, T, DT, HALF, BASE_SPEED, ATTACH_REACH, GESTURE_GAP, attach_ticks,
-                      GROUND, CEILING, FLOOR, SKY)
+from levelgen import (Level, T, DT, HALF, BASE_SPEED, ATTACH_REACH, GESTURE_GAP, attach_ticks, hop_rise,
+                      hop_ticks, GROUND, CEILING, FLOOR, SKY)
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..") + "/"
 WORLD = "world_04"
@@ -39,11 +39,23 @@ SLAB = 1.5
 
 # ------------------------------------------------------------------ physics --
 
-def cross_dx(lv, corridor=None):
-    """How far (tiles) the run carries the player during a crossing of a
-    corridor `corridor` tiles tall (default: the level's)."""
+def tune(lv, element, tap, ms, **options):
+    """lv.tune with the level's severity applied to the target window."""
+    return lv.tune(element, tap, round(ms * lv.ms_scale), **options)
+
+
+def cross_dx(lv, corridor=None, gap=GESTURE_GAP):
+    """How far (tiles) the run carries the player from a gesture's second tap
+    to the touch across a corridor `corridor` tiles tall (default: the
+    level's): the crossing starts from the hop the first tap began `gap`
+    ticks earlier."""
     corridor = corridor or lv.corridor[1]
-    return attach_ticks(corridor * T - 2 * HALF) * lv.tiles_per_tick()
+    return attach_ticks(corridor * T - 2 * HALF - hop_rise(gap)) * lv.tiles_per_tick()
+
+
+def hop_dx(lv):
+    """How far (tiles) a hop carries the player over flat ground."""
+    return hop_ticks() * lv.tiles_per_tick()
 
 
 # ------------------------------------------------------------------ terrain --
@@ -102,16 +114,20 @@ class Band:
                 lv.garden_block(a, b, h, h - SLAB, latchable=not slick)
 
 
-def new_level(key, number, name, tagline, speed, corridor=C):
-    """A World 04 level whose corridor is `corridor` tiles tall."""
+def new_level(key, number, name, tagline, speed, corridor=C, ms_scale=1.0):
+    """A World 04 level whose corridor is `corridor` tiles tall; every timing
+    target of its beats is scaled by `ms_scale` (the level's severity)."""
     lv = Level(key, f"w04_l{number:02d}", name, tagline, speed)
+    lv.ms_scale = ms_scale
     lv.latch_mode = True
     lv.corridor = (0.0, corridor)
     lv.kill_y = 7.0 * T
     lv.kill_top = -(corridor + 7.0) * T
     # The camera centres the corridor whichever surface is the floor.
     lv.corridor_height = corridor
-    lv.tune_any_kind = True
+    # A window counts only the shifts that still make the intended action
+    # (a hop that stays a hop, an attach that attaches).
+    lv.tune_any_kind = False
     return lv
 
 
@@ -198,9 +214,9 @@ def rest(x, length=8.0):
 def roots_here(lv, plan, x, ms, period=1.6, gap=1.0, width=1.4, early=None):
     """ROOTS rise on the surface you run on, just past x: attach before they
     reach you (the surface goes on past them; a late attach meets them)."""
-    r = lv.roots(x + gap, width, 1.7, anchor=plan.here(), period=period, hold=0.5)
+    r = lv.roots(x + gap, width, 2.1, anchor=plan.here(), period=period, hold=0.5)
     land = plan.cross(x, early=early, late=gap + width + 1.5)
-    lv.tune(r, x, ms)
+    tune(lv, r, x, ms)
     return land
 
 
@@ -209,7 +225,7 @@ def flower_across(lv, plan, x, ms, period=1.6, ahead=0.4, early=3.2, late=None):
     it has passed you, while it is closed (it opens again behind you)."""
     fl = lv.flower(x + cross_dx(lv) - ahead, anchor=plan.across(), period=period, hold_ratio=0.55)
     land = plan.cross(x, early=early, late=late)
-    lv.tune(fl, x, ms)
+    tune(lv, fl, x, ms)
     return land
 
 
@@ -218,7 +234,7 @@ def branch_through(lv, plan, x, ms, period=1.8, amplitude=0.85, length=2.6):
     corridor where the crossing goes: attach while it is swung aside."""
     b = lv.branch(x + cross_dx(lv) * 0.55, length, anchor=plan.across(), amplitude=amplitude, period=period)
     land = plan.cross(x)
-    lv.tune(b, x, ms)
+    tune(lv, b, x, ms)
     return land
 
 
@@ -227,16 +243,19 @@ def flock_through(lv, plan, x, ms, period=2.0, sweep=1.4):
     crossing goes: attach through the gap it leaves."""
     fk = lv.flock(x + cross_dx(lv) * 0.5, lv.corridor[1] * 0.5, sweep, period=period)
     land = plan.cross(x)
-    lv.tune(fk, x, ms)
+    tune(lv, fk, x, ms)
     return land
 
 
 def rock_through(lv, plan, x, ms, period=1.5, ice=False):
     """Stones break loose from the sky side and fall across the corridor
     where the crossing goes: attach between them."""
-    rk = lv.rock(x + cross_dx(lv) * 0.6, anchor=SKY, period=period, ice=ice)
+    # The side it breaks from is fixed (the surface across at this attach),
+    # not read from the run's surface log: the attach's timing then never
+    # changes which way a later stone falls.
+    rk = lv.rock(x + cross_dx(lv) * 0.6, anchor=plan.across(), period=period, ice=ice)
     land = plan.cross(x)
-    lv.tune(rk, x, ms)
+    tune(lv, rk, x, ms)
     return land
 
 
@@ -247,16 +266,16 @@ def waterfall_through(lv, plan, x, ms, period=1.6, hold_ratio=0.4, share=0.62):
     wf = lv.waterfall(x + cross_dx(lv) * 0.5, width=70.0, length=lv.corridor[1] * T * share, deadly=True,
                       anchor=plan.across(), period=period, hold_ratio=hold_ratio)
     land = plan.cross(x)
-    lv.tune(wf, x, ms)
+    tune(lv, wf, x, ms)
     return land
 
 
 def wave_here(lv, plan, x, ms, period=2.4, speed=380.0, run=5.0):
-    """A WAVE forms on the surface you run on and rolls toward you: attach
-    before it arrives."""
-    wv = lv.wave(x + 2.2 + run, run, anchor=plan.here(), period=period, speed=speed)
+    """A tall WAVE forms on the surface you run on and rolls toward you (too
+    tall to hop): attach before it arrives."""
+    wv = lv.wave(x + 2.2 + run, run, height=100.0, anchor=plan.here(), period=period, speed=speed)
     land = plan.cross(x, late=run + 3.0)
-    lv.tune(wv, x, ms)
+    tune(lv, wv, x, ms)
     return land
 
 
@@ -265,7 +284,7 @@ def ink_across(lv, plan, x, ms, period=2.0, reach=3.0):
     attach after the flood has drawn back."""
     ik = lv.ink(x + cross_dx(lv) - 0.3, reach, anchor=plan.across(), period=period, hold_ratio=0.45)
     land = plan.cross(x, early=2.6)
-    lv.tune(ik, x, ms)
+    tune(lv, ik, x, ms)
     return land
 
 
@@ -275,7 +294,7 @@ def vines_across(lv, plan, x, ms, period=1.8):
     of the path and of the landing)."""
     vn = lv.vines(x + 0.25, 1.0, 0.6, 2.6, anchor=plan.across(), period=period)
     land = plan.cross(x)
-    lv.tune(vn, x, ms)
+    tune(lv, vn, x, ms)
     return land
 
 
@@ -286,9 +305,9 @@ def slick_wait(lv, plan, x, ms, slick=6.0, period=1.5):
     garden, and go before the roots."""
     dx = cross_dx(lv)
     (plan.floor if plan.up else plan.top).slicken(x + dx - slick, x + dx - 0.9)
-    r = lv.roots(x + 1.0, 1.4, 1.7, anchor=plan.here(), period=period, hold=0.5)
+    r = lv.roots(x + 1.0, 1.4, 2.1, anchor=plan.here(), period=period, hold=0.5)
     land = plan.cross(x, early=slick, late=4.0)
-    lv.tune(r, x, ms)
+    tune(lv, r, x, ms)
     return land
 
 
@@ -296,7 +315,7 @@ def boulder_through(lv, plan, x, ms, period=2.0):
     """A BOULDER swings on its rope from the ceiling across the crossing."""
     bd = lv.boulder(x + cross_dx(lv) * 0.5, 2.4, radius=36.0, amplitude=0.8, period=period)
     land = plan.cross(x)
-    lv.tune(bd, x, ms)
+    tune(lv, bd, x, ms)
     return land
 
 
@@ -306,7 +325,7 @@ def curtain_through(lv, plan, x, ms, period=1.8):
     of the path and of the landing)."""
     ct = lv.curtain(x + 0.1, 1.0, 0.5, 2.6, anchor=plan.across(), period=period, hold_ratio=0.45)
     land = plan.cross(x)
-    lv.tune(ct, x, ms)
+    tune(lv, ct, x, ms)
     return land
 
 
@@ -314,7 +333,7 @@ def glider_through(lv, plan, x, ms, period=2.2):
     """A LEAF rides the wind in loops through the middle of the corridor."""
     gl = lv.glider(x + cross_dx(lv) * 0.5, lv.corridor[1] * 0.5, loop=(110.0, 70.0), period=period)
     land = plan.cross(x)
-    lv.tune(gl, x, ms)
+    tune(lv, gl, x, ms)
     return land
 
 
@@ -342,8 +361,101 @@ def moving_ceiling(lv, plan, x, ms, period=2.2, ride=7.0):
     lv.attach(x2)
     plan.up = False
     plan.open(x2 + 1.6)
-    lv.tune(mv, [x, x2], ms, osc=True)
+    tune(lv, mv, [x, x2], ms, osc=True)
     return x2 + dx
+
+
+# --------------------------------------------------------------- hop beats --
+# One HOP each (x: its tap), over something small on the surface you run on.
+# Between attaches the surface across is gone, so a TAP TAP there only hops
+# (its attach finds nothing); hop_pinch guards it so that an attach dies.
+
+HOP_MID = 12.5   # Ticks from a hop's tap to the middle of its flight.
+COYOTE_TICKS = 4.8   # MovementConfig.coyote_time in ticks.
+
+
+def _here(plan):
+    """The band of the surface you run on."""
+    return plan.top if plan.up else plan.floor
+
+
+def hop_mid(lv, x):
+    """Where (tiles) the hop tapped at x is highest."""
+    return x + HOP_MID * lv.tiles_per_tick()
+
+
+def hop_roots(lv, plan, x, ms, period=1.5, width=0.8, reach=1.0, hold=0.45):
+    """Small ROOTS rise on the surface you run on: hop over them while they
+    stand (a hop clears 1 tile; the attach roots are twice that)."""
+    r = lv.roots(hop_mid(lv, x) - width * 0.5, width, reach, anchor=plan.here(), period=period, hold=hold)
+    lv.hop(x)
+    tune(lv, r, x, ms)
+    return x + hop_dx(lv)
+
+
+def hop_gap(lv, plan, x, ms):
+    """A GAP in the surface you run on: hop across. Nothing moves: the gap's
+    width is the timing, sized so the take-off window is about `ms` (the
+    wider, the less time: the hop must leave late and land just past it)."""
+    tpt = lv.tiles_per_tick()
+    coyote = COYOTE_TICKS * tpt
+    ms = round(ms * lv.ms_scale)
+    width = hop_dx(lv) + 2 * HALF / T + coyote - (ms * 60.0 / 1000.0 - 1.0) * tpt
+    mid = hop_mid(lv, x)
+    _here(plan).cut(mid - width * 0.5, mid + width * 0.5)
+    lv.hop(x)
+    lv.notes.append(f"Gap x={mid - width * 0.5:.1f}: {width:.2f} tiles for {ms} ms")
+    return x + hop_dx(lv)
+
+
+def hop_ink(lv, plan, x, ms, reach=2.2, period=1.8, hold_ratio=0.5):
+    """INK spills along the surface you run on, toward you: hop over the
+    flow (thin: a hop clears it; spread wide: the hop must be on time)."""
+    ik = lv.ink(hop_mid(lv, x) + reach * 0.5, reach, anchor=plan.here(), period=period, hold_ratio=hold_ratio)
+    lv.hop(x)
+    tune(lv, ik, x, ms)
+    return x + hop_dx(lv)
+
+
+def hop_wave(lv, plan, x, ms, height=44.0, period=2.0, speed=360.0, run=4.0):
+    """A small WAVE rolls at you along the surface you run on: hop over its
+    crest (it closes in fast: a short window)."""
+    wv = lv.wave(hop_mid(lv, x) + run * 0.5, run, height=height, anchor=plan.here(), period=period, speed=speed)
+    lv.hop(x)
+    tune(lv, wv, x, ms)
+    return x + hop_dx(lv)
+
+
+def hop_pinch(lv, plan, x, ms, period=1.5, flower_period=1.3):
+    """Both surfaces closed at once: small roots on yours, and a short
+    stretch of surface across with a FLOWER closing over where an attach
+    from this hop would land (later, the stretch has ended: an attach finds
+    nothing). Only a hop gets through: a TAP TAP lands in the flower."""
+    near = 3 * lv.tiles_per_tick() + cross_dx(lv, gap=3)   # the earliest landing of a TAP TAP
+    plan.close(x - 1.5)
+    plan.open(x + near + 0.9)
+    fl = lv.flower(x + near + 0.35, anchor=plan.across(), period=flower_period, hold_ratio=0.85)
+    r = lv.roots(hop_mid(lv, x) - 0.4, 0.8, 1.0, anchor=plan.here(), period=period, hold=0.45)
+    lv.hop(x)
+    tune(lv, r, x, ms)
+    lv.guard_attach(fl, x, near + 1.5)
+    return x + hop_dx(lv)
+
+
+def hop_attach(lv, plan, x, ms, late_gap=12, period=1.5):
+    """HOP, then ATTACH from the hop: small roots on your surface, and your
+    surface ends right after them. The first tap hops the roots; the second,
+    late in the hop (`late_gap` ticks on), carries it across. Returns the
+    landing x."""
+    hx = x - late_gap * lv.tiles_per_tick()
+    r = lv.roots(hop_mid(lv, hx) - 0.4, 0.8, 1.0, anchor=plan.here(), period=period, hold=0.45)
+    dx = cross_dx(lv, gap=late_gap)
+    plan.close(x + dx - plan.early)
+    lv.attach(x, gap=late_gap)
+    plan.up = not plan.up
+    plan.open(x + plan.late)
+    tune(lv, r, x, ms)
+    return x + dx
 
 
 # ------------------------------------------------------------------ levels --
@@ -353,340 +465,459 @@ def on_ground(plan):
 
 
 def level_01():
-    """BLUE BLOOM — hard. Teaches TAP TAP -> CEILING, then TAP TAP -> GROUND,
-    with room to decide: the first attaches have wide windows over long
-    stretches where both surfaces exist (attach now, or run on?). Roots on
-    the ground send you up, flowers on the ceiling send you down, a wave
-    rolls in, a branch swings, stones fall; the last third keeps switching
-    with less time for each."""
-    lv = new_level("level_01", 1, "Blue Bloom", "Hard", 1.16, corridor=5.2)
+    """BLUE BLOOM — hard. The two moves of the garden, one at a time and then
+    mixed: a TAP hops small things on the surface you run on (gaps, small
+    roots, thin ink, low waves), a TAP TAP takes you across when the way on
+    is closed (tall roots, a tall wave, a flower closing, a branch, stones).
+    Then both, back to back, with less room between them."""
+    lv = new_level("level_01", 1, "Blue Bloom", "Hard", 1.18, corridor=5.2, ms_scale=0.58)
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top, early=2.2, late=2.0)
+    plan = Plan(lv, floor, top, early=1.4, late=0.5)
     plan.open(13.0)
 
-    lv.group("FirstAttach")
-    # Both surfaces from x=16: the ground ends at 28 (attach any time on the way).
-    land = plan.cross(24.0, early=8.0, late=4.0)
-    lv.shards_along(14.0, land + 6.0, 2.0)
-    lv.group("BackDown")
-    x = land + 12.0
-    land = plan.cross(x, early=6.0, late=3.0)
-    lv.shards_along(x - 8.0, land + 6.0, 2.0)
+    lv.group("FirstHops")
+    x = 16.0
+    land = hop_gap(lv, plan, x, 300)
+    x = land + 3.0
+    land = hop_roots(lv, plan, x, 260, period=1.8)
+    x = land + 3.0
+    land = hop_gap(lv, plan, x, 270)
+    lv.shards_along(14.0, land, 2.0)
 
-    lv.group("Roots")
-    x = rest(land, 9.0)
-    land = roots_here(lv, plan, x, 420, period=1.8, early=5.0)
-    x = land + 9.0
-    land = flower_across(lv, plan, x, 380, period=1.9)
-    lv.shards_along(x - 16.0, land + 5.0, 2.0)
+    lv.group("FirstAttach")
+    x = land + 4.0
+    land = roots_here(lv, plan, x, 260, period=1.8, early=5.0)
+    x = land + 3.5
+    land = hop_roots(lv, plan, x, 250, period=1.7)
+    x = land + 3.5
+    land = flower_across(lv, plan, x, 250, period=1.8)
+    x = land + 3.0
+    land = hop_ink(lv, plan, x, 230, reach=2.0)
+    x = land + 3.0
+    land = wave_here(lv, plan, x, 230, period=2.4)
+    lv.shards_along(x - 20.0, land + 3.0, 2.0)
 
     lv.group("Rest")
-    x = rest(land, 10.0)
+    x = rest(land, 13.0)   # (Long: the wave behind reaches into it.)
 
     lv.group("Garden")
-    # Uneven gaps: no fixed tapping rhythm lines up with the beats.
-    land = wave_here(lv, plan, x, 340, period=2.6)
-    x = land + 8.0
-    land = branch_through(lv, plan, x, 320, period=2.0)
-    x = land + 11.5
-    land = rock_through(lv, plan, x, 320, period=1.7)
-    x = land + 6.5
-    land = flower_across(lv, plan, x, 300, period=1.8)
-    x = land + 10.0
-    land = vines_across(lv, plan, x, 300, period=1.9)
-    lv.shards_along(x - 34.0, land + 5.0, 2.0)
+    land = hop_gap(lv, plan, x, 250)
+    x = land + 3.5
+    land = ink_across(lv, plan, x, 220, period=2.0)
+    x = land + 2.5
+    land = hop_roots(lv, plan, x, 220, period=1.6)
+    x = land + 3.0
+    land = branch_through(lv, plan, x, 220, period=1.9)
+    x = land + 3.0
+    land = hop_wave(lv, plan, x, 220)
+    x = land + 3.0
+    land = rock_through(lv, plan, x, 210, period=1.7)
+    x = land + 2.5
+    land = hop_roots(lv, plan, x, 200, period=1.5)
+    lv.shards_along(x - 30.0, land + 3.0, 2.0)
 
     lv.group("Rest2")
-    x = rest(land, 10.0)
+    x = rest(land, 9.0)
 
     lv.group("Pressure")
-    land = roots_here(lv, plan, x, 300, period=1.6)
-    x = land + 9.5
-    land = flower_across(lv, plan, x, 290, period=1.7)
-    x = land + 6.0
-    land = waterfall_through(lv, plan, x, 280, period=1.7)
-    x = land + 8.5
-    land = roots_here(lv, plan, x, 270, period=1.5)
-    x = land + 6.5
-    land = branch_through(lv, plan, x, 260, period=1.8)
-    lv.shards_along(x - 30.0, land + 4.0, 2.2)
-    return finish_level(lv, floor, top, land + 10.0, plan)
+    land = roots_here(lv, plan, x, 200, period=1.6)
+    x = land + 2.5
+    land = hop_gap(lv, plan, x, 230)
+    x = land + 2.5
+    land = vines_across(lv, plan, x, 200, period=1.8)
+    x = land + 2.5
+    land = hop_ink(lv, plan, x, 190, reach=2.2)
+    x = land + 2.5
+    land = hop_pinch(lv, plan, x, 190)
+    x = land + 2.5
+    land = waterfall_through(lv, plan, x, 190, period=1.7)
+    x = land + 2.5
+    land = hop_roots(lv, plan, x, 180, period=1.5)
+    x = land + 2.5
+    land = flower_across(lv, plan, x, 180, period=1.7)
+    lv.shards_along(x - 30.0, land + 3.0, 2.2)
+    return finish_level(lv, floor, top, land + 9.0, plan)
 
 
 def level_02():
-    """FALLING GARDEN — very hard. The surface is how you get out of the way:
-    roots and waves on the ground send you up, vines, boulders and flowers
-    on the ceiling send you down, stones and waterfalls fall across the way
-    you cross. More attaches, closer together."""
-    lv = new_level("level_02", 2, "Falling Garden", "Very hard", 1.19, corridor=5.3)
+    """FALLING GARDEN — very hard. Things fall across the way (stones,
+    waterfalls, a swinging boulder, vines and curtains) while the surface
+    you run on keeps breaking into gaps: hop the gaps, attach between the
+    falls; the first hop-then-attach from the hop itself."""
+    lv = new_level("level_02", 2, "Falling Garden", "Very hard", 1.24, corridor=5.3, ms_scale=0.78)
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top, early=1.6, late=1.4)
+    plan = Plan(lv, floor, top, early=1.2, late=0.3)
     plan.open(13.0)
 
     lv.group("Stones")
-    land = roots_here(lv, plan, 18.0, 300, period=1.6, early=4.0)
-    x = land + 7.0
-    land = rock_through(lv, plan, x, 280, period=1.5)
-    x = land + 7.0
-    land = vines_across(lv, plan, x, 270, period=1.8)
-    x = land + 7.0
-    land = flower_across(lv, plan, x, 260, period=1.6)
-    lv.shards_along(14.0, land + 5.0, 2.2)
+    x = 17.0
+    land = hop_gap(lv, plan, x, 220)
+    x = land + 2.5
+    land = rock_through(lv, plan, x, 200, period=1.5)
+    x = land + 2.5
+    land = hop_roots(lv, plan, x, 200, period=1.5)
+    x = land + 2.5
+    land = vines_across(lv, plan, x, 190, period=1.7)
+    x = land + 2.5
+    land = hop_ink(lv, plan, x, 190, reach=2.2)
+    x = land + 2.5
+    land = boulder_through(lv, plan, x, 190, period=1.9)
+    x = land + 2.5
+    land = hop_gap(lv, plan, x, 200)
+    x = land + 2.5
+    land = flower_across(lv, plan, x, 180, period=1.6)
+    lv.shards_along(14.0, land + 3.0, 2.2)
 
     lv.group("Rest")
     x = rest(land, 9.0)
 
     lv.group("Falls")
-    land = waterfall_through(lv, plan, x, 250, period=1.6)
-    x = land + 6.5
-    land = boulder_through(lv, plan, x, 250, period=2.0)
-    x = land + 6.5
-    land = wave_here(lv, plan, x, 240, period=2.2, speed=420.0)
-    x = land + 6.5
-    land = rock_through(lv, plan, x, 240, period=1.4)
-    x = land + 6.5
-    land = vines_across(lv, plan, x, 235, period=1.7)
-    lv.shards_along(x - 28.0, land + 4.0, 2.2)
+    land = hop_wave(lv, plan, x, 180)
+    x = land + 2.5
+    land = waterfall_through(lv, plan, x, 180, period=1.6)
+    x = land + 2.5
+    land = hop_roots(lv, plan, x, 175, period=1.5)
+    x = land + 2.5
+    land = rock_through(lv, plan, x, 175, period=1.4)
+    x = land + 2.5
+    land = hop_gap(lv, plan, x, 190)
+    x = land + 2.0
+    land = roots_here(lv, plan, x, 170, period=1.5)
+    x = land + 2.5
+    land = hop_roots(lv, plan, x, 170, period=1.4)
+    x = land + 2.5
+    land = curtain_through(lv, plan, x, 170, period=1.7)
+    x = land + 2.5
+    land = hop_attach(lv, plan, x, 165)
+    lv.shards_along(x - 38.0, land + 3.0, 2.2)
 
     lv.group("Rest2")
     x = rest(land, 9.0)
 
     lv.group("Downpour")
-    land = roots_here(lv, plan, x, 230, period=1.4)
-    x = land + 6.0
-    land = waterfall_through(lv, plan, x, 220, period=1.5)
-    x = land + 6.0
-    land = flower_across(lv, plan, x, 215, period=1.5)
-    x = land + 6.0
-    land = rock_through(lv, plan, x, 210, period=1.3)
-    x = land + 6.0
-    land = boulder_through(lv, plan, x, 210, period=1.8)
-    x = land + 6.0
-    land = vines_across(lv, plan, x, 205, period=1.6)
-    x = land + 6.0
-    land = roots_here(lv, plan, x, 200, period=1.35)
-    lv.shards_along(x - 38.0, land + 4.0, 2.2)
-    return finish_level(lv, floor, top, land + 10.0, plan)
+    land = hop_ink(lv, plan, x, 160, reach=2.3)
+    x = land + 2.0
+    land = waterfall_through(lv, plan, x, 160, period=1.5)
+    x = land + 2.0
+    land = hop_roots(lv, plan, x, 160, period=1.4)
+    x = land + 2.0
+    land = hop_gap(lv, plan, x, 180)
+    x = land + 2.0
+    land = rock_through(lv, plan, x, 155, period=1.3)
+    x = land + 2.0
+    land = hop_wave(lv, plan, x, 155)
+    x = land + 2.0
+    land = boulder_through(lv, plan, x, 150, period=1.8)
+    x = land + 2.0
+    land = hop_roots(lv, plan, x, 150, period=1.35)
+    x = land + 2.0
+    land = vines_across(lv, plan, x, 150, period=1.6)
+    lv.shards_along(x - 36.0, land + 3.0, 2.2)
+    return finish_level(lv, floor, top, land + 9.0, plan)
 
 
 def level_03():
-    """THE FLOODED SKY — extremely hard. Surface management in water, ink and
-    wind: waves roll along the surface you run on, ink floods the one
-    across, waterfalls pour from the sky side, slick stone that cannot be
-    held makes you wait, a ceiling that rises out of reach and comes back,
-    leaves riding the wind through the corridor. Every decision is WHEN to
-    attach."""
-    lv = new_level("level_03", 3, "The Flooded Sky", "Extremely hard", 1.22, corridor=5.4)
+    """THE FLOODED SKY — extremely hard. Water and ink on both surfaces:
+    waves to hop and waves to flee, ink to hop and ink to wait out, slick
+    stone that cannot be held, a ceiling that rises out of reach; the
+    question is always which move, and exactly when."""
+    lv = new_level("level_03", 3, "The Flooded Sky", "Extremely hard", 1.30, corridor=5.4, ms_scale=0.70)
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top, early=1.4, late=1.2)
+    plan = Plan(lv, floor, top, early=1.0, late=0.2)
     plan.open(13.0)
 
     lv.group("Tide")
-    land = wave_here(lv, plan, 18.0, 240, period=2.2, speed=420.0)
-    x = land + 6.5
-    land = ink_across(lv, plan, x, 230, period=2.0)
-    x = land + 6.5
-    land = waterfall_through(lv, plan, x, 225, period=1.5)
-    x = land + 6.5
-    land = roots_here(lv, plan, x, 220, period=1.5)
-    lv.shards_along(14.0, land + 4.0, 2.2)
+    x = 17.0
+    land = hop_wave(lv, plan, x, 170)
+    x = land + 2.0
+    land = wave_here(lv, plan, x, 165, period=2.2, speed=420.0)
+    x = land + 2.0
+    land = hop_ink(lv, plan, x, 165, reach=2.3)
+    x = land + 2.0
+    land = ink_across(lv, plan, x, 160, period=1.9)
+    x = land + 2.0
+    land = hop_gap(lv, plan, x, 170)
+    x = land + 2.0
+    land = waterfall_through(lv, plan, x, 160, period=1.5)
+    x = land + 2.0
+    land = hop_wave(lv, plan, x, 155)
+    x = land + 2.0
+    land = roots_here(lv, plan, x, 155, period=1.5)
+    lv.shards_along(14.0, land + 3.0, 2.2)
 
     lv.group("SlickStone")
-    x = land + 7.0
-    land = slick_wait(lv, plan, x, 215, period=1.5)
-    x = land + 6.5
-    land = vines_across(lv, plan, x, 210, period=1.6)
+    x = land + 2.5
+    land = hop_ink(lv, plan, x, 150, reach=2.4)
+    x = land + 2.0
+    land = slick_wait(lv, plan, x, 150, period=1.5)
+    x = land + 2.0
+    land = hop_roots(lv, plan, x, 150, period=1.4)
+    x = land + 2.0
+    land = vines_across(lv, plan, x, 150, period=1.6)
 
     lv.group("Rest")
     x = rest(land, 9.0)
 
     lv.group("RisingCeiling")
     on_ground(plan)
-    land = moving_ceiling(lv, plan, x, 210, period=2.2)
+    land = moving_ceiling(lv, plan, x, 150, period=2.2)
 
     lv.group("Flood")
-    x = land + 6.5
-    land = ink_across(lv, plan, x, 205, period=1.8)
-    x = land + 6.0
-    land = wave_here(lv, plan, x, 200, period=2.0, speed=440.0)
-    x = land + 6.0
-    land = waterfall_through(lv, plan, x, 195, period=1.4)
-    x = land + 6.0
-    land = roots_here(lv, plan, x, 195, period=1.4)
-    lv.shards_along(x - 28.0, land + 4.0, 2.2)
+    x = land + 4.0
+    land = hop_attach(lv, plan, x, 145)
+    x = land + 2.0
+    land = hop_wave(lv, plan, x, 145)
+    x = land + 2.0
+    land = ink_across(lv, plan, x, 140, period=1.8)
+    x = land + 2.0
+    land = hop_gap(lv, plan, x, 150)
+    x = land + 2.0
+    land = wave_here(lv, plan, x, 140, period=2.0, speed=440.0)
+    x = land + 2.0
+    land = hop_ink(lv, plan, x, 140, reach=2.4)
+    x = land + 2.0
+    land = waterfall_through(lv, plan, x, 135, period=1.4)
+    lv.shards_along(x - 34.0, land + 3.0, 2.2)
 
     lv.group("Rest2")
     x = rest(land, 9.0)
 
     lv.group("Deluge")
     w0 = x - 2.0
-    land = slick_wait(lv, plan, x, 190, period=1.4)
-    x = land + 6.0
-    land = ink_across(lv, plan, x, 185, period=1.7)
-    x = land + 6.0
-    land = waterfall_through(lv, plan, x, 185, period=1.35)
-    x = land + 6.0
-    land = wave_here(lv, plan, x, 180, period=1.9, speed=460.0)
-    x = land + 6.0
-    land = glider_through(lv, plan, x, 180, period=1.9)
-    x = land + 6.0
-    land = flock_through(lv, plan, x, 175, period=1.9)
-    lv.weather(w0, land + 6.0, "leaves", density=0.7)
-    lv.shards_along(x - 34.0, land + 4.0, 2.2)
-    return finish_level(lv, floor, top, land + 10.0, plan)
+    land = hop_pinch(lv, plan, x, 135)
+    x = land + 2.0
+    land = glider_through(lv, plan, x, 135, period=1.9)
+    x = land + 2.0
+    land = hop_gap(lv, plan, x, 140)
+    x = land + 2.0
+    land = flock_through(lv, plan, x, 130, period=1.9)
+    x = land + 2.0
+    land = hop_wave(lv, plan, x, 130)
+    x = land + 2.0
+    land = slick_wait(lv, plan, x, 130, period=1.4)
+    x = land + 2.0
+    land = hop_ink(lv, plan, x, 125, reach=2.5)
+    x = land + 2.0
+    land = roots_here(lv, plan, x, 125, period=1.4)
+    x = land + 2.0
+    land = hop_roots(lv, plan, x, 125, period=1.35)
+    lv.weather(w0, land + 4.0, "leaves", density=0.7)
+    lv.shards_along(x - 40.0, land + 3.0, 2.2)
+    return finish_level(lv, floor, top, land + 9.0, plan)
 
 
 def level_04():
-    """PAINTED STORM — brutal. Colours and surface switching: every attach
-    turns the painting over (blue + white <-> yellow + black), and each side
-    has its own dangers: curtains unroll, branches swing, flocks and leaves
-    cross the way, boulders swing, a ceiling rises and falls. The difficulty
-    is timing, reading and choosing the surface, not speed."""
-    lv = new_level("level_04", 4, "Painted Storm", "Brutal", 1.25, corridor=5.4)
+    """PAINTED STORM — brutal. Every attach turns the painting over, and
+    every stretch mixes the two moves with less room between them: hop,
+    attach, hop on the ceiling, attach back, a hop that turns into an attach,
+    both surfaces closed at once (only a hop gets through)."""
+    lv = new_level("level_04", 4, "Painted Storm", "Brutal", 1.35, corridor=5.4, ms_scale=0.73)
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top, early=1.2, late=1.0)
+    plan = Plan(lv, floor, top, early=0.9, late=0.1)
     plan.open(13.0)
 
     lv.group("Canvas")
     w0 = 14.0
-    land = curtain_through(lv, plan, 18.0, 200, period=1.8)
-    x = land + 6.0
-    land = branch_through(lv, plan, x, 195, period=1.7)
-    x = land + 6.0
-    land = glider_through(lv, plan, x, 190, period=2.0)
-    x = land + 6.0
-    land = roots_here(lv, plan, x, 190, period=1.4)
-    x = land + 6.0
-    land = flower_across(lv, plan, x, 185, period=1.5)
-    lv.weather(w0, land + 4.0, "leaves", density=0.6)
-    lv.shards_along(14.0, land + 4.0, 2.2)
+    x = 17.0
+    land = hop_roots(lv, plan, x, 150, period=1.4)
+    x = land + 2.0
+    land = curtain_through(lv, plan, x, 150, period=1.7)
+    x = land + 2.0
+    land = hop_gap(lv, plan, x, 130)
+    x = land + 2.0
+    land = branch_through(lv, plan, x, 145, period=1.7)
+    x = land + 2.0
+    land = hop_ink(lv, plan, x, 145, reach=2.4)
+    x = land + 2.0
+    land = glider_through(lv, plan, x, 145, period=2.0)
+    x = land + 2.0
+    land = hop_roots(lv, plan, x, 140, period=1.35)
+    x = land + 2.0
+    land = flower_across(lv, plan, x, 140, period=1.5)
+    x = land + 2.0
+    land = hop_wave(lv, plan, x, 140)
+    x = land + 2.0
+    on_ground(plan)
+    land = moving_ceiling(lv, plan, x, 135, period=2.0)
+    lv.weather(w0, land + 3.0, "leaves", density=0.6)
+    lv.shards_along(14.0, land + 3.0, 2.2)
 
     lv.group("Rest")
     x = rest(land, 9.0)
 
     lv.group("Storm")
-    if plan.up:
-        land = flock_through(lv, plan, x, 185, period=1.8)
-        x = land + 6.0
-    land = moving_ceiling(lv, plan, x, 180, period=2.0)
-    x = land + 6.0
-    land = curtain_through(lv, plan, x, 180, period=1.6)
-    x = land + 6.0
-    land = boulder_through(lv, plan, x, 180, period=1.8)
-    x = land + 6.0
-    land = ink_across(lv, plan, x, 175, period=1.6)
-    x = land + 6.0
-    land = branch_through(lv, plan, x, 175, period=1.6)
-    lv.shards_along(x - 32.0, land + 4.0, 2.2)
+    land = hop_roots(lv, plan, x, 135, period=1.35)
+    x = land + 2.0
+    land = hop_attach(lv, plan, x, 135)
+    x = land + 2.0
+    land = hop_ink(lv, plan, x, 130, reach=2.5)
+    x = land + 2.0
+    land = boulder_through(lv, plan, x, 130, period=1.8)
+    x = land + 2.0
+    land = hop_pinch(lv, plan, x, 130)
+    x = land + 2.0
+    land = curtain_through(lv, plan, x, 130, period=1.6)
+    x = land + 2.0
+    land = hop_gap(lv, plan, x, 130)
+    x = land + 2.0
+    land = ink_across(lv, plan, x, 125, period=1.6)
+    x = land + 2.0
+    land = hop_wave(lv, plan, x, 120)
+    lv.shards_along(x - 40.0, land + 3.0, 2.2)
 
     lv.group("Rest2")
     x = rest(land, 9.0)
 
     lv.group("Tempest")
     w0 = x - 2.0
-    land = slick_wait(lv, plan, x, 175, period=1.3)
-    x = land + 5.5
-    land = glider_through(lv, plan, x, 170, period=1.8)
-    x = land + 5.5
-    land = wave_here(lv, plan, x, 170, period=1.8, speed=460.0)
-    x = land + 5.5
-    land = curtain_through(lv, plan, x, 165, period=1.5)
-    x = land + 5.5
-    land = flock_through(lv, plan, x, 165, period=1.7)
-    x = land + 5.5
-    land = roots_here(lv, plan, x, 160, period=1.3)
-    x = land + 5.5
-    land = branch_through(lv, plan, x, 160, period=1.5)
-    x = land + 5.5
-    land = curtain_through(lv, plan, x, 155, period=1.45)
-    lv.weather(w0, land + 4.0, "leaves", density=0.8)
-    lv.shards_along(x - 42.0, land + 4.0, 2.2)
-    return finish_level(lv, floor, top, land + 10.0, plan)
+    land = slick_wait(lv, plan, x, 120, period=1.3)
+    x = land + 1.8
+    land = hop_gap(lv, plan, x, 125)
+    x = land + 1.8
+    land = glider_through(lv, plan, x, 120, period=1.8)
+    x = land + 1.8
+    land = hop_roots(lv, plan, x, 115, period=1.3)
+    x = land + 1.8
+    land = wave_here(lv, plan, x, 115, period=1.8, speed=460.0)
+    x = land + 1.8
+    land = hop_ink(lv, plan, x, 115, reach=2.5)
+    x = land + 1.8
+    land = curtain_through(lv, plan, x, 115, period=1.5)
+    x = land + 1.8
+    land = hop_pinch(lv, plan, x, 110)
+    x = land + 1.8
+    land = flock_through(lv, plan, x, 110, period=1.7)
+    x = land + 1.8
+    land = hop_roots(lv, plan, x, 110, period=1.3)
+    x = land + 1.8
+    land = branch_through(lv, plan, x, 110, period=1.5)
+    lv.weather(w0, land + 3.0, "leaves", density=0.8)
+    lv.shards_along(x - 46.0, land + 3.0, 2.2)
+    return finish_level(lv, floor, top, land + 9.0, plan)
 
 
 def level_05():
-    """THE INVERTED GARDEN — brutal but fair. No new ability: TAP TAP,
-    timing, reading, and knowing which surface to be on. Every obstacle of
-    the garden, a snowfall where ice falls among the flakes, a ceiling that
-    rises and falls, and the FINAL GAUNTLET: the last stretch, the tightest
-    attaches of the world."""
-    lv = new_level("level_05", 5, "The Inverted Garden", "Brutal but fair", 1.28, corridor=5.45)
+    """THE INVERTED GARDEN — brutal but fair. No new move: the hop and the
+    attach, faster, closer together, with the least room of the world; a
+    snowfall where ice falls among the flakes; the FINAL GAUNTLET, sixteen
+    moves in a row, the tightest windows of the garden."""
+    lv = new_level("level_05", 5, "The Inverted Garden", "Brutal but fair", 1.40, corridor=5.45, ms_scale=0.86)
     floor, top = start_level(lv)
-    plan = Plan(lv, floor, top, early=1.0, late=0.8)
+    plan = Plan(lv, floor, top, early=0.8, late=0.0)
     plan.open(13.0)
 
     lv.group("Mastery")
-    land = roots_here(lv, plan, 18.0, 175, period=1.4, early=3.0)
-    x = land + 5.5
-    land = branch_through(lv, plan, x, 170, period=1.6)
-    x = land + 5.5
-    land = ink_across(lv, plan, x, 170, period=1.7)
-    x = land + 5.5
-    land = flock_through(lv, plan, x, 165, period=1.7)
-    x = land + 5.5
-    land = vines_across(lv, plan, x, 165, period=1.6)
-    lv.shards_along(14.0, land + 4.0, 2.2)
+    x = 17.0
+    land = hop_roots(lv, plan, x, 130, period=1.35)
+    x = land + 1.8
+    land = roots_here(lv, plan, x, 130, period=1.4)
+    x = land + 1.8
+    land = hop_ink(lv, plan, x, 125, reach=2.5)
+    x = land + 1.8
+    land = branch_through(lv, plan, x, 125, period=1.6)
+    x = land + 1.8
+    land = hop_gap(lv, plan, x, 115)
+    x = land + 1.8
+    land = ink_across(lv, plan, x, 125, period=1.6)
+    x = land + 1.8
+    land = hop_wave(lv, plan, x, 120)
+    x = land + 1.8
+    land = flock_through(lv, plan, x, 120, period=1.7)
+    x = land + 1.8
+    land = hop_pinch(lv, plan, x, 120)
+    x = land + 1.8
+    land = vines_across(lv, plan, x, 120, period=1.5)
+    lv.shards_along(14.0, land + 3.0, 2.2)
 
     lv.group("Snowfall")
-    x = land + 5.5
-    s0 = x - 4.0
-    land = rock_through(lv, plan, x, 165, period=1.3, ice=True)
-    x = land + 5.5
-    land = flower_across(lv, plan, x, 160, period=1.4)
-    x = land + 5.5
-    land = rock_through(lv, plan, x, 160, period=1.25, ice=True)
-    x = land + 5.5
-    land = boulder_through(lv, plan, x, 160, period=1.7)
-    lv.weather(s0, land + 6.0, "snow", density=0.8)
-    lv.shards_along(s0, land + 4.0, 2.2)
+    x = land + 1.8
+    s0 = x - 3.0
+    land = hop_roots(lv, plan, x, 115, period=1.3)
+    x = land + 1.8
+    land = rock_through(lv, plan, x, 115, period=1.3, ice=True)
+    x = land + 1.8
+    land = hop_gap(lv, plan, x, 110)
+    lv.weather(s0, land + 4.0, "snow", density=0.8)
+    lv.shards_along(s0, land + 3.0, 2.2)
 
     lv.group("Rest")
     x = rest(land, 9.0)
 
+    lv.group("Blizzard")
+    s0 = x - 2.0
+    land = flower_across(lv, plan, x, 115, period=1.4)
+    x = land + 1.8
+    land = hop_ink(lv, plan, x, 110, reach=2.6)
+    x = land + 1.8
+    land = rock_through(lv, plan, x, 110, period=1.25, ice=True)
+    x = land + 1.8
+    land = hop_roots(lv, plan, x, 110, period=1.3)
+    x = land + 1.8
+    land = boulder_through(lv, plan, x, 110, period=1.7)
+    lv.weather(s0, land + 4.0, "snow", density=0.8)
+    lv.shards_along(s0, land + 3.0, 2.2)
+
     lv.group("Rapids")
-    land = wave_here(lv, plan, x, 160, period=1.8, speed=480.0)
-    x = land + 5.5
-    land = waterfall_through(lv, plan, x, 155, period=1.3)
-    x = land + 5.5
-    land = slick_wait(lv, plan, x, 155, period=1.3)
-    x = land + 5.5
-    if plan.up:
-        land = glider_through(lv, plan, x, 150, period=1.7)
-        x = land + 5.5
-    land = moving_ceiling(lv, plan, x, 155, period=1.9)
-    lv.shards_along(x - 30.0, land + 4.0, 2.2)
+    x = land + 1.8
+    land = hop_wave(lv, plan, x, 105)
+    x = land + 1.8
+    land = wave_here(lv, plan, x, 105, period=1.8, speed=480.0)
+    x = land + 1.8
+    land = hop_gap(lv, plan, x, 100)
+    x = land + 1.8
+    land = waterfall_through(lv, plan, x, 105, period=1.3)
+    x = land + 1.8
+    land = hop_ink(lv, plan, x, 100, reach=2.6)
+    x = land + 1.8
+    land = slick_wait(lv, plan, x, 100, period=1.3)
+    x = land + 1.8
+    land = hop_roots(lv, plan, x, 100, period=1.25)
+    lv.shards_along(x - 30.0, land + 3.0, 2.2)
 
     lv.group("Rest2")
     x = rest(land, 9.0)
 
     lv.group("FinalGauntlet")
-    land = curtain_through(lv, plan, x, 150, period=1.5)
-    x = land + 5.0
-    land = flock_through(lv, plan, x, 145, period=1.6)
-    x = land + 5.0
-    land = roots_here(lv, plan, x, 145, period=1.25)
-    x = land + 5.0
-    land = branch_through(lv, plan, x, 145, period=1.5)
-    x = land + 5.0
-    land = ink_across(lv, plan, x, 140, period=1.5)
-    x = land + 5.0
-    land = wave_here(lv, plan, x, 140, period=1.7, speed=500.0)
-    x = land + 5.0
-    land = waterfall_through(lv, plan, x, 140, period=1.25)
-    x = land + 5.0
-    land = vines_across(lv, plan, x, 140, period=1.4)
-    lv.shards_along(x - 44.0, land + 3.0, 2.2)
+    land = hop_attach(lv, plan, x, 95)
+    x = land + 1.6
+    land = hop_roots(lv, plan, x, 95, period=1.25)
+    x = land + 1.6
+    land = curtain_through(lv, plan, x, 90, period=1.5)
+    x = land + 1.6
+    land = hop_gap(lv, plan, x, 85)
+    x = land + 1.6
+    land = flock_through(lv, plan, x, 90, period=1.6)
+    x = land + 1.6
+    land = hop_wave(lv, plan, x, 90)
+    x = land + 1.6
+    land = roots_here(lv, plan, x, 88, period=1.25)
+    x = land + 1.6
+    land = hop_pinch(lv, plan, x, 88)
+    x = land + 1.6
+    land = branch_through(lv, plan, x, 85, period=1.5)
+    x = land + 1.6
+    land = hop_ink(lv, plan, x, 85, reach=2.6)
+    x = land + 1.6
+    land = ink_across(lv, plan, x, 83, period=1.5)
+    x = land + 1.6
+    land = hop_roots(lv, plan, x, 83, period=1.25)
+    x = land + 1.6
+    land = wave_here(lv, plan, x, 83, period=1.7, speed=500.0)
+    x = land + 1.6
+    land = hop_gap(lv, plan, x, 90)
+    x = land + 1.6
+    land = glider_through(lv, plan, x, 83, period=1.6)
+    x = land + 1.6
+    land = hop_wave(lv, plan, x, 83)
+    lv.shards_along(x - 60.0, land + 3.0, 2.2)
     return finish_level(lv, floor, top, land + 8.0, plan)
 
 
 LEVELS = [level_01, level_02, level_03, level_04, level_05]
-# Each level's run speed in px/s (for the gesture's first tap in the routes).
-SPEEDS = {1: 1.16 * BASE_SPEED, 2: 1.19 * BASE_SPEED, 3: 1.22 * BASE_SPEED, 4: 1.25 * BASE_SPEED, 5: 1.28 * BASE_SPEED}
 
 
 def read_routes():
-    """{number: (name, attaches)}: each attach is the second tap of its
-    gesture (the file lists both taps of every gesture)."""
+    """{number: (name, taps)}: every tap of each level's intended solution."""
     out = {}
     try:
         with open(ROOT + f"levels/{WORLD}/{WORLD}_routes.gd") as fh:
@@ -697,23 +928,19 @@ def read_routes():
         if line.startswith("const LEVEL_"):
             number = int(line[len("const LEVEL_"):].split(":")[0])
             taps = [float(x) for x in line.split("= [")[1].rstrip("]").split(",")]
-            out[number] = (lines[i - 1].lstrip("# ").strip(), taps[1::2])
+            out[number] = (lines[i - 1].lstrip("# ").strip(), taps)
     return out
 
 
-def write_routes(routes, speeds):
-    """The routes as the engine's finger plays them: both taps of every TAP
-    TAP gesture (the first GESTURE_GAP ticks before the second)."""
+def write_routes(routes):
+    """The routes as the engine's finger plays them: every tap (a hop is one,
+    a TAP TAP surface attach two)."""
     lines = ["class_name World04Routes",
              "## Generated by tools/levelgen/world_04.py: the intended solution of each",
-             "## World 04 level, as the player-centre x (tiles) of every tap. World 04 has",
-             "## no jump: taps come in pairs, each pair one TAP TAP surface attach.", ""]
+             "## World 04 level, as the player-centre x (tiles) of every tap. A lone tap",
+             "## is a hop; two taps close together are one TAP TAP surface attach.", ""]
     for number in sorted(routes):
-        name, attaches = routes[number]
-        gap = GESTURE_GAP * speeds[number] * DT / T
-        taps = []
-        for a in attaches:
-            taps += [round(a - gap, 3), a]
+        name, taps = routes[number]
         lines.append(f"## {name}")
         lines.append(f"const LEVEL_{number:02d}: PackedFloat32Array = [{', '.join(f'{x:g}' for x in taps)}]")
     names = ", ".join(f"LEVEL_{n:02d}" for n in sorted(routes))
@@ -790,16 +1017,16 @@ def main():
             print("  " + timing_load(lv, taps))
         for note in lv.notes:
             print("  " + note)
-        ticks, _ = lv.run()
-        kinds = "".join({"attach": "A", "fail": "f", "ground": "J", "air": "D"}.get(s["jump"], "")
-                        for s in ticks if s["jump"])
-        print(f"  gestures: {kinds}  attaches: {kinds.count('A')}, jumps: {kinds.count('J') + kinds.count('D')}")
+        acts = lv.actions()
+        line = "".join("A" if k == "attach" else "H" for k, _ in acts)
+        hops = line.count("H")
+        print(f"  actions: {line}  hops: {hops}, attaches: {len(acts) - hops}")
         lv.write(ROOT, f"levels/{WORLD}/level_{i:02d}.tscn", f"levels/{WORLD}/level_{i:02d}.tres")
 
         def save(lv=lv, i=i):
             routes = read_routes()
             routes[i] = (lv.name, sorted(lv.route))
-            write_routes(routes, SPEEDS)
+            write_routes(routes)
             write_world(len(LEVELS))
         _locked(save)
 

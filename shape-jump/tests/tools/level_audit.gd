@@ -65,9 +65,12 @@ func _play_route() -> void:
 	speed_tiles = h.game.player.get_run_speed() / GameConst.TILE
 	for cp in level.get_checkpoints():
 		checkpoints.append(cp.global_position.x / GameConst.TILE)
-	var jumps: Array[int] = [0, 0]
+	# [jumps, double jumps, attaches, failed attaches]; World 04's jumps are its hops.
+	var jumps: Array[int] = [0, 0, 0, 0]
 	h.game.player.jumped.connect(func() -> void: jumps[0] += 1)
 	h.game.player.double_jumped.connect(func() -> void: jumps[1] += 1)
+	h.game.player.attach_started.connect(func(_l: Vector2, _u: bool) -> void: jumps[2] += 1)
+	h.game.player.attach_failed.connect(func() -> void: jumps[3] += 1)
 	h.game.press_jump()
 	# --probe=x0,x1: the player's state after every tick in that stretch.
 	var probe := Autoplay.option("--probe").split(",")
@@ -86,7 +89,12 @@ func _play_route() -> void:
 	var data := WORLD.get_level(level_index)
 	print("LEVEL %d %s  speed %.0f px/s  finish x=%.1f  checkpoints %s" % [level_index + 1, data.display_name,
 		h.game.player.get_run_speed(), level.get_finish().global_position.x / GameConst.TILE, checkpoints])
-	if h.deaths.is_empty():
+	if h.deaths.is_empty() and h.game.player.uses_surface_attach():
+		# Every attach's gesture starts with a hop: the hops of their own are the rest.
+		print("  ROUTE OK  %.1f s  taps %d  hops %d  attaches %d  failed attaches %d  double jumps %d  shards %d/%d" % [
+			h.ticks / 60.0, route.size(), jumps[0] - jumps[2], jumps[2], jumps[3], jumps[1], h.game.score.shards,
+			level.get_shard_count()])
+	elif h.deaths.is_empty():
 		print("  ROUTE OK  %.1f s  taps %d  jumps %d  double jumps %d  shards %d/%d" % [h.ticks / 60.0,
 			route.size(), jumps[0], jumps[1], h.game.score.shards, level.get_shard_count()])
 		for shard in level.find_children("*", "Shard", true, false):
@@ -116,10 +124,23 @@ func _horizon(j: int) -> float:
 	return x if j + HORIZON_TAPS < route.size() else 1e9
 
 
-## True when the run with tap [param j] moved by [param shift] ticks survives to the horizon.
+## World 04: the first tap of the gesture whose second tap is route[j] (-1:
+## none). Two taps closer than the attach window are one TAP TAP.
+func _partner(j: int) -> int:
+	if world_index != 3 or j == 0 or _partner(j - 1) >= 0:
+		return -1
+	var gap_ticks := (route[j] - route[j - 1]) / speed_tiles * 60.0
+	return j - 1 if gap_ticks < 18.5 else -1
+
+
+## True when the run with tap [param j] (and, World 04, the rest of its
+## gesture) moved by [param shift] ticks survives to the horizon.
 func _survives(j: int, shift: int) -> bool:
 	var taps := route.duplicate()
 	taps[j] += shift * speed_tiles / 60.0
+	var partner := _partner(j)
+	if partner >= 0:
+		taps[partner] += shift * speed_tiles / 60.0
 	var h := GameHarness.new(self, taps)
 	await h.start(level_index, world_index)
 	var from := _start_before(route[j])
@@ -133,6 +154,9 @@ func _survives(j: int, shift: int) -> bool:
 	# Alive at the horizon, and not already falling through a pit (a fall is
 	# only detected well below the ground).
 	var ok := h.deaths.is_empty() and h.game.player.global_position.y < GameConst.TILE
+	if h.game.level.surface_latch:
+		# World 04: nor falling off the ceiling, away from the corridor.
+		ok = ok and h.game.player.global_position.y > -(h.game.level.corridor_height + 1.5) * GameConst.TILE
 	h.free_game()
 	await get_tree().physics_frame
 	return ok
@@ -161,6 +185,8 @@ func _windows(args: PackedStringArray) -> void:
 	for j in route.size():
 		if only >= 0 and j != only:
 			continue
+		if j + 1 < route.size() and _partner(j + 1) == j:
+			continue  # A gesture's first tap: measured with its second.
 		var lo := 0
 		var hi := 0
 		if not await _survives(j, 0):
@@ -177,7 +203,10 @@ func _windows(args: PackedStringArray) -> void:
 			hi = k
 		var ms := (hi - lo + 1) * 1000.0 / 60.0
 		sizes.append(ms)
-		print("  T%02d x=%7.2f  [%+3d, %+3d] ticks  %4d ms%s" % [j + 1, route[j], lo, hi, int(ms),
+		var kind := ""
+		if world_index == 3:
+			kind = " A" if _partner(j) >= 0 else " H"
+		print("  T%02d%s x=%7.2f  [%+3d, %+3d] ticks  %4d ms%s" % [j + 1, kind, route[j], lo, hi, int(ms),
 			"  (open)" if lo == -MAX_SHIFT or hi == MAX_SHIFT else ""])
 	if sizes.size() > 1:
 		var sorted := sizes.duplicate()

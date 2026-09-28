@@ -24,8 +24,9 @@ func after_each() -> void:
 	_save.leave()
 
 
-## Plays [param case] with its route until the player has run on the floor
-## of the wanted surface for a second; returns the camera's report then.
+## Plays [param case] with its route until the player has run on the wanted
+## surface for half a second (hops included: the frame keeps the floor it left
+## from); returns the camera's report then, measured while standing.
 func _measure(case: Vector2i, want_up: bool) -> Dictionary:
 	var h := GameHarness.new(self, Autoplay.route_for(case.x, case.y))
 	_harnesses.append(h)
@@ -36,8 +37,10 @@ func _measure(case: Vector2i, want_up: bool) -> Dictionary:
 		await h.tick()
 		if h.game.state != GameSession.State.PLAYING:
 			break
-		standing = standing + 1 if h.game.player.is_on_floor() and h.game.gravity.up == want_up else 0
-		if standing >= 60:
+		var p := h.game.player
+		var on_it := h.game.gravity.up == want_up and not p.is_attaching() and (p.is_on_floor() or p.is_hopping())
+		standing = standing + 1 if on_it else 0
+		if standing >= 30 and p.is_on_floor():
 			var report := h.game.camera.framing_report()
 			print("  framing W%d L%d on the %s: %s" % [case.x + 1, case.y + 1, "ceiling" if want_up else "ground", report])
 			h.free_game()

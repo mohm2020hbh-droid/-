@@ -8,4 +8,4 @@ id = &"w04_l05"
 display_name = "The Inverted Garden"
 tagline = "Brutal but fair"
 scene_path = "res://levels/world_04/level_05.tscn"
-speed_scale = 1.28
+speed_scale = 1.4

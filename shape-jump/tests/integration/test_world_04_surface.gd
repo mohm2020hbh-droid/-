@@ -1,9 +1,10 @@
 extends TestCase
-## World 04 on the real game scene (docs/GDD.md §9D): the TAP TAP surface
-## attach with the camera, the colours, the run's bookkeeping, and the edge
-## cases of the spec (an attach during death, restart, pause, a lost WebGL
-## context; respawns on either surface; the run always going left to right;
-## never a jump). The physics-only cases are in test_surface_attach.
+## World 04 on the real game scene (docs/GDD.md §9D): the hop and the TAP
+## TAP surface attach with the camera, the colours, the run's bookkeeping,
+## and the edge cases of the spec (an attach during death, restart, pause, a
+## lost WebGL context; respawns on either surface; the run always going left
+## to right; never a double jump). The physics-only cases are in
+## test_surface_attach.
 
 const WORLD := 3
 const T := GameConst.TILE
@@ -178,14 +179,17 @@ func test_the_run_state_names_every_phase_of_a_crossing() -> void:
 		gestures[_run().gesture] = true
 		if _run().attaches >= 2 and h.game.player.is_on_floor() and not _gravity().up:
 			break
-	var want: Array[SurfaceRun.Phase] = [SurfaceRun.Phase.GROUND_RUN, SurfaceRun.Phase.ATTACHING,
+	var want: Array[SurfaceRun.Phase] = [SurfaceRun.Phase.GROUND_RUN, SurfaceRun.Phase.HOPPING,
+		SurfaceRun.Phase.GROUND_RUN, SurfaceRun.Phase.HOPPING, SurfaceRun.Phase.ATTACHING,
 		SurfaceRun.Phase.CEILING_RUN, SurfaceRun.Phase.ATTACHING, SurfaceRun.Phase.GROUND_RUN]
 	var at := 0
 	for p in phases:
 		if at < want.size() and p == want[at]:
 			at += 1
-	assert_eq(at, want.size(), "ground run -> attaching -> ceiling run -> attaching -> ground run (%s)" % [phases])
-	assert_false(SurfaceRun.Phase.AIRBORNE in phases, "never airborne: no jump, no release")
+	assert_eq(at, want.size(),
+		"ground run -> hop -> ground run -> hop -> attaching -> ceiling run -> attaching -> ground run (%s)" % [phases])
+	assert_false(SurfaceRun.Phase.AIRBORNE in phases, "never falling: every airborne moment is a hop")
+	assert_true(_run().hops >= 3, "hops counted (%d)" % _run().hops)
 	assert_eq(targets.slice(0, 2), [SurfaceRun.Surface.CEILING, SurfaceRun.Surface.GROUND] as Array[SurfaceRun.Surface],
 		"each attach names its target surface")
 	assert_true(gestures.has(SurfaceRun.Gesture.TAP_PENDING) and gestures.has(SurfaceRun.Gesture.IDLE),
@@ -198,10 +202,13 @@ func test_the_run_state_names_every_phase_of_a_crossing() -> void:
 	assert_true(_run().can_attach(), "ready for the next gesture")
 
 
-func test_a_gesture_with_no_surface_across_fails_without_moving_anything() -> void:
-	await _start(0, false)
-	# Level 01 opens onto the sky over the ground from x = 13 to about 17.9.
-	assert_true(await h.run_until(func() -> bool: return h.player_x() >= 14.0, 60 * 5), "under the open sky")
+func test_a_gesture_with_no_surface_across_is_only_the_hop() -> void:
+	# The first checkpoint's runway: flat ground, open sky above it.
+	var found: Array = await _find_checkpoint(false)
+	await _start(found[0], false)
+	var cp := h.game.level.get_checkpoints()[found[1]]
+	h.start_run_at(cp.global_position)
+	await h.run_ticks(3)
 	var fails := [0]
 	h.game.player.attach_failed.connect(func() -> void: fails[0] += 1)
 	var y := h.game.player.global_position.y
@@ -213,26 +220,36 @@ func test_a_gesture_with_no_surface_across_fails_without_moving_anything() -> vo
 	assert_false(_gravity().up, "no turn, no teleport")
 	assert_eq(_run().attaches, 0)
 	assert_eq(_run().fails, 1)
-	for i in 10:
+	var top := 0.0
+	for i in 40:
 		await h.tick()
-		assert_true(h.game.player.is_on_floor(), "no jump instead: still running on the ground")
+		top = maxf(top, y - h.game.player.global_position.y)
+	assert_true(h.deaths.is_empty())
+	assert_true(h.game.player.is_on_floor(), "the hop came down: back on the ground")
+	assert_near(top, h.game.player.config.hop_height, 3.0, "only the hop: no fallback jump")
 	assert_near(h.game.player.global_position.y, y, 0.5)
 
 
-func test_hammering_the_screen_never_jumps_and_never_chains_attaches() -> void:
+func test_hammering_the_screen_never_double_jumps_and_never_chains_attaches() -> void:
 	await _start(0, false)
 	var events: Array[String] = []
-	h.game.player.jumped.connect(func() -> void: events.append("J"))
 	h.game.player.double_jumped.connect(func() -> void: events.append("D"))
 	h.game.player.attach_started.connect(func(_l: Vector2, _u: bool) -> void: events.append("A"))
 	h.game.player.attached.connect(func(_u: bool) -> void: events.append("_"))
+	var hop := h.game.player.config.hop_height
 	for i in 150:
 		h.game.press_jump()
 		await h.tick()
 		if not h.deaths.is_empty():
 			break
+		var p := h.game.player
+		if not p.is_attaching():
+			# Height of the feet off the floor, toward the other surface.
+			var feet := p.get_feet_position().y
+			var height := feet + h.game.level.corridor_height * T if _gravity().up else -feet
+			assert_true(height <= hop + 3.0, "tick %d: never higher than one hop (%.1f px)" % [i, height])
 	var s := "".join(events)
-	assert_false("J" in s or "D" in s, "never a jump (%s)" % s)
+	assert_false("D" in s, "never a double jump (%s)" % s)
 	assert_false("AA" in s, "never a second attach before touching down (%s)" % s)
 
 
