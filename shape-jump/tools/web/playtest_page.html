@@ -250,6 +250,8 @@
   };
 
   function fail(err) {
+    // Nothing runs after a failed start: the canvas is no longer sized.
+    window.removeEventListener('resize', fitCanvas);
     const msg = err && err.message ? err.message : String(err);
     status.className = 'error';
     status.textContent = 'تعذّر تشغيل اللعبة: ' + msg;
@@ -414,12 +416,32 @@
   // budget (2.5x the 1280x720 design size), and never 0 (a hidden frame).
   const MAX_PIXELS = 1280 * 720 * 2.5;
   let gpuMax = 4096;
-  function readGpuLimits() {
+  function readGpuLimits(gl) {
+    const dims = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+    gpuMax = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), dims[0], dims[1]);
+  }
+
+  // Engine.getMissingFeatures() only tries WebGL2 on a spare canvas. If the
+  // game's own canvas then gets no WebGL2 context (GPU blocked or reset in
+  // between, too many contexts, ...), Godot does not stop: it falls back to a
+  // renderer that draws nothing, and the game runs blind behind a blank
+  // page. So once the engine has started, the page checks the context the
+  // game draws with (the one Godot made; asking again returns it), and
+  // without one it stops the engine's main loop and says why, once.
+  function gameContext(instance) {
     const gl = canvasEl.getContext('webgl2');
     if (gl) {
-      const dims = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
-      gpuMax = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), gl.getParameter(gl.MAX_RENDERBUFFER_SIZE), dims[0], dims[1]);
+      return gl;
     }
+    // Stopping it makes it shut down: its exit report is not the fault.
+    retired.add(instance);
+    try {
+      instance.rtenv.pauseMainLoop();
+    } catch (e) {
+      console.warn('[webgl] could not pause the engine: ' + (e && e.message));
+    }
+    throw new Error('missing browser features: WebGL2 (the game canvas could not get a WebGL2 context) - ' +
+      'Check web browser configuration and hardware support');
   }
   function fitCanvas() {
     const canvas = canvasEl;
@@ -497,7 +519,7 @@
       args.push('--resume=' + window.shapeJumpResume);
     }
     await engine.start({ args: args });
-    readGpuLimits();
+    readGpuLimits(gameContext(engine));
     fitCanvas();
     fresh.focus();
     setTimeout(function () { notice.hidden = true; }, 1500);
@@ -528,11 +550,11 @@
     }
     baseArgs = args.slice();
     engine.start({ args: args }).then(function () {
-      readGpuLimits();
+      readGpuLimits(gameContext(engine));
       fitCanvas();
       launcher.hidden = true;
       canvasEl.focus();
-    }, function (err) {
+    }).catch(function (err) {
       started = false;
       fail(err);
     });
