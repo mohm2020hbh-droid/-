@@ -68,7 +68,7 @@ class GameSessionTest {
         val bounces = mutableListOf<Int>()
         val s = GameSession(level(bounces = 5))
         s.listener = object : GameSession.Listener {
-            override fun onBounce(x: Double, y: Double, bouncesLeft: Int) {
+            override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) {
                 bounces += bouncesLeft
             }
         }
@@ -157,28 +157,81 @@ class GameSessionTest {
     }
 
     @Test
-    fun aimFiresOppositeToThePullWithProportionalPower() {
-        val aim = SlingshotAim(maxPull = 200.0)
+    fun headOnHitsAreHarderThanGlancingOnesAndTheBreakingHitIsKept() {
+        val strengths = mutableListOf<Double>()
+        val s = GameSession(level(bounces = 1))
+        s.listener = object : GameSession.Listener {
+            override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) {
+                strengths += impact.strength
+            }
+        }
+        s.bankShotOffTop() // a glancing bounce off the top edge, then the goal
+        s.runToEnd()
+        assertEquals(1, strengths.size)
+        assertTrue(strengths[0] in 0.05..0.6)
+
+        val head = GameSession(level(bounces = 0))
+        head.launch(1.0, 0.0, 1.0) // straight into the middle wall: no bounces left, so it breaks
+        head.runToEnd()
+        assertEquals(GameSession.FailReason.OUT_OF_BOUNCES, head.failReason)
+        val hit = head.lastImpact!!
+        assertEquals(1.0, hit.strength, 1e-9)
+        assertEquals(-1.0, hit.nx, 1e-9) // the wall faces back towards the ball
+        head.restart()
+        assertNull(head.lastImpact)
+    }
+
+    @Test
+    fun theBallFliesTheWayItIsDraggedWithPowerFromTheDistance() {
+        val aim = DragAim(maxDrag = 200.0)
         assertFalse(aim.tryBegin(500.0, 500.0, ballX = 100.0, ballY = 300.0, grabRadius = 60.0))
         assertTrue(aim.tryBegin(120.0, 310.0, ballX = 100.0, ballY = 300.0, grabRadius = 60.0))
-        aim.drag(20.0, 310.0) // pulled 100 units to the left
+        aim.drag(220.0, 310.0) // dragged 100 units to the right
         assertEquals(0.5, aim.power, 1e-9)
         assertEquals(1.0, aim.dirX, 1e-9)
         assertEquals(0.0, aim.dirY, 1e-9)
-        aim.drag(-500.0, 310.0) // beyond max pull: power is capped
+        aim.drag(900.0, 310.0) // beyond the full-power distance: power is capped
         assertEquals(1.0, aim.power, 1e-9)
 
         val s = GameSession(level(bounces = 1))
         assertTrue(aim.release(s))
         assertEquals(GameSession.State.MOVING, s.state)
-        assertEquals(1.0, s.ball.dirX, 1e-9)
+        assertEquals(1.0, s.ball.dirX, 1e-9) // right, like the drag
+
+        val up = DragAim(maxDrag = 200.0)
+        up.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0)
+        up.drag(100.0, 150.0) // dragged up (y points down)
+        val s2 = GameSession(level(bounces = 1))
+        assertTrue(up.release(s2))
+        assertEquals(-1.0, s2.ball.dirY, 1e-9)
+        assertEquals(s2.level.maxSpeed * Math.sqrt(0.75), s2.ball.speed, 1e-9)
     }
 
     @Test
-    fun tinyPullIsACancelNotAShot() {
-        val aim = SlingshotAim(maxPull = 200.0)
+    fun aQuickFlickAddsPowerButACarefulReleaseDoesNot() {
+        fun aim() = DragAim(maxDrag = 200.0, flickStart = 500.0, flickFull = 1500.0, flickBoost = 0.25)
+
+        val flick = aim()
+        flick.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0, time = 0.0)
+        flick.drag(150.0, 300.0, time = 0.025)
+        flick.drag(200.0, 300.0, time = 0.05) // 100 units in 50 ms: 2000 units/s
+        assertEquals(0.5, flick.power, 1e-9)
+        assertEquals(0.75, flick.launchPower(0.05), 1e-9)
+
+        val careful = aim()
+        careful.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0, time = 0.0)
+        careful.drag(150.0, 300.0, time = 0.025)
+        careful.drag(200.0, 300.0, time = 0.05)
+        val s = GameSession(level(bounces = 1))
+        assertTrue(careful.release(s, 200.0, 300.0, time = 0.6)) // held still, then let go
+        assertEquals(s.level.maxSpeed * Math.sqrt(0.5), s.ball.speed, 1e-9)
+    }
+
+    @Test
+    fun tinyDragIsACancelNotAShot() {
+        val aim = DragAim(maxDrag = 200.0)
         aim.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0)
-        aim.drag(95.0, 300.0)
+        aim.drag(105.0, 300.0)
         assertFalse(aim.isShotReady)
         val s = GameSession(level(bounces = 1))
         assertFalse(aim.release(s))

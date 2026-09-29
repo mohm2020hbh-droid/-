@@ -22,6 +22,11 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onDestroy() {
+        gameView.release()
+        super.onDestroy()
+    }
+
     @Deprecated("Used only below Android 13; newer versions use OnBackInvokedDispatcher.")
     override fun onBackPressed() = handleBack()
 

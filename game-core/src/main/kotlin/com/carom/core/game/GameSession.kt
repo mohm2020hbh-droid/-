@@ -5,6 +5,7 @@ import com.carom.core.math.Vec2
 import com.carom.core.physics.Ball
 import com.carom.core.physics.CircleTrigger
 import com.carom.core.physics.PhysicsWorld
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -28,15 +29,28 @@ class GameSession(val level: LevelData) {
         STOPPED,
     }
 
+    /**
+     * One wall contact: the ball's centre at the moment of contact, the wall's unit normal
+     * (pointing towards the ball) and how hard the ball hit, from 0 (grazing) to 1 (head-on at
+     * full launch speed).
+     */
+    class Impact(val x: Double, val y: Double, val nx: Double, val ny: Double, val strength: Double)
+
     /** Presentation hooks (sound, haptics, effects). The rules never depend on them. */
     interface Listener {
         fun onLaunch() {}
-        fun onBounce(x: Double, y: Double, bouncesLeft: Int) {}
+        fun onBounce(impact: Impact, bouncesLeft: Int) {}
         fun onWin(x: Double, y: Double) {}
+
+        /** For [FailReason.OUT_OF_BOUNCES], [GameSession.lastImpact] is the hit that ended it. */
         fun onFail(reason: FailReason, x: Double, y: Double) {}
     }
 
     var listener: Listener? = null
+
+    /** The most recent wall contact of this attempt, or null before the first one. */
+    var lastImpact: Impact? = null
+        private set
 
     private val world: PhysicsWorld = WorldBuilder.build(level)
     val ball = Ball(level.ballRadius)
@@ -71,13 +85,17 @@ class GameSession(val level: LevelData) {
 
     private val rules = object : PhysicsWorld.Listener {
         override fun onWallContact(x: Double, y: Double, nx: Double, ny: Double): Boolean {
+            // How hard the hit is: the speed going into the wall, relative to a full-power shot.
+            val into = ball.speed * abs(ball.dirX * nx + ball.dirY * ny)
+            val impact = Impact(x, y, nx, ny, (into / level.maxSpeed).coerceIn(0.0, 1.0))
+            lastImpact = impact
             if (bouncesLeft == 0) {
                 finish(State.FAILED, FailReason.OUT_OF_BOUNCES)
                 return false
             }
             bouncesLeft--
             currentPath.add(Vec2(x, y))
-            listener?.onBounce(x, y, bouncesLeft)
+            listener?.onBounce(impact, bouncesLeft)
             return true
         }
 
@@ -167,6 +185,7 @@ class GameSession(val level: LevelData) {
         state = State.AIMING
         bouncesLeft = level.bounces
         failReason = null
+        lastImpact = null
         flightTime = 0.0
         currentPath.clear()
     }

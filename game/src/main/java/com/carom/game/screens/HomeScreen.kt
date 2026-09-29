@@ -25,21 +25,26 @@ class HomeScreen(host: GameHost) : Screen(host) {
     private val levelsButton = UiButton(UiButton.Style.OUTLINE, kit.text.levels, Icon.GRID) {
         host.showLevels(host.app.progress.currentIndex)
     }
+    private val soundButton = UiButton(UiButton.Style.OUTLINE, icon = Icon.SOUND) {
+        settings.soundEnabled = !settings.soundEnabled
+        updateToggleLabels()
+    }
     private val vibrationButton = UiButton(UiButton.Style.OUTLINE, icon = Icon.VIBRATION) {
         settings.hapticsEnabled = !settings.hapticsEnabled
-        updateVibrationLabel()
+        updateToggleLabels()
         host.haptic(Haptic.CLICK)
     }
-    private val buttons = listOf(playButton, levelsButton, vibrationButton)
+    private val buttons = listOf(playButton, levelsButton, soundButton, vibrationButton)
 
     private var columnX = 0f
     private var titleY = 0f
 
     init {
-        updateVibrationLabel()
+        updateToggleLabels()
     }
 
-    private fun updateVibrationLabel() {
+    private fun updateToggleLabels() {
+        soundButton.label = if (settings.soundEnabled) kit.text.soundOn else kit.text.soundOff
         vibrationButton.label = if (settings.hapticsEnabled) kit.text.vibrationOn else kit.text.vibrationOff
     }
 
@@ -48,10 +53,11 @@ class HomeScreen(host: GameHost) : Screen(host) {
         titleY = safe.top + safe.height() * 0.49f
         // Buttons sit in the lower half, where the thumb rests on a phone held upright.
         val w = min(safe.width() - kit.u(64f), kit.u(260f))
-        val top = safe.top + safe.height() * 0.66f
+        val top = safe.top + safe.height() * 0.63f
         playButton.setCenter(columnX, top, w, kit.u(54f))
-        levelsButton.setCenter(columnX, top + kit.u(68f), w, kit.u(50f))
-        vibrationButton.setCenter(columnX, top + kit.u(132f), w, kit.u(46f))
+        levelsButton.setCenter(columnX, top + kit.u(66f), w, kit.u(50f))
+        soundButton.setCenter(columnX, top + kit.u(124f), w, kit.u(44f))
+        vibrationButton.setCenter(columnX, top + kit.u(176f), w, kit.u(44f))
     }
 
     override fun onTouch(e: MotionEvent): Boolean = routeToButtons(e, buttons)
@@ -72,14 +78,23 @@ class HomeScreen(host: GameHost) : Screen(host) {
         val topY = safe.top + safe.height() * 0.16f
         val wallY = safe.top + safe.height() * 0.36f
         val ballR = kit.u(20f)
-        val bounceY = wallY - ballR - kit.u(3f)
+        val bounceY = wallY - ballR - kit.u(4f)
         val ballX = columnX - span * 0.8f
         val goalX = columnX + span * 0.8f
 
+        // The wall, in the same style as the game's obstacles: a round-ended bar with a fine
+        // light inlay and a pearl at each end.
         val colors = palette
+        val inlay = Palette.blend(colors.primary, 0xFFFFFFFF.toInt(), 0.42f)
         kit.stroke.color = colors.primary
-        kit.stroke.strokeWidth = kit.u(5f)
+        kit.stroke.strokeWidth = kit.u(8f)
         canvas.drawLine(columnX - span, wallY, columnX + span, wallY, kit.stroke)
+        kit.stroke.color = inlay
+        kit.stroke.strokeWidth = kit.u(1.6f)
+        canvas.drawLine(columnX - span, wallY, columnX + span, wallY, kit.stroke)
+        kit.fill.color = Palette.blend(colors.primary, 0xFFFFFFFF.toInt(), 0.62f)
+        canvas.drawCircle(columnX - span, wallY, kit.u(1.6f), kit.fill)
+        canvas.drawCircle(columnX + span, wallY, kit.u(1.6f), kit.fill)
 
         // Dotted path: down to the wall, then up into the goal (a mirror-image V).
         kit.fill.color = Palette.withAlpha(colors.accent, 0.45f)

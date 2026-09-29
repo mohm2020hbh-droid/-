@@ -1,5 +1,6 @@
 package com.carom.core.level
 
+import com.carom.core.game.WorldBuilder
 import com.carom.core.math.Vec2
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -63,6 +64,38 @@ class LevelParserTest {
         assertTrue(level.border)
         assertTrue(level.obstacles.isEmpty())
         assertEquals(null, level.hintFor("en"))
+    }
+
+    @Test
+    fun blocksHaveRoundedCornersButKeepTheirFaces() {
+        val level = LevelParser.parse(
+            "b",
+            """{"bounces": 0, "ball": [100, 100], "goal": [500, 500], "obstacles": [
+                 {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 100},
+                 {"type": "rect", "x": 700, "y": 700, "w": 20, "h": 20},
+                 {"type": "poly", "points": [0, 0, 100, 0, 50, 20, 100, 100, 0, 100], "round": 10},
+                 {"type": "rect", "x": 800, "y": 100, "w": 50, "h": 50, "round": 0}
+               ]}""",
+        )
+        val rect = level.obstacles[0] as Block
+        assertEquals(LevelDefaults.BLOCK_ROUNDING, rect.radius, 0.0)
+        val r = rect.radius
+        assertEquals(
+            listOf(Vec2(300 + r, 300 + r), Vec2(500 - r, 300 + r), Vec2(500 - r, 400 - r), Vec2(300 + r, 400 - r)),
+            rect.core,
+        )
+        // A ball coming straight at the long face stops where it would against a sharp block.
+        val world = WorldBuilder.build(level)
+        assertFalse(world.overlaps(400.0, 300.0 - 60.0 - 0.01, 60.0))
+        assertTrue(world.overlaps(400.0, 300.0 - 60.0 + 0.5, 60.0))
+        // ...but its corner is round: diagonally off the corner there is room the sharp block had filled.
+        assertFalse(world.overlaps(300.0 - 60.0 * 0.7071 + 3, 300.0 - 60.0 * 0.7071 + 3, 60.0))
+
+        assertEquals(7.0, (level.obstacles[1] as Block).radius, 0.0) // too small for 14: halved
+        val dented = level.obstacles[2] as Block // not convex: keeps its sharp outline
+        assertEquals(0.0, dented.radius, 0.0)
+        assertEquals(dented.points, dented.core)
+        assertEquals(0.0, (level.obstacles[3] as Block).radius, 0.0)
     }
 
     @Test

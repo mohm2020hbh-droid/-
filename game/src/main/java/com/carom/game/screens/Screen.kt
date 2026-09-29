@@ -12,6 +12,8 @@ import com.carom.game.ui.WorldPalette
 
 enum class Haptic { CLICK, BOUNCE, SUCCESS, FAILURE }
 
+enum class Sound { IMPACT, SHATTER }
+
 /** What screens can ask of the game shell: navigation, feedback, shared state. */
 interface GameHost {
     val app: GameApp
@@ -20,6 +22,9 @@ interface GameHost {
     fun showLevels(focusIndex: Int)
     fun play(index: Int)
     fun haptic(kind: Haptic)
+
+    /** Plays [kind]; [strength] (0..1) is how hard the ball hit, for impacts. */
+    fun sound(kind: Sound, strength: Double = 1.0)
 }
 
 /**

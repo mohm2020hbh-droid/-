@@ -21,6 +21,8 @@ class UiText private constructor(
     val ballStopped: String,
     val vibrationOn: String,
     val vibrationOff: String,
+    val soundOn: String,
+    val soundOff: String,
 ) {
     fun worldUnlocked(worldNumber: Int): String = String.format(Locale.ROOT, worldUnlockedFormat, worldNumber)
 
@@ -30,7 +32,7 @@ class UiText private constructor(
     companion object {
         private val ENGLISH = UiText(
             language = "en",
-            tagline = "AIM  ·  BOUNCE  ·  SOLVE",
+            tagline = "DRAG  ·  BOUNCE  ·  SOLVE",
             play = "PLAY",
             levels = "LEVELS",
             level = "LEVEL",
@@ -46,11 +48,13 @@ class UiText private constructor(
             ballStopped = "THE BALL STOPPED",
             vibrationOn = "VIBRATION ON",
             vibrationOff = "VIBRATION OFF",
+            soundOn = "SOUND ON",
+            soundOff = "SOUND OFF",
         )
 
         private val ARABIC = UiText(
             language = "ar",
-            tagline = "صوّب  ·  ارتدّ  ·  احلُل",
+            tagline = "اسحب  ·  ارتدّ  ·  احلُل",
             play = "العب",
             levels = "المراحل",
             level = "المرحلة",
@@ -66,6 +70,8 @@ class UiText private constructor(
             ballStopped = "توقفت الكرة",
             vibrationOn = "الاهتزاز: يعمل",
             vibrationOff = "الاهتزاز: متوقف",
+            soundOn = "الصوت: يعمل",
+            soundOff = "الصوت: متوقف",
         )
 
         fun forLocale(locale: Locale = Locale.getDefault()): UiText =

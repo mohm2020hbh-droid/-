@@ -19,8 +19,8 @@ import kotlin.math.sin
  *   "border": true,                   // optional: the edges bounce the ball (never drawn)
  *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
  *   "obstacles": [
- *     {"type": "wall", "points": [800, 0, 800, 600], "thickness": 14, "closed": false},
- *     {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 40, "angle": 45},
+ *     {"type": "wall", "points": [800, 0, 800, 600], "thickness": 30, "closed": false},
+ *     {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 40, "angle": 45, "round": 14},
  *     {"type": "poly", "points": [1000, 900, 1200, 600, 1400, 900]}
  *   ]
  * }
@@ -78,16 +78,22 @@ object LevelParser {
             "poly" -> {
                 val points = points(obj["points"], "$where.points")
                 if (points.size < 3) throw LevelFormatException("$where: a polygon needs at least 3 points")
-                Block(points)
+                Block(points, rounding(obj, where))
             }
             "rect" -> {
                 val x = obj.number("x") ?: throw LevelFormatException("$where: 'x' is required")
                 val y = obj.number("y") ?: throw LevelFormatException("$where: 'y' is required")
                 val w = positive(obj.number("w") ?: 0.0, "$where.w")
                 val h = positive(obj.number("h") ?: 0.0, "$where.h")
-                Block(rotatedRect(x, y, w, h, obj.number("angle") ?: 0.0))
+                Block(rotatedRect(x, y, w, h, obj.number("angle") ?: 0.0), rounding(obj, where))
             }
             else -> throw LevelFormatException("$where: unknown type '$type'")
+        }
+
+    /** Corner rounding of a block; 0 keeps sharp corners. */
+    private fun rounding(obj: Map<*, *>, where: String): Double =
+        (obj.number("round") ?: LevelDefaults.BLOCK_ROUNDING).also {
+            if (it < 0) throw LevelFormatException("$where.round must be ≥ 0")
         }
 
     private fun parseHint(value: Any?): Map<String, String> = when (value) {

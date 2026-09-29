@@ -4,7 +4,7 @@
   "ball": [450, 1600],
   "goal": [450, 400],
   "obstacles": [
-    {"type": "wall", "points": [0, 1200, 560, 1200]},
-    {"type": "wall", "points": [900, 800, 340, 800]}
+    {"type": "wall", "points": [0, 1207, 553, 1207]},
+    {"type": "wall", "points": [900, 793, 347, 793]}
   ]
 }

@@ -1,15 +1,16 @@
 package com.carom.game.screens
 
 import android.graphics.Canvas
-import android.graphics.DashPathEffect
 import android.graphics.Path
 import android.graphics.RectF
 import android.view.MotionEvent
+import com.carom.core.game.DragAim
 import com.carom.core.game.GameSession
-import com.carom.core.game.SlingshotAim
 import com.carom.core.level.LevelData
 import com.carom.core.level.Worlds
+import com.carom.game.render.BallShatter
 import com.carom.game.render.BoardRenderer
+import com.carom.game.render.BoardRenderer.BallStyle
 import com.carom.game.ui.Icon
 import com.carom.game.ui.Icons
 import com.carom.game.ui.Palette
@@ -26,8 +27,13 @@ import kotlin.math.sin
  * but the ball bounces off them), with the level number, restart and level-list buttons floating
  * over the top and the hint over the bottom.
  *
- * Owns the [GameSession] (rules), the slingshot input and everything drawn on top of the board.
- * The bounces left are shown inside the ball itself.
+ * Owns the [GameSession] (rules), the drag-to-launch input and everything drawn on top of the
+ * board. The bounces left are shown inside the ball itself.
+ *
+ * Launching: the ball sits in a launch zone (a faint ringed disc). The player touches anywhere in
+ * it, drags the way the ball should go and lets go; the ball flies in the drag's direction, with
+ * power from the drag's length (and a little extra for a quick flick). There is no arrow: while
+ * dragging, the ball leans towards the finger and the zone's ring fills like a dial with the power.
  */
 class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) : Screen(host), GameSession.Listener {
 
@@ -36,13 +42,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     internal val board = BoardRenderer(level, palette)
     private val boardRect = RectF()
 
-    private var aim = SlingshotAim(maxPull = 1.0)
+    private var aim = DragAim(maxDrag = 1.0)
     private var grabRadius = 1.0
-    private var maxPullPx = 1f
-    private var touchStartX = 0f
-    private var touchStartY = 0f
-    private var fingerX = 0f
-    private var fingerY = 0f
+
+    /** Radius of the launch zone on screen, in pixels. */
+    private var zoneRadius = 1f
+
+    /** How far the drawn ball leans towards the finger while held, and the lean it launched with. */
+    private var leanX = 0f
+    private var leanY = 0f
+    private var launchLeanX = 0f
+    private var launchLeanY = 0f
+    private var sinceLaunch = 0f
     private var shotsFired = 0
     private val hint: String? = level.hintFor(kit.text.language)
     private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
@@ -66,7 +77,9 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val particles = ArrayList<Particle>()
     private val shape = Path()
     private val hintBox = RectF()
-    private var pullRingDash: DashPathEffect? = null
+
+    /** The ball breaking, when the attempt ended by running out of bounces. */
+    private var shatter: BallShatter? = null
 
     private class Ripple(val x: Double, val y: Double) {
         var age = 0f
@@ -80,7 +93,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val overlayProgress: Float
         get() {
             if (!ended) return 0f
-            val delay = if (session.state == GameSession.State.WON) WIN_OVERLAY_DELAY else FAIL_OVERLAY_DELAY
+            val delay = when {
+                session.state == GameSession.State.WON -> WIN_OVERLAY_DELAY
+                shatter != null -> BREAK_OVERLAY_DELAY
+                else -> FAIL_OVERLAY_DELAY
+            }
             return ((endTime - delay) / OVERLAY_FADE).coerceIn(0f, 1f)
         }
 
@@ -108,12 +125,17 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         levelsButton.setCenter(safe.right - kit.u(8f) - button / 2, topBarY, button, button)
         restartButton.setCenter(safe.right - kit.u(12f) - button * 1.5f, topBarY, button, button)
 
-        // Aiming is sized in screen terms so it feels the same on every device. The ball can be
-        // grabbed well outside its edge: at least a fingertip's width around its centre.
-        maxPullPx = kit.u(110f)
-        aim = SlingshotAim(maxPull = (maxPullPx / scale).toDouble())
-        grabRadius = (max(board.ballScreenRadius * 1.6f, kit.u(34f)) / scale).toDouble()
-        pullRingDash = DashPathEffect(floatArrayOf(kit.u(4f), kit.u(6f)), 0f)
+        // Aiming is sized in screen terms so it feels the same on every device. The launch zone
+        // reaches well past the ball's edge, so it is easy to catch with a thumb, and a touch a
+        // little outside its ring still counts.
+        zoneRadius = max(board.ballScreenRadius * 1.9f, kit.u(46f))
+        grabRadius = ((zoneRadius + kit.u(6f)) / scale).toDouble()
+        aim = DragAim(
+            maxDrag = (kit.u(MAX_DRAG) / scale).toDouble(),
+            flickStart = (kit.u(FLICK_START) / scale).toDouble(),
+            flickFull = (kit.u(FLICK_FULL) / scale).toDouble(),
+            flickBoost = FLICK_BOOST,
+        )
 
         arrangeResultButtons()
     }
@@ -128,6 +150,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     // ---------------------------------------------------------------- simulation & feedback
 
     override fun update(dt: Float) {
+        if (session.state == GameSession.State.MOVING) sinceLaunch += dt
         session.advance(dt.toDouble())
         if (ended) endTime += dt
         ripples.forEach { it.age += dt }
@@ -146,12 +169,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override fun onLaunch() {
         shotsFired++
+        sinceLaunch = 0f
+        launchLeanX = leanX
+        launchLeanY = leanY
+        leanX = 0f
+        leanY = 0f
         host.haptic(Haptic.CLICK)
     }
 
-    override fun onBounce(x: Double, y: Double, bouncesLeft: Int) {
-        ripples += Ripple(x, y)
+    override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) {
+        ripples += Ripple(impact.x, impact.y)
         host.haptic(Haptic.BOUNCE)
+        host.sound(Sound.IMPACT, impact.strength)
     }
 
     override fun onWin(x: Double, y: Double) {
@@ -174,12 +203,21 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     override fun onFail(reason: GameSession.FailReason, x: Double, y: Double) {
         arrangeResultButtons()
         host.haptic(Haptic.FAILURE)
+        val hit = session.lastImpact
+        if (reason == GameSession.FailReason.OUT_OF_BOUNCES && hit != null) {
+            // The last allowed bounce is spent: the ball breaks against the wall it hit.
+            shatter = BallShatter(board.x(x), board.y(y), board.ballScreenRadius, hit.nx.toFloat(), hit.ny.toFloat())
+            host.sound(Sound.SHATTER, hit.strength)
+        }
     }
 
     private fun restart() {
         session.restart()
         aim.cancel()
         endTime = 0f
+        leanX = 0f
+        leanY = 0f
+        shatter = null
         ripples.clear()
         particles.clear()
     }
@@ -192,33 +230,57 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 if (session.state == GameSession.State.AIMING &&
-                    aim.tryBegin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, grabRadius)
+                    aim.tryBegin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, grabRadius, seconds(e))
                 ) {
-                    touchStartX = e.x
-                    touchStartY = e.y
-                    fingerX = e.x
-                    fingerY = e.y
+                    updateLean()
                     return true
                 }
             }
             MotionEvent.ACTION_MOVE -> if (aim.isActive) {
-                aim.drag(board.worldX(e.x), board.worldY(e.y))
-                fingerX = e.x
-                fingerY = e.y
+                // Every point the finger passed through, so a flick's speed is measured faithfully.
+                for (h in 0 until e.historySize) {
+                    aim.drag(board.worldX(e.getHistoricalX(h)), board.worldY(e.getHistoricalY(h)), e.getHistoricalEventTime(h) / 1000.0)
+                }
+                aim.drag(board.worldX(e.x), board.worldY(e.y), seconds(e))
+                updateLean()
                 return true
             }
             MotionEvent.ACTION_UP -> if (aim.isActive) {
-                aim.release(session)
+                aim.drag(board.worldX(e.x), board.worldY(e.y), seconds(e))
+                updateLean()
+                if (!aim.release(session, time = seconds(e))) {
+                    leanX = 0f
+                    leanY = 0f
+                }
                 return true
             }
-            MotionEvent.ACTION_CANCEL -> aim.cancel()
+            MotionEvent.ACTION_CANCEL -> {
+                aim.cancel()
+                leanX = 0f
+                leanY = 0f
+            }
         }
         return false
     }
 
     override fun onBack(): Boolean {
-        if (aim.isActive) aim.cancel() else host.showLevels(index)
+        if (aim.isActive) {
+            aim.cancel()
+            leanX = 0f
+            leanY = 0f
+        } else {
+            host.showLevels(index)
+        }
         return true
+    }
+
+    private fun seconds(e: MotionEvent): Double = e.eventTime / 1000.0
+
+    /** The held ball follows the finger a little, to show it is being dragged (never an arrow). */
+    private fun updateLean() {
+        val lean = min(aim.dragLength.toFloat() * board.scale * 0.2f, board.ballScreenRadius * 0.3f)
+        leanX = aim.dirX.toFloat() * lean
+        leanY = aim.dirY.toFloat() * lean
     }
 
     private fun overlayButtons(): List<UiButton> = when {
@@ -248,7 +310,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val scoring = session.state == GameSession.State.WON && endTime < GOAL_PULSE
         board.drawGoal(canvas, if (scoring) endTime / GOAL_PULSE else 0f)
         drawRipples(canvas)
-        if (aim.isActive) drawAiming(canvas, ballX, ballY)
+        if (session.state == GameSession.State.AIMING) {
+            board.drawLaunchZone(
+                canvas, ballX, ballY, zoneRadius, kit.unit,
+                active = aim.isActive, power = aim.power.toFloat(), ready = aim.isShotReady,
+            )
+        }
         drawBall(canvas, ballX, ballY)
         drawParticles(canvas)
         drawHud(canvas)
@@ -270,28 +337,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         canvas.drawRect(boardRect.right, boardRect.top, width, boardRect.bottom, kit.fill)
     }
 
-    /**
-     * While the ball is held: a dashed ring showing how far to pull for full power, a thin band
-     * from the ball to the finger, and the launch guide.
-     */
-    private fun drawAiming(canvas: Canvas, ballX: Float, ballY: Float) {
-        kit.stroke.color = Palette.withAlpha(Palette.TEXT, 0.18f)
-        kit.stroke.strokeWidth = kit.u(1.5f)
-        kit.stroke.pathEffect = pullRingDash
-        canvas.drawCircle(touchStartX, touchStartY, maxPullPx, kit.stroke)
-        kit.stroke.pathEffect = null
-
-        kit.stroke.color = Palette.withAlpha(palette.accent, 0.25f)
-        kit.stroke.strokeWidth = kit.u(2f)
-        canvas.drawLine(ballX, ballY, fingerX, fingerY, kit.stroke)
-        board.drawAim(
-            canvas, ballX, ballY, aim.dirX.toFloat(), aim.dirY.toFloat(),
-            aim.power.toFloat(), aim.isShotReady, kit.unit,
-        )
-    }
-
     private fun drawBall(canvas: Canvas, x: Float, y: Float) {
         val left = session.bouncesLeft
+        // With no bounces left the ball shows cracks: the next wall breaks it.
+        val style = if (left == 0) BallStyle.CRACKED else BallStyle.SOLID
         when (session.state) {
             GameSession.State.WON -> {
                 // Glide into the centre of the goal and settle.
@@ -299,15 +348,24 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                 val ease = 1f - (1f - t) * (1f - t)
                 val gx = board.x(level.goal.x)
                 val gy = board.y(level.goal.y)
-                board.drawBall(canvas, x + (gx - x) * ease, y + (gy - y) * ease, 1f - 0.3f * ease, hollow = false, left)
+                board.drawBall(canvas, x + (gx - x) * ease, y + (gy - y) * ease, 1f - 0.3f * ease, BallStyle.SOLID, left)
             }
             GameSession.State.FAILED -> {
-                val shake = if (endTime < 0.3f) sin(endTime * 70f) * kit.u(2.5f) * (1f - endTime / 0.3f) else 0f
-                board.drawBall(canvas, x + shake, y, 1f, hollow = true, left)
+                val broken = shatter
+                if (broken != null) {
+                    broken.draw(canvas, endTime, palette.accent, kit.fill, kit.stroke)
+                } else {
+                    // The ball ran out of speed: it empties and gives a small shake.
+                    val shake = if (endTime < 0.3f) sin(endTime * 70f) * kit.u(2.5f) * (1f - endTime / 0.3f) else 0f
+                    board.drawBall(canvas, x + shake, y, 1f, BallStyle.HOLLOW, left)
+                }
             }
-            // Out of bounces in flight: the next wall or edge ends the attempt, so the ball empties.
-            GameSession.State.MOVING -> board.drawBall(canvas, x, y, 1f, hollow = left == 0, left)
-            GameSession.State.AIMING -> board.drawBall(canvas, x, y, 1f, hollow = false, left)
+            GameSession.State.MOVING -> {
+                // The lean the ball was let go with melts into its flight.
+                val k = max(0f, 1f - sinceLaunch / LEAN_SETTLE)
+                board.drawBall(canvas, x + launchLeanX * k, y + launchLeanY * k, 1f, style, left)
+            }
+            GameSession.State.AIMING -> board.drawBall(canvas, x + leanX, y + leanY, 1f, style, left)
         }
     }
 
@@ -409,9 +467,21 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private companion object {
         const val WIN_OVERLAY_DELAY = 0.65f
         const val FAIL_OVERLAY_DELAY = 0.5f
+
+        /** Long enough to watch the ball break before the result appears. */
+        const val BREAK_OVERLAY_DELAY = 0.7f
         const val OVERLAY_FADE = 0.2f
         const val GOAL_PULSE = 0.6f
         const val RIPPLE_LIFE = 0.45f
         const val PARTICLE_LIFE = 0.9f
+        const val LEAN_SETTLE = 0.08f
+
+        /** Drag length for a full-power shot, in UI units. */
+        const val MAX_DRAG = 120f
+
+        /** Finger speeds at release (UI units per second) where a flick starts and stops adding power. */
+        const val FLICK_START = 900f
+        const val FLICK_FULL = 2600f
+        const val FLICK_BOOST = 0.25
     }
 }

@@ -11,12 +11,14 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import com.carom.core.level.LevelFormatException
+import com.carom.game.audio.SoundFx
 import com.carom.game.screens.GameHost
 import com.carom.game.screens.Haptic
 import com.carom.game.screens.HomeScreen
 import com.carom.game.screens.LevelSelectScreen
 import com.carom.game.screens.PlayScreen
 import com.carom.game.screens.Screen
+import com.carom.game.screens.Sound
 import com.carom.game.ui.Palette
 import com.carom.game.ui.UiKit
 import com.carom.game.ui.UiText
@@ -33,6 +35,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         private set
 
     private var screen: Screen = HomeScreen(this)
+    private val soundFx = SoundFx()
     private val insets = Rect()
     private var lastFrameNanos = 0L
 
@@ -140,6 +143,17 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         }
         performHapticFeedback(constant)
     }
+
+    override fun sound(kind: Sound, strength: Double) {
+        if (!app.settings.soundEnabled) return
+        when (kind) {
+            Sound.IMPACT -> soundFx.impact(strength)
+            Sound.SHATTER -> soundFx.shatter()
+        }
+    }
+
+    /** Frees the audio tracks; the view is not used afterwards. */
+    fun release() = soundFx.release()
 
     private companion object {
         const val TAG = "Carom"

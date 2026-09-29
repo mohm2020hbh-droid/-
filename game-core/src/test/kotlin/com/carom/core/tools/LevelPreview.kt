@@ -59,7 +59,15 @@ object LevelPreview {
                     g.stroke = BasicStroke(o.thickness.toFloat(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
                     g.draw(polyline(o.points, o.closed))
                 }
-                is Block -> g.fill(polyline(o.points, closed = true))
+                is Block -> {
+                    // The block's real shape: its core grown by its rounding.
+                    val core = polyline(o.core, closed = true)
+                    g.fill(core)
+                    if (o.radius > 0) {
+                        g.stroke = BasicStroke((o.radius * 2).toFloat(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+                        g.draw(core)
+                    }
+                }
             }
         }
 

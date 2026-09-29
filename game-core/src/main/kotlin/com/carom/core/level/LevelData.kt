@@ -54,8 +54,34 @@ data class Wall(
     val thickness: Double,
 ) : Obstacle
 
-/** A solid filled polygon (rectangles and triangles are polygons too). Points in order. */
-data class Block(val points: List<Vec2>) : Obstacle
+/**
+ * A solid filled polygon (rectangles and triangles are polygons too). Points in order.
+ *
+ * Its corners are rounded by [rounding], so no block ever has a sharp point: the solid is [core]
+ * (the outline pulled in by [radius]) grown by [radius] in every direction. It fills the same
+ * outline as [points] except at the corners, and physics and drawing both use this exact shape.
+ * Only convex outlines can be rounded this way; other outlines keep sharp corners.
+ */
+data class Block(val points: List<Vec2>, val rounding: Double = LevelDefaults.BLOCK_ROUNDING) : Obstacle {
+    /** The polygon whose edges carry the rounding. */
+    val core: List<Vec2>
+
+    /** The rounding actually applied (smaller than [rounding] on blocks too small for it). */
+    val radius: Double
+
+    init {
+        var r = rounding
+        var inset: List<Vec2>? = null
+        // Halve the rounding until the outline is big enough to take it.
+        while (r >= 1.0) {
+            inset = Polygons.insetConvex(points, r)
+            if (inset != null) break
+            r /= 2
+        }
+        core = inset ?: points
+        radius = if (inset != null) r else 0.0
+    }
+}
 
 /**
  * Levels are portrait 9:20 — the shape of today's phones held upright — so the level's edges are
@@ -67,7 +93,8 @@ object LevelDefaults {
     const val HEIGHT = 2000.0
     const val BALL_RADIUS = 60.0
     const val GOAL_RADIUS = 84.0
-    const val WALL_THICKNESS = 16.0
+    const val WALL_THICKNESS = 30.0
+    const val BLOCK_ROUNDING = 14.0
     const val MAX_SPEED = 2400.0
     const val FRICTION = 600.0
 }

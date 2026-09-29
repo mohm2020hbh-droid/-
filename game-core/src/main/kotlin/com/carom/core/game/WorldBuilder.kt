@@ -25,8 +25,8 @@ object WorldBuilder {
         for (obstacle in level.obstacles) {
             when (obstacle) {
                 is Wall -> addChain(segments, obstacle.points, obstacle.closed, obstacle.thickness / 2)
-                // A block's edges are infinitely thin; the ball's own radius rounds its corners.
-                is Block -> addChain(segments, obstacle.points, closed = true, radius = 0.0)
+                // A block is its core polygon with rounded edges, so its corners are never sharp.
+                is Block -> addChain(segments, obstacle.core, closed = true, radius = obstacle.radius)
             }
         }
         val goal = CircleTrigger(level.goal.x, level.goal.y, level.goalRadius)

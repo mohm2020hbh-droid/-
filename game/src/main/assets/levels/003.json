@@ -6,6 +6,6 @@
   "hint": {"en": "Angled walls turn the ball", "ar": "الجدران المائلة تغيّر اتجاه الكرة"},
   "obstacles": [
     {"type": "wall", "points": [430, 2000, 430, 720]},
-    {"type": "wall", "points": [860.1, 620.1, 599.9, 359.9]}
+    {"type": "wall", "points": [865, 615.2, 604.8, 355]}
   ]
 }

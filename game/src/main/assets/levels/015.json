@@ -5,6 +5,6 @@
   "goal": [720, 350],
   "obstacles": [
     {"type": "wall", "points": [450, 850, 450, 1150]},
-    {"type": "wall", "points": [300, 1000, 600, 1000]}
+    {"type": "wall", "points": [300, 993, 593, 993]}
   ]
 }

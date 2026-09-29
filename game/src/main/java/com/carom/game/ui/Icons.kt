@@ -6,7 +6,7 @@ import android.graphics.RectF
 import kotlin.math.cos
 import kotlin.math.sin
 
-enum class Icon { PLAY, RESTART, GRID, BACK, FORWARD, CHECK, CROSS, LOCK, VIBRATION, RING }
+enum class Icon { PLAY, RESTART, GRID, BACK, FORWARD, CHECK, CROSS, LOCK, VIBRATION, SOUND, RING }
 
 /** Simple geometric icons drawn with paths, so the game ships no image assets. */
 object Icons {
@@ -97,6 +97,22 @@ object Icons {
                 for (side in intArrayOf(-1, 1)) {
                     canvas.drawLine(cx + side * 0.32f * s, cy - 0.16f * s, cx + side * 0.32f * s, cy + 0.16f * s, stroke)
                     canvas.drawLine(cx + side * 0.46f * s, cy - 0.08f * s, cx + side * 0.46f * s, cy + 0.08f * s, stroke)
+                }
+            }
+            Icon.SOUND -> {
+                // A small speaker and two sound waves.
+                path.moveTo(cx - 0.4f * s, cy - 0.12f * s)
+                path.lineTo(cx - 0.24f * s, cy - 0.12f * s)
+                path.lineTo(cx - 0.04f * s, cy - 0.32f * s)
+                path.lineTo(cx - 0.04f * s, cy + 0.32f * s)
+                path.lineTo(cx - 0.24f * s, cy + 0.12f * s)
+                path.lineTo(cx - 0.4f * s, cy + 0.12f * s)
+                path.close()
+                canvas.drawPath(path, fill)
+                stroke.strokeWidth = s * 0.08f
+                for (r in floatArrayOf(0.2f, 0.36f)) {
+                    box.set(cx - 0.06f * s - r * s, cy - r * s, cx - 0.06f * s + r * s, cy + r * s)
+                    canvas.drawArc(box, -45f, 90f, false, stroke)
                 }
             }
             Icon.RING -> {

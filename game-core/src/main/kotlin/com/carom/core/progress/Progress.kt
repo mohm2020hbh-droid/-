@@ -59,7 +59,12 @@ class Settings(private val store: KeyValueStore) {
         get() = store.getString(KEY_HAPTICS) != "off"
         set(value) = store.putString(KEY_HAPTICS, if (value) "on" else "off")
 
+    var soundEnabled: Boolean
+        get() = store.getString(KEY_SOUND) != "off"
+        set(value) = store.putString(KEY_SOUND, if (value) "on" else "off")
+
     private companion object {
         const val KEY_HAPTICS = "settings.haptics"
+        const val KEY_SOUND = "settings.sound"
     }
 }

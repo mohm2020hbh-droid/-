@@ -74,10 +74,14 @@ class ProgressTest {
     }
 
     @Test
-    fun hapticsSettingPersists() {
+    fun settingsPersistAndAreSeparate() {
         val store = MapStore()
         assertTrue(Settings(store).hapticsEnabled)
+        assertTrue(Settings(store).soundEnabled)
         Settings(store).hapticsEnabled = false
         assertFalse(Settings(store).hapticsEnabled)
+        assertTrue(Settings(store).soundEnabled)
+        Settings(store).soundEnabled = false
+        assertFalse(Settings(store).soundEnabled)
     }
 }

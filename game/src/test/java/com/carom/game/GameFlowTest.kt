@@ -65,18 +65,18 @@ class GameFlowTest {
         }
     }
 
-    /** Grabs the ball and pulls straight down by [pullPx], so it fires straight up. */
-    private fun pullDownAndRelease(view: GameView, play: PlayScreen, pullPx: Float) {
+    /** Holds the ball and drags it straight up by [dragPx], so it flies straight up. */
+    private fun dragUpAndRelease(view: GameView, play: PlayScreen, dragPx: Float) {
         val bx = play.board.x(play.session.ball.x)
         val by = play.board.y(play.session.ball.y)
         touch(view, MotionEvent.ACTION_DOWN, bx, by)
-        touch(view, MotionEvent.ACTION_MOVE, bx, by + pullPx / 2)
-        touch(view, MotionEvent.ACTION_MOVE, bx, by + pullPx)
-        touch(view, MotionEvent.ACTION_UP, bx, by + pullPx)
+        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx / 2)
+        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx)
+        touch(view, MotionEvent.ACTION_UP, bx, by - dragPx)
     }
 
     @Test
-    fun pullingBackFromTheBallFiresItAndWinningSavesProgress() {
+    fun draggingTheBallFiresItThatWayAndWinningSavesProgress() {
         val store = MapStore()
         val view = newView(store)
         assertTrue(view.currentScreen is HomeScreen)
@@ -84,8 +84,9 @@ class GameFlowTest {
         view.play(0)
         val play = view.currentScreen as PlayScreen
         // Level 1 is a straight shot: the goal is right above the ball.
-        pullDownAndRelease(view, play, 400f)
+        dragUpAndRelease(view, play, 400f)
         assertEquals(GameSession.State.MOVING, play.session.state)
+        assertTrue(play.session.ball.dirY < -0.999) // up, the way it was dragged
 
         runFor(view, 4f)
         assertEquals(GameSession.State.WON, play.session.state)
@@ -100,9 +101,22 @@ class GameFlowTest {
         val play = view.currentScreen as PlayScreen
         assertEquals(2, play.session.bouncesLeft)
         // Straight up from level 2's start hits the wall above the ball.
-        pullDownAndRelease(view, play, 400f)
+        dragUpAndRelease(view, play, 400f)
         runFor(view, 0.35f) // first wall at ~0.21 s, the next one at ~0.57 s
         assertEquals(1, play.session.bouncesLeft)
+    }
+
+    @Test
+    fun runningOutOfBouncesBreaksTheBall() {
+        val view = newView(MapStore())
+        view.play(1)
+        val play = view.currentScreen as PlayScreen
+        // Straight up and down between the wall above and the bottom edge: two bounces, then it breaks.
+        dragUpAndRelease(view, play, 400f)
+        runFor(view, 6f)
+        assertEquals(GameSession.State.FAILED, play.session.state)
+        assertEquals(GameSession.FailReason.OUT_OF_BOUNCES, play.session.failReason)
+        assertTrue(play.session.lastImpact != null)
     }
 
     @Test
