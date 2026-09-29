@@ -1,11 +1,16 @@
 package com.carom.game.render
 
+import android.graphics.Bitmap
+import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.Rect
 import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
 import com.carom.core.level.Block
 import com.carom.core.level.LevelData
@@ -13,19 +18,20 @@ import com.carom.core.level.Wall
 import com.carom.core.math.Vec2
 import com.carom.game.ui.Palette
 import com.carom.game.ui.WorldPalette
+import kotlin.math.hypot
+import kotlin.math.max
 
 /**
- * Draws a level: walls, blocks, goal, ball, launch zone and shot paths, in the world's two
- * colours (obstacles in the main colour; ball, goal and guides in the contrast colour). The
- * level's edges are never drawn: they are the edges of the screen.
+ * Draws a level in the world's two colours: obstacles in the main colour; ball, goal and guides in
+ * the contrast colour. The level's edges are never drawn: they are the edges of the screen.
  *
- * Obstacles have a calm, classic look: solid bars and panels with rounded ends and corners, a
- * fine light inlay line running inside each one, small pearls finishing the ends of the bars, and
- * a soft shadow that lifts them off the ground. What is drawn is exactly what the ball bounces
- * off: a wall's round ends and a block's round corners are part of its physics too.
+ * The look is soft and light, with a little depth: the ground is gently lit from the middle, the
+ * obstacles are smooth rounded bars and panels, shaded as if lit from above with a crisp light edge
+ * and a soft shadow, the ball is a small glossy sphere and the goal ring glows faintly. What is
+ * drawn is exactly what the ball bounces off: round ends and round corners are physics too.
  *
- * Level geometry is converted to screen-space paths once per layout, so drawing a frame is a
- * handful of draw calls with no allocation.
+ * The ground and the obstacles never move, so they are painted once per layout into a bitmap;
+ * a frame draws that bitmap and then the few moving things.
  */
 class BoardRenderer(private val level: LevelData, private val palette: WorldPalette) {
 
@@ -47,37 +53,18 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     var originY = 0f
         private set
 
-    /** Wall centre lines, one path per thickness since stroke width is per draw call. */
-    private val wallPaths = LinkedHashMap<Double, Path>()
+    private var backdrop: Bitmap? = null
+    private var viewWidth = 0
+    private var viewHeight = 0
 
-    /** Block cores (outlines pulled in by their rounding), one path per rounding. */
-    private val blockPaths = LinkedHashMap<Double, Path>()
-
-    /** Pearls at the open ends of walls: x, y, radius (screen) in sequence. */
-    private var pearls = FloatArray(0)
-
-    /** Small lozenges at the centre of the larger blocks: x, y, half-size (screen). */
-    private var ornaments = FloatArray(0)
-    private val trailPath = Path()
-    private val ornamentPath = Path()
-    private val arcBox = RectF()
-
-    private val bodyColor = palette.primary
-    private val inlayColor = Palette.blend(palette.primary, 0xFFFFFFFF.toInt(), 0.42f)
-    private val pearlColor = Palette.blend(palette.primary, 0xFFFFFFFF.toInt(), 0.62f)
-    private val shadowColor = Palette.blend(palette.background, 0xFF000000.toInt(), 0.5f)
-
-    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-    }
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
+    private val trailPath = Path()
+    private val arcBox = RectF()
     private var dash: DashPathEffect? = null
 
     private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -87,46 +74,61 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     private val numberBounds = Rect()
     private val numbers = Array(100) { it.toString() }
 
-    fun layout(scale: Float, originX: Float, originY: Float) {
+    // Shaders for the moving parts, built at the origin once per layout and moved into place.
+    private val ballPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val ballShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val goalGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val zonePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    /**
+     * Lays the level out at [scale] with its top-left corner at (originX, originY), on a view of
+     * [width]×[height] pixels, and paints the still parts.
+     */
+    fun layout(scale: Float, originX: Float, originY: Float, width: Int, height: Int) {
         this.scale = scale
         this.originX = originX
         this.originY = originY
+        viewWidth = width
+        viewHeight = height
         dash = DashPathEffect(floatArrayOf(6f * scale, 10f * scale), 0f)
 
-        wallPaths.clear()
-        blockPaths.clear()
-        val pearlList = ArrayList<Float>()
-        val ornamentList = ArrayList<Float>()
-        for (o in level.obstacles) {
-            when (o) {
-                is Wall -> {
-                    addPolyline(wallPaths.getOrPut(o.thickness) { Path() }, o.points, o.closed)
-                    if (!o.closed) {
-                        for (p in listOf(o.points.first(), o.points.last())) {
-                            pearlList += x(p.x)
-                            pearlList += y(p.y)
-                            pearlList += (o.thickness * PEARL).toFloat() * scale
-                        }
-                    }
-                }
-                is Block -> {
-                    addPolyline(blockPaths.getOrPut(o.radius) { Path() }, o.core, closed = true)
-                    val minX = o.core.minOf { it.x }
-                    val maxX = o.core.maxOf { it.x }
-                    val minY = o.core.minOf { it.y }
-                    val maxY = o.core.maxOf { it.y }
-                    // Free-standing panels carry an ornament; pieces filling a corner or an edge don't.
-                    val edge = o.points.any { it.x <= 0.5 || it.y <= 0.5 || it.x >= level.width - 0.5 || it.y >= level.height - 0.5 }
-                    if (o.radius > 0 && !edge && minOf(maxX - minX, maxY - minY) >= ORNAMENT_MIN_CORE) {
-                        ornamentList += x(o.core.sumOf { it.x } / o.core.size)
-                        ornamentList += y(o.core.sumOf { it.y } / o.core.size)
-                        ornamentList += (level.wallThickness * 0.36).toFloat() * scale
-                    }
-                }
+        val r = ballScreenRadius
+        ballPaint.shader = RadialGradient(
+            -0.35f * r, -0.4f * r, 1.45f * r,
+            intArrayOf(Palette.blend(palette.accent, WHITE, 0.75f), palette.accent, Palette.blend(palette.accent, BLACK, 0.22f)),
+            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP,
+        )
+        ballShadowPaint.shader = RadialGradient(
+            0f, 0f, 1.1f * r, intArrayOf(Palette.withAlpha(BLACK, 0.4f), Palette.withAlpha(BLACK, 0f)), null, Shader.TileMode.CLAMP,
+        )
+        val g = level.goalRadius.toFloat() * scale
+        goalGlowPaint.shader = RadialGradient(
+            0f, 0f, 1.8f * g,
+            intArrayOf(Palette.withAlpha(palette.accent, 0.07f), Palette.withAlpha(palette.accent, 0.05f), Palette.withAlpha(palette.accent, 0.2f), Palette.withAlpha(palette.accent, 0f)),
+            floatArrayOf(0f, 0.5f, 0.57f, 1f), Shader.TileMode.CLAMP,
+        )
+        val z = zoneScreenRadius
+        zonePaint.shader = RadialGradient(
+            0f, 0f, z,
+            intArrayOf(Palette.withAlpha(palette.accent, 0.075f), Palette.withAlpha(palette.accent, 0.04f), Palette.withAlpha(palette.accent, 0.015f)),
+            floatArrayOf(0f, 0.8f, 1f), Shader.TileMode.CLAMP,
+        )
+
+        backdrop?.recycle()
+        backdrop = null
+        if (width > 0 && height > 0) {
+            backdrop = try {
+                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { paintBackdrop(Canvas(it)) }
+            } catch (e: OutOfMemoryError) {
+                null // drawn live instead
             }
         }
-        pearls = pearlList.toFloatArray()
-        ornaments = ornamentList.toFloatArray()
+    }
+
+    /** Frees the painted bitmap; the renderer lays itself out again before drawing. */
+    fun release() {
+        backdrop?.recycle()
+        backdrop = null
     }
 
     fun x(worldX: Double): Float = originX + worldX.toFloat() * scale
@@ -134,69 +136,201 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     fun worldX(screenX: Float): Double = ((screenX - originX) / scale).toDouble()
     fun worldY(screenY: Float): Double = ((screenY - originY) / scale).toDouble()
 
-    fun drawGeometry(canvas: Canvas) {
-        // A soft shadow just below each obstacle.
-        canvas.save()
-        canvas.translate(0f, (level.wallThickness * SHADOW_DROP).toFloat() * scale)
-        drawBodies(canvas, shadowColor)
-        canvas.restore()
-
-        drawBodies(canvas, bodyColor)
-
-        // The inlay: a fine light line inside each obstacle, the same distance in from its edge.
-        strokePaint.color = inlayColor
-        for ((thickness, path) in wallPaths) {
-            strokePaint.strokeWidth = (thickness * INLAY).toFloat() * scale
-            canvas.drawPath(path, strokePaint)
-        }
-        strokePaint.strokeWidth = (level.wallThickness * INLAY * 0.8).toFloat() * scale
-        for ((radius, path) in blockPaths) if (radius > 0) canvas.drawPath(path, strokePaint)
-
-        fillPaint.color = pearlColor
-        for (i in pearls.indices step 3) canvas.drawCircle(pearls[i], pearls[i + 1], pearls[i + 2], fillPaint)
-        for (i in ornaments.indices step 3) {
-            val cx = ornaments[i]
-            val cy = ornaments[i + 1]
-            val h = ornaments[i + 2]
-            ornamentPath.reset()
-            ornamentPath.moveTo(cx, cy - h)
-            ornamentPath.lineTo(cx + h * 0.7f, cy)
-            ornamentPath.lineTo(cx, cy + h)
-            ornamentPath.lineTo(cx - h * 0.7f, cy)
-            ornamentPath.close()
-            canvas.drawPath(ornamentPath, fillPaint)
-        }
+    /** The ground and all obstacles. */
+    fun drawBackdrop(canvas: Canvas) {
+        val bitmap = backdrop
+        if (bitmap != null && !bitmap.isRecycled) canvas.drawBitmap(bitmap, 0f, 0f, null) else paintBackdrop(canvas)
     }
 
-    /** Every obstacle's solid shape in one colour: walls as round-ended bars, blocks as round-cornered panels. */
-    private fun drawBodies(canvas: Canvas, color: Int) {
-        strokePaint.color = color
-        for ((thickness, path) in wallPaths) {
-            strokePaint.strokeWidth = thickness.toFloat() * scale
-            canvas.drawPath(path, strokePaint)
+    // ---------------------------------------------------------------- still parts
+
+    private fun paintBackdrop(canvas: Canvas) {
+        val w = viewWidth.toFloat()
+        val h = viewHeight.toFloat()
+        // The ground: gently lighter in the middle, deepening towards the edges.
+        val ground = Paint().apply {
+            shader = RadialGradient(
+                w / 2, h * 0.42f, hypot(w, h) * 0.62f,
+                intArrayOf(Palette.blend(palette.background, WHITE, 0.07f), palette.background, Palette.blend(palette.background, BLACK, 0.32f)),
+                floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP,
+            )
         }
-        fillPaint.color = color
-        for ((radius, path) in blockPaths) {
-            canvas.drawPath(path, fillPaint)
-            if (radius > 0) {
-                strokePaint.strokeWidth = (radius * 2).toFloat() * scale
-                canvas.drawPath(path, strokePaint)
+        canvas.drawRect(0f, 0f, w, h, ground)
+
+        // On screens shaped differently from the level, the space outside it is a deeper shade.
+        val left = originX
+        val top = originY
+        val right = originX + level.width.toFloat() * scale
+        val bottom = originY + level.height.toFloat() * scale
+        val outside = Paint().apply { color = Palette.withAlpha(palette.void, 0.85f) }
+        if (top > 0.5f) {
+            canvas.drawRect(0f, 0f, w, top, outside)
+            canvas.drawRect(0f, bottom, w, h, outside)
+        }
+        if (left > 0.5f) {
+            canvas.drawRect(0f, top, left, bottom, outside)
+            canvas.drawRect(right, top, w, bottom, outside)
+        }
+
+        paintShadows(canvas)
+        for (o in level.obstacles) {
+            when (o) {
+                is Wall -> paintWall(canvas, o)
+                is Block -> paintBlock(canvas, o)
             }
         }
     }
 
-    /** The goal ring. [pulse] (0..1) animates the scoring ripple. */
+    /** One soft shadow under everything, falling a little below. */
+    private fun paintShadows(canvas: Canvas) {
+        val t = level.wallThickness.toFloat() * scale
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Palette.withAlpha(BLACK, 0.42f)
+            maskFilter = BlurMaskFilter(max(1f, t * 0.35f), BlurMaskFilter.Blur.NORMAL)
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        canvas.save()
+        canvas.translate(0f, t * 0.28f)
+        val path = Path()
+        for (o in level.obstacles) {
+            path.reset()
+            when (o) {
+                is Wall -> {
+                    addPolyline(path, o.points, o.closed)
+                    paint.style = Paint.Style.STROKE
+                    paint.strokeWidth = o.thickness.toFloat() * scale
+                    canvas.drawPath(path, paint)
+                }
+                is Block -> {
+                    addPolyline(path, o.core, closed = true)
+                    paint.style = Paint.Style.FILL_AND_STROKE
+                    paint.strokeWidth = (o.radius * 2).toFloat() * scale
+                    canvas.drawPath(path, paint)
+                }
+            }
+        }
+        canvas.restore()
+    }
+
+    /**
+     * A wall: a smooth rod with round ends, shaded across its width as if lit from above (light on
+     * top, deeper underneath), inside a crisp light edge, with a soft gloss along its top.
+     */
+    private fun paintWall(canvas: Canvas, wall: Wall) {
+        val t = wall.thickness.toFloat() * scale
+        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+            strokeWidth = t
+            color = rimColor
+        }
+        val path = Path()
+        addPolyline(path, wall.points, wall.closed)
+        canvas.drawPath(path, edge)
+
+        val body = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeWidth = max(1f, t - 2f * rimWidth)
+        }
+        val gloss = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeWidth = t * 0.12f
+            color = Palette.withAlpha(WHITE, 0.22f)
+        }
+        val count = if (wall.closed) wall.points.size else wall.points.size - 1
+        for (i in 0 until count) {
+            val a = wall.points[i]
+            val b = wall.points[(i + 1) % wall.points.size]
+            val ax = x(a.x)
+            val ay = y(a.y)
+            val bx = x(b.x)
+            val by = y(b.y)
+            val len = hypot(bx - ax, by - ay)
+            if (len < 1e-3f) continue
+            val ux = (bx - ax) / len
+            val uy = (by - ay) / len
+            // The side facing the light (from above, slightly left).
+            var nx = -uy
+            var ny = ux
+            if (nx * -0.3f + ny * -1f < 0f) {
+                nx = -nx
+                ny = -ny
+            }
+            val mx = (ax + bx) / 2
+            val my = (ay + by) / 2
+            body.shader = LinearGradient(
+                mx + nx * t / 2, my + ny * t / 2, mx - nx * t / 2, my - ny * t / 2,
+                intArrayOf(lightColor, palette.primary, darkColor), floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP,
+            )
+            canvas.drawLine(ax, ay, bx, by, body)
+            if (len > t) {
+                val inset = t * 0.4f
+                val gx = nx * t * 0.24f
+                val gy = ny * t * 0.24f
+                canvas.drawLine(ax + ux * inset + gx, ay + uy * inset + gy, bx - ux * inset + gx, by - uy * inset + gy, gloss)
+            }
+        }
+    }
+
+    /** A block: a round-cornered panel shaded from light at the top to deeper at the bottom, inside a crisp light edge. */
+    private fun paintBlock(canvas: Canvas, block: Block) {
+        val path = Path()
+        addPolyline(path, block.core, closed = true)
+        val r = block.radius.toFloat() * scale
+        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL_AND_STROKE
+            strokeJoin = Paint.Join.ROUND
+            strokeWidth = 2 * r
+            color = rimColor
+        }
+        canvas.drawPath(path, edge)
+        val top = y(block.core.minOf { it.y }) - r
+        val bottom = y(block.core.maxOf { it.y }) + r
+        val body = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = if (r > 0f) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
+            strokeJoin = Paint.Join.ROUND
+            strokeWidth = max(0f, 2 * r - 2 * rimWidth)
+            shader = LinearGradient(
+                0f, top, 0f, bottom, intArrayOf(lightColor, palette.primary, darkColor), floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP,
+            )
+        }
+        if (r > rimWidth) {
+            canvas.drawPath(path, body)
+        } else {
+            // Too small a rounding to inset the edge by; the shading covers the whole shape.
+            body.strokeWidth = 2 * r
+            canvas.drawPath(path, body)
+        }
+    }
+
+    private val lightColor = Palette.blend(palette.primary, WHITE, 0.26f)
+    private val darkColor = Palette.blend(palette.primary, BLACK, 0.3f)
+    private val rimColor = Palette.blend(palette.primary, WHITE, 0.42f)
+    private val rimWidth: Float get() = max(1f, 1.4f * scale)
+
+    // ---------------------------------------------------------------- moving parts
+
+    /** The goal: a ring with a faint glow and a centre point. [pulse] (0..1) animates the scoring ripple. */
     fun drawGoal(canvas: Canvas, pulse: Float) {
         val cx = x(level.goal.x)
         val cy = y(level.goal.y)
         val r = level.goalRadius.toFloat() * scale
-        val ring = r * 0.18f
+        canvas.save()
+        canvas.translate(cx, cy)
+        canvas.drawCircle(0f, 0f, 1.8f * r, goalGlowPaint)
+        canvas.restore()
+        val ring = r * 0.14f
         linePaint.pathEffect = null
+        linePaint.shader = null
         linePaint.color = palette.accent
         linePaint.strokeWidth = ring
         canvas.drawCircle(cx, cy, r - ring / 2, linePaint)
         fillPaint.color = palette.accent
-        canvas.drawCircle(cx, cy, r * 0.2f, fillPaint)
+        canvas.drawCircle(cx, cy, r * 0.16f, fillPaint)
         if (pulse > 0f) {
             linePaint.color = Palette.withAlpha(palette.accent, 1f - pulse)
             linePaint.strokeWidth = ring * (1f - pulse * 0.6f)
@@ -207,23 +341,35 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     /** Radius of the ball on screen, in pixels. */
     val ballScreenRadius: Float get() = level.ballRadius.toFloat() * scale
 
+    /** Radius of the launch zone on screen: everywhere the ball itself can reach while being held. */
+    val zoneScreenRadius: Float get() = ((level.launchZone + level.ballRadius) * 1.0).toFloat() * scale
+
     /**
-     * The ball at screen position (sx, sy), with the bounces it has left written in its centre.
-     * The number is part of the ball: same position, same scale, always inside its edge.
+     * The ball at screen position (sx, sy): a small glossy sphere with the bounces it has left
+     * written in its centre. The number is part of the ball: same position, same scale.
      */
-    fun drawBall(canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, style: BallStyle, bouncesLeft: Int) {
+    fun drawBall(canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, style: BallStyle, bouncesLeft: Int, alpha: Float = 1f) {
         val r = ballScreenRadius * sizeFactor
+        val a = (alpha * 255).toInt().coerceIn(0, 255)
         if (style == BallStyle.HOLLOW) {
             val ring = r * 0.12f
             linePaint.pathEffect = null
-            linePaint.color = palette.accent
+            linePaint.shader = null
+            linePaint.color = Palette.withAlpha(palette.accent, alpha)
             linePaint.strokeWidth = ring
             canvas.drawCircle(sx, sy, r - ring / 2, linePaint)
-            numberPaint.color = palette.accent
+            numberPaint.color = Palette.withAlpha(palette.accent, alpha)
         } else {
-            fillPaint.color = palette.accent
-            canvas.drawCircle(sx, sy, r, fillPaint)
-            numberPaint.color = palette.background
+            canvas.save()
+            canvas.translate(sx, sy)
+            canvas.scale(sizeFactor, sizeFactor)
+            val base = ballScreenRadius
+            ballShadowPaint.alpha = a
+            canvas.drawCircle(base * 0.06f, base * 0.24f, base * 1.1f, ballShadowPaint)
+            ballPaint.alpha = a
+            canvas.drawCircle(0f, 0f, base, ballPaint)
+            canvas.restore()
+            numberPaint.color = Palette.withAlpha(palette.background, alpha)
             if (style == BallStyle.CRACKED) drawCracks(canvas, sx, sy, r)
         }
         val text = numbers[bouncesLeft.coerceIn(0, numbers.size - 1)]
@@ -235,7 +381,8 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     /** Fine jagged cracks running in from the rim: the lines along which the ball will break. */
     private fun drawCracks(canvas: Canvas, sx: Float, sy: Float, r: Float) {
         linePaint.pathEffect = null
-        linePaint.color = Palette.withAlpha(palette.background, 0.9f)
+        linePaint.shader = null
+        linePaint.color = Palette.withAlpha(palette.background, 0.85f)
         for ((k, i) in BallCracks.visible.withIndex()) {
             // Wider where it meets the rim, finer as it runs inwards.
             linePaint.strokeWidth = r * 0.06f
@@ -253,32 +400,38 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     }
 
     /**
-     * The launch zone around the ball at (sx, sy): a faint disc edged by a fine double ring,
-     * showing where the ball can be held and dragged. While dragging ([active]), a thin arc fills
-     * the ring clockwise from the top with the shot's [power], like a dial, so it never points
-     * anywhere: the direction is the player's drag alone.
+     * The launch zone: a soft disc with a fine ring, centred on the level's start, covering
+     * everywhere the ball can be moved to before a throw, with a small mark at the start. While the
+     * ball is held ([active]), the ring brightens and a thin arc fills it clockwise from the top
+     * with the throw's [power], like a dial, so it never points anywhere.
      */
-    fun drawLaunchZone(canvas: Canvas, sx: Float, sy: Float, radius: Float, unit: Float, active: Boolean, power: Float, ready: Boolean) {
-        fillPaint.color = Palette.withAlpha(palette.accent, if (active) 0.09f else 0.055f)
-        canvas.drawCircle(sx, sy, radius, fillPaint)
+    fun drawLaunchZone(canvas: Canvas, unit: Float, active: Boolean, power: Float, ready: Boolean) {
+        val cx = x(level.ball.x)
+        val cy = y(level.ball.y)
+        val radius = zoneScreenRadius
+        canvas.save()
+        canvas.translate(cx, cy)
+        canvas.drawCircle(0f, 0f, radius, zonePaint)
+        canvas.restore()
         linePaint.pathEffect = null
-        linePaint.color = Palette.withAlpha(palette.accent, if (active) 0.42f else 0.3f)
+        linePaint.shader = null
+        linePaint.color = Palette.withAlpha(palette.accent, if (active) 0.45f else 0.26f)
         linePaint.strokeWidth = 1.5f * unit
-        canvas.drawCircle(sx, sy, radius, linePaint)
-        linePaint.color = Palette.withAlpha(palette.accent, 0.13f)
+        canvas.drawCircle(cx, cy, radius, linePaint)
+        linePaint.color = Palette.withAlpha(palette.accent, 0.3f)
         linePaint.strokeWidth = unit
-        canvas.drawCircle(sx, sy, radius - 4.5f * unit, linePaint)
+        canvas.drawCircle(cx, cy, 4f * unit, linePaint)
         if (!active || power <= 0f) return
 
         val color = if (ready) palette.accent else Palette.withAlpha(palette.accent, 0.45f)
         linePaint.color = color
         linePaint.strokeWidth = 3f * unit
-        arcBox.set(sx - radius, sy - radius, sx + radius, sy + radius)
+        arcBox.set(cx - radius, cy - radius, cx + radius, cy + radius)
         val sweep = 360f * power.coerceIn(0f, 1f)
         canvas.drawArc(arcBox, -90f, sweep, false, linePaint)
         val end = Math.toRadians((sweep - 90f).toDouble())
         fillPaint.color = color
-        canvas.drawCircle(sx + radius * Math.cos(end).toFloat(), sy + radius * Math.sin(end).toFloat(), 3.4f * unit, fillPaint)
+        canvas.drawCircle(cx + radius * Math.cos(end).toFloat(), cy + radius * Math.sin(end).toFloat(), 3.4f * unit, fillPaint)
     }
 
     /** A shot's path through [points], optionally continued to the ball's current screen position. */
@@ -288,6 +441,7 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         trailPath.moveTo(x(points[0].x), y(points[0].y))
         for (i in 1 until points.size) trailPath.lineTo(x(points[i].x), y(points[i].y))
         if (!endX.isNaN()) trailPath.lineTo(endX, endY)
+        linePaint.shader = null
         linePaint.color = color
         linePaint.strokeWidth = 2.5f * scale
         linePaint.pathEffect = if (dashed) dash else null
@@ -302,16 +456,7 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     }
 
     private companion object {
-        /** Inlay line width, as a fraction of the wall's thickness. */
-        const val INLAY = 0.14
-
-        /** Radius of the pearls on a wall's ends, as a fraction of its thickness. */
-        const val PEARL = 0.17
-
-        /** How far below an obstacle its shadow falls, as a fraction of the wall thickness. */
-        const val SHADOW_DROP = 0.22
-
-        /** Blocks whose core is at least this big (world units) carry a centre ornament. */
-        const val ORNAMENT_MIN_CORE = 60.0
+        const val WHITE = 0xFFFFFFFF.toInt()
+        const val BLACK = 0xFF000000.toInt()
     }
 }

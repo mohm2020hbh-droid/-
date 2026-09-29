@@ -12,7 +12,7 @@ import com.carom.game.ui.WorldPalette
 
 enum class Haptic { CLICK, BOUNCE, SUCCESS, FAILURE }
 
-enum class Sound { IMPACT, SHATTER }
+enum class Sound { IMPACT, LAUNCH, SHATTER, WIN, TAP }
 
 /** What screens can ask of the game shell: navigation, feedback, shared state. */
 interface GameHost {
@@ -23,8 +23,14 @@ interface GameHost {
     fun play(index: Int)
     fun haptic(kind: Haptic)
 
-    /** Plays [kind]; [strength] (0..1) is how hard the ball hit, for impacts. */
-    fun sound(kind: Sound, strength: Double = 1.0)
+    /**
+     * Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts) or was thrown (launch);
+     * [step] is which bounce of the shot an impact is, so the notes climb.
+     */
+    fun sound(kind: Sound, strength: Double = 1.0, step: Int = 0)
+
+    /** The rolling sound, at [level] (0..1) of full speed; 0 silences it. */
+    fun rolling(level: Float)
 }
 
 /**
@@ -69,6 +75,9 @@ abstract class Screen(protected val host: GameHost) {
 
     open fun onEnter() {}
 
+    /** The screen is being replaced; free anything large it holds. */
+    open fun onExit() {}
+
     /** Press/release handling shared by every screen's buttons. Returns true if a button took the event. */
     protected fun routeToButtons(e: MotionEvent, buttons: List<UiButton>): Boolean {
         val slop = kit.u(4f)
@@ -88,6 +97,7 @@ abstract class Screen(protected val host: GameHost) {
                 if (clicked) {
                     host.haptic(Haptic.CLICK)
                     it.onClick()
+                    host.sound(Sound.TAP)
                 }
                 return true
             }

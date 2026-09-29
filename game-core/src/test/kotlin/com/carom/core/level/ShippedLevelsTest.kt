@@ -75,6 +75,20 @@ class ShippedLevelsTest {
         }
     }
 
+    /**
+     * The player may move the ball around its launch zone before throwing. That may make a shot
+     * easier to line up, but it must never skip a bounce the level is built around.
+     */
+    @Test
+    fun movingTheBallAroundItsLaunchZoneNeverSkipsABounce() {
+        val skips = levels.mapNotNull { level ->
+            val fromStart = ShotSearch.search(level, stepDegrees = 0.5).minBounces ?: return@mapNotNull null
+            val fromZone = ShotSearch.minBouncesFromZone(level) ?: return@mapNotNull null
+            if (fromZone < fromStart) "${level.id}: $fromStart bounces from the start, $fromZone from its launch zone" else null
+        }
+        assertEquals(emptyList<String>(), skips)
+    }
+
     private companion object {
         const val MIN_FAIR_WINDOW_DEGREES = 0.3
     }

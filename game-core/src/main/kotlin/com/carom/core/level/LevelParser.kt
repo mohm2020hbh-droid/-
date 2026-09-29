@@ -17,6 +17,7 @@ import kotlin.math.sin
  *   "goalRadius": 48,                 // optional
  *   "speed": 2400, "friction": 600,   // optional launch power and deceleration
  *   "border": true,                   // optional: the edges bounce the ball (never drawn)
+ *   "launchZone": 130,                // optional: how far the player may move the ball before a throw
  *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
  *   "obstacles": [
  *     {"type": "wall", "points": [800, 0, 800, 600], "thickness": 30, "closed": false},
@@ -56,6 +57,9 @@ object LevelParser {
                 wallThickness = positive(wallThickness, "wallThickness"),
                 ballRadius = positive(root.number("ballRadius") ?: LevelDefaults.BALL_RADIUS, "ballRadius"),
                 obstacles = obstacles,
+                launchZone = (root.number("launchZone") ?: LevelDefaults.LAUNCH_ZONE).also {
+                    if (it < 0) throw LevelFormatException("'launchZone' must be ≥ 0")
+                },
                 hint = parseHint(root["hint"]),
             )
         } catch (e: LevelFormatException) {

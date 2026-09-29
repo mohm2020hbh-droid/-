@@ -50,9 +50,8 @@ class GameFlowTest {
         return view
     }
 
-    private fun touch(view: GameView, action: Int, x: Float, y: Float) {
-        val t = SystemClock.uptimeMillis()
-        val e = MotionEvent.obtain(t, t, action, x, y, 0)
+    private fun touch(view: GameView, action: Int, x: Float, y: Float, time: Long = SystemClock.uptimeMillis()) {
+        val e = MotionEvent.obtain(time, time, action, x, y, 0)
         view.dispatchTouchEvent(e)
         e.recycle()
     }
@@ -65,7 +64,7 @@ class GameFlowTest {
         }
     }
 
-    /** Holds the ball and drags it straight up by [dragPx], so it flies straight up. */
+    /** Holds the ball and strokes straight up by [dragPx], letting go mid-stroke, so it flies straight up. */
     private fun dragUpAndRelease(view: GameView, play: PlayScreen, dragPx: Float) {
         val bx = play.board.x(play.session.ball.x)
         val by = play.board.y(play.session.ball.y)
@@ -104,6 +103,26 @@ class GameFlowTest {
         dragUpAndRelease(view, play, 400f)
         runFor(view, 0.35f) // first wall at ~0.21 s, the next one at ~0.57 s
         assertEquals(1, play.session.bouncesLeft)
+    }
+
+    @Test
+    fun theBallFollowsTheFingerAndStaysPutWhenLetGoWithoutAThrow() {
+        val view = newView(MapStore())
+        view.play(0)
+        val play = view.currentScreen as PlayScreen
+        val startX = play.session.ball.x
+        val bx = play.board.x(startX)
+        val by = play.board.y(play.session.ball.y)
+        val t = SystemClock.uptimeMillis()
+        touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
+        touch(view, MotionEvent.ACTION_MOVE, bx + 50f, by, t + 30)
+        touch(view, MotionEvent.ACTION_MOVE, bx + 100f, by, t + 60)
+        assertEquals(startX + 100f / play.board.scale, play.session.ball.x, 0.5) // carried to the right
+        // Held still for a moment, then lifted: no throw, the ball stays where it was put.
+        touch(view, MotionEvent.ACTION_MOVE, bx + 100f, by, t + 400)
+        touch(view, MotionEvent.ACTION_UP, bx + 100f, by, t + 420)
+        assertEquals(GameSession.State.AIMING, play.session.state)
+        assertEquals(startX + 100f / play.board.scale, play.session.ball.x, 0.5)
     }
 
     @Test

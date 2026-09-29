@@ -102,6 +102,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         super.onWindowVisibilityChanged(visibility)
         // Don't let time spent in the background arrive as one giant frame.
         lastFrameNanos = 0L
+        if (visibility != VISIBLE) soundFx.roll(0f)
     }
 
     /** Returns false when the back action should leave the game. */
@@ -123,6 +124,8 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     }
 
     private fun switchTo(next: Screen) {
+        soundFx.roll(0f)
+        screen.onExit()
         screen = next
         keepScreenOn = next is PlayScreen
         if (width > 0) next.layout(width, height, insets)
@@ -144,13 +147,18 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         performHapticFeedback(constant)
     }
 
-    override fun sound(kind: Sound, strength: Double) {
+    override fun sound(kind: Sound, strength: Double, step: Int) {
         if (!app.settings.soundEnabled) return
         when (kind) {
-            Sound.IMPACT -> soundFx.impact(strength)
+            Sound.IMPACT -> soundFx.impact(strength, step)
+            Sound.LAUNCH -> soundFx.launch(strength)
             Sound.SHATTER -> soundFx.shatter()
+            Sound.WIN -> soundFx.win()
+            Sound.TAP -> soundFx.tap()
         }
     }
+
+    override fun rolling(level: Float) = soundFx.roll(if (app.settings.soundEnabled) level else 0f)
 
     /** Frees the audio tracks; the view is not used afterwards. */
     fun release() = soundFx.release()

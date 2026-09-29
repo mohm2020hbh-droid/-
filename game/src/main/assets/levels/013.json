@@ -4,9 +4,9 @@
   "ball": [250, 1620],
   "goal": [310, 500],
   "obstacles": [
-    {"type": "wall", "points": [0, 1233, 473, 1233]},
-    {"type": "wall", "points": [787, 1247, 900, 1247]},
-    {"type": "wall", "points": [0, 767, 413, 767]},
-    {"type": "wall", "points": [727, 753, 900, 753]}
+    {"type": "wall", "points": [0, 1233, 466, 1233]},
+    {"type": "wall", "points": [794, 1247, 900, 1247]},
+    {"type": "wall", "points": [0, 767, 406, 767]},
+    {"type": "wall", "points": [734, 753, 900, 753]}
   ]
 }

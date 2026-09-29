@@ -63,12 +63,45 @@ object ShotSearch {
         return Result(level, stepDegrees, wins, minBounces)
     }
 
-    /** Plays one shot to the end and returns the finished session. */
-    fun fire(level: LevelData, angleDegrees: Double, power: Double = 1.0): GameSession {
+    /** Plays one shot to the end, from [from] (moved there within the launch zone) if given. */
+    fun fire(level: LevelData, angleDegrees: Double, power: Double = 1.0, from: Vec2? = null): GameSession {
         val session = GameSession(level)
+        if (from != null) session.placeBall(from.x, from.y)
         val dir = Vec2.fromDegrees(angleDegrees)
         session.launch(dir.x, dir.y, power)
         while (session.state == GameSession.State.MOVING) session.step()
         return session
+    }
+
+    /**
+     * The fewest bounces any full-power shot needs from anywhere in the level's launch zone
+     * (sampled on a [spacing] grid, every [stepDegrees]), or null if nothing scores.
+     */
+    fun minBouncesFromZone(level: LevelData, spacing: Double = 40.0, stepDegrees: Double = 0.5): Int? {
+        var best: Int? = null
+        val z = level.launchZone
+        var gx = -z
+        while (gx <= z + 1e-9) {
+            var gy = -z
+            while (gy <= z + 1e-9) {
+                if (gx * gx + gy * gy <= z * z + 1e-6) {
+                    val spot = Vec2(level.ball.x + gx, level.ball.y + gy)
+                    val probe = GameSession(level)
+                    probe.placeBall(spot.x, spot.y)
+                    // Only spots the ball can actually be moved to (not behind a wall).
+                    if (spot.distanceTo(Vec2(probe.ball.x, probe.ball.y)) < 1.0) {
+                        var a = 0.0
+                        while (a < 360.0) {
+                            val s = fire(level, a, from = spot)
+                            if (s.state == GameSession.State.WON) best = minOf(best ?: Int.MAX_VALUE, s.bouncesUsed)
+                            a += stepDegrees
+                        }
+                    }
+                }
+                gy += spacing
+            }
+            gx += spacing
+        }
+        return best
     }
 }

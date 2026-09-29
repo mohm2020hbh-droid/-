@@ -32,7 +32,7 @@ class UiText private constructor(
     companion object {
         private val ENGLISH = UiText(
             language = "en",
-            tagline = "DRAG  ·  BOUNCE  ·  SOLVE",
+            tagline = "FLICK  ·  BOUNCE  ·  SOLVE",
             play = "PLAY",
             levels = "LEVELS",
             level = "LEVEL",
@@ -54,7 +54,7 @@ class UiText private constructor(
 
         private val ARABIC = UiText(
             language = "ar",
-            tagline = "اسحب  ·  ارتدّ  ·  احلُل",
+            tagline = "اقذف  ·  ارتدّ  ·  احلُل",
             play = "العب",
             levels = "المراحل",
             level = "المرحلة",

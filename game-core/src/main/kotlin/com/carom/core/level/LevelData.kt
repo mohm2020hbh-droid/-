@@ -30,6 +30,11 @@ data class LevelData(
     val wallThickness: Double,
     val ballRadius: Double,
     val obstacles: List<Obstacle>,
+    /**
+     * How far from [ball] the player may move the ball before throwing it: its centre can go
+     * anywhere within this radius (and clear of walls). 0 fixes the start point.
+     */
+    val launchZone: Double = LevelDefaults.LAUNCH_ZONE,
     /** Optional teaching text by language code ("en", "ar", ...). */
     val hint: Map<String, String> = emptyMap(),
 ) {
@@ -93,8 +98,11 @@ object LevelDefaults {
     const val HEIGHT = 2000.0
     const val BALL_RADIUS = 60.0
     const val GOAL_RADIUS = 84.0
-    const val WALL_THICKNESS = 30.0
-    const val BLOCK_ROUNDING = 14.0
+    const val WALL_THICKNESS = 44.0
+    const val BLOCK_ROUNDING = 18.0
     const val MAX_SPEED = 2400.0
     const val FRICTION = 600.0
+
+    /** The ball can be moved this far from its start before a throw: about two ball widths across. */
+    const val LAUNCH_ZONE = 130.0
 }

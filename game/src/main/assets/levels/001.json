@@ -3,5 +3,5 @@
   "bounces": 3,
   "ball": [450, 1540],
   "goal": [450, 460],
-  "hint": {"en": "Drag the ball where it should go, then let go", "ar": "اسحب الكرة في الاتجاه الذي تريده، ثم اترُكها"}
+  "hint": {"en": "Hold the ball, move it, then flick it", "ar": "امسك الكرة وحرّكها، ثم اقذفها بحركة سريعة"}
 }

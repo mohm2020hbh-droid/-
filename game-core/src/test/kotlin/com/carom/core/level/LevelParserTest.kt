@@ -91,7 +91,7 @@ class LevelParserTest {
         // ...but its corner is round: diagonally off the corner there is room the sharp block had filled.
         assertFalse(world.overlaps(300.0 - 60.0 * 0.7071 + 3, 300.0 - 60.0 * 0.7071 + 3, 60.0))
 
-        assertEquals(7.0, (level.obstacles[1] as Block).radius, 0.0) // too small for 14: halved
+        assertEquals(LevelDefaults.BLOCK_ROUNDING / 2, (level.obstacles[1] as Block).radius, 0.0) // too small: halved
         val dented = level.obstacles[2] as Block // not convex: keeps its sharp outline
         assertEquals(0.0, dented.radius, 0.0)
         assertEquals(dented.points, dented.core)

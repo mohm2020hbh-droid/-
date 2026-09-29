@@ -128,6 +128,48 @@ class GameSession(val level: LevelData) {
         return true
     }
 
+    /**
+     * Before a shot, moves the ball as close to (x, y) as it can go: within the launch zone around
+     * the level's start, inside the level, and clear of every wall (it stops where it would touch
+     * one). Returns true if the ball moved.
+     */
+    fun placeBall(x: Double, y: Double): Boolean {
+        if (state != State.AIMING) return false
+        val r = ball.radius
+        var tx = x
+        var ty = y
+        val dx = tx - level.ball.x
+        val dy = ty - level.ball.y
+        val d = hypot(dx, dy)
+        if (d > level.launchZone) {
+            val k = if (d > 0.0) level.launchZone / d else 0.0
+            tx = level.ball.x + dx * k
+            ty = level.ball.y + dy * k
+        }
+        tx = tx.coerceIn(r, level.width - r)
+        ty = ty.coerceIn(r, level.height - r)
+        val dist = hypot(tx - ball.x, ty - ball.y)
+        if (dist < 1e-9) return false
+        // Slide a probe from the ball towards the target: it stops at the first wall in the way,
+        // so the ball can be pushed against a wall but never through it.
+        probe.x = ball.x
+        probe.y = ball.y
+        probe.dirX = (tx - ball.x) / dist
+        probe.dirY = (ty - ball.y) / dist
+        world.move(probe, dist, stopAtWalls)
+        if (probe.x == ball.x && probe.y == ball.y) return false
+        ball.place(probe.x, probe.y)
+        prevX = probe.x
+        prevY = probe.y
+        return true
+    }
+
+    private val probe = Ball(level.ballRadius)
+    private val stopAtWalls = object : PhysicsWorld.Listener {
+        override fun onWallContact(x: Double, y: Double, nx: Double, ny: Double) = false
+        override fun onTrigger(trigger: CircleTrigger, x: Double, y: Double) = true
+    }
+
     /** Advances by one frame's worth of time, running as many fixed steps as fit. */
     fun advance(frameSeconds: Double) {
         if (state != State.MOVING) return

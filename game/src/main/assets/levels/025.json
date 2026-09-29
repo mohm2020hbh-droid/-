@@ -5,8 +5,8 @@
   "goal": [450, 350],
   "goalRadius": 56,
   "obstacles": [
-    {"type": "wall", "points": [300, 1475, 900, 1475]},
-    {"type": "wall", "points": [0, 1025, 600, 1025]},
-    {"type": "wall", "points": [300, 575, 900, 575]}
+    {"type": "wall", "points": [307, 1475, 900, 1475]},
+    {"type": "wall", "points": [0, 1025, 593, 1025]},
+    {"type": "wall", "points": [307, 575, 900, 575]}
   ]
 }

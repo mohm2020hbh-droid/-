@@ -4,7 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Path
 import android.graphics.RectF
 import android.view.MotionEvent
-import com.carom.core.game.DragAim
+import com.carom.core.game.FlickAim
 import com.carom.core.game.GameSession
 import com.carom.core.level.LevelData
 import com.carom.core.level.Worlds
@@ -17,43 +17,44 @@ import com.carom.game.ui.Palette
 import com.carom.game.ui.UiButton
 import com.carom.game.ui.WorldPalette
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.random.Random
 
 /**
  * A level being played. The level fills the screen: its edges are the screen's edges (invisible,
  * but the ball bounces off them), with the level number, restart and level-list buttons floating
  * over the top and the hint over the bottom.
  *
- * Owns the [GameSession] (rules), the drag-to-launch input and everything drawn on top of the
+ * Owns the [GameSession] (rules), the hold-and-throw input and everything drawn on top of the
  * board. The bounces left are shown inside the ball itself.
  *
- * Launching: the ball sits in a launch zone (a faint ringed disc). The player touches anywhere in
- * it, drags the way the ball should go and lets go; the ball flies in the drag's direction, with
- * power from the drag's length (and a little extra for a quick flick). There is no arrow: while
- * dragging, the ball leans towards the finger and the zone's ring fills like a dial with the power.
+ * Throwing: the ball sits in a launch zone (a soft ringed disc). The player touches anywhere in
+ * it, and the ball follows the finger around the zone; a stroke throws it the way the stroke went,
+ * as hard as the stroke was long (and a little harder for a quick one). There is no arrow: the ball
+ * moves with the finger, and the zone's ring fills like a dial with the power.
+ *
+ * Scoring: the ball swirls into the ring and settles in its centre in a shower of sparks.
  */
 class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) : Screen(host), GameSession.Listener {
 
     override val palette: WorldPalette = Palette.forLevel(index)
     internal val session = GameSession(level).also { it.listener = this }
     internal val board = BoardRenderer(level, palette)
-    private val boardRect = RectF()
 
-    private var aim = DragAim(maxDrag = 1.0)
-    private var grabRadius = 1.0
+    private var aim = FlickAim(maxStroke = 1.0, restDistance = 1.0)
 
-    /** Radius of the launch zone on screen, in pixels. */
-    private var zoneRadius = 1f
-
-    /** How far the drawn ball leans towards the finger while held, and the lean it launched with. */
-    private var leanX = 0f
-    private var leanY = 0f
-    private var launchLeanX = 0f
-    private var launchLeanY = 0f
-    private var sinceLaunch = 0f
+    /** Where the ball was when the finger went down; it follows the finger from there. */
+    private var holdX = 0.0
+    private var holdY = 0.0
+    private var throwPower = 0.0
     private var shotsFired = 0
     private val hint: String? = level.hintFor(kit.text.language)
     private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
@@ -74,18 +75,30 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** Seconds since the attempt was won or lost. */
     private var endTime = 0f
     private val ripples = ArrayList<Ripple>()
-    private val particles = ArrayList<Particle>()
-    private val shape = Path()
+    private val sparks = ArrayList<Spark>()
+    private val random = Random(index)
+    private val star = Path()
     private val hintBox = RectF()
 
     /** The ball breaking, when the attempt ended by running out of bounces. */
     private var shatter: BallShatter? = null
 
+    // The winning swirl: where the ball entered the ring (relative to its centre) and which way it turns.
+    private var swirlRadius = 0f
+    private var swirlAngle = 0f
+    private var swirlTurn = 1f
+    private var trailTimer = 0f
+    private var settled = false
+
     private class Ripple(val x: Double, val y: Double) {
         var age = 0f
     }
 
-    private class Particle(var x: Float, var y: Float, val vx: Float, val vy: Float, val spin: Float, val color: Int) {
+    /** A spark: a short glowing streak flying outwards, or ([twinkle]) a small four-pointed star in place. */
+    private class Spark(
+        var x: Float, var y: Float, var vx: Float, var vy: Float,
+        val life: Float, val size: Float, val color: Int, val twinkle: Boolean = false,
+    ) {
         var age = 0f
     }
 
@@ -105,6 +118,8 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         host.app.progress.lastPlayedIndex = index
     }
 
+    override fun onExit() = board.release()
+
     // ---------------------------------------------------------------- layout
 
     override fun onLayout() {
@@ -118,20 +133,16 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val scale = min(width / lw, height / lh)
         val left = (width - lw * scale) / 2
         val top = (height - lh * scale) / 2
-        board.layout(scale, left, top)
-        boardRect.set(left, top, left + lw * scale, top + lh * scale)
+        board.layout(scale, left, top, width.toInt(), height.toInt())
 
         val button = kit.u(48f)
         levelsButton.setCenter(safe.right - kit.u(8f) - button / 2, topBarY, button, button)
         restartButton.setCenter(safe.right - kit.u(12f) - button * 1.5f, topBarY, button, button)
 
-        // Aiming is sized in screen terms so it feels the same on every device. The launch zone
-        // reaches well past the ball's edge, so it is easy to catch with a thumb, and a touch a
-        // little outside its ring still counts.
-        zoneRadius = max(board.ballScreenRadius * 1.9f, kit.u(46f))
-        grabRadius = ((zoneRadius + kit.u(6f)) / scale).toDouble()
-        aim = DragAim(
-            maxDrag = (kit.u(MAX_DRAG) / scale).toDouble(),
+        // Throwing is sized in screen terms so it feels the same on every device.
+        aim = FlickAim(
+            maxStroke = (kit.u(MAX_STROKE) / scale).toDouble(),
+            restDistance = (kit.u(REST_DISTANCE) / scale).toDouble(),
             flickStart = (kit.u(FLICK_START) / scale).toDouble(),
             flickFull = (kit.u(FLICK_FULL) / scale).toDouble(),
             flickBoost = FLICK_BOOST,
@@ -150,54 +161,53 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     // ---------------------------------------------------------------- simulation & feedback
 
     override fun update(dt: Float) {
-        if (session.state == GameSession.State.MOVING) sinceLaunch += dt
         session.advance(dt.toDouble())
+        host.rolling(if (session.state == GameSession.State.MOVING) (session.ball.speed / level.maxSpeed).toFloat() else 0f)
         if (ended) endTime += dt
         ripples.forEach { it.age += dt }
         ripples.removeAll { it.age > RIPPLE_LIFE }
-        for (p in particles) {
-            p.age += dt
-            p.x += p.vx * dt
-            p.y += p.vy * dt
+        if (session.state == GameSession.State.WON) updateSwirl(dt)
+        val drag = exp(-2.5f * dt)
+        for (s in sparks) {
+            s.age += dt
+            s.x += s.vx * dt
+            s.y += s.vy * dt
+            s.vx *= drag
+            s.vy *= drag
         }
-        particles.removeAll { it.age > PARTICLE_LIFE }
+        sparks.removeAll { it.age > it.life }
     }
 
     override val isAnimating: Boolean
-        get() = session.state == GameSession.State.MOVING || ripples.isNotEmpty() || particles.isNotEmpty() ||
+        get() = session.state == GameSession.State.MOVING || ripples.isNotEmpty() || sparks.isNotEmpty() ||
             (ended && overlayProgress < 1f)
 
     override fun onLaunch() {
         shotsFired++
-        sinceLaunch = 0f
-        launchLeanX = leanX
-        launchLeanY = leanY
-        leanX = 0f
-        leanY = 0f
         host.haptic(Haptic.CLICK)
+        host.sound(Sound.LAUNCH, throwPower)
     }
 
     override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) {
         ripples += Ripple(impact.x, impact.y)
         host.haptic(Haptic.BOUNCE)
-        host.sound(Sound.IMPACT, impact.strength)
+        host.sound(Sound.IMPACT, impact.strength, step = session.bouncesUsed - 1)
     }
 
     override fun onWin(x: Double, y: Double) {
         arrangeResultButtons()
         host.app.progress.markCompleted(index)
         host.haptic(Haptic.SUCCESS)
-        val gx = board.x(level.goal.x)
-        val gy = board.y(level.goal.y)
-        val colors = intArrayOf(palette.accent, palette.primary)
-        for (i in 0 until 16) {
-            val a = i / 16.0 * Math.PI * 2 + (i % 3) * 0.3
-            val speed = kit.u(70f + (i * 37 % 60))
-            particles += Particle(
-                gx, gy, (cos(a) * speed).toFloat(), (sin(a) * speed).toFloat(),
-                if (i % 2 == 0) 4f else -3f, colors[i % colors.size],
-            )
-        }
+        host.sound(Sound.WIN)
+        // The ball enters the ring where it crossed it and keeps turning the way it was going.
+        val dx = board.x(x) - board.x(level.goal.x)
+        val dy = board.y(y) - board.y(level.goal.y)
+        swirlRadius = hypot(dx, dy)
+        swirlAngle = atan2(dy, dx)
+        val turn = dx * session.ball.dirY.toFloat() - dy * session.ball.dirX.toFloat()
+        swirlTurn = if (turn < 0f) -1f else 1f
+        settled = false
+        burst(count = 20, fromRing = true)
     }
 
     override fun onFail(reason: GameSession.FailReason, x: Double, y: Double) {
@@ -215,12 +225,65 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         session.restart()
         aim.cancel()
         endTime = 0f
-        leanX = 0f
-        leanY = 0f
         shatter = null
         ripples.clear()
-        particles.clear()
+        sparks.clear()
     }
+
+    // ---------------------------------------------------------------- the winning swirl
+
+    /** Where the swirling ball is at [t] seconds after scoring, relative to the goal's centre, and its size. */
+    private fun swirl(t: Float): Triple<Float, Float, Float> {
+        val p = (t / SWIRL_TIME).coerceIn(0f, 1f)
+        val r = swirlRadius * (1f - p).pow(1.3f)
+        val a = swirlAngle + swirlTurn * SWIRL_TURNS * 2f * PI.toFloat() * (1f - (1f - p) * (1f - p))
+        val size = 1f - 0.28f * (1f - (1f - p) * (1f - p))
+        return Triple(cos(a) * r, sin(a) * r, size)
+    }
+
+    private fun updateSwirl(dt: Float) {
+        val gx = board.x(level.goal.x)
+        val gy = board.y(level.goal.y)
+        if (endTime < SWIRL_TIME) {
+            // A trail of small sparkles behind the circling ball.
+            trailTimer += dt
+            while (trailTimer > 0.04f) {
+                trailTimer -= 0.04f
+                val (bx, by) = swirl(endTime)
+                val a = random.nextFloat() * 2f * PI.toFloat()
+                val speed = kit.u(15f + 30f * random.nextFloat())
+                sparks += Spark(gx + bx, gy + by, cos(a) * speed, sin(a) * speed, 0.35f + 0.2f * random.nextFloat(), kit.u(1.8f), sparkColor())
+            }
+        } else if (!settled) {
+            // Settled in the centre: a last bright burst and a few twinkles round the ring.
+            settled = true
+            burst(count = 16, fromRing = false)
+            val r = level.goalRadius.toFloat() * board.scale
+            repeat(6) {
+                val a = random.nextFloat() * 2f * PI.toFloat()
+                val d = r * (0.9f + 0.5f * random.nextFloat())
+                sparks += Spark(gx + cos(a) * d, gy + sin(a) * d, 0f, 0f, 0.5f + 0.25f * random.nextFloat(), kit.u(5f + 3f * random.nextFloat()), Palette.TEXT, twinkle = true)
+            }
+        }
+    }
+
+    /** Sparks flying out: from all round the ring, or from the centre. */
+    private fun burst(count: Int, fromRing: Boolean) {
+        val gx = board.x(level.goal.x)
+        val gy = board.y(level.goal.y)
+        val r = level.goalRadius.toFloat() * board.scale
+        repeat(count) { i ->
+            val a = (i + random.nextFloat()) / count * 2f * PI.toFloat()
+            val start = if (fromRing) r * 0.95f else r * 0.3f
+            val speed = kit.u(if (fromRing) 90f + 130f * random.nextFloat() else 60f + 90f * random.nextFloat())
+            // A little sideways in the swirl's direction, so the sparks spin off the ring.
+            val vx = cos(a) - swirlTurn * sin(a) * 0.35f
+            val vy = sin(a) + swirlTurn * cos(a) * 0.35f
+            sparks += Spark(gx + cos(a) * start, gy + sin(a) * start, vx * speed, vy * speed, 0.45f + 0.35f * random.nextFloat(), kit.u(2.4f), sparkColor())
+        }
+    }
+
+    private fun sparkColor(): Int = if (random.nextFloat() < 0.55f) palette.accent else Palette.TEXT
 
     // ---------------------------------------------------------------- input
 
@@ -229,59 +292,49 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         if (!aim.isActive && routeToButtons(e, hudButtons)) return true
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                if (session.state == GameSession.State.AIMING &&
-                    aim.tryBegin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, grabRadius, seconds(e))
-                ) {
-                    updateLean()
+                if (session.state == GameSession.State.AIMING && inLaunchZone(e.x, e.y)) {
+                    holdX = session.ball.x
+                    holdY = session.ball.y
+                    aim.begin(board.worldX(e.x), board.worldY(e.y), seconds(e))
                     return true
                 }
             }
             MotionEvent.ACTION_MOVE -> if (aim.isActive) {
-                // Every point the finger passed through, so a flick's speed is measured faithfully.
+                // Every point the finger passed through, so a stroke is measured faithfully.
                 for (h in 0 until e.historySize) {
-                    aim.drag(board.worldX(e.getHistoricalX(h)), board.worldY(e.getHistoricalY(h)), e.getHistoricalEventTime(h) / 1000.0)
+                    aim.move(board.worldX(e.getHistoricalX(h)), board.worldY(e.getHistoricalY(h)), e.getHistoricalEventTime(h) / 1000.0)
                 }
-                aim.drag(board.worldX(e.x), board.worldY(e.y), seconds(e))
-                updateLean()
+                aim.move(board.worldX(e.x), board.worldY(e.y), seconds(e))
+                session.placeBall(holdX + aim.offsetX, holdY + aim.offsetY)
                 return true
             }
             MotionEvent.ACTION_UP -> if (aim.isActive) {
-                aim.drag(board.worldX(e.x), board.worldY(e.y), seconds(e))
-                updateLean()
-                if (!aim.release(session, time = seconds(e))) {
-                    leanX = 0f
-                    leanY = 0f
+                val thrown = aim.release(board.worldX(e.x), board.worldY(e.y), seconds(e))
+                session.placeBall(holdX + aim.offsetX, holdY + aim.offsetY)
+                if (thrown != null) {
+                    throwPower = thrown.power
+                    session.launch(thrown.dirX, thrown.dirY, thrown.power)
                 }
                 return true
             }
-            MotionEvent.ACTION_CANCEL -> {
-                aim.cancel()
-                leanX = 0f
-                leanY = 0f
-            }
+            MotionEvent.ACTION_CANCEL -> aim.cancel()
         }
         return false
     }
 
+    /** The ball can be picked up anywhere in its launch zone, or anywhere on (and just around) it. */
+    private fun inLaunchZone(sx: Float, sy: Float): Boolean {
+        val zone = hypot(sx - board.x(level.ball.x), sy - board.y(level.ball.y)) <= board.zoneScreenRadius + kit.u(12f)
+        val onBall = hypot(sx - board.x(session.ball.x), sy - board.y(session.ball.y)) <= max(board.ballScreenRadius * 1.6f, kit.u(34f))
+        return zone || onBall
+    }
+
     override fun onBack(): Boolean {
-        if (aim.isActive) {
-            aim.cancel()
-            leanX = 0f
-            leanY = 0f
-        } else {
-            host.showLevels(index)
-        }
+        if (aim.isActive) aim.cancel() else host.showLevels(index)
         return true
     }
 
     private fun seconds(e: MotionEvent): Double = e.eventTime / 1000.0
-
-    /** The held ball follows the finger a little, to show it is being dragged (never an arrow). */
-    private fun updateLean() {
-        val lean = min(aim.dragLength.toFloat() * board.scale * 0.2f, board.ballScreenRadius * 0.3f)
-        leanX = aim.dirX.toFloat() * lean
-        leanY = aim.dirY.toFloat() * lean
-    }
 
     private fun overlayButtons(): List<UiButton> = when {
         session.state == GameSession.State.FAILED -> listOf(retryButton, menuButton)
@@ -292,8 +345,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     // ---------------------------------------------------------------- drawing
 
     override fun draw(canvas: Canvas) {
-        drawOutside(canvas)
-        board.drawGeometry(canvas)
+        board.drawBackdrop(canvas)
 
         val trail = Palette.withAlpha(palette.accent, 0.35f)
         val ghost = session.lastShotPath
@@ -307,34 +359,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             board.drawShotPath(canvas, session.path, Float.NaN, Float.NaN, trail, dashed = false)
         }
 
-        val scoring = session.state == GameSession.State.WON && endTime < GOAL_PULSE
-        board.drawGoal(canvas, if (scoring) endTime / GOAL_PULSE else 0f)
-        drawRipples(canvas)
+        val pulse = if (session.state == GameSession.State.WON && endTime >= SWIRL_TIME) (endTime - SWIRL_TIME) / GOAL_PULSE else 0f
+        board.drawGoal(canvas, if (pulse in 0f..1f) pulse else 0f)
         if (session.state == GameSession.State.AIMING) {
-            board.drawLaunchZone(
-                canvas, ballX, ballY, zoneRadius, kit.unit,
-                active = aim.isActive, power = aim.power.toFloat(), ready = aim.isShotReady,
-            )
+            board.drawLaunchZone(canvas, kit.unit, active = aim.isActive, power = aim.power.toFloat(), ready = aim.isThrowReady)
         }
+        drawRipples(canvas)
         drawBall(canvas, ballX, ballY)
-        drawParticles(canvas)
+        drawSparks(canvas)
         drawHud(canvas)
 
         val overlay = overlayProgress
         if (overlay > 0f) drawResult(canvas, overlay)
-    }
-
-    /**
-     * On screens shaped differently from the level, the space outside it is a slightly deeper
-     * shade, so the player can see where the invisible edges are. On a 9:20 phone there is none.
-     */
-    private fun drawOutside(canvas: Canvas) {
-        if (boardRect.width() >= width - 1f && boardRect.height() >= height - 1f) return
-        kit.fill.color = palette.void
-        canvas.drawRect(0f, 0f, width, boardRect.top, kit.fill)
-        canvas.drawRect(0f, boardRect.bottom, width, height, kit.fill)
-        canvas.drawRect(0f, boardRect.top, boardRect.left, boardRect.bottom, kit.fill)
-        canvas.drawRect(boardRect.right, boardRect.top, width, boardRect.bottom, kit.fill)
     }
 
     private fun drawBall(canvas: Canvas, x: Float, y: Float) {
@@ -343,12 +379,8 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val style = if (left == 0) BallStyle.CRACKED else BallStyle.SOLID
         when (session.state) {
             GameSession.State.WON -> {
-                // Glide into the centre of the goal and settle.
-                val t = (endTime / 0.3f).coerceIn(0f, 1f)
-                val ease = 1f - (1f - t) * (1f - t)
-                val gx = board.x(level.goal.x)
-                val gy = board.y(level.goal.y)
-                board.drawBall(canvas, x + (gx - x) * ease, y + (gy - y) * ease, 1f - 0.3f * ease, BallStyle.SOLID, left)
+                val (sx, sy, size) = swirl(endTime)
+                board.drawBall(canvas, board.x(level.goal.x) + sx, board.y(level.goal.y) + sy, size, BallStyle.SOLID, left)
             }
             GameSession.State.FAILED -> {
                 val broken = shatter
@@ -360,12 +392,9 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                     board.drawBall(canvas, x + shake, y, 1f, BallStyle.HOLLOW, left)
                 }
             }
-            GameSession.State.MOVING -> {
-                // The lean the ball was let go with melts into its flight.
-                val k = max(0f, 1f - sinceLaunch / LEAN_SETTLE)
-                board.drawBall(canvas, x + launchLeanX * k, y + launchLeanY * k, 1f, style, left)
-            }
-            GameSession.State.AIMING -> board.drawBall(canvas, x + leanX, y + leanY, 1f, style, left)
+            GameSession.State.MOVING -> board.drawBall(canvas, x, y, 1f, style, left)
+            // Held, the ball is lifted a touch.
+            GameSession.State.AIMING -> board.drawBall(canvas, x, y, if (aim.isActive) 1.06f else 1f, style, left)
         }
     }
 
@@ -379,21 +408,30 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         }
     }
 
-    private fun drawParticles(canvas: Canvas) {
-        val s = kit.u(5f)
-        for (p in particles) {
-            val t = p.age / PARTICLE_LIFE
-            val a = p.age * p.spin
-            kit.fill.color = Palette.withAlpha(p.color, 1f - t)
-            shape.reset()
-            for (k in 0..2) {
-                val ang = a + k * 2.094f
-                val px = p.x + cos(ang) * s
-                val py = p.y + sin(ang) * s
-                if (k == 0) shape.moveTo(px, py) else shape.lineTo(px, py)
+    private fun drawSparks(canvas: Canvas) {
+        for (s in sparks) {
+            val t = s.age / s.life
+            if (s.twinkle) {
+                // Grows in, shines, and fades: a four-pointed star.
+                val k = sin(t * PI.toFloat())
+                val r = s.size * k
+                kit.fill.color = Palette.withAlpha(s.color, 0.9f * k)
+                star.reset()
+                for (i in 0 until 8) {
+                    val a = i * PI.toFloat() / 4
+                    val d = if (i % 2 == 0) r else r * 0.28f
+                    val px = s.x + cos(a) * d
+                    val py = s.y + sin(a) * d
+                    if (i == 0) star.moveTo(px, py) else star.lineTo(px, py)
+                }
+                star.close()
+                canvas.drawPath(star, kit.fill)
+            } else {
+                // A short bright streak along its flight, fading out.
+                kit.stroke.color = Palette.withAlpha(s.color, 1f - t)
+                kit.stroke.strokeWidth = s.size * (1f - 0.5f * t)
+                canvas.drawLine(s.x, s.y, s.x - s.vx * 0.06f, s.y - s.vy * 0.06f, kit.stroke)
             }
-            shape.close()
-            canvas.drawPath(shape, kit.fill)
         }
     }
 
@@ -465,7 +503,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     private companion object {
-        const val WIN_OVERLAY_DELAY = 0.65f
+        /** The swirl into the ring, then a moment to enjoy it, before the result appears. */
+        const val SWIRL_TIME = 0.95f
+        const val SWIRL_TURNS = 1.6f
+        const val WIN_OVERLAY_DELAY = 1.45f
         const val FAIL_OVERLAY_DELAY = 0.5f
 
         /** Long enough to watch the ball break before the result appears. */
@@ -473,11 +514,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         const val OVERLAY_FADE = 0.2f
         const val GOAL_PULSE = 0.6f
         const val RIPPLE_LIFE = 0.45f
-        const val PARTICLE_LIFE = 0.9f
-        const val LEAN_SETTLE = 0.08f
 
-        /** Drag length for a full-power shot, in UI units. */
-        const val MAX_DRAG = 120f
+        /** Stroke length for a full-power throw, in UI units. */
+        const val MAX_STROKE = 110f
+
+        /** A finger moving less than this (UI units) for a moment is resting. */
+        const val REST_DISTANCE = 3f
 
         /** Finger speeds at release (UI units per second) where a flick starts and stops adding power. */
         const val FLICK_START = 900f

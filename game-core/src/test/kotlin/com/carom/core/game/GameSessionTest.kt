@@ -10,13 +10,13 @@ import org.junit.Test
 class GameSessionTest {
 
     /** A 1000×600 box; ball on the left, goal on the right, a wall between them. */
-    private fun level(bounces: Int, friction: Double = 0.0, extra: String = "") = LevelParser.parse(
+    private fun level(bounces: Int, friction: Double = 0.0, extra: String = "", zone: Double = 130.0) = LevelParser.parse(
         "test",
         """
         {
-          "size": [1000, 600], "bounces": $bounces, "friction": $friction,
+          "size": [1000, 600], "bounces": $bounces, "friction": $friction, "launchZone": $zone,
           "ball": [100, 300], "goal": [900, 300],
-          "obstacles": [ {"type": "wall", "points": [500, 150, 500, 450]} $extra ]
+          "obstacles": [ {"type": "wall", "points": [500, 200, 500, 450]} $extra ]
         }
         """,
     )
@@ -181,60 +181,96 @@ class GameSessionTest {
         assertNull(head.lastImpact)
     }
 
+    /** Feeds a straight finger movement from (x0, y0) to (x1, y1) over [seconds], 60 samples a second. */
+    private fun FlickAim.stroke(x0: Double, y0: Double, x1: Double, y1: Double, t0: Double, seconds: Double) {
+        val n = (seconds * 60).toInt().coerceAtLeast(1)
+        for (i in 1..n) move(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, t0 + seconds * i / n)
+    }
+
     @Test
-    fun theBallFliesTheWayItIsDraggedWithPowerFromTheDistance() {
-        val aim = DragAim(maxDrag = 200.0)
-        assertFalse(aim.tryBegin(500.0, 500.0, ballX = 100.0, ballY = 300.0, grabRadius = 60.0))
-        assertTrue(aim.tryBegin(120.0, 310.0, ballX = 100.0, ballY = 300.0, grabRadius = 60.0))
-        aim.drag(220.0, 310.0) // dragged 100 units to the right
+    fun aStrokeThrowsTheBallItsWayWithPowerFromItsLength() {
+        val right = FlickAim(maxStroke = 200.0, restDistance = 4.0)
+        right.begin(100.0, 300.0, 0.0)
+        right.stroke(100.0, 300.0, 200.0, 300.0, 0.0, 0.1) // 100 units to the right
+        assertEquals(0.5, right.power, 1e-9)
+        val t = right.release(200.0, 300.0, 0.11)!!
+        assertEquals(1.0, t.dirX, 1e-9)
+        assertEquals(0.0, t.dirY, 1e-9)
+        assertEquals(0.5, t.power, 1e-9)
+
+        val up = FlickAim(maxStroke = 200.0, restDistance = 4.0)
+        up.begin(100.0, 300.0, 0.0)
+        up.stroke(100.0, 300.0, 100.0, -300.0, 0.0, 0.2) // far upwards: full power, capped
+        val u = up.release(100.0, -300.0, 0.21)!!
+        assertEquals(-1.0, u.dirY, 1e-9)
+        assertEquals(1.0, u.power, 1e-9)
+    }
+
+    @Test
+    fun movingTheBallIntoPlaceThenSwipingThrowsAlongTheSwipeOnly() {
+        val aim = FlickAim(maxStroke = 200.0, restDistance = 4.0)
+        aim.begin(100.0, 300.0, 0.0)
+        aim.stroke(100.0, 300.0, 180.0, 300.0, 0.0, 0.2) // carry the ball to the right...
+        aim.move(180.0, 300.0, 0.5) // ...and hold it there
+        assertEquals(80.0, aim.offsetX, 1e-9) // the ball follows the finger
+        aim.stroke(180.0, 300.0, 180.0, 200.0, 0.5, 0.1) // then swipe up
+        val t = aim.release(180.0, 200.0, 0.61)!!
+        assertEquals(0.0, t.dirX, 1e-9)
+        assertEquals(-1.0, t.dirY, 1e-9)
+        assertEquals(0.5, t.power, 1e-9)
+    }
+
+    @Test
+    fun turningBackStartsANewStroke() {
+        val aim = FlickAim(maxStroke = 200.0, restDistance = 4.0)
+        aim.begin(100.0, 300.0, 0.0)
+        aim.stroke(100.0, 300.0, 250.0, 300.0, 0.0, 0.15)
+        aim.stroke(250.0, 300.0, 150.0, 300.0, 0.15, 0.1)
+        val t = aim.release(150.0, 300.0, 0.26)!!
+        assertEquals(-1.0, t.dirX, 1e-9)
+        assertEquals(0.5, t.power, 1e-6)
+    }
+
+    @Test
+    fun lettingGoOfAHeldBallOrATinyNudgeThrowsNothing() {
+        val held = FlickAim(maxStroke = 200.0, restDistance = 4.0)
+        held.begin(100.0, 300.0, 0.0)
+        held.stroke(100.0, 300.0, 200.0, 300.0, 0.0, 0.1)
+        assertNull(held.release(200.0, 300.0, 0.6)) // rested, then lifted: the ball just stays put
+
+        val nudge = FlickAim(maxStroke = 200.0, restDistance = 4.0)
+        nudge.begin(100.0, 300.0, 0.0)
+        nudge.stroke(100.0, 300.0, 110.0, 300.0, 0.0, 0.05)
+        assertFalse(nudge.isThrowReady)
+        assertNull(nudge.release(110.0, 300.0, 0.06))
+    }
+
+    @Test
+    fun aQuickFlickAddsPower() {
+        val aim = FlickAim(maxStroke = 200.0, restDistance = 4.0, flickStart = 500.0, flickFull = 1500.0, flickBoost = 0.25)
+        aim.begin(100.0, 300.0, 0.0)
+        aim.move(150.0, 300.0, 0.025)
+        aim.move(200.0, 300.0, 0.05) // 100 units in 50 ms: 2000 units/s
         assertEquals(0.5, aim.power, 1e-9)
-        assertEquals(1.0, aim.dirX, 1e-9)
-        assertEquals(0.0, aim.dirY, 1e-9)
-        aim.drag(900.0, 310.0) // beyond the full-power distance: power is capped
-        assertEquals(1.0, aim.power, 1e-9)
-
-        val s = GameSession(level(bounces = 1))
-        assertTrue(aim.release(s))
-        assertEquals(GameSession.State.MOVING, s.state)
-        assertEquals(1.0, s.ball.dirX, 1e-9) // right, like the drag
-
-        val up = DragAim(maxDrag = 200.0)
-        up.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0)
-        up.drag(100.0, 150.0) // dragged up (y points down)
-        val s2 = GameSession(level(bounces = 1))
-        assertTrue(up.release(s2))
-        assertEquals(-1.0, s2.ball.dirY, 1e-9)
-        assertEquals(s2.level.maxSpeed * Math.sqrt(0.75), s2.ball.speed, 1e-9)
+        assertEquals(0.75, aim.release(200.0, 300.0, 0.05)!!.power, 1e-9)
     }
 
     @Test
-    fun aQuickFlickAddsPowerButACarefulReleaseDoesNot() {
-        fun aim() = DragAim(maxDrag = 200.0, flickStart = 500.0, flickFull = 1500.0, flickBoost = 0.25)
-
-        val flick = aim()
-        flick.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0, time = 0.0)
-        flick.drag(150.0, 300.0, time = 0.025)
-        flick.drag(200.0, 300.0, time = 0.05) // 100 units in 50 ms: 2000 units/s
-        assertEquals(0.5, flick.power, 1e-9)
-        assertEquals(0.75, flick.launchPower(0.05), 1e-9)
-
-        val careful = aim()
-        careful.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0, time = 0.0)
-        careful.drag(150.0, 300.0, time = 0.025)
-        careful.drag(200.0, 300.0, time = 0.05)
+    fun theBallCanBeMovedAroundItsLaunchZoneButNotThroughWalls() {
         val s = GameSession(level(bounces = 1))
-        assertTrue(careful.release(s, 200.0, 300.0, time = 0.6)) // held still, then let go
-        assertEquals(s.level.maxSpeed * Math.sqrt(0.5), s.ball.speed, 1e-9)
-    }
+        assertTrue(s.placeBall(100.0, 0.0)) // straight up, 300 away: stops at the zone's edge
+        assertEquals(100.0, s.ball.x, 1e-9)
+        assertEquals(300.0 - s.level.launchZone, s.ball.y, 1e-9)
+        s.launch(1.0, 0.0, 1.0)
+        assertEquals(300.0 - s.level.launchZone, s.path[0].y, 1e-9) // the shot starts where the ball was put
+        assertFalse(s.placeBall(100.0, 300.0)) // not while it is flying
+        s.restart()
+        assertEquals(300.0, s.ball.y, 1e-9) // a restart brings it back to the start
 
-    @Test
-    fun tinyDragIsACancelNotAShot() {
-        val aim = DragAim(maxDrag = 200.0)
-        aim.tryBegin(100.0, 300.0, 100.0, 300.0, 50.0)
-        aim.drag(105.0, 300.0)
-        assertFalse(aim.isShotReady)
-        val s = GameSession(level(bounces = 1))
-        assertFalse(aim.release(s))
-        assertEquals(GameSession.State.AIMING, s.state)
+        val wide = GameSession(level(bounces = 1, zone = 600.0))
+        wide.placeBall(900.0, 300.0) // towards the middle wall: stops against it, never through it
+        val face = 500.0 - wide.level.wallThickness / 2 - wide.level.ballRadius
+        assertEquals(face, wide.ball.x, 1e-3)
+        assertTrue(wide.ball.x <= face)
     }
 }
