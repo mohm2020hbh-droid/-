@@ -364,7 +364,7 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     /** Radius of the ball on screen, in pixels. */
     val ballScreenRadius: Float get() = level.ballRadius.toFloat() * scale
 
-    /** Radius of the launch zone on screen: everywhere the ball itself can reach while being held. */
+    /** Radius of the (invisible) control zone on screen: everywhere the ball itself can reach while being held. */
     val zoneScreenRadius: Float get() = ((level.launchZone + level.ballRadius) * 1.0).toFloat() * scale
 
     /**
@@ -420,40 +420,6 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
                 sx + BallCracks.innerX[i] * r, sy + BallCracks.innerY[i] * r, linePaint,
             )
         }
-    }
-
-    private var zoneDash: DashPathEffect? = null
-    private var zoneDashUnit = 0f
-
-    /**
-     * The control zone: everywhere the ball can be moved to before a throw, marked by a dashed line round it and a very
-     * faint fill. A picture only: it is not a wall and stops nothing. The dashes are evenly spaced all the way round
-     * the circle, and the line brightens while the ball is being held.
-     */
-    fun drawControlZone(canvas: Canvas, unit: Float, active: Boolean) {
-        val cx = x(level.ball.x)
-        val cy = y(level.ball.y)
-        val radius = zoneScreenRadius
-        canvas.save()
-        canvas.translate(cx, cy)
-        zonePaint.alpha = 140
-        canvas.drawCircle(0f, 0f, radius, zonePaint)
-        zonePaint.alpha = 255
-        canvas.restore()
-        if (zoneDash == null || zoneDashUnit != unit) {
-            // A whole number of dash + gap pairs round the circle.
-            val circumference = 2f * Math.PI.toFloat() * radius
-            val pairs = max(8, Math.round(circumference / (14f * unit)))
-            val part = circumference / (2f * pairs)
-            zoneDash = DashPathEffect(floatArrayOf(part, part), 0f)
-            zoneDashUnit = unit
-        }
-        linePaint.shader = null
-        linePaint.pathEffect = zoneDash
-        linePaint.color = Palette.withAlpha(palette.accent, if (active) 0.75f else 0.5f)
-        linePaint.strokeWidth = 2f * unit
-        canvas.drawCircle(cx, cy, radius, linePaint)
-        linePaint.pathEffect = null
     }
 
     /**

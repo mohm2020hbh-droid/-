@@ -41,7 +41,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         private set
 
     private var screen: Screen = HomeScreen(this)
-    private val soundFx = SoundFx()
+    private val soundFx = SoundFx { context.assets.open("sounds/launch_sfx_heartbeat_soft.wav").use { it.readBytes() } }
     private val music = MusicPlayer()
     private val vibrator: Vibrator? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

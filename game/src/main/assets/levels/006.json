@@ -3,7 +3,7 @@
   "bounces": 1,
   "ball": [450, 1650],
   "goal": [450, 350],
-  "launchZone": 90,
+  "launchZone": 140,
   "obstacles": [
     {"type": "wall", "points": [236, 0, 236, 2000]},
     {"type": "wall", "points": [650, 0, 650, 2000]},

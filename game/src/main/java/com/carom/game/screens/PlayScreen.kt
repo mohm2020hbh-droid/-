@@ -43,9 +43,9 @@ import kotlin.random.Random
  * Owns the [GameSession] (rules), the touch input and everything drawn on top of the board. The
  * bounces left are shown inside the ball itself.
  *
- * - Throwing: hold the ball and move it about the dashed control zone (it follows the finger); pull the finger
- *   away from it, out past the zone's edge or with a hard stroke, and a ring round the ball fills with the pull's
- *   power like a dial; let go and the ball is thrown the way it was pulled, and from then on it is physics, never
+ * - Throwing: hold the ball and move it about its control zone (it follows the finger). The zone is not drawn:
+ *   no edge, no ring, no power dial, no arrow. Pull the finger away from the ball, out past the zone's edge or with
+ *   a hard stroke, and let go: the ball is thrown the way it was pulled, and from then on it is physics, never
  *   following the finger again. Moving the ball gently, however far, never throws it. (The reference swipe control is
  *   still there, chosen by [GameTuning.controlMode]; a ball in a touch zone is always pushed by a swipe.)
  * - A wall hit is felt: a hard knock, a short screen shake and a light tap of the vibration motor,
@@ -730,24 +730,17 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     /**
-     * What shows where the player can act. Before the throw: the dashed control zone (a picture only, it stops
-     * nothing) and a ring round the ball, which fills like a clock with the pull's power once the finger has pulled
-     * away. A ball in a touch zone wears the ring too, for its swipe.
+     * What shows where the player can act. Before the throw with the hold control: nothing (the control zone exists only
+     * in the rules). With the swipe control the ball wears a ring that fills with the swipe's power; a ball in a touch
+     * zone wears it too, for its swipe.
      */
     private fun drawAimingAids(canvas: Canvas) {
+        val dialPower = if (swipeActive) swipe.power.toFloat() else 0f
         if (session.state == GameSession.State.AIMING && respawnTime < 0f) {
-            if (tuning.controlMode == GameTuning.ControlMode.HOLD) {
-                board.drawControlZone(canvas, kit.unit, active = pull.isActive)
-                board.drawSwipeDial(
-                    canvas, board.x(session.renderX), board.y(session.renderY), kit.unit,
-                    pull.isActive, pull.power.toFloat(), pull.isThrowReady,
-                )
-            } else {
-                val dialPower = if (swipeActive) swipe.power.toFloat() else 0f
+            if (tuning.controlMode == GameTuning.ControlMode.SWIPE) {
                 board.drawSwipeDial(canvas, board.x(session.renderX), board.y(session.renderY), kit.unit, swipeActive, dialPower, swipe.isSwipe)
             }
         } else if (session.state == GameSession.State.MOVING) {
-            val dialPower = if (swipeActive) swipe.power.toFloat() else 0f
             for (b in session.balls) {
                 if (!b.alive || !b.inTouchZone) continue
                 board.drawSwipeDial(canvas, board.x(session.renderX(b)), board.y(session.renderY(b)), kit.unit, swipeActive, dialPower, swipe.isSwipe, 0.8f)

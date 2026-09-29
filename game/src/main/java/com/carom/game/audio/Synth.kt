@@ -143,61 +143,6 @@ object Synth {
     }
 
     /**
-     * The throw: a soft, clean whoosh that swells and settles (no sharp attack), a rounded "bwup" of an elastic letting
-     * go (its pitch rises a little, it never falls like a punch) and a faint mechanical tick at the moment of release.
-     * Three layers, each set to the same loudness first and then mixed, so nothing in it is a crack or a bang.
-     */
-    fun launch(): ShortArray {
-        val length = 0.5
-        val whoosh = FloatArray(seconds(length))
-        val rnd = Random(5)
-        val air = Svf()
-        val soften = Svf()
-        for (i in 0 until seconds(0.44)) {
-            val t = i.toDouble() / SAMPLE_RATE
-            val rise = min(1.0, t / 0.22)
-            val centre = if (t < 0.22) 420.0 + (1500.0 - 420.0) * rise * rise * (3 - 2 * rise) else 1500.0 - 450.0 * min(1.0, (t - 0.22) / 0.22)
-            val swell = sin(PI / 2 * min(1.0, t / 0.09)).pow(2.0)
-            val env = swell * exp(-max(0.0, t - 0.1) / 0.11)
-            whoosh[i] = (env * soften.lowpass(air.bandpass(rnd.nextDouble(-1.0, 1.0), centre, q = 0.9), 3200.0, q = 0.7)).toFloat()
-        }
-
-        val bwup = FloatArray(seconds(length))
-        var phase = 0.0
-        for (i in 0 until seconds(0.24)) {
-            val t = i.toDouble() / SAMPLE_RATE
-            val freq = 210.0 - 90.0 * exp(-t / 0.03) // 120 Hz rising to 210
-            phase += 2 * PI * freq / SAMPLE_RATE
-            val rise = min(1.0, t / 0.014)
-            val env = rise * rise * (3 - 2 * rise) * exp(-t / 0.055)
-            bwup[i] = (env * (sin(phase) + 0.3 * sin(2 * phase))).toFloat()
-        }
-
-        val tick = FloatArray(seconds(length))
-        val click = Svf()
-        for (i in 0 until seconds(0.03)) {
-            val t = i.toDouble() / SAMPLE_RATE
-            val env = min(1.0, t / 0.0015) * exp(-t / 0.004)
-            tick[i] = (env * (click.bandpass(rnd.nextDouble(-1.0, 1.0), 2200.0, q = 2.0) + 0.5 * sin(2 * PI * 1800.0 * t))).toFloat()
-        }
-
-        val out = FloatArray(seconds(length))
-        mixLayer(out, whoosh, 0.62)
-        mixLayer(out, bwup, 0.38)
-        mixLayer(out, tick, 0.1)
-        reverb(out, mix = 0.06)
-        return finish(out, peak = 0.75)
-    }
-
-    /** Adds [layer] to [out], first scaled so its loudest sample is [gain]. */
-    private fun mixLayer(out: FloatArray, layer: FloatArray, gain: Double) {
-        var loudest = 1e-6f
-        for (v in layer) loudest = max(loudest, abs(v))
-        val k = (gain / loudest).toFloat()
-        for (i in out.indices) out[i] += layer[i] * k
-    }
-
-    /**
      * The ball rolling: a soft, low, felt-like rumble with a faint breath of air and a slow
      * wobble. It loops seamlessly; its volume follows the ball's speed.
      */

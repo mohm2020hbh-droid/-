@@ -1,6 +1,7 @@
 {
   "name": "Funnel",
   "bounces": 2,
+  "launchZone": 140,
   "ball": [450, 1700],
   "goal": [450, 350],
   "guide": {"afterFails": 10, "angle": 64.78},

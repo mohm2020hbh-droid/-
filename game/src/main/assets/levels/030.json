@@ -1,6 +1,7 @@
 {
   "name": "Vault",
   "bounces": 3,
+  "launchZone": 170,
   "ball": [450, 1600],
   "goal": [450, 1000],
   "obstacles": [

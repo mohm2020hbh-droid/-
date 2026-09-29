@@ -1,6 +1,7 @@
 {
   "name": "Boost",
   "bounces": 1,
+  "launchZone": 180,
   "ball": [
     700,
     1650

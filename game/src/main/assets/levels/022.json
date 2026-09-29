@@ -1,6 +1,7 @@
 {
   "name": "Hidden Pocket",
   "bounces": 3,
+  "launchZone": 140,
   "ball": [700, 1550],
   "goal": [720, 650],
   "obstacles": [

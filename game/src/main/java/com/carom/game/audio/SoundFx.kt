@@ -6,6 +6,7 @@ import android.media.AudioTrack
 import android.os.SystemClock
 import android.util.Log
 import com.carom.core.audio.VoicePool
+import com.carom.core.audio.WavFile
 
 /**
  * Plays the game's sound effects. Each sound is synthesised once (on a background thread, so
@@ -17,10 +18,13 @@ import com.carom.core.audio.VoicePool
  * exploding, the exit) take over from the small ones (bounces) when a busy moment fills it.
  * [setPitch] scales the playback speed of everything, playing or not, for slow motion.
  *
+ * The launch sound is a recorded file ([launchSound] gives its bytes); it plays at its own sample rate, exactly as
+ * recorded. Every other sound is synthesised.
+ *
  * Sound is decoration: until the sounds are ready, or if the device refuses audio tracks, the game
  * simply stays silent.
  */
-class SoundFx {
+class SoundFx(private val launchSound: () -> ByteArray) {
 
     private class Bank(val voices: List<Voice>, val seconds: Float) {
         private var next = 0
@@ -56,7 +60,6 @@ class SoundFx {
             val made = linkedMapOf(
                 "impact" to (Synth.impact() to 4),
                 "container" to (Synth.containerHit() to 2),
-                "launch" to (Synth.launch() to 2),
                 "shatter" to (Synth.shatter() to 2),
                 "win" to (Synth.win() to 1),
                 "tap" to (Synth.tap() to 2),
@@ -70,6 +73,9 @@ class SoundFx {
                 "exitPartial" to (Synth.exitPartial() to 1),
             ).mapValues { (_, v) ->
                 Bank(List(v.second) { Voice.create(v.first, loop = false) }.filterNotNull(), v.first.size.toFloat() / Synth.SAMPLE_RATE)
+            }.toMutableMap()
+            loadLaunch()?.let { pcm ->
+                made["launch"] = Bank(List(2) { Voice.create(pcm.samples, loop = false, sampleRate = pcm.sampleRate) }.filterNotNull(), pcm.seconds.toFloat())
             }
             val rollVoice = Voice.create(Synth.roll(), loop = true)
             synchronized(this) {
@@ -85,6 +91,13 @@ class SoundFx {
     }
 
     private fun now(): Double = SystemClock.elapsedRealtime() / 1000.0
+
+    private fun loadLaunch(): WavFile.Pcm? = try {
+        WavFile.decode(launchSound())
+    } catch (e: Exception) {
+        Log.w(TAG, "Could not read the launch sound", e)
+        null
+    }
 
     /**
      * Plays a sound from its bank if the shared pool has room for it (or something less important to give up).
@@ -117,9 +130,9 @@ class SoundFx {
         play("container", volume = 0.5f + 0.5f * s, rate = pitch * (0.96f + 0.08f * s), priority = VoicePool.Priority.BOUNCE + 1)
     }
 
-    /** The throw; louder for a stronger one. */
+    /** The throw: the recorded launch sound at its own pitch, louder for a stronger throw. */
     fun launch(power: Double) {
-        play("launch", volume = 0.3f + 0.5f * power.coerceIn(0.0, 1.0).toFloat(), rate = 0.92f + 0.16f * power.toFloat(), priority = VoicePool.Priority.LAUNCH)
+        play("launch", volume = 0.3f + 0.5f * power.coerceIn(0.0, 1.0).toFloat(), priority = VoicePool.Priority.LAUNCH)
     }
 
     fun shatter() = play("shatter", 0.85f, priority = VoicePool.Priority.EXPLOSION)
@@ -182,7 +195,7 @@ class SoundFx {
         }
     }
 
-    private class Voice(private val track: AudioTrack) {
+    private class Voice(private val track: AudioTrack, private val sampleRate: Int) {
         /** The playback speed this sound was started at, before the global pitch. */
         private var baseRate = 1f
 
@@ -191,7 +204,7 @@ class SoundFx {
                 track.stop()
                 track.reloadStaticData()
                 baseRate = rate
-                track.playbackRate = (Synth.SAMPLE_RATE * rate * pitch).toInt().coerceAtLeast(MIN_RATE)
+                track.playbackRate = (sampleRate * rate * pitch).toInt().coerceAtLeast(MIN_RATE)
                 track.setVolume(volume)
                 track.play()
             } catch (e: IllegalStateException) {
@@ -201,7 +214,7 @@ class SoundFx {
 
         fun applyPitch(pitch: Float) {
             try {
-                track.playbackRate = (Synth.SAMPLE_RATE * baseRate * pitch).toInt().coerceAtLeast(MIN_RATE)
+                track.playbackRate = (sampleRate * baseRate * pitch).toInt().coerceAtLeast(MIN_RATE)
             } catch (e: IllegalStateException) {
                 Log.w(TAG, "Could not change a sound's pitch", e)
             }
@@ -238,7 +251,7 @@ class SoundFx {
         fun release() = track.release()
 
         companion object {
-            fun create(pcm: ShortArray, loop: Boolean): Voice? = try {
+            fun create(pcm: ShortArray, loop: Boolean, sampleRate: Int = Synth.SAMPLE_RATE): Voice? = try {
                 val track = AudioTrack.Builder()
                     .setAudioAttributes(
                         AudioAttributes.Builder()
@@ -249,7 +262,7 @@ class SoundFx {
                     .setAudioFormat(
                         AudioFormat.Builder()
                             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(Synth.SAMPLE_RATE)
+                            .setSampleRate(sampleRate)
                             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                             .build(),
                     )
@@ -258,7 +271,7 @@ class SoundFx {
                     .build()
                 track.write(pcm, 0, pcm.size)
                 if (loop) track.setLoopPoints(0, pcm.size, -1)
-                if (track.state == AudioTrack.STATE_INITIALIZED) Voice(track) else null.also { track.release() }
+                if (track.state == AudioTrack.STATE_INITIALIZED) Voice(track, sampleRate) else null.also { track.release() }
             } catch (e: Exception) {
                 Log.w(TAG, "Audio unavailable", e)
                 null

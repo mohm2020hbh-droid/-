@@ -133,6 +133,9 @@ object LevelDefaults {
     /** The reference ball's linear drag. */
     const val DRAG = 0.25
 
-    /** The ball can be moved this far from its start before a throw: about two ball widths across. */
-    const val LAUNCH_ZONE = 130.0
+    /**
+     * The ball can be moved this far from its start before a throw (the control zone, never drawn). A level whose
+     * puzzle a bigger zone would short-cut (a shot needing fewer bounces than it is built around) sets a smaller one.
+     */
+    const val LAUNCH_ZONE = 260.0
 }

@@ -20,7 +20,7 @@ import kotlin.math.sin
  *   "exitRequired": 1,                // optional: balls that must reach the exit
  *   "hardcore": false,                // optional: a hard level (intense music)
  *   "border": true,                   // optional: the edges bounce the ball (never drawn)
- *   "launchZone": 130,                // optional: how far the player may move the ball before a throw
+ *   "launchZone": 260,                // optional: how far the player may move the ball before a throw
  *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
  *   "guide": {"afterFails": 10, "angle": 271.5}, // optional path hint for players who keep failing
  *   "obstacles": [

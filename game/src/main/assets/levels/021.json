@@ -1,6 +1,7 @@
 {
   "name": "Stairwell",
   "bounces": 3,
+  "launchZone": 210,
   "ball": [450, 1720],
   "goal": [450, 300],
   "obstacles": [
