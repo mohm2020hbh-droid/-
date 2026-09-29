@@ -12,7 +12,18 @@ import com.carom.game.ui.WorldPalette
 
 enum class Haptic { CLICK, BOUNCE, BREAK, EXPLOSION, SUCCESS }
 
-enum class Sound { IMPACT, LAUNCH, SHATTER, WIN, TAP, SPIN, EXPLOSION, RESPAWN, FIZZLE }
+enum class Sound {
+    IMPACT, IMPACT_CONTAINER, LAUNCH, SHATTER, WIN, TAP, SPIN, EXPLOSION, RESPAWN, FIZZLE,
+
+    /** A ball entering a portal. */
+    PORTAL,
+
+    /** Time slowing down, and speeding back up. */
+    SLOW_IN, SLOW_OUT,
+
+    /** A ball reached an exit that still needs more. */
+    EXIT_PARTIAL,
+}
 
 /** What screens can ask of the game shell: navigation, feedback, shared state. */
 interface GameHost {
@@ -24,8 +35,17 @@ interface GameHost {
     /** A vibration; [strength] (0..1) scales a bounce's. */
     fun haptic(kind: Haptic, strength: Double = 1.0)
 
-    /** Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts) or was thrown (launch). */
-    fun sound(kind: Sound, strength: Double = 1.0)
+    /**
+     * Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts) or was thrown (launch); [pitch] is a
+     * multiplier for impacts, which start low and rise as the ball's bounces run out.
+     */
+    fun sound(kind: Sound, strength: Double = 1.0, pitch: Float = 1f)
+
+    /** The playback speed of all sound and music: 1 normally, about a third in slow motion. */
+    fun soundPitch(scale: Float)
+
+    /** 0..1, 1 on a beat of the music and fading after it: a pulse for pictures (never for the rules). */
+    val beatPulse: Float
 
     /** Cuts [kind] short if it is playing (a spin-up interrupted by a restart). */
     fun stopSound(kind: Sound)
@@ -68,6 +88,12 @@ abstract class Screen(protected val host: GameHost) {
     open fun update(dt: Float) {}
 
     open val isAnimating: Boolean get() = false
+
+    /**
+     * While nothing moves, redraw every this many milliseconds anyway (0 = never): for a screen with a gentle
+     * looping animation, like a force zone, that does not need a full frame rate.
+     */
+    open val idleRedrawMillis: Long get() = 0L
 
     abstract fun onTouch(e: MotionEvent): Boolean
 

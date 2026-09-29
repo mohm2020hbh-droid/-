@@ -65,14 +65,15 @@ class GameFlowTest {
         }
     }
 
-    /** Holds the ball and strokes straight up by [dragPx], letting go mid-stroke, so it flies straight up. */
+    /** Swipes straight up by [dragPx] from the ball: touch, drag, let go. The swipe is the impulse. */
     private fun dragUpAndRelease(view: GameView, play: PlayScreen, dragPx: Float) {
         val bx = play.board.x(play.session.ball.x)
         val by = play.board.y(play.session.ball.y)
-        touch(view, MotionEvent.ACTION_DOWN, bx, by)
-        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx / 2)
-        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx)
-        touch(view, MotionEvent.ACTION_UP, bx, by - dragPx)
+        val t = SystemClock.uptimeMillis()
+        touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
+        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx / 2, t + 40)
+        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx, t + 80)
+        touch(view, MotionEvent.ACTION_UP, bx, by - dragPx, t + 90)
     }
 
     @Test
@@ -88,10 +89,14 @@ class GameFlowTest {
         assertEquals(GameSession.State.MOVING, play.session.state)
         assertTrue(play.session.ball.dirY < -0.999) // up, the way it was dragged
 
-        runFor(view, 4f)
+        runFor(view, 2f) // the ball reaches the ring in about a second
         assertEquals(GameSession.State.WON, play.session.state)
         assertTrue(store.map["progress.completed"]!!.split(',').contains("001"))
         assertEquals(1, GameApp(LevelRepository(DirectorySource(levelsDir)), store).progress.currentIndex)
+        // A level that does not end a world moves on by itself 2.5 seconds after the win: no card, nothing to press.
+        assertTrue("not yet", view.currentScreen === play)
+        runFor(view, 2f)
+        assertTrue("on to level 2", view.currentScreen !== play && (view.currentScreen as PlayScreen).index == 1)
     }
 
     @Test
@@ -100,14 +105,14 @@ class GameFlowTest {
         view.play(1)
         val play = view.currentScreen as PlayScreen
         assertEquals(2, play.session.bouncesLeft)
-        // Straight up from level 2's start hits the wall above the ball.
+        // Straight up from level 2's start hits the wall above the ball (a 400 px swipe is a bit over half speed).
         dragUpAndRelease(view, play, 400f)
-        runFor(view, 0.35f) // first wall at ~0.21 s, the next one at ~0.57 s
+        runFor(view, 0.6f) // first wall at ~0.4 s, the next one at ~1.0 s
         assertEquals(1, play.session.bouncesLeft)
     }
 
     @Test
-    fun theBallFollowsTheFingerAndStaysPutWhenLetGoWithoutAThrow() {
+    fun theBallStaysWhereItIsWhileTheFingerMovesAndASwipeIsAnImpulse() {
         val view = newView(MapStore())
         view.play(0)
         val play = view.currentScreen as PlayScreen
@@ -116,14 +121,25 @@ class GameFlowTest {
         val by = play.board.y(play.session.ball.y)
         val t = SystemClock.uptimeMillis()
         touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
-        touch(view, MotionEvent.ACTION_MOVE, bx + 50f, by, t + 30)
-        touch(view, MotionEvent.ACTION_MOVE, bx + 100f, by, t + 60)
-        assertEquals(startX + 100f / play.board.scale, play.session.ball.x, 0.5) // carried to the right
-        // Held still for a moment, then lifted: no throw, the ball stays where it was put.
-        touch(view, MotionEvent.ACTION_MOVE, bx + 100f, by, t + 400)
-        touch(view, MotionEvent.ACTION_UP, bx + 100f, by, t + 420)
+        touch(view, MotionEvent.ACTION_MOVE, bx + 150f, by, t + 30)
+        assertEquals("the ball does not follow the finger", startX, play.session.ball.x, 1e-9)
+        // Let go after a drag of 150 px: 150 / 3 = 50 dp × 0.5 = 25 ref units × 20 = 500 units per second.
+        touch(view, MotionEvent.ACTION_UP, bx + 150f, by, t + 60)
+        assertEquals(GameSession.State.MOVING, play.session.state)
+        assertEquals(500.0, play.session.ball.speed, 1.0)
+        assertEquals(1.0, play.session.ball.dirX, 1e-9)
+    }
+
+    @Test
+    fun aTapOrAShortDragDoesNotThrow() {
+        val view = newView(MapStore())
+        view.play(0)
+        val play = view.currentScreen as PlayScreen
+        val bx = play.board.x(play.session.ball.x)
+        val by = play.board.y(play.session.ball.y)
+        touch(view, MotionEvent.ACTION_DOWN, bx, by)
+        touch(view, MotionEvent.ACTION_UP, bx + 6f, by + 4f) // about 2 dp: under the 4 dp swipe tolerance
         assertEquals(GameSession.State.AIMING, play.session.state)
-        assertEquals(startX + 100f / play.board.scale, play.session.ball.x, 0.5)
     }
 
     @Test
@@ -139,8 +155,10 @@ class GameFlowTest {
         assertEquals(GameSession.State.FAILED, play.session.state)
         assertEquals(GameSession.FailReason.OUT_OF_BOUNCES, play.session.failReason)
 
-        // No result screen and nothing to press: a moment later a new ball waits at the start.
-        runFor(view, 1f)
+        // No result screen and nothing to press: a second later a new ball waits at the start.
+        runFor(view, 0.5f)
+        assertEquals("not yet", GameSession.State.FAILED, play.session.state)
+        runFor(view, 0.7f)
         assertEquals(GameSession.State.AIMING, play.session.state)
         assertEquals(2, play.session.bouncesLeft)
         assertEquals(play.session.level.ball.x, play.session.ball.x, 1e-9)
@@ -157,8 +175,8 @@ class GameFlowTest {
         assertEquals("023", play.session.level.id)
         assertFalse(play.isGuideShown) // ten losses are not "more than ten"
 
-        play.session.launch(0.0, 1.0, 0.005) // a throw so weak it stops: the eleventh loss
-        runFor(view, 1f)
+        play.session.launch(1.0, 0.0, 1.0) // along the floor: out of bounces on the third edge, the eleventh loss
+        runFor(view, 3f)
         assertEquals(GameSession.State.AIMING, play.session.state)
         assertTrue(play.isGuideShown)
 

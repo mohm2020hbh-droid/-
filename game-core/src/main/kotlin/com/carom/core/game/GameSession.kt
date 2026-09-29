@@ -192,6 +192,12 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
     private val channels = BooleanArray(CHANNELS)
     private val armed = BooleanArray(elements.size) { true }
 
+    /** The ball that scored (the first ball, until one has). */
+    val winnerBall: BallState get() = winner
+
+    /** Whether switch line [channel] has been flipped on (an odd number of times) in this attempt. */
+    fun channelOn(channel: Int): Boolean = channels[channel.coerceIn(0, CHANNELS - 1)]
+
     private var current: BallState = balls[0]
     private var winner: BallState = balls[0]
     private var aliveCount = 0
@@ -677,7 +683,11 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         setVelocity(b, dx * speed, dy * speed)
         b.lockPortal = to.index
         b.lockUntil = gameTime + tuning.portalCooldown
-        if (b.index == 0) currentPath.add(Vec2(body.x, body.y))
+        if (b.index == 0) {
+            currentPath.add(Vec2(fromX, fromY))
+            currentPath.add(PATH_BREAK) // the picture lifts its pen here: the ball did not travel between the portals
+            currentPath.add(Vec2(body.x, body.y))
+        }
         listener?.onPortal(b.index, fromX, fromY, body.x, body.y)
     }
 
@@ -830,6 +840,9 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         const val MAX_FLIGHT_SECONDS = 90.0
 
         private const val CHANNELS = 16
+
+        /** In [GameSession.path]: the line stops here and starts again at the next point (a portal jump). */
+        val PATH_BREAK = Vec2(Double.NaN, Double.NaN)
 
         /** A wall touched again within this many steps of the last touch is still the same contact. */
         private const val CONTINUOUS_STEPS = 2

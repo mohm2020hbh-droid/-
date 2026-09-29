@@ -19,6 +19,8 @@ data class GameTuning(
     val freezeRotation: Boolean = true,
 
     // ---- touch control: swipe → delta × sensibility → impulse ----
+    /** How a touch acts on the ball: [ControlMode.SWIPE] (the reference) or the earlier hold-and-throw. */
+    val controlMode: ControlMode = ControlMode.SWIPE,
     val touchSensibility: Double = 0.5,
     /** A touch that moves less than this (in dp) is not a swipe. */
     val swipeTolerance: Double = 4.0,
@@ -83,6 +85,14 @@ data class GameTuning(
     fun bouncePitch(progress: Double): Double {
         val p = progress.coerceIn(0.0, 1.0)
         return bouncePitchStart + (bouncePitchEnd - bouncePitchStart) * p
+    }
+
+    enum class ControlMode {
+        /** Touch → drag → delta × sensibility → impulse. The ball does not go to the finger. */
+        SWIPE,
+
+        /** The ball follows the finger around its launch zone and is thrown by a stroke (the earlier control). */
+        HOLD,
     }
 
     companion object {

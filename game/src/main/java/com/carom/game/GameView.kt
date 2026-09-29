@@ -13,7 +13,10 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
+import com.carom.core.audio.MusicLibrary
 import com.carom.core.level.LevelFormatException
+import com.carom.core.level.Worlds
+import com.carom.game.audio.MusicPlayer
 import com.carom.game.audio.SoundFx
 import com.carom.game.screens.GameHost
 import com.carom.game.screens.Haptic
@@ -39,6 +42,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
 
     private var screen: Screen = HomeScreen(this)
     private val soundFx = SoundFx()
+    private val music = MusicPlayer()
     private val vibrator: Vibrator? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             context.getSystemService(VibratorManager::class.java)?.defaultVibrator
@@ -100,12 +104,14 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
             postInvalidateOnAnimation()
         } else {
             lastFrameNanos = 0L
+            if (screen.idleRedrawMillis > 0L) postInvalidateDelayed(screen.idleRedrawMillis)
         }
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         screen.onTouch(event)
+        music.setEnabled(app.settings.soundEnabled) // the sound button on the home screen also switches the music
         invalidate()
         return true
     }
@@ -115,6 +121,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         // Don't let time spent in the background arrive as one giant frame.
         lastFrameNanos = 0L
         if (visibility != VISIBLE) soundFx.roll(0f)
+        music.setPaused(visibility != VISIBLE)
     }
 
     /** Returns false when the back action should leave the game. */
@@ -138,8 +145,14 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     private fun switchTo(next: Screen) {
         soundFx.roll(0f)
         soundFx.stopSpin()
+        soundFx.setPitch(1f)
+        music.setPitch(1f)
         screen.onExit()
         screen = next
+        // The music follows the world (and the kind of level) and carries on across levels that share a track.
+        val here = app.progress.currentIndex
+        music.setEnabled(app.settings.soundEnabled)
+        music.play((next as? PlayScreen)?.track ?: MusicLibrary.trackFor(here, Worlds.worldOf(here), false))
         keepScreenOn = next is PlayScreen
         if (width > 0) next.layout(width, height, insets)
         next.onEnter()
@@ -177,10 +190,15 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         }
     }
 
-    override fun sound(kind: Sound, strength: Double) {
+    override fun sound(kind: Sound, strength: Double, pitch: Float) {
         if (!app.settings.soundEnabled) return
         when (kind) {
-            Sound.IMPACT -> soundFx.impact(strength)
+            Sound.IMPACT -> soundFx.impact(strength, pitch)
+            Sound.IMPACT_CONTAINER -> soundFx.containerHit(strength, pitch)
+            Sound.PORTAL -> soundFx.portal()
+            Sound.SLOW_IN -> soundFx.slowIn()
+            Sound.SLOW_OUT -> soundFx.slowOut()
+            Sound.EXIT_PARTIAL -> soundFx.exitPartial()
             Sound.LAUNCH -> soundFx.launch(strength)
             Sound.SHATTER -> soundFx.shatter()
             Sound.WIN -> soundFx.win()
@@ -192,6 +210,13 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         }
     }
 
+    override fun soundPitch(scale: Float) {
+        soundFx.setPitch(scale)
+        music.setPitch(scale)
+    }
+
+    override val beatPulse: Float get() = if (app.settings.soundEnabled) music.beatPulse() else 0f
+
     override fun stopSound(kind: Sound) {
         if (kind == Sound.SPIN) soundFx.stopSpin()
     }
@@ -199,7 +224,10 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     override fun rolling(level: Float) = soundFx.roll(if (app.settings.soundEnabled) level else 0f)
 
     /** Frees the audio tracks; the view is not used afterwards. */
-    fun release() = soundFx.release()
+    fun release() {
+        soundFx.release()
+        music.release()
+    }
 
     private companion object {
         const val TAG = "Carom"

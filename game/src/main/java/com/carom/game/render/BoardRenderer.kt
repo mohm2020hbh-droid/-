@@ -322,15 +322,30 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
 
     // ---------------------------------------------------------------- moving parts
 
-    /** The goal: a ring with a faint glow and a centre point. [pulse] (0..1) animates the scoring ripple. */
-    fun drawGoal(canvas: Canvas, pulse: Float) {
+    /**
+     * The goal: a ring with a faint glow and a centre point. [pulse] (0..1) animates the scoring ripple;
+     * [beat] (0..1) is the music's pulse, which lifts the glow a little on each beat (it only ever affects the picture).
+     * An exit that needs several balls shows small pips under it, [entered] of them filled.
+     */
+    fun drawGoal(canvas: Canvas, pulse: Float, beat: Float = 0f, entered: Int = 0, needed: Int = 1) {
         val cx = x(level.goal.x)
         val cy = y(level.goal.y)
         val r = level.goalRadius.toFloat() * scale
         canvas.save()
         canvas.translate(cx, cy)
+        canvas.scale(1f + 0.06f * beat, 1f + 0.06f * beat)
+        goalGlowPaint.alpha = (255 * (0.85f + 0.15f * beat)).toInt()
         canvas.drawCircle(0f, 0f, 1.8f * r, goalGlowPaint)
+        goalGlowPaint.alpha = 255
         canvas.restore()
+        if (needed > 1) {
+            val gap = r * 0.34f
+            val startX = cx - gap * (needed - 1) / 2f
+            for (i in 0 until needed) {
+                fillPaint.color = if (i < entered) palette.accent else Palette.withAlpha(palette.accent, 0.25f)
+                canvas.drawCircle(startX + i * gap, cy + r * 1.35f, r * 0.09f, fillPaint)
+            }
+        }
         val ring = r * 0.14f
         linePaint.pathEffect = null
         linePaint.shader = null
@@ -431,6 +446,37 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         canvas.drawCircle(cx, cy, 4f * unit, linePaint)
         if (!active || power <= 0f) return
 
+        val color = if (ready) palette.accent else Palette.withAlpha(palette.accent, 0.45f)
+        linePaint.color = color
+        linePaint.strokeWidth = 3f * unit
+        arcBox.set(cx - radius, cy - radius, cx + radius, cy + radius)
+        val sweep = 360f * power.coerceIn(0f, 1f)
+        canvas.drawArc(arcBox, -90f, sweep, false, linePaint)
+        val end = Math.toRadians((sweep - 90f).toDouble())
+        fillPaint.color = color
+        canvas.drawCircle(cx + radius * Math.cos(end).toFloat(), cy + radius * Math.sin(end).toFloat(), 3.4f * unit, fillPaint)
+    }
+
+    /**
+     * The swipe control's dial: a fine ring round the ball at (cx, cy) that shows the ball can be swiped, and, while a
+     * swipe is under way ([active]), a thin arc filling it clockwise from the top with the swipe's [power] — like a
+     * clock, so it never points anywhere.
+     */
+    fun drawSwipeDial(canvas: Canvas, cx: Float, cy: Float, unit: Float, active: Boolean, power: Float, ready: Boolean, alpha: Float = 1f) {
+        val radius = ballScreenRadius * 1.7f
+        canvas.save()
+        canvas.translate(cx, cy)
+        canvas.scale(radius / zoneScreenRadius, radius / zoneScreenRadius)
+        zonePaint.alpha = (255 * alpha).toInt()
+        canvas.drawCircle(0f, 0f, zoneScreenRadius, zonePaint)
+        zonePaint.alpha = 255
+        canvas.restore()
+        linePaint.pathEffect = null
+        linePaint.shader = null
+        linePaint.color = Palette.withAlpha(palette.accent, (if (active) 0.45f else 0.26f) * alpha)
+        linePaint.strokeWidth = 1.5f * unit
+        canvas.drawCircle(cx, cy, radius, linePaint)
+        if (!active || power <= 0f) return
         val color = if (ready) palette.accent else Palette.withAlpha(palette.accent, 0.45f)
         linePaint.color = color
         linePaint.strokeWidth = 3f * unit
@@ -552,9 +598,16 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     fun drawShotPath(canvas: Canvas, points: List<Vec2>, endX: Float, endY: Float, color: Int, dashed: Boolean) {
         if (points.isEmpty()) return
         trailPath.reset()
-        trailPath.moveTo(x(points[0].x), y(points[0].y))
-        for (i in 1 until points.size) trailPath.lineTo(x(points[i].x), y(points[i].y))
-        if (!endX.isNaN()) trailPath.lineTo(endX, endY)
+        var pen = false // false: the next point starts a new stroke (the first, or the one after a portal jump)
+        for (p in points) {
+            if (p.x.isNaN()) {
+                pen = false
+                continue
+            }
+            if (pen) trailPath.lineTo(x(p.x), y(p.y)) else trailPath.moveTo(x(p.x), y(p.y))
+            pen = true
+        }
+        if (!endX.isNaN() && pen) trailPath.lineTo(endX, endY)
         linePaint.shader = null
         linePaint.color = color
         linePaint.strokeWidth = 2.5f * scale

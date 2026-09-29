@@ -5,14 +5,20 @@ import android.graphics.DashPathEffect
 import android.graphics.Path
 import android.graphics.RectF
 import android.view.MotionEvent
+import com.carom.core.audio.MusicLibrary
+import com.carom.core.audio.TrackSpec
 import com.carom.core.game.FlickAim
 import com.carom.core.game.GameSession
+import com.carom.core.game.GameTuning
 import com.carom.core.game.HintRoute
+import com.carom.core.game.TouchControl
+import com.carom.core.level.ElementKind
 import com.carom.core.level.LevelData
 import com.carom.core.level.Worlds
 import com.carom.game.render.BallShatter
 import com.carom.game.render.BoardRenderer
 import com.carom.game.render.BoardRenderer.BallStyle
+import com.carom.game.render.ElementsRenderer
 import com.carom.game.ui.Icon
 import com.carom.game.ui.Icons
 import com.carom.game.ui.Palette
@@ -34,25 +40,37 @@ import kotlin.random.Random
  * but the ball bounces off them), with the level number, restart and level-list buttons floating
  * over the top and the hint over the bottom.
  *
- * Owns the [GameSession] (rules), the hold-and-throw input and everything drawn on top of the
- * board. The bounces left are shown inside the ball itself.
+ * Owns the [GameSession] (rules), the touch input and everything drawn on top of the board. The
+ * bounces left are shown inside the ball itself.
  *
- * - Throwing: the ball follows the finger around its launch zone; a stroke throws it the way the
- *   stroke went, as hard as the stroke was long. There is no arrow.
+ * - Throwing: a swipe is read as a delta; delta × sensibility is an impulse, and the impulse is the
+ *   ball's velocity. The ball does not go to the finger. A ring round the ball fills with the swipe's
+ *   power like a dial, so nothing points anywhere. (The earlier hold-and-throw control is still
+ *   there, chosen by [GameTuning.controlMode].)
  * - A wall hit is felt: a hard knock, a short screen shake and a light tap of the vibration motor,
  *   all on the same frame, a little stronger for a harder hit.
- * - Losing costs nothing but a moment: the ball breaks (or deflates, if it just stopped), and a new
- *   ball is back at the start at once, ready to throw. No screen, no button.
+ * - Losing costs a second at most: a ball breaks (or fades, if it just stopped), and when the last
+ *   one is gone a new ball is back at the start, ready to throw. No screen, no button.
  * - Scoring: the ball stops in the ring, turns into a small fan, spins up with a whir and
- *   explodes; then the level is complete.
+ *   explodes; then the next level starts by itself (a level that ends a world, or the last one,
+ *   shows its result card instead).
+ * - Slow motion: inside a slow-motion zone game time runs at an eighth and every sound drops in pitch.
  * - A level with a path hint shows it, roughly, once the player has failed it enough times.
  */
 class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) : Screen(host), GameSession.Listener {
 
     override val palette: WorldPalette = Palette.forLevel(index)
-    internal val session = GameSession(level).also { it.listener = this }
+    private val tuning = GameTuning.DEFAULT
+    internal val session = GameSession(level, tuning).also { it.listener = this }
     internal val board = BoardRenderer(level, palette)
+    private val elementsView = ElementsRenderer(level, palette, board)
 
+    /** The music for this level: its world's, or the hardcore folder's for a hard level. */
+    internal val track: TrackSpec = MusicLibrary.trackFor(index, Worlds.worldOf(index), level.hardcore)
+
+    /** The swipe control: touches in dp in, gestures and impulses out. */
+    private val swipe = TouchControl(tuning)
+    private var swipeActive = false
     private var aim = FlickAim(maxStroke = 1.0, restDistance = 1.0)
 
     /** Where the ball was when the finger went down; it follows the finger from there. */
@@ -71,6 +89,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     private val isLastLevel = index == host.app.levels.size - 1
     private val opensNewWorld = !isLastLevel && Worlds.worldOf(index + 1) != Worlds.worldOf(index)
+
+    /** A level that ends a world, or the last one, shows the result card; any other goes straight to the next. */
+    private val showsResult = isLastLevel || opensNewWorld
+    private var leftForNext = false
     private val nextButton = UiButton(UiButton.Style.PRIMARY, kit.text.next, Icon.PLAY) { host.play(index + 1) }
     private val replayButton = UiButton(UiButton.Style.OUTLINE, kit.text.restart, Icon.RESTART) { restart() }
     private val menuButton = UiButton(UiButton.Style.OUTLINE, kit.text.levels, Icon.GRID) { host.showLevels(index) }
@@ -78,8 +100,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** Seconds since the attempt was won or lost, and seconds on this screen (for looping animations). */
     private var endTime = 0f
     private var clock = 0f
-    private val ripples = ArrayList<Ripple>()
-    private val sparks = ArrayList<Spark>()
+
+    // Effects come from fixed pools: nothing is created while playing.
+    private val ripples = Array(MAX_RIPPLES) { Ripple() }
+    private val sparks = Array(MAX_SPARKS) { Spark() }
+    private var sparkCursor = 0
     private val random = Random(index)
     private val shape = Path()
     private val hintBox = RectF()
@@ -89,14 +114,16 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private var shakeLength = 0f
     private var shakeSize = 0f
 
-    /** The ball breaking, and how long ago; it plays out even as the next ball appears. */
-    private var shatter: BallShatter? = null
-    private var shatterTime = 0f
+    /** Balls breaking; each plays out even as the next ball appears. */
+    private val shatters = Array(MAX_SHATTERS) { BallShatter() }
+    private var shatterCursor = 0
 
-    // A new ball appearing at the start after a loss: popping in, or gliding back from where it stopped.
+    // A new ball appearing at the start after a loss, popping in.
     private var respawnTime = -1f
-    private var respawnFromX = Float.NaN
-    private var respawnFromY = 0f
+
+    // Slow motion: how far the slow-motion look has come in (0..1), and the exit's ring flashing when a ball enters.
+    private var slowAmount = 0f
+    private var exitFlash = 0f
 
     // Scoring: where the ball entered the ring, and which steps of the fan's show have happened.
     private var entryX = 0f
@@ -110,25 +137,35 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val route: HintRoute? by lazy { level.guide?.let { HintRoute.plan(level, it) } }
     private var guideShown = false
 
-    private class Ripple(val x: Double, val y: Double) {
+    private class Ripple {
+        var alive = false
+        var x = 0.0
+        var y = 0.0
         var age = 0f
     }
 
     private enum class SparkKind { STREAK, STAR, CHUNK }
 
-    /** A spark: a glowing streak, a twinkling four-pointed star, or a tumbling fragment. */
-    private class Spark(
-        var x: Float, var y: Float, var vx: Float, var vy: Float,
-        val life: Float, val size: Float, val color: Int, val kind: SparkKind = SparkKind.STREAK, val spin: Float = 0f,
-    ) {
+    /** A spark: a glowing streak, a twinkling four-pointed star, or a tumbling fragment. Reused, never recreated. */
+    private class Spark {
+        var alive = false
+        var x = 0f
+        var y = 0f
+        var vx = 0f
+        var vy = 0f
+        var life = 1f
+        var size = 1f
+        var color = 0
+        var kind = SparkKind.STREAK
+        var spin = 0f
         var age = 0f
     }
 
     private val ended get() = session.state == GameSession.State.WON || session.state == GameSession.State.FAILED
 
-    /** The result card is only for a completed level; a loss never stops play. */
+    /** The result card is only for a level that ends a world (or the last); a loss never stops play. */
     private val overlayProgress: Float
-        get() = if (session.state != GameSession.State.WON) 0f else ((endTime - WIN_OVERLAY_DELAY) / OVERLAY_FADE).coerceIn(0f, 1f)
+        get() = if (session.state != GameSession.State.WON || !showsResult) 0f else ((endTime - WIN_OVERLAY_DELAY) / OVERLAY_FADE).coerceIn(0f, 1f)
 
     override fun onEnter() {
         host.app.progress.lastPlayedIndex = index
@@ -151,6 +188,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val left = (width - lw * scale) / 2
         val top = (height - lh * scale) / 2
         board.layout(scale, left, top, width.toInt(), height.toInt())
+        elementsView.layout(kit.unit)
 
         val button = kit.u(48f)
         levelsButton.setCenter(safe.right - kit.u(8f) - button / 2, topBarY, button, button)
@@ -179,43 +217,106 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     override fun update(dt: Float) {
         clock += dt
         session.advance(dt.toDouble())
-        host.rolling(if (session.state == GameSession.State.MOVING) (session.ball.speed / level.maxSpeed).toFloat() else 0f)
+        var fastest = 0.0
+        for (b in session.balls) if (b.alive && b.body.speed > fastest) fastest = b.body.speed
+        host.rolling(if (session.state == GameSession.State.MOVING) (fastest / level.maxSpeed).toFloat() else 0f)
         if (ended) endTime += dt
-        if (shakeTime < shakeLength) shakeTime += dt
-        if (shatter != null) {
-            shatterTime += dt
-            if (shatterTime > BallShatter.DURATION) shatter = null
-        }
+
+        // Effects run on game time: in slow motion the sparks, rings, breaks and the shake slow down with the ball.
+        val fx = dt * session.timeScale.toFloat()
+        if (shakeTime < shakeLength) shakeTime += fx
+        for (s in shatters) s.advance(fx)
         if (respawnTime >= 0f) {
             respawnTime += dt
             if (respawnTime > RESPAWN_TIME) respawnTime = -1f
         }
-        ripples.forEach { it.age += dt }
-        ripples.removeAll { it.age > RIPPLE_LIFE }
-        val drag = exp(-2.5f * dt)
-        for (s in sparks) {
-            s.age += dt
-            s.x += s.vx * dt
-            s.y += s.vy * dt
+        for (r in ripples) if (r.alive) {
+            r.age += fx
+            if (r.age > RIPPLE_LIFE) r.alive = false
+        }
+        val drag = exp(-2.5f * fx)
+        for (s in sparks) if (s.alive) {
+            s.age += fx
+            s.x += s.vx * fx
+            s.y += s.vy * fx
             s.vx *= drag
             s.vy *= drag
+            if (s.age > s.life) s.alive = false
         }
-        sparks.removeAll { it.age > it.life }
+        val slowTarget = if (session.isSlowMotion) 1f else 0f
+        slowAmount += (slowTarget - slowAmount) * (1f - exp(-6f * dt))
+        if (slowAmount < 0.002f && slowTarget == 0f) slowAmount = 0f
+        exitFlash = max(0f, exitFlash - dt * 2.5f)
 
         when (session.state) {
-            GameSession.State.WON -> updateFan(dt)
-            GameSession.State.FAILED -> {
-                val wait = if (session.failReason == GameSession.FailReason.STOPPED) STOP_RETRY_DELAY else BREAK_RETRY_DELAY
-                if (endTime >= wait) retry()
+            GameSession.State.WON -> {
+                updateFan(dt)
+                // No card to press: the next level comes by itself after a moment.
+                if (!showsResult && !leftForNext && endTime >= tuning.nextLevelDelay) {
+                    leftForNext = true
+                    host.play(index + 1)
+                }
             }
+            GameSession.State.FAILED -> if (endTime >= tuning.retryDelay) retry()
             else -> {}
         }
     }
 
     override val isAnimating: Boolean
-        get() = session.state == GameSession.State.MOVING || ripples.isNotEmpty() || sparks.isNotEmpty() ||
-            shakeTime < shakeLength || shatter != null || respawnTime >= 0f || session.state == GameSession.State.FAILED ||
-            (session.state == GameSession.State.WON && overlayProgress < 1f) || (guideShown && session.state == GameSession.State.AIMING)
+        get() = session.state == GameSession.State.MOVING || anyRipple() || anySpark() || anyShatter() ||
+            shakeTime < shakeLength || respawnTime >= 0f || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f ||
+            (session.state == GameSession.State.WON && (overlayProgress < 1f || !showsResult)) || (guideShown && session.state == GameSession.State.AIMING)
+
+    /** A level with force zones, portals and the like keeps moving even while the player aims (at a gentle rate). */
+    override val idleRedrawMillis: Long get() = if (level.elements.any { it.kind != ElementKind.SOLID && it.kind != ElementKind.TOUCH_ZONE }) 33L else 0L
+
+    private fun anyRipple() = ripples.any { it.alive }
+    private fun anySpark() = sparks.any { it.alive }
+    private fun anyShatter() = shatters.any { it.isPlaying }
+
+    private fun addRipple(x: Double, y: Double) {
+        val r = ripples.firstOrNull { !it.alive } ?: ripples.minByOrNull { -it.age } ?: return
+        r.alive = true
+        r.x = x
+        r.y = y
+        r.age = 0f
+    }
+
+    /** Sets a spark going, in a free slot (or the oldest slot if all are busy). */
+    private fun spark(
+        x: Float, y: Float, vx: Float, vy: Float, life: Float, size: Float, color: Int,
+        kind: SparkKind = SparkKind.STREAK, spin: Float = 0f,
+    ) {
+        var s: Spark? = null
+        for (i in 0 until MAX_SPARKS) {
+            val c = sparks[(sparkCursor + i) % MAX_SPARKS]
+            if (!c.alive) {
+                s = c
+                sparkCursor = (sparkCursor + i + 1) % MAX_SPARKS
+                break
+            }
+        }
+        if (s == null) {
+            s = sparks[sparkCursor]
+            sparkCursor = (sparkCursor + 1) % MAX_SPARKS
+        }
+        s.alive = true
+        s.x = x
+        s.y = y
+        s.vx = vx
+        s.vy = vy
+        s.life = life
+        s.size = size
+        s.color = color
+        s.kind = kind
+        s.spin = spin
+        s.age = 0f
+    }
+
+    private fun startShatter(x: Float, y: Float, awayX: Float, awayY: Float) {
+        val s = shatters.firstOrNull { !it.isPlaying } ?: shatters[shatterCursor].also { shatterCursor = (shatterCursor + 1) % MAX_SHATTERS }
+        s.start(x, y, board.ballScreenRadius, awayX, awayY)
+    }
 
     private fun shake(size: Float, length: Float) {
         // A new shake never cuts a stronger one short.
@@ -234,55 +335,124 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         host.sound(Sound.LAUNCH, throwPower)
     }
 
+    override fun onImpulse(ball: Int) {
+        host.haptic(Haptic.CLICK)
+        host.sound(Sound.LAUNCH, throwPower * 0.6)
+    }
+
     override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) {
-        // The knock: sound, shake and vibration together, on this very frame.
+        // The knock: sound, shake and vibration together, on this very frame. The pitch starts low and rises
+        // with every bounce the ball has used, so the sound tells how many it has left.
         val s = impact.strength
-        host.sound(Sound.IMPACT, s)
+        val pitch = tuning.bouncePitch(impact.progress).toFloat()
+        host.sound(if (impact.kind == ElementKind.BALL_CONTAINER) Sound.IMPACT_CONTAINER else Sound.IMPACT, s, pitch)
         host.haptic(Haptic.BOUNCE, s)
         shake(kit.u(1.5f + 3.5f * s.toFloat()), BOUNCE_SHAKE_TIME)
-        ripples += Ripple(impact.x, impact.y)
+        addRipple(impact.x, impact.y)
     }
 
     override fun onWin(x: Double, y: Double) {
         arrangeResultButtons()
         host.app.progress.markCompleted(index)
         host.haptic(Haptic.SUCCESS)
+        host.soundPitch(1f)
         entryX = board.x(x)
         entryY = board.y(y)
+        endTime = 0f
         // The fan turns the way the ball was curving round the ring's centre.
-        val turn = (entryX - board.x(level.goal.x)) * session.ball.dirY.toFloat() - (entryY - board.y(level.goal.y)) * session.ball.dirX.toFloat()
+        val won = session.winnerBall.body
+        val turn = (entryX - board.x(level.goal.x)) * won.dirY.toFloat() - (entryY - board.y(level.goal.y)) * won.dirX.toFloat()
         fanSpin = if (turn < 0f) -1f else 1f
         whirStarted = false
         exploded = false
         chimed = false
     }
 
-    override fun onFail(reason: GameSession.FailReason, x: Double, y: Double) {
-        val hit = session.lastImpact
-        if (reason == GameSession.FailReason.OUT_OF_BOUNCES && hit != null) {
-            // The last allowed bounce is spent: the ball breaks against the wall it hit.
-            shatter = BallShatter(board.x(x), board.y(y), board.ballScreenRadius, hit.nx.toFloat(), hit.ny.toFloat())
-            shatterTime = 0f
-            host.sound(Sound.SHATTER, hit.strength)
-            host.haptic(Haptic.BREAK)
-            shake(kit.u(4f), BREAK_SHAKE_TIME)
-        } else {
+    /** A ball went into an exit that needs more than one. */
+    override fun onExitPartial(count: Int, needed: Int, x: Double, y: Double) {
+        host.sound(Sound.EXIT_PARTIAL)
+        host.haptic(Haptic.CLICK)
+        exitFlash = 1f
+        addRipple(level.goal.x, level.goal.y)
+    }
+
+    /** One ball is gone: it breaks (out of bounces, or into a deadly zone), or simply fades if it stopped. */
+    override fun onBallLost(ball: Int, reason: GameSession.FailReason, x: Double, y: Double) {
+        if (reason == GameSession.FailReason.STOPPED) {
             host.sound(Sound.FIZZLE)
             host.haptic(Haptic.BOUNCE, 0.3)
+            return
+        }
+        val hit = session.lastImpact?.takeIf { reason == GameSession.FailReason.OUT_OF_BOUNCES }
+        val b = session.balls[ball].body
+        val awayX = hit?.nx?.toFloat() ?: -b.dirX.toFloat()
+        val awayY = hit?.ny?.toFloat() ?: -b.dirY.toFloat()
+        startShatter(board.x(x), board.y(y), awayX, awayY)
+        host.sound(Sound.SHATTER, hit?.strength ?: 1.0)
+        host.haptic(Haptic.BREAK)
+        shake(kit.u(4f), BREAK_SHAKE_TIME)
+    }
+
+    /** Every ball is gone: after a moment the level starts again by itself. */
+    override fun onFail(reason: GameSession.FailReason, x: Double, y: Double) {
+        endTime = 0f
+    }
+
+    override fun onPortal(ball: Int, fromX: Double, fromY: Double, toX: Double, toY: Double) {
+        host.sound(Sound.PORTAL)
+        host.haptic(Haptic.CLICK)
+        addRipple(fromX, fromY)
+        addRipple(toX, toY)
+    }
+
+    override fun onSlowMo(active: Boolean) {
+        host.sound(if (active) Sound.SLOW_IN else Sound.SLOW_OUT)
+        host.soundPitch(if (active) tuning.slowMoPitch.toFloat() else 1f)
+    }
+
+    override fun onBallSpawned(ball: Int, x: Double, y: Double) {
+        host.sound(Sound.RESPAWN)
+        addRipple(x, y)
+    }
+
+    override fun onElement(element: Int, event: GameSession.ElementEvent) {
+        val e = session.elements[element]
+        when (event) {
+            GameSession.ElementEvent.BROKEN -> {
+                // A barrier breaks into tumbling fragments.
+                val cx = board.x(e.x)
+                val cy = board.y(e.y)
+                repeat(8) { i ->
+                    val a = (i + random.nextFloat()) / 8f * 2f * PI.toFloat()
+                    val speed = kit.u(90f + 140f * random.nextFloat())
+                    spark(cx, cy, cos(a) * speed, sin(a) * speed, 0.5f + 0.2f * random.nextFloat(), board.ballScreenRadius * 0.28f, palette.primary,
+                        kind = SparkKind.CHUNK, spin = (4f + 6f * random.nextFloat()) * if (random.nextBoolean()) 1f else -1f)
+                }
+                host.sound(Sound.SHATTER, 0.5)
+                host.haptic(Haptic.BREAK)
+                shake(kit.u(3f), BREAK_SHAKE_TIME)
+            }
+            GameSession.ElementEvent.SWITCHED -> {
+                host.sound(Sound.TAP)
+                host.haptic(Haptic.CLICK)
+                addRipple(e.x, e.y)
+            }
+            GameSession.ElementEvent.OPENED -> addRipple(e.x, e.y)
         }
     }
 
-    /** Straight into the next attempt: a new ball at the start, bounces restored, nothing to press. */
+    /** Straight into the next attempt: a new ball at the start, everything as it was, nothing to press. */
     private fun retry() {
-        val stopped = session.failReason == GameSession.FailReason.STOPPED
-        respawnFromX = if (stopped) board.x(session.ball.x) else Float.NaN
-        respawnFromY = board.y(session.ball.y)
         val fails = host.app.progress.recordFail(index)
         session.restart()
+        swipe.cancel()
+        swipeActive = false
         aim.cancel()
         endTime = 0f
-        ripples.clear()
+        for (r in ripples) r.alive = false
         respawnTime = 0f
+        slowAmount = 0f
+        host.soundPitch(1f)
         host.sound(Sound.RESPAWN)
         guideShown = guideDue(fails)
     }
@@ -296,13 +466,17 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun restart() {
         host.stopSound(Sound.SPIN)
         session.restart()
+        swipe.cancel()
+        swipeActive = false
         aim.cancel()
         endTime = 0f
-        shatter = null
+        for (s in shatters) s.advance(BallShatter.DURATION)
         respawnTime = -1f
         shakeTime = shakeLength
-        ripples.clear()
-        sparks.clear()
+        for (r in ripples) r.alive = false
+        for (s in sparks) s.alive = false
+        slowAmount = 0f
+        host.soundPitch(1f)
         guideShown = guideDue()
     }
 
@@ -335,7 +509,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                 val tipX = gx + cos(a) * r * 1.2f
                 val tipY = gy + sin(a) * r * 1.2f
                 val speed = kit.u(60f + 160f * p)
-                sparks += Spark(tipX, tipY, -sin(a) * fanSpin * speed, cos(a) * fanSpin * speed, 0.25f + 0.2f * random.nextFloat(), kit.u(1.6f), sparkColor())
+                spark(tipX, tipY, -sin(a) * fanSpin * speed, cos(a) * fanSpin * speed, 0.25f + 0.2f * random.nextFloat(), kit.u(1.6f), sparkColor())
             }
         }
         if (!exploded && endTime >= EXPLODE) {
@@ -356,12 +530,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         repeat(36) { i ->
             val a = (i + random.nextFloat()) / 36f * 2f * PI.toFloat()
             val speed = kit.u(200f + 220f * random.nextFloat())
-            sparks += Spark(gx + cos(a) * r * 0.4f, gy + sin(a) * r * 0.4f, cos(a) * speed, sin(a) * speed, 0.4f + 0.4f * random.nextFloat(), kit.u(2.6f), sparkColor())
+            spark(gx + cos(a) * r * 0.4f, gy + sin(a) * r * 0.4f, cos(a) * speed, sin(a) * speed, 0.4f + 0.4f * random.nextFloat(), kit.u(2.6f), sparkColor())
         }
         repeat(8) { i ->
             val a = (i + 0.5f * random.nextFloat()) / 8f * 2f * PI.toFloat()
             val speed = kit.u(120f + 120f * random.nextFloat())
-            sparks += Spark(
+            spark(
                 gx, gy, cos(a) * speed, sin(a) * speed, 0.55f + 0.2f * random.nextFloat(), r * 0.32f, palette.accent,
                 kind = SparkKind.CHUNK, spin = (4f + 6f * random.nextFloat()) * if (random.nextBoolean()) 1f else -1f,
             )
@@ -369,7 +543,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         repeat(6) {
             val a = random.nextFloat() * 2f * PI.toFloat()
             val d = r * (1.4f + 1.2f * random.nextFloat())
-            sparks += Spark(gx + cos(a) * d, gy + sin(a) * d, 0f, 0f, 0.5f + 0.3f * random.nextFloat(), kit.u(5f + 4f * random.nextFloat()), Palette.TEXT, kind = SparkKind.STAR)
+            spark(gx + cos(a) * d, gy + sin(a) * d, 0f, 0f, 0.5f + 0.3f * random.nextFloat(), kit.u(5f + 4f * random.nextFloat()), Palette.TEXT, kind = SparkKind.STAR)
         }
     }
 
@@ -379,7 +553,46 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override fun onTouch(e: MotionEvent): Boolean {
         if (overlayProgress > 0f) return routeToButtons(e, overlayButtons())
-        if (!aim.isActive && routeToButtons(e, hudButtons)) return true
+        if (!swipeActive && !aim.isActive && routeToButtons(e, hudButtons)) return true
+        return if (tuning.controlMode == GameTuning.ControlMode.SWIPE) onSwipeTouch(e) else onHoldTouch(e)
+    }
+
+    /**
+     * The reference control: touch, drag, and on release the drag is a delta; delta × sensibility is the impulse.
+     * The ball does not move to the finger. A tap (or a drag too short to be a swipe) does nothing.
+     */
+    private fun onSwipeTouch(e: MotionEvent): Boolean {
+        val unit = kit.unit
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> if (session.canSwipe) {
+                respawnTime = -1f
+                swipe.begin(e.x / unit.toDouble(), e.y / unit.toDouble(), seconds(e))
+                swipeActive = true
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> if (swipeActive) {
+                swipe.move(e.x / unit.toDouble(), e.y / unit.toDouble())
+                return true
+            }
+            MotionEvent.ACTION_UP -> if (swipeActive) {
+                swipeActive = false
+                val result = swipe.end(e.x / unit.toDouble(), e.y / unit.toDouble(), seconds(e))
+                if (result.gesture == TouchControl.Gesture.SWIPE) {
+                    throwPower = (result.length * tuning.touchSensibility / tuning.maxSpeedRef).coerceIn(0.0, 1.0)
+                    session.swipe(result.dx, result.dy)
+                }
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                swipe.cancel()
+                swipeActive = false
+            }
+        }
+        return false
+    }
+
+    /** The earlier control: the ball follows the finger round its launch zone, and a stroke throws it. */
+    private fun onHoldTouch(e: MotionEvent): Boolean {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 if (session.state == GameSession.State.AIMING && inLaunchZone(e.x, e.y)) {
@@ -421,7 +634,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     override fun onBack(): Boolean {
-        if (aim.isActive) aim.cancel() else host.showLevels(index)
+        if (swipeActive) {
+            swipe.cancel()
+            swipeActive = false
+        } else if (aim.isActive) aim.cancel() else host.showLevels(index)
         return true
     }
 
@@ -444,6 +660,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             canvas.translate(shakeSize * k * sin(shakeTime * 2f * PI.toFloat() * 31f), shakeSize * k * 0.8f * cos(shakeTime * 2f * PI.toFloat() * 23f))
         }
         board.drawBackdrop(canvas)
+        elementsView.draw(canvas, session, clock, kit.unit)
 
         val trail = Palette.withAlpha(palette.accent, 0.35f)
         val ghost = session.lastShotPath
@@ -453,27 +670,31 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val ballX = board.x(session.renderX)
         val ballY = board.y(session.renderY)
         if (session.state == GameSession.State.MOVING) {
-            board.drawShotPath(canvas, session.path, ballX, ballY, trail, dashed = false)
+            val first = session.balls[0]
+            board.drawShotPath(canvas, session.path, if (first.alive) ballX else Float.NaN, ballY, trail, dashed = false)
         } else if (ended) {
             board.drawShotPath(canvas, session.path, Float.NaN, Float.NaN, trail, dashed = false)
         }
 
         val won = session.state == GameSession.State.WON
-        board.drawGoal(canvas, if (won && endTime >= EXPLODE) ((endTime - EXPLODE) / GOAL_PULSE).coerceAtMost(1f) else 0f)
+        val beat = if (session.state == GameSession.State.MOVING) host.beatPulse else 0f
+        board.drawGoal(
+            canvas, if (won && endTime >= EXPLODE) ((endTime - EXPLODE) / GOAL_PULSE).coerceAtMost(1f) else 0f,
+            beat = max(beat, exitFlash), entered = session.exitCount, needed = level.exitRequired,
+        )
         if (won && !exploded) {
             // The ring charges up as the fan spins.
             val p = spinUp(endTime)
             kit.fill.color = Palette.withAlpha(palette.accent, 0.18f * p)
             canvas.drawCircle(board.x(level.goal.x), board.y(level.goal.y), level.goalRadius.toFloat() * board.scale * 1.15f, kit.fill)
         }
-        if (session.state == GameSession.State.AIMING) {
-            board.drawLaunchZone(canvas, kit.unit, active = aim.isActive, power = aim.power.toFloat(), ready = aim.isThrowReady)
-        }
+        drawAimingAids(canvas)
         drawRipples(canvas)
-        shatter?.draw(canvas, shatterTime, palette.accent, kit.fill, kit.stroke)
-        drawBall(canvas, ballX, ballY)
+        for (s in shatters) if (s.isPlaying) s.draw(canvas, palette.accent, kit.fill, kit.stroke)
+        drawBalls(canvas)
         if (won && exploded) drawExplosion(canvas, endTime - EXPLODE)
         drawSparks(canvas)
+        if (slowAmount > 0f) drawSlowMotion(canvas)
         if (shaking) canvas.restore()
 
         drawHud(canvas)
@@ -481,41 +702,65 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         if (overlay > 0f) drawResult(canvas, overlay)
     }
 
-    private fun drawBall(canvas: Canvas, x: Float, y: Float) {
-        val left = session.bouncesLeft
-        // With no bounces left the ball shows cracks: the next wall breaks it.
-        val style = if (left == 0) BallStyle.CRACKED else BallStyle.SOLID
-        when (session.state) {
-            GameSession.State.WON -> drawFanStage(canvas, left)
-            GameSession.State.FAILED -> {
-                if (session.failReason == GameSession.FailReason.STOPPED) {
-                    // It ran out of speed: it empties with a small shake, then heads back to the start.
-                    val shake = sin(endTime * 70f) * kit.u(2.5f) * max(0f, 1f - endTime / STOP_RETRY_DELAY)
-                    board.drawBall(canvas, x + shake, y, 1f, BallStyle.HOLLOW, left)
-                }
-                // Broken: only its pieces are left (drawn by the shatter).
+    /** What shows where the player can act: the swipe dial round the ball (or the launch zone, for the hold control). */
+    private fun drawAimingAids(canvas: Canvas) {
+        if (tuning.controlMode == GameTuning.ControlMode.HOLD) {
+            if (session.state == GameSession.State.AIMING) {
+                board.drawLaunchZone(canvas, kit.unit, active = aim.isActive, power = aim.power.toFloat(), ready = aim.isThrowReady)
             }
-            GameSession.State.MOVING -> board.drawBall(canvas, x, y, 1f, style, left)
-            GameSession.State.AIMING -> {
-                if (respawnTime >= 0f) {
-                    val p = (respawnTime / RESPAWN_TIME).coerceIn(0f, 1f)
-                    if (!respawnFromX.isNaN()) {
-                        // Gliding back to the start from where it stopped.
-                        val e = p * p * (3f - 2f * p)
-                        board.drawBall(canvas, respawnFromX + (x - respawnFromX) * e, respawnFromY + (y - respawnFromY) * e, 1f, style, left)
-                    } else {
-                        // Popping in with a little overshoot.
-                        val c = 1.7f
-                        val q = p - 1f
-                        val size = (1f + (c + 1f) * q * q * q + c * q * q).coerceAtLeast(0.01f)
-                        board.drawBall(canvas, x, y, size, style, left)
-                    }
-                } else {
-                    // Held, the ball is lifted a touch.
-                    board.drawBall(canvas, x, y, if (aim.isActive) 1.06f else 1f, style, left)
-                }
+            return
+        }
+        val dialPower = if (swipeActive) swipe.power.toFloat() else 0f
+        if (session.state == GameSession.State.AIMING && respawnTime < 0f) {
+            board.drawSwipeDial(canvas, board.x(session.renderX), board.y(session.renderY), kit.unit, swipeActive, dialPower, swipe.isSwipe)
+        } else if (session.state == GameSession.State.MOVING) {
+            // A ball in a touch zone can be swiped again: it wears the dial too.
+            for (b in session.balls) {
+                if (!b.alive || !b.inTouchZone) continue
+                board.drawSwipeDial(canvas, board.x(session.renderX(b)), board.y(session.renderY(b)), kit.unit, swipeActive, dialPower, swipe.isSwipe, 0.8f)
             }
         }
+    }
+
+    /** Every ball in play (or the fan, once the level is won). */
+    private fun drawBalls(canvas: Canvas) {
+        when (session.state) {
+            GameSession.State.WON -> drawFanStage(canvas, session.winnerBall.left)
+            GameSession.State.FAILED -> {} // Broken: only its pieces are left (drawn by the shatters).
+            GameSession.State.MOVING -> for (b in session.balls) {
+                if (!b.alive) continue
+                val style = if (b.left == 0) BallStyle.CRACKED else BallStyle.SOLID
+                board.drawBall(canvas, board.x(session.renderX(b)), board.y(session.renderY(b)), 1f, style, b.left, b.alpha.toFloat())
+            }
+            GameSession.State.AIMING -> drawWaitingBall(canvas, board.x(session.renderX), board.y(session.renderY))
+        }
+    }
+
+    /** The ball at the start: popping in after a loss, or waiting; held, it is lifted a touch. */
+    private fun drawWaitingBall(canvas: Canvas, x: Float, y: Float) {
+        val left = session.bouncesLeft
+        val style = if (left == 0) BallStyle.CRACKED else BallStyle.SOLID
+        if (respawnTime >= 0f) {
+            // Popping in with a little overshoot.
+            val p = (respawnTime / RESPAWN_TIME).coerceIn(0f, 1f)
+            val c = 1.7f
+            val q = p - 1f
+            val size = (1f + (c + 1f) * q * q * q + c * q * q).coerceAtLeast(0.01f)
+            board.drawBall(canvas, x, y, size, style, left)
+        } else {
+            board.drawBall(canvas, x, y, if (aim.isActive || swipeActive) 1.06f else 1f, style, left)
+        }
+    }
+
+    /** Slow motion, seen: the edges of the screen close in softly and a thin ring breathes at the border. */
+    private fun drawSlowMotion(canvas: Canvas) {
+        val a = slowAmount
+        kit.stroke.color = Palette.withAlpha(palette.accent, 0.10f * a)
+        kit.stroke.strokeWidth = kit.u(28f) * a
+        canvas.drawRect(kit.u(14f) * a, kit.u(14f) * a, width - kit.u(14f) * a, height - kit.u(14f) * a, kit.stroke)
+        kit.stroke.color = Palette.withAlpha(palette.accent, (0.16f + 0.08f * sin(clock * 2.5f)) * a)
+        kit.stroke.strokeWidth = kit.u(1.5f)
+        canvas.drawRect(kit.u(6f), kit.u(6f), width - kit.u(6f), height - kit.u(6f), kit.stroke)
     }
 
     /** Entering, stopping, turning into a fan and spinning up, until it explodes. */
@@ -638,6 +883,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun drawRipples(canvas: Canvas) {
         val r = board.ballScreenRadius
         for (ripple in ripples) {
+            if (!ripple.alive) continue
             val t = ripple.age / RIPPLE_LIFE
             kit.stroke.color = Palette.withAlpha(palette.accent, 0.7f * (1f - t))
             kit.stroke.strokeWidth = kit.u(2f)
@@ -647,6 +893,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     private fun drawSparks(canvas: Canvas) {
         for (s in sparks) {
+            if (!s.alive) continue
             val t = s.age / s.life
             when (s.kind) {
                 SparkKind.STAR -> {
@@ -769,15 +1016,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         const val MORPH_END = 0.5f
         const val EXPLODE = 1.4f
         const val CHIME_DELAY = 0.5f
+
+        // Fixed sizes of the effect pools.
+        const val MAX_SPARKS = 128
+        const val MAX_RIPPLES = 16
+        const val MAX_SHATTERS = 4
         const val FLASH_TIME = 0.18f
         const val RING_TIME = 0.45f
         const val WIN_OVERLAY_DELAY = 2.1f
         const val OVERLAY_FADE = 0.2f
         const val GOAL_PULSE = 0.6f
 
-        // Losing: how long the loss shows before the next ball is at the start, and its arrival.
-        const val BREAK_RETRY_DELAY = 0.45f
-        const val STOP_RETRY_DELAY = 0.35f
+        // Losing: the new ball's arrival. (How long a loss shows first is GameTuning.retryDelay.)
         const val RESPAWN_TIME = 0.25f
 
         // Shakes: a quick flick on a wall hit, a little more for a break, a real jolt for the explosion.

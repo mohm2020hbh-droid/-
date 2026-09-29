@@ -257,6 +257,165 @@ object Synth {
         return finish(out, peak = 0.6)
     }
 
+    // ---------------------------------------------------------------- level elements
+
+    /** A ball entering a portal: a quick rising blip inside an airy whoosh that opens up and fades. */
+    fun portal(): ShortArray {
+        val out = FloatArray(seconds(0.4))
+        val rnd = Random(31)
+        val air = Svf()
+        var phase = 0.0
+        for (k in 0 until seconds(0.3)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            val centre = 500.0 + 2200.0 * min(1.0, t / 0.2)
+            val env = min(1.0, t / 0.02) * exp(-t / 0.09)
+            phase += 2 * PI * (300.0 * (1200.0 / 300.0).pow(min(1.0, t / 0.12))) / SAMPLE_RATE
+            out[k] += (env * (0.5 * air.bandpass(rnd.nextDouble(-1.0, 1.0), centre, q = 1.4) + 0.35 * sin(phase))).toFloat()
+        }
+        reverb(out, mix = 0.15)
+        return finish(out, peak = 0.7)
+    }
+
+    /** Time slowing down: a long falling sweep, like a record winding down, over a low swell. */
+    fun slowIn(): ShortArray {
+        val out = FloatArray(seconds(0.6))
+        val rnd = Random(37)
+        val breath = Svf()
+        var phase = 0.0
+        for (k in 0 until seconds(0.5)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            phase += 2 * PI * (900.0 * (160.0 / 900.0).pow(min(1.0, t / 0.4))) / SAMPLE_RATE
+            val env = min(1.0, t / 0.01) * exp(-t / 0.2)
+            out[k] += (env * (0.6 * sin(phase) + 0.2 * breath.lowpass(rnd.nextDouble(-1.0, 1.0), 700.0 - 400.0 * t, q = 0.7))).toFloat()
+        }
+        reverb(out, mix = 0.14)
+        return finish(out, peak = 0.7)
+    }
+
+    /** Time speeding back up: a quicker rising sweep that ends bright. */
+    fun slowOut(): ShortArray {
+        val out = FloatArray(seconds(0.4))
+        var phase = 0.0
+        for (k in 0 until seconds(0.3)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            phase += 2 * PI * (180.0 * (1000.0 / 180.0).pow(min(1.0, t / 0.22))) / SAMPLE_RATE
+            val env = min(1.0, t / 0.01) * exp(-t / 0.1)
+            out[k] += (env * (0.55 * sin(phase) + 0.15 * sin(2 * phase))).toFloat()
+        }
+        reverb(out, mix = 0.12)
+        return finish(out, peak = 0.6)
+    }
+
+    /** A ball reaching an exit that still needs more: two short, falling, muted notes ("not yet"). */
+    fun exitPartial(): ShortArray {
+        val out = FloatArray(seconds(0.3))
+        partial(out, 0.0, 660.0, 0.7, 0.05, attack = 0.002)
+        partial(out, 0.0, 1320.0, 0.15, 0.03, attack = 0.002)
+        partial(out, 0.09, 494.0, 0.7, 0.07, attack = 0.002)
+        partial(out, 0.09, 988.0, 0.12, 0.04, attack = 0.002)
+        return finish(out, peak = 0.5)
+    }
+
+    /** A ball hitting a ball container: a wooden clack with a little rattle of the balls inside. */
+    fun containerHit(): ShortArray {
+        val out = FloatArray(seconds(0.35))
+        val rnd = Random(41)
+        val click = Svf()
+        for (k in 0 until seconds(0.03)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            out[k] += (0.6 * min(1.0, t / 0.0003) * exp(-t / 0.003) * click.bandpass(rnd.nextDouble(-1.0, 1.0), 2600.0, q = 1.2)).toFloat()
+        }
+        partial(out, 0.0, 620.0, 0.55, 0.035, attack = 0.0006)
+        partial(out, 0.0, 1340.0, 0.3, 0.025, attack = 0.0006)
+        partial(out, 0.0, 190.0, 0.5, 0.05, attack = 0.001)
+        for (i in 0 until 3) {
+            val f = Svf()
+            val first = seconds(0.05 + 0.045 * i)
+            for (k in 0 until min(out.size - first, seconds(0.02))) {
+                val t = k.toDouble() / SAMPLE_RATE
+                out[first + k] += (0.25 * (1.0 - 0.25 * i) * exp(-t / 0.004) * f.bandpass(rnd.nextDouble(-1.0, 1.0), 3200.0, q = 1.5)).toFloat()
+            }
+        }
+        reverb(out, mix = 0.08)
+        return finish(out, peak = 0.9)
+    }
+
+    // ---------------------------------------------------------------- music
+
+    /**
+     * A loop of music from a recipe ([spec]): a slow pad on the chords, a soft bass, a gentle kick on every
+     * beat, plucked arpeggios and (in busier tracks) off-beat ticks. Deterministic: the same recipe always
+     * gives the same piece. Quiet by design; it sits under the sound effects.
+     */
+    fun music(spec: com.carom.core.audio.TrackSpec): ShortArray {
+        val beat = 60.0 / spec.bpm
+        val bar = 4 * beat
+        val out = FloatArray(seconds(spec.bars * bar))
+        val rnd = Random(spec.seed)
+        val scale = if (spec.minor) intArrayOf(0, 2, 3, 5, 7, 8, 10) else intArrayOf(0, 2, 4, 5, 7, 9, 11)
+        val progression = if (spec.minor) intArrayOf(0, 5, 2, 6, 0, 5, 3, 6) else intArrayOf(0, 4, 5, 3, 0, 4, 5, 3)
+        fun midi(degree: Int, octave: Int = 0): Double {
+            val d = Math.floorMod(degree, 7)
+            return (spec.root + scale[d] + 12 * (Math.floorDiv(degree, 7) + octave)).toDouble()
+        }
+        fun hz(m: Double) = 440.0 * 2.0.pow((m - 69.0) / 12.0)
+        val busy = spec.intensity
+        val hatFilter = Svf()
+
+        for (b in 0 until spec.bars) {
+            val start = b * bar
+            val root = progression[b % progression.size]
+            val chord = intArrayOf(root, root + 2, root + 4)
+            // Pad: the chord held for the bar, fading in and out so bars join without a click.
+            for (degree in chord) {
+                val f = hz(midi(degree, 0))
+                val first = seconds(start)
+                val length = seconds(bar)
+                val w = 2 * PI * f / SAMPLE_RATE
+                for (i in 0 until min(length, out.size - first)) {
+                    val t = i.toDouble() / SAMPLE_RATE
+                    val env = min(1.0, t / 0.35) * min(1.0, (bar - t) / 0.35)
+                    out[first + i] += (0.05 * env * (sin(w * i) + 0.3 * sin(2 * w * i))).toFloat()
+                }
+            }
+            // Bass on beats 1 and 3, an octave or two down.
+            for (beatIndex in intArrayOf(0, 2)) {
+                partial(out, start + beatIndex * beat, hz(midi(root, -2)), 0.22, 0.28, attack = 0.004)
+            }
+            // A soft kick on every beat: a low thump that gives the music its pulse.
+            for (beatIndex in 0 until 4) {
+                val first = seconds(start + beatIndex * beat)
+                var phase = 0.0
+                for (k in 0 until min(out.size - first, seconds(0.2))) {
+                    val t = k.toDouble() / SAMPLE_RATE
+                    phase += 2 * PI * (48.0 + 60.0 * exp(-t / 0.03)) / SAMPLE_RATE
+                    out[first + k] += (0.3 * (0.6 + 0.4 * busy) * min(1.0, t / 0.002) * exp(-t / 0.07) * sin(phase)).toFloat()
+                }
+            }
+            // Arpeggio: eighth notes over the chord, a little different every bar, brighter and denser when busy.
+            for (e in 0 until 8) {
+                if (rnd.nextDouble() > 0.45 + 0.5 * busy) continue
+                val degree = chord[rnd.nextInt(3)] + if (rnd.nextDouble() < 0.4) 7 else 0
+                val f = hz(midi(degree, 1))
+                val at = start + e * beat / 2
+                partial(out, at, f, 0.05 + 0.05 * busy, 0.16, attack = 0.003)
+                partial(out, at, f * 2.0, 0.015 + 0.02 * busy, 0.08, attack = 0.003)
+            }
+            // Off-beat ticks in the busier tracks.
+            if (busy > 0.4) {
+                for (beatIndex in 0 until 4) {
+                    val first = seconds(start + (beatIndex + 0.5) * beat)
+                    for (k in 0 until min(out.size - first, seconds(0.03))) {
+                        val t = k.toDouble() / SAMPLE_RATE
+                        out[first + k] += (0.06 * busy * exp(-t / 0.006) * hatFilter.bandpass(rnd.nextDouble(-1.0, 1.0), 6500.0, q = 1.0)).toFloat()
+                    }
+                }
+            }
+        }
+        reverb(out, mix = 0.18)
+        return finish(out, peak = 0.5, edges = true)
+    }
+
     // ---------------------------------------------------------------- building blocks
 
     private fun seconds(s: Double) = (s * SAMPLE_RATE).toInt()
