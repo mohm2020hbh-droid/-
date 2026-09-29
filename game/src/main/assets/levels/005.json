@@ -1,0 +1,11 @@
+{
+  "name": "Octagon",
+  "bounces": 1,
+  "ball": [330, 450],
+  "goal": [1270, 450],
+  "border": false,
+  "obstacles": [
+    {"type": "wall", "points": [420, 30, 1180, 30, 1570, 420, 1570, 480, 1180, 870, 420, 870, 30, 480, 30, 420], "closed": true},
+    {"type": "rect", "x": 650, "y": 300, "w": 300, "h": 300}
+  ]
+}

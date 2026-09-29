@@ -1,0 +1,11 @@
+{
+  "name": "Hexagon",
+  "bounces": 1,
+  "ball": [500, 450],
+  "goal": [1100, 450],
+  "border": false,
+  "obstacles": [
+    {"type": "wall", "points": [1230, 450, 1015, 822, 585, 822, 370, 450, 585, 78, 1015, 78], "closed": true},
+    {"type": "wall", "points": [800, 250, 800, 650]}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Keyhole",
+  "bounces": 2,
+  "ball": [250, 780],
+  "goal": [1450, 478],
+  "obstacles": [
+    {"type": "wall", "points": [700, 0, 700, 275]},
+    {"type": "wall", "points": [700, 385, 700, 900]}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Rebound",
+  "bounces": 2,
+  "ball": [300, 620],
+  "goal": [300, 190],
+  "obstacles": [
+    {"type": "wall", "points": [0, 330, 900, 330]}
+  ]
+}

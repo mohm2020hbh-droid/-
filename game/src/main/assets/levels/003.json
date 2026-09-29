@@ -1,0 +1,11 @@
+{
+  "name": "Mirror",
+  "bounces": 1,
+  "ball": [220, 700],
+  "goal": [1300, 290],
+  "hint": {"en": "Angled walls turn the ball", "ar": "الجدران المائلة تغيّر اتجاه الكرة"},
+  "obstacles": [
+    {"type": "wall", "points": [0, 430, 1080, 430]},
+    {"type": "wall", "points": [1179.9, 860.1, 1440.1, 599.9]}
+  ]
+}

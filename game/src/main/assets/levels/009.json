@@ -1,0 +1,11 @@
+{
+  "name": "Echo Chamber",
+  "bounces": 1,
+  "ball": [150, 450],
+  "goal": [1450, 450],
+  "obstacles": [
+    {"type": "wall", "points": [0, 330, 1600, 330]},
+    {"type": "wall", "points": [0, 570, 1600, 570]},
+    {"type": "rect", "x": 770, "y": 420, "w": 60, "h": 60}
+  ]
+}

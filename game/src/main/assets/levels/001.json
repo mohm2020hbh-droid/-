@@ -1,0 +1,7 @@
+{
+  "name": "First Shot",
+  "bounces": 3,
+  "ball": [260, 450],
+  "goal": [1340, 450],
+  "hint": {"en": "Pull back from the ball, aim, and let go", "ar": "اسحب من الكرة للخلف، صوّب، ثم اترُكها"}
+}

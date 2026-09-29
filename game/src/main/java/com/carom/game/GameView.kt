@@ -1,0 +1,148 @@
+package com.carom.game
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Rect
+import android.os.Build
+import android.util.Log
+import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowInsets
+import com.carom.core.level.LevelFormatException
+import com.carom.game.screens.GameHost
+import com.carom.game.screens.Haptic
+import com.carom.game.screens.HomeScreen
+import com.carom.game.screens.LevelSelectScreen
+import com.carom.game.screens.PlayScreen
+import com.carom.game.screens.Screen
+import com.carom.game.ui.Palette
+import com.carom.game.ui.UiKit
+import com.carom.game.ui.UiText
+import kotlin.math.max
+import kotlin.math.min
+
+/**
+ * The game's only view. It runs the frame loop, routes input to the current [Screen] and handles
+ * navigation. Frames are requested only while something moves; an idle screen draws nothing.
+ */
+@SuppressLint("ViewConstructor")
+class GameView(context: Context, override val app: GameApp) : View(context), GameHost {
+
+    override var kit = UiKit(1f, UiText.forLocale())
+        private set
+
+    private var screen: Screen = HomeScreen(this)
+    private val insets = Rect()
+    private var lastFrameNanos = 0L
+
+    /** Screen-change fade, 1 → 0. */
+    private var fade = 0f
+
+    internal val currentScreen: Screen get() = screen
+
+    /** Test hook: skip the screen-change fade. */
+    internal fun finishTransition() {
+        fade = 0f
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        kit = UiKit(min(w / 640f, h / 360f), kit.text)
+        screen.layout(w, h, insets)
+    }
+
+    override fun onApplyWindowInsets(windowInsets: WindowInsets): WindowInsets {
+        // Keep UI clear of camera cutouts. System bars are hidden (immersive), so they don't count.
+        val cutout = Rect()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val i = windowInsets.getInsets(WindowInsets.Type.displayCutout())
+            cutout.set(i.left, i.top, i.right, i.bottom)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            windowInsets.displayCutout?.let { cutout.set(it.safeInsetLeft, it.safeInsetTop, it.safeInsetRight, it.safeInsetBottom) }
+        }
+        if (cutout != insets) {
+            insets.set(cutout)
+            if (width > 0) screen.layout(width, height, insets)
+            invalidate()
+        }
+        return super.onApplyWindowInsets(windowInsets)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val now = System.nanoTime()
+        val dt = if (lastFrameNanos == 0L) 0f else ((now - lastFrameNanos) / 1e9f).coerceAtMost(0.1f)
+        lastFrameNanos = now
+
+        screen.update(dt)
+        fade = max(0f, fade - dt / FADE_SECONDS)
+
+        canvas.drawColor(Palette.BACKGROUND)
+        screen.draw(canvas)
+        if (fade > 0f) canvas.drawColor(Palette.withAlpha(Palette.BACKGROUND, fade))
+
+        if (screen.isAnimating || fade > 0f) {
+            postInvalidateOnAnimation()
+        } else {
+            lastFrameNanos = 0L
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        screen.onTouch(event)
+        invalidate()
+        return true
+    }
+
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        // Don't let time spent in the background arrive as one giant frame.
+        lastFrameNanos = 0L
+    }
+
+    /** Returns false when the back action should leave the game. */
+    fun onBack(): Boolean = screen.onBack().also { invalidate() }
+
+    override fun showHome() = switchTo(HomeScreen(this))
+
+    override fun showLevels(focusIndex: Int) = switchTo(LevelSelectScreen(this, focusIndex))
+
+    override fun play(index: Int) {
+        if (index !in 0 until app.levels.size) return showLevels(app.levels.size - 1)
+        val level = try {
+            app.levels.load(index)
+        } catch (e: LevelFormatException) {
+            Log.e(TAG, "Level ${app.levels.ids[index]} is invalid", e)
+            return showLevels(index)
+        }
+        switchTo(PlayScreen(this, index, level))
+    }
+
+    private fun switchTo(next: Screen) {
+        screen = next
+        keepScreenOn = next is PlayScreen
+        if (width > 0) next.layout(width, height, insets)
+        next.onEnter()
+        fade = 1f
+        invalidate()
+    }
+
+    override fun haptic(kind: Haptic) {
+        if (!app.settings.hapticsEnabled) return
+        val constant = when (kind) {
+            Haptic.CLICK -> HapticFeedbackConstants.KEYBOARD_TAP
+            Haptic.BOUNCE -> HapticFeedbackConstants.CLOCK_TICK
+            Haptic.SUCCESS ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY
+            Haptic.FAILURE ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS
+        }
+        performHapticFeedback(constant)
+    }
+
+    private companion object {
+        const val TAG = "Carom"
+        const val FADE_SECONDS = 0.18f
+    }
+}

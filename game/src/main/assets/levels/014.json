@@ -1,0 +1,10 @@
+{
+  "name": "Chicane",
+  "bounces": 2,
+  "ball": [200, 450],
+  "goal": [1400, 450],
+  "obstacles": [
+    {"type": "wall", "points": [600, 0, 600, 560]},
+    {"type": "wall", "points": [1000, 900, 1000, 340]}
+  ]
+}

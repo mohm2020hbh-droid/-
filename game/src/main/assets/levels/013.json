@@ -1,0 +1,13 @@
+{
+  "name": "Periscope",
+  "bounces": 2,
+  "ball": [200, 700],
+  "goal": [1400, 200],
+  "obstacles": [
+    {"type": "wall", "points": [0, 450, 460, 450]},
+    {"type": "wall", "points": [660, 450, 1600, 450]},
+    {"type": "wall", "points": [1150, 0, 1150, 140]},
+    {"type": "wall", "points": [509.1, 791.9, 692.9, 608.1]},
+    {"type": "wall", "points": [427.1, 291.9, 610.9, 108.1]}
+  ]
+}

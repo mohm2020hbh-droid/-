@@ -1,0 +1,11 @@
+{
+  "name": "Triple Chicane",
+  "bounces": 5,
+  "ball": [180, 780],
+  "goal": [1420, 120],
+  "obstacles": [
+    {"type": "wall", "points": [450, 0, 450, 600]},
+    {"type": "wall", "points": [800, 900, 800, 300]},
+    {"type": "wall", "points": [1150, 0, 1150, 600]}
+  ]
+}

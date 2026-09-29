@@ -1,0 +1,11 @@
+{
+  "name": "Wedge",
+  "bounces": 2,
+  "ball": [250, 750],
+  "goal": [1350, 140],
+  "hint": {"en": "Solid shapes bounce the ball too", "ar": "الأشكال الصلبة ترتد عنها الكرة أيضًا"},
+  "obstacles": [
+    {"type": "wall", "points": [420, 450, 1600, 450]},
+    {"type": "poly", "points": [0, 0, 360, 0, 0, 360]}
+  ]
+}

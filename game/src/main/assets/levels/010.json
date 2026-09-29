@@ -1,0 +1,10 @@
+{
+  "name": "Hidden Pocket",
+  "bounces": 3,
+  "ball": [250, 700],
+  "goal": [1150, 720],
+  "obstacles": [
+    {"type": "wall", "points": [700, 900, 700, 380]},
+    {"type": "wall", "points": [1000, 900, 1000, 500, 1350, 500]}
+  ]
+}

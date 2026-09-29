@@ -1,0 +1,12 @@
+{
+  "name": "Twin Mirrors",
+  "bounces": 2,
+  "ball": [620, 160],
+  "goal": [620, 740],
+  "obstacles": [
+    {"type": "wall", "points": [0, 450, 1250, 450]},
+    {"type": "wall", "points": [1250, 300, 1250, 600]},
+    {"type": "wall", "points": [1313.9, 63.9, 1526.1, 276.1]},
+    {"type": "wall", "points": [1313.9, 836.1, 1526.1, 623.9]}
+  ]
+}
