@@ -109,6 +109,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val shape = Path()
     private val hintBox = RectF()
 
+    // The wrapped caption (hint), worked out when it or the screen width changes.
+    private var captionKey: String? = null
+    private var captionFor = 0f
+    private var captionLines: List<String> = emptyList()
+    private var captionWidth = 0f
+
     // Screen shake: how long it has run, for how long, and how far.
     private var shakeTime = 0f
     private var shakeLength = 0f
@@ -962,19 +968,44 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             else -> null
         }
         if (caption != null) {
-            // The path hint's caption sits up under the level number, clear of the path itself.
-            val y = if (guideShown) topBarY + kit.u(46f) else hintY
-            val w = min(kit.small.measureText(caption) + kit.u(28f), safe.width() - kit.u(16f))
-            hintBox.set(width / 2 - w / 2, y - kit.u(15f), width / 2 + w / 2, y + kit.u(15f))
+            // A hint or the path hint's caption; a long one wraps onto a second line. The path hint's sits up under
+            // the level number, clear of the path itself.
+            if (caption != captionKey || captionFor != safe.width()) wrapCaption(caption)
+            val lineHeight = kit.u(16f)
+            val extra = (captionLines.size - 1) * lineHeight
+            val w = min(captionWidth + kit.u(28f), safe.width() - kit.u(16f))
+            val y = if (guideShown) topBarY + kit.u(46f) + extra / 2 else hintY - extra / 2
+            hintBox.set(width / 2 - w / 2, y - kit.u(15f) - extra / 2, width / 2 + w / 2, y + kit.u(15f) + extra / 2)
             kit.fill.color = Palette.withAlpha(palette.background, 0.85f)
             canvas.drawRoundRect(hintBox, kit.u(15f), kit.u(15f), kit.fill)
             kit.stroke.color = if (guideShown) Palette.withAlpha(palette.accent, 0.5f) else Palette.LINE
             kit.stroke.strokeWidth = kit.u(1f)
             canvas.drawRoundRect(hintBox, kit.u(15f), kit.u(15f), kit.stroke)
             kit.small.color = if (guideShown) Palette.TEXT else Palette.TEXT_DIM
-            kit.drawText(canvas, caption, width / 2, y, kit.small)
+            for (i in captionLines.indices) kit.drawText(canvas, captionLines[i], width / 2, y - extra / 2 + i * lineHeight, kit.small)
             kit.small.color = Palette.TEXT
         }
+    }
+
+    /** Breaks [text] into lines that fit the screen, at spaces; done when the caption or the screen changes, not every frame. */
+    private fun wrapCaption(text: String) {
+        val maxWidth = safe.width() - kit.u(56f)
+        val lines = ArrayList<String>()
+        var current = ""
+        for (word in text.split(" ")) {
+            val attempt = if (current.isEmpty()) word else "$current $word"
+            if (current.isNotEmpty() && kit.small.measureText(attempt) > maxWidth) {
+                lines.add(current)
+                current = word
+            } else {
+                current = attempt
+            }
+        }
+        if (current.isNotEmpty()) lines.add(current)
+        captionLines = lines
+        captionKey = text
+        captionFor = safe.width()
+        captionWidth = lines.maxOf { kit.small.measureText(it) }
     }
 
     private fun drawResult(canvas: Canvas, progress: Float) {
