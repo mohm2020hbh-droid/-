@@ -24,9 +24,9 @@ data class LevelData(
     val maxSpeed: Double,
     /** Constant deceleration in units per second²; 0 means the ball never slows down. */
     val friction: Double,
-    /** Whether the level is enclosed by a rectangular wall along its edges. */
+    /** Whether the level's edges (the screen's edges) bounce the ball. They are never drawn. */
     val border: Boolean,
-    /** Thickness of the border wall and the default thickness of walls. */
+    /** Default thickness of walls. */
     val wallThickness: Double,
     val ballRadius: Double,
     val obstacles: List<Obstacle>,
@@ -58,14 +58,15 @@ data class Wall(
 data class Block(val points: List<Vec2>) : Obstacle
 
 /**
- * Levels are portrait (1:2) to fill a phone held upright. The ball is deliberately large — about a
- * tenth of the board's width — so it is easy to see, grab and read the bounce count inside it.
+ * Levels are portrait 9:20 — the shape of today's phones held upright — so the level's edges are
+ * the screen's edges. The ball is the thing the player holds: large (its diameter is about 13% of
+ * the width) so it is easy to see, grab and read the bounce count inside it.
  */
 object LevelDefaults {
     const val WIDTH = 900.0
-    const val HEIGHT = 1800.0
-    const val BALL_RADIUS = 46.0
-    const val GOAL_RADIUS = 64.0
+    const val HEIGHT = 2000.0
+    const val BALL_RADIUS = 60.0
+    const val GOAL_RADIUS = 84.0
     const val WALL_THICKNESS = 16.0
     const val MAX_SPEED = 2400.0
     const val FRICTION = 600.0

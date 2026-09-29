@@ -9,6 +9,8 @@ class UiText private constructor(
     val play: String,
     val levels: String,
     val level: String,
+    val world: String,
+    private val worldUnlockedFormat: String,
     val levelComplete: String,
     val levelFailed: String,
     val allComplete: String,
@@ -20,6 +22,8 @@ class UiText private constructor(
     val vibrationOn: String,
     val vibrationOff: String,
 ) {
+    fun worldUnlocked(worldNumber: Int): String = String.format(Locale.ROOT, worldUnlockedFormat, worldNumber)
+
     /** Letter spacing looks right in Latin capitals but breaks Arabic joining, so it is per language. */
     val letterSpacing: Float get() = if (language == "ar") 0f else 1f
 
@@ -30,6 +34,8 @@ class UiText private constructor(
             play = "PLAY",
             levels = "LEVELS",
             level = "LEVEL",
+            world = "WORLD",
+            worldUnlockedFormat = "WORLD %d UNLOCKED",
             levelComplete = "LEVEL COMPLETE",
             levelFailed = "LEVEL FAILED",
             allComplete = "ALL LEVELS COMPLETE",
@@ -48,6 +54,8 @@ class UiText private constructor(
             play = "العب",
             levels = "المراحل",
             level = "المرحلة",
+            world = "العالم",
+            worldUnlockedFormat = "فُتح العالم %d",
             levelComplete = "اكتملت المرحلة",
             levelFailed = "فشلت المحاولة",
             allComplete = "أنهيت جميع المراحل",

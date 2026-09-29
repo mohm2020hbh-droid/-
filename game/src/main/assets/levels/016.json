@@ -1,16 +1,10 @@
 {
-  "name": "Mirror Maze",
+  "name": "Chicane",
   "bounces": 2,
-  "ball": [150, 1550],
-  "goal": [750, 250],
+  "ball": [450, 1600],
+  "goal": [450, 400],
   "obstacles": [
-    {"type": "wall", "points": [300, 1400, 300, 1000]},
-    {"type": "wall", "points": [600, 800, 600, 400]},
-    {"type": "wall", "points": [65.1, 984.9, 234.9, 815.1]},
-    {"type": "wall", "points": [665.1, 984.9, 834.9, 815.1]},
-    {"type": "wall", "points": [520.7, 1370.7, 379.3, 1229.3]},
-    {"type": "wall", "points": [379.3, 570.7, 520.7, 429.3]},
-    {"type": "wall", "points": [820.7, 1370.7, 679.3, 1229.3]},
-    {"type": "wall", "points": [220.7, 570.7, 79.3, 429.3]}
+    {"type": "wall", "points": [0, 1200, 560, 1200]},
+    {"type": "wall", "points": [900, 800, 340, 800]}
   ]
 }

@@ -1,13 +1,9 @@
 {
-  "name": "Periscope",
+  "name": "Prism",
   "bounces": 2,
-  "ball": [700, 1500],
-  "goal": [200, 300],
+  "ball": [450, 1650],
+  "goal": [450, 450],
   "obstacles": [
-    {"type": "wall", "points": [450, 1800, 450, 1240]},
-    {"type": "wall", "points": [450, 1040, 450, 0]},
-    {"type": "wall", "points": [0, 550, 140, 550]},
-    {"type": "wall", "points": [791.9, 1190.9, 608.1, 1007.1]},
-    {"type": "wall", "points": [291.9, 1272.9, 108.1, 1089.1]}
+    {"type": "wall", "points": [180, 1250, 450, 1000, 720, 1250]}
   ]
 }

@@ -1,10 +1,10 @@
 {
-  "name": "Chicane",
+  "name": "Crossroads",
   "bounces": 2,
-  "ball": [450, 1500],
-  "goal": [450, 300],
+  "ball": [180, 1700],
+  "goal": [720, 350],
   "obstacles": [
-    {"type": "wall", "points": [0, 1100, 560, 1100]},
-    {"type": "wall", "points": [900, 700, 340, 700]}
+    {"type": "wall", "points": [450, 850, 450, 1150]},
+    {"type": "wall", "points": [300, 1000, 600, 1000]}
   ]
 }

@@ -3,28 +3,53 @@ package com.carom.game.ui
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
+import com.carom.core.level.Worlds
 
-/** The game's few colours. Dark, calm background; one accent; the ball and walls stand out. */
+/**
+ * A world's look, built from two colours only:
+ * - [primary] is the environment: the background is its deepest shade and walls are its soft tint.
+ * - [accent] is contrast: the ball, the goal, and everything the player touches.
+ * Text uses neutral white, so no other colour ever appears on screen.
+ */
+class WorldPalette(val background: Int, val primary: Int, val accent: Int) {
+    /** The space outside the level on screens whose shape differs from the level's. */
+    val void: Int get() = Palette.blend(background, 0xFF000000.toInt(), 0.35f)
+}
+
 object Palette {
-    const val BACKGROUND = 0xFF10141C.toInt()
-    const val LINE = 0xFF2C3545.toInt()
-    const val TEXT = 0xFFE7EAF0.toInt()
-    const val TEXT_DIM = 0xFF7E889B.toInt()
-    const val ACCENT = 0xFFF4C152.toInt()
-    const val ON_ACCENT = 0xFF171A21.toInt()
-    const val BALL = 0xFF6FE3B4.toInt()
-    const val DANGER = 0xFFEE6E68.toInt()
+    /** Neutral text, shared by every world. */
+    const val TEXT = 0xFFF1F3F6.toInt()
+    val TEXT_DIM: Int = withAlpha(TEXT, 0.55f)
+    val LINE: Int = withAlpha(TEXT, 0.2f)
 
-    /** One chapter = one page of the level list. */
-    const val LEVELS_PER_CHAPTER = 20
+    /** Calm, deep grounds with a soft main colour and a light contrast colour. */
+    private val WORLDS = arrayOf(
+        WorldPalette(0xFF0E1A2B.toInt(), 0xFF5E82B0.toInt(), 0xFFF2F5F9.toInt()), // blue + white
+        WorldPalette(0xFF19142B.toInt(), 0xFF8674B8.toInt(), 0xFFF4F1FA.toInt()), // violet + white
+        WorldPalette(0xFF0D211D.toInt(), 0xFF5E9A86.toInt(), 0xFFEFF6F2.toInt()), // green + white
+        WorldPalette(0xFF24150F.toInt(), 0xFFC5835A.toInt(), 0xFFFBF2EA.toInt()), // orange + white
+        WorldPalette(0xFF08121F.toInt(), 0xFF34597F.toInt(), 0xFF86D5E6.toInt()), // deep blue + cyan
+    )
 
-    /** Each chapter gets its own wall colour. */
-    private val WALLS = intArrayOf(0xFFE6D9BF.toInt(), 0xFF9FC9EE.toInt(), 0xFFC9B9F2.toInt(), 0xFFF2B5A2.toInt())
+    fun forWorld(world: Int): WorldPalette = WORLDS[Math.floorMod(world, WORLDS.size)]
 
-    fun wallColor(levelIndex: Int): Int = WALLS[(levelIndex / LEVELS_PER_CHAPTER) % WALLS.size]
+    fun forLevel(levelIndex: Int): WorldPalette = forWorld(Worlds.worldOf(levelIndex))
+
+    /** Palette part-way between [a] and [b], for sliding between worlds. */
+    fun lerp(a: WorldPalette, b: WorldPalette, t: Float): WorldPalette =
+        WorldPalette(blend(a.background, b.background, t), blend(a.primary, b.primary, t), blend(a.accent, b.accent, t))
 
     fun withAlpha(color: Int, alpha: Float): Int =
         (color and 0x00FFFFFF) or ((alpha.coerceIn(0f, 1f) * 255).toInt() shl 24)
+
+    fun blend(from: Int, to: Int, t: Float): Int {
+        fun ch(shift: Int): Int {
+            val a = (from shr shift) and 0xFF
+            val b = (to shr shift) and 0xFF
+            return (a + (b - a) * t.coerceIn(0f, 1f)).toInt() shl shift
+        }
+        return ch(24) or ch(16) or ch(8) or ch(0)
+    }
 }
 
 /**
@@ -35,6 +60,9 @@ object Palette {
 class UiKit(val unit: Float, val text: UiText) {
 
     fun u(v: Float): Float = v * unit
+
+    /** Colours of the screen being drawn; set by the view before each frame. */
+    var palette: WorldPalette = Palette.forWorld(0)
 
     val fill = Paint(Paint.ANTI_ALIAS_FLAG)
 

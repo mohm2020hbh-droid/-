@@ -1,12 +1,12 @@
 {
   "name": "Triple Chicane",
-  "bounces": 5,
-  "ball": [780, 1520],
-  "goal": [120, 280],
+  "bounces": 3,
+  "ball": [450, 1700],
+  "goal": [450, 350],
   "goalRadius": 56,
   "obstacles": [
-    {"type": "wall", "points": [0, 1250, 600, 1250]},
-    {"type": "wall", "points": [900, 900, 300, 900]},
-    {"type": "wall", "points": [0, 550, 600, 550]}
+    {"type": "wall", "points": [300, 1475, 900, 1475]},
+    {"type": "wall", "points": [0, 1025, 600, 1025]},
+    {"type": "wall", "points": [300, 575, 900, 575]}
   ]
 }

@@ -1,13 +1,10 @@
 {
-  "name": "Gauntlet",
-  "bounces": 4,
-  "ball": [450, 1550],
-  "goal": [450, 360],
-  "goalRadius": 56,
+  "name": "Hidden Pocket",
+  "bounces": 3,
+  "ball": [700, 1550],
+  "goal": [720, 650],
   "obstacles": [
-    {"type": "wall", "points": [0, 1401, 560, 1401]},
-    {"type": "wall", "points": [340, 1104, 900, 1104]},
-    {"type": "wall", "points": [0, 807, 560, 807]},
-    {"type": "wall", "points": [340, 510, 900, 510]}
+    {"type": "wall", "points": [900, 1100, 380, 1100]},
+    {"type": "wall", "points": [900, 800, 500, 800, 500, 450]}
   ]
 }

@@ -1,10 +1,10 @@
 {
   "name": "Over the Wall",
   "bounces": 2,
-  "ball": [660, 1440],
-  "goal": [660, 360],
-  "hint": {"en": "Every wall hit uses one bounce", "ar": "كل اصطدام بجدار يستهلك ارتدادًا واحدًا"},
+  "ball": [660, 1540],
+  "goal": [660, 460],
+  "hint": {"en": "Walls and screen edges each use one bounce", "ar": "كل اصطدام بجدار أو بحافة الشاشة يستهلك ارتدادًا واحدًا"},
   "obstacles": [
-    {"type": "wall", "points": [300, 900, 900, 900]}
+    {"type": "wall", "points": [300, 1000, 900, 1000]}
   ]
 }

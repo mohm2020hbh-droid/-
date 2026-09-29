@@ -8,12 +8,16 @@ import android.view.MotionEvent
 import com.carom.game.ui.Icon
 import com.carom.game.ui.Palette
 import com.carom.game.ui.UiButton
+import com.carom.game.ui.WorldPalette
 import kotlin.math.min
 
 /** Title screen: continue playing, open the level list, toggle vibration. */
 class HomeScreen(host: GameHost) : Screen(host) {
 
     private val settings = host.app.settings
+
+    /** The title screen wears the colours of the world the player has reached. */
+    override val palette: WorldPalette get() = Palette.forLevel(host.app.progress.currentIndex)
 
     private val playButton = UiButton(UiButton.Style.PRIMARY, kit.text.play, Icon.PLAY) {
         host.play(host.app.progress.currentIndex)
@@ -67,17 +71,18 @@ class HomeScreen(host: GameHost) : Screen(host) {
         val span = min(safe.width() * 0.34f, kit.u(130f))
         val topY = safe.top + safe.height() * 0.16f
         val wallY = safe.top + safe.height() * 0.36f
-        val ballR = kit.u(17f)
+        val ballR = kit.u(20f)
         val bounceY = wallY - ballR - kit.u(3f)
         val ballX = columnX - span * 0.8f
         val goalX = columnX + span * 0.8f
 
-        kit.stroke.color = Palette.wallColor(0)
+        val colors = palette
+        kit.stroke.color = colors.primary
         kit.stroke.strokeWidth = kit.u(5f)
         canvas.drawLine(columnX - span, wallY, columnX + span, wallY, kit.stroke)
 
         // Dotted path: down to the wall, then up into the goal (a mirror-image V).
-        kit.fill.color = Palette.withAlpha(Palette.BALL, 0.5f)
+        kit.fill.color = Palette.withAlpha(colors.accent, 0.45f)
         val steps = 16
         for (i in 2 until steps - 1) {
             val t = i / steps.toFloat()
@@ -85,14 +90,15 @@ class HomeScreen(host: GameHost) : Screen(host) {
             canvas.drawCircle(ballX + (goalX - ballX) * t, topY + (bounceY - topY) * k, kit.u(2f), kit.fill)
         }
 
-        kit.stroke.color = Palette.ACCENT
+        kit.stroke.color = colors.accent
         kit.stroke.strokeWidth = kit.u(5f)
         canvas.drawCircle(goalX, topY, kit.u(24f), kit.stroke)
-        kit.fill.color = Palette.ACCENT
+        kit.fill.color = colors.accent
         canvas.drawCircle(goalX, topY, kit.u(5f), kit.fill)
 
-        kit.fill.color = Palette.BALL
+        kit.fill.color = colors.accent
         canvas.drawCircle(ballX, topY, ballR, kit.fill)
+        emblemDigit.color = colors.background
         emblemDigit.textSize = ballR * 1.1f
         emblemDigit.getTextBounds("1", 0, 1, digitBounds)
         canvas.drawText("1", ballX, topY - digitBounds.exactCenterY(), emblemDigit)
@@ -101,7 +107,6 @@ class HomeScreen(host: GameHost) : Screen(host) {
     private val emblemDigit = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.create("sans-serif", Typeface.BOLD)
         textAlign = Paint.Align.CENTER
-        color = Palette.BACKGROUND
     }
     private val digitBounds = Rect()
 }

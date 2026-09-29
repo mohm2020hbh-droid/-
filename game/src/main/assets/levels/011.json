@@ -1,9 +1,9 @@
 {
   "name": "Corner Pocket",
   "bounces": 2,
-  "ball": [700, 1500],
-  "goal": [170, 260],
+  "ball": [700, 1600],
+  "goal": [170, 360],
   "obstacles": [
-    {"type": "wall", "points": [0, 450, 260, 450, 260, 260]}
+    {"type": "wall", "points": [0, 550, 260, 550, 260, 360]}
   ]
 }

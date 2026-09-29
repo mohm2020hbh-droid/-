@@ -28,6 +28,11 @@ class ShippedLevelsTest {
     }
 
     @Test
+    fun levelsFillWholeWorlds() {
+        assertEquals("every world must have exactly ${Worlds.SIZE} levels", 0, repository.size % Worlds.SIZE)
+    }
+
+    @Test
     fun everyLevelIsValid() {
         val problems = levels.flatMap { level -> LevelValidator.problems(level).map { "${level.id}: $it" } }
         assertEquals(emptyList<String>(), problems)

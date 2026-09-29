@@ -5,8 +5,10 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.view.MotionEvent
 import com.carom.game.GameApp
+import com.carom.game.ui.Palette
 import com.carom.game.ui.UiButton
 import com.carom.game.ui.UiKit
+import com.carom.game.ui.WorldPalette
 
 enum class Haptic { CLICK, BOUNCE, SUCCESS, FAILURE }
 
@@ -45,6 +47,9 @@ abstract class Screen(protected val host: GameHost) {
     }
 
     protected abstract fun onLayout()
+
+    /** The world colours this screen is drawn in (the view paints its background first). */
+    open val palette: WorldPalette get() = Palette.forWorld(0)
 
     abstract fun draw(canvas: Canvas)
 

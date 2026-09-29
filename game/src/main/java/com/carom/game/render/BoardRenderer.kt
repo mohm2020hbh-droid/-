@@ -11,14 +11,17 @@ import com.carom.core.level.LevelData
 import com.carom.core.level.Wall
 import com.carom.core.math.Vec2
 import com.carom.game.ui.Palette
+import com.carom.game.ui.WorldPalette
 
 /**
- * Draws a level: walls, blocks, goal, ball, shot paths and the aiming guide.
+ * Draws a level: walls, blocks, goal, ball, shot paths and the aiming guide, in the world's two
+ * colours (walls in the main colour; ball, goal and guides in the contrast colour). The level's
+ * edges are never drawn: they are the edges of the screen.
  *
  * Level geometry is converted to screen-space paths once per layout, so drawing a frame is a
  * handful of draw calls with no allocation.
  */
-class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
+class BoardRenderer(private val level: LevelData, private val palette: WorldPalette) {
 
     var scale = 1f
         private set
@@ -36,7 +39,7 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
-        color = wallColor
+        color = palette.primary
     }
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -49,7 +52,6 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
     private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.create("sans-serif", Typeface.BOLD)
         textAlign = Paint.Align.CENTER
-        color = Palette.BACKGROUND
     }
     private val numberBounds = Rect()
     private val numbers = Array(100) { it.toString() }
@@ -62,12 +64,6 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
 
         wallPaths.clear()
         blockPath.reset()
-        if (level.border) {
-            val corners = listOf(
-                Vec2(0.0, 0.0), Vec2(level.width, 0.0), Vec2(level.width, level.height), Vec2(0.0, level.height),
-            )
-            addPolyline(pathFor(level.wallThickness), corners, closed = true)
-        }
         for (o in level.obstacles) {
             when (o) {
                 is Wall -> addPolyline(pathFor(o.thickness), o.points, o.closed)
@@ -86,7 +82,7 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
             wallPaint.strokeWidth = thickness.toFloat() * scale
             canvas.drawPath(path, wallPaint)
         }
-        fillPaint.color = wallColor
+        fillPaint.color = palette.primary
         canvas.drawPath(blockPath, fillPaint)
     }
 
@@ -97,13 +93,13 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
         val r = level.goalRadius.toFloat() * scale
         val ring = r * 0.18f
         linePaint.pathEffect = null
-        linePaint.color = Palette.ACCENT
+        linePaint.color = palette.accent
         linePaint.strokeWidth = ring
         canvas.drawCircle(cx, cy, r - ring / 2, linePaint)
-        fillPaint.color = Palette.ACCENT
+        fillPaint.color = palette.accent
         canvas.drawCircle(cx, cy, r * 0.2f, fillPaint)
         if (pulse > 0f) {
-            linePaint.color = Palette.withAlpha(Palette.ACCENT, 1f - pulse)
+            linePaint.color = Palette.withAlpha(palette.accent, 1f - pulse)
             linePaint.strokeWidth = ring * (1f - pulse * 0.6f)
             canvas.drawCircle(cx, cy, r * (1f + pulse * 1.2f), linePaint)
         }
@@ -115,11 +111,23 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
     /**
      * The ball at screen position (sx, sy), with the bounces it has left written in its centre.
      * The number is part of the ball: same position, same scale, always inside its edge.
+     * A [hollow] ball (no bounces left, or the attempt failed) is drawn as a ring, so the state
+     * change needs no extra colour.
      */
-    fun drawBall(canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, color: Int, bouncesLeft: Int) {
+    fun drawBall(canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, hollow: Boolean, bouncesLeft: Int) {
         val r = ballScreenRadius * sizeFactor
-        fillPaint.color = color
-        canvas.drawCircle(sx, sy, r, fillPaint)
+        if (hollow) {
+            val ring = r * 0.12f
+            linePaint.pathEffect = null
+            linePaint.color = palette.accent
+            linePaint.strokeWidth = ring
+            canvas.drawCircle(sx, sy, r - ring / 2, linePaint)
+            numberPaint.color = palette.accent
+        } else {
+            fillPaint.color = palette.accent
+            canvas.drawCircle(sx, sy, r, fillPaint)
+            numberPaint.color = palette.background
+        }
         val text = numbers[bouncesLeft.coerceIn(0, numbers.size - 1)]
         numberPaint.textSize = r * if (text.length == 1) 1.1f else 0.85f
         numberPaint.getTextBounds(text, 0, text.length, numberBounds)
@@ -145,7 +153,7 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
      * power, ending in a chevron. It deliberately doesn't predict bounces — planning is the puzzle.
      */
     fun drawAim(canvas: Canvas, sx: Float, sy: Float, dirX: Float, dirY: Float, power: Float, ready: Boolean, unit: Float) {
-        val color = if (ready) Palette.BALL else Palette.withAlpha(Palette.BALL, 0.35f)
+        val color = if (ready) palette.accent else Palette.withAlpha(palette.accent, 0.35f)
         val start = level.ballRadius.toFloat() * scale + 6f * unit
         val length = 16f * unit + power * 100f * unit
         val spacing = 7f * unit

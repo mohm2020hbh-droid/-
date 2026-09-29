@@ -2,29 +2,30 @@ package com.carom.game.screens
 
 import android.graphics.Canvas
 import android.view.MotionEvent
+import com.carom.core.level.Worlds
 import com.carom.game.ui.Icon
 import com.carom.game.ui.Icons
 import com.carom.game.ui.Palette
 import com.carom.game.ui.UiButton
+import com.carom.game.ui.WorldPalette
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.ceil
 import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Pages of 20 levels (4 columns × 5 rows, sized for a phone held upright). Completed levels are
- * marked, the next level to play is highlighted, locked levels are dimmed. Swipe or use the arrows
- * beside the page dots to change page; tap a level to play it.
+ * One page per world, each holding that world's 10 levels (2 columns × 5 rows) in the world's own
+ * two colours. Swiping slides the colours from one world to the next. Completed levels are filled
+ * like the ball, the next level to play is ringed in the contrast colour, locked levels are dimmed.
  */
 class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
 
     private val levelCount = host.app.levels.size
     private val progress = host.app.progress
-    private val pageCount = max(1, ceil(levelCount / PER_PAGE.toFloat()).toInt())
-    private var page = (focusIndex / PER_PAGE).coerceIn(0, pageCount - 1)
+    private val worldCount = max(1, Worlds.count(levelCount))
+    private var page = Worlds.worldOf(focusIndex.coerceAtLeast(0)).coerceIn(0, worldCount - 1)
 
     /** Page position being shown; follows the finger while dragging, then eases to [page]. */
     private var scroll = page.toFloat()
@@ -46,16 +47,24 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
     private var cellH = 0f
     private var ringRadius = 0f
 
+    /** Colours slide between worlds as the pages move. */
+    override val palette: WorldPalette
+        get() {
+            val first = floor(scroll).toInt().coerceIn(0, worldCount - 1)
+            val next = (first + 1).coerceAtMost(worldCount - 1)
+            return Palette.lerp(Palette.forWorld(first), Palette.forWorld(next), scroll - first)
+        }
+
     override fun onLayout() {
-        headerY = safe.top + kit.u(36f)
+        headerY = safe.top + kit.u(44f)
         dotsY = safe.bottom - kit.u(40f)
-        val gridW = min(safe.width() - kit.u(24f), kit.u(420f))
-        gridTop = headerY + kit.u(40f)
+        val gridW = min(safe.width() - kit.u(80f), kit.u(260f))
+        gridTop = headerY + kit.u(56f)
         val gridH = dotsY - kit.u(36f) - gridTop
         cellW = gridW / COLUMNS
         cellH = gridH / ROWS
         gridLeft = safe.left + (safe.width() - gridW) / 2
-        ringRadius = min(cellW, cellH) * 0.34f
+        ringRadius = min(min(cellW, cellH) * 0.36f, kit.u(40f))
         val b = kit.u(48f)
         backButton.setCenter(safe.left + kit.u(32f), headerY, b, b)
         prevButton.setCenter(width / 2 - kit.u(96f), dotsY, b, b)
@@ -63,20 +72,20 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
         updateArrows()
     }
 
-    /** Screen position of level [i]'s cell on its page (for tests). */
+    /** Screen position of level [i]'s cell on its world's page (for tests). */
     internal fun cellCenter(i: Int): Pair<Float, Float> {
-        val slot = i % PER_PAGE
+        val slot = i % Worlds.SIZE
         return (gridLeft + (slot % COLUMNS + 0.5f) * cellW) to (gridTop + (slot / COLUMNS + 0.5f) * cellH)
     }
 
     private fun goTo(target: Int) {
-        page = target.coerceIn(0, pageCount - 1)
+        page = target.coerceIn(0, worldCount - 1)
         updateArrows()
     }
 
     private fun updateArrows() {
         prevButton.visible = page > 0
-        nextButton.visible = page < pageCount - 1
+        nextButton.visible = page < worldCount - 1
     }
 
     override fun update(dt: Float) {
@@ -98,7 +107,7 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
             MotionEvent.ACTION_MOVE -> if (dragging) {
                 val dx = e.x - downX
                 if (abs(dx) > kit.u(8f)) dragged = true
-                if (dragged) scroll = (page - dx / width).coerceIn(-0.15f, pageCount - 0.85f)
+                if (dragged) scroll = (page - dx / width).coerceIn(-0.15f, worldCount - 0.85f)
             }
             MotionEvent.ACTION_UP -> if (dragging) {
                 dragging = false
@@ -131,22 +140,16 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
         val col = floor((x - gridLeft) / cellW).toInt()
         val row = floor((y - gridTop) / cellH).toInt()
         if (col !in 0 until COLUMNS || row !in 0 until ROWS) return null
-        val i = page * PER_PAGE + row * COLUMNS + col
+        val i = Worlds.firstLevel(page) + row * COLUMNS + col
         return if (i < levelCount) i else null
     }
 
     override fun draw(canvas: Canvas) {
         backButton.draw(canvas, kit)
-        kit.heading.color = Palette.TEXT
-        kit.drawText(canvas, kit.text.levels, width / 2, headerY, kit.heading)
-        val count = String.format(Locale.ROOT, "%d / %d", progress.completedCount, levelCount)
-        kit.small.color = Palette.TEXT_DIM
-        kit.drawText(canvas, count, safe.right - kit.u(36f), headerY, kit.small)
-        kit.small.color = Palette.TEXT
 
         val first = floor(scroll).toInt()
         for (p in first..first + 1) {
-            if (p !in 0 until pageCount) continue
+            if (p !in 0 until worldCount) continue
             val offset = (p - scroll) * width
             if (abs(offset) >= width) continue
             drawPage(canvas, p, offset)
@@ -154,77 +157,79 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
 
         prevButton.draw(canvas, kit)
         nextButton.draw(canvas, kit)
-        if (pageCount > 1) {
+        if (worldCount > 1) {
             val gap = kit.u(14f)
-            val startX = width / 2 - gap * (pageCount - 1) / 2
-            for (p in 0 until pageCount) {
+            val startX = width / 2 - gap * (worldCount - 1) / 2
+            for (p in 0 until worldCount) {
                 kit.fill.color = if (p == page) Palette.TEXT else Palette.LINE
                 canvas.drawCircle(startX + p * gap, dotsY, kit.u(3f), kit.fill)
             }
         }
     }
 
-    private fun drawPage(canvas: Canvas, p: Int, offset: Float) {
+    private fun drawPage(canvas: Canvas, world: Int, offset: Float) {
+        val colors = Palette.forWorld(world)
+        val firstLevel = Worlds.firstLevel(world)
+        val done = (firstLevel until min(firstLevel + Worlds.SIZE, levelCount)).count(progress::isCompleted)
+
+        val cx = width / 2 + offset
+        kit.heading.color = Palette.TEXT
+        kit.drawText(canvas, "${kit.text.world} ${world + 1}", cx, headerY, kit.heading)
+        kit.small.color = Palette.TEXT_DIM
+        kit.drawText(canvas, String.format(Locale.ROOT, "%d / %d", done, Worlds.SIZE), cx, headerY + kit.u(30f), kit.small)
+        kit.small.color = Palette.TEXT
+
         val current = progress.currentIndex
-        for (slot in 0 until PER_PAGE) {
-            val i = p * PER_PAGE + slot
+        for (slot in 0 until Worlds.SIZE) {
+            val i = firstLevel + slot
             if (i >= levelCount) break
-            val cx = offset + gridLeft + (slot % COLUMNS + 0.5f) * cellW
-            val cy = gridTop + (slot / COLUMNS + 0.5f) * cellH
-            drawCell(canvas, i, cx, cy, i == current)
+            val x = offset + gridLeft + (slot % COLUMNS + 0.5f) * cellW
+            val y = gridTop + (slot / COLUMNS + 0.5f) * cellH
+            drawCell(canvas, colors, i, x, y, i == current)
         }
     }
 
-    private fun drawCell(canvas: Canvas, i: Int, cx: Float, cy: Float, isCurrent: Boolean) {
+    private fun drawCell(canvas: Canvas, colors: WorldPalette, i: Int, cx: Float, cy: Float, isCurrent: Boolean) {
         val r = ringRadius
         val label = String.format(Locale.ROOT, "%02d", i + 1)
-        val unlocked = progress.isUnlocked(i)
-        val completed = progress.isCompleted(i)
         kit.stroke.strokeWidth = kit.u(1.6f)
         when {
             isCurrent -> {
-                kit.stroke.color = Palette.withAlpha(Palette.ACCENT, 0.25f)
-                canvas.drawCircle(cx, cy, r + kit.u(4f), kit.stroke)
-                kit.stroke.color = Palette.ACCENT
+                kit.stroke.color = Palette.withAlpha(colors.accent, 0.25f)
+                canvas.drawCircle(cx, cy, r + kit.u(5f), kit.stroke)
+                kit.stroke.color = colors.accent
                 kit.stroke.strokeWidth = kit.u(2.4f)
                 canvas.drawCircle(cx, cy, r, kit.stroke)
-                kit.number.color = Palette.ACCENT
+                kit.number.color = colors.accent
                 kit.drawText(canvas, label, cx, cy, kit.number)
             }
-            completed -> {
-                kit.fill.color = Palette.withAlpha(Palette.BALL, 0.1f)
+            progress.isCompleted(i) -> {
+                // Completed levels look like the ball: a filled disc.
+                kit.fill.color = colors.accent
                 canvas.drawCircle(cx, cy, r, kit.fill)
-                kit.stroke.color = Palette.BALL
-                canvas.drawCircle(cx, cy, r, kit.stroke)
-                kit.number.color = Palette.TEXT
+                kit.number.color = colors.background
                 kit.drawText(canvas, label, cx, cy, kit.number)
-                // A small check badge on the ring.
-                val bx = cx + r * 0.7f
-                val by = cy + r * 0.7f
-                kit.fill.color = Palette.BALL
-                canvas.drawCircle(bx, by, kit.u(7f), kit.fill)
-                Icons.draw(canvas, kit, Icon.CHECK, bx, by, kit.u(9f), Palette.BACKGROUND)
             }
-            unlocked -> {
+            progress.isUnlocked(i) -> {
                 kit.stroke.color = Palette.TEXT_DIM
                 canvas.drawCircle(cx, cy, r, kit.stroke)
                 kit.number.color = Palette.TEXT
                 kit.drawText(canvas, label, cx, cy, kit.number)
             }
             else -> {
-                kit.stroke.color = Palette.LINE
+                val dim = Palette.withAlpha(colors.primary, 0.55f)
+                kit.stroke.color = dim
                 canvas.drawCircle(cx, cy, r, kit.stroke)
-                kit.number.color = Palette.withAlpha(Palette.TEXT_DIM, 0.6f)
+                kit.number.color = dim
                 kit.drawText(canvas, label, cx, cy - r * 0.18f, kit.number)
-                Icons.draw(canvas, kit, Icon.LOCK, cx, cy + r * 0.45f, r * 0.34f, Palette.LINE)
+                Icons.draw(canvas, kit, Icon.LOCK, cx, cy + r * 0.45f, r * 0.34f, dim)
             }
         }
         kit.number.color = Palette.TEXT
     }
 
     private companion object {
-        const val COLUMNS = 4
+        const val COLUMNS = 2
         const val ROWS = 5
-        const val PER_PAGE = COLUMNS * ROWS
     }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "Serpent",
+  "bounces": 4,
+  "ball": [150, 1650],
+  "goal": [750, 350],
+  "goalRadius": 56,
+  "obstacles": [
+    {"type": "wall", "points": [300, 2000, 300, 580]},
+    {"type": "wall", "points": [600, 1420, 600, 0]},
+    {"type": "wall", "points": [65.1, 424.9, 234.9, 255.1]},
+    {"type": "wall", "points": [534.9, 424.9, 365.1, 255.1]},
+    {"type": "wall", "points": [534.9, 1744.9, 365.1, 1575.1]},
+    {"type": "wall", "points": [665.1, 1744.9, 834.9, 1575.1]}
+  ]
+}

@@ -1,15 +1,13 @@
 {
-  "name": "Serpent",
-  "bounces": 4,
-  "ball": [150, 1550],
-  "goal": [750, 250],
-  "goalRadius": 56,
+  "name": "Loop",
+  "bounces": 3,
+  "ball": [780, 1600],
+  "goal": [450, 1725],
   "obstacles": [
-    {"type": "wall", "points": [300, 1800, 300, 400]},
-    {"type": "wall", "points": [600, 1400, 600, 0]},
-    {"type": "wall", "points": [65.1, 324.9, 234.9, 155.1]},
-    {"type": "wall", "points": [534.9, 324.9, 365.1, 155.1]},
-    {"type": "wall", "points": [534.9, 1644.9, 365.1, 1475.1]},
-    {"type": "wall", "points": [665.1, 1644.9, 834.9, 1475.1]}
+    {"type": "wall", "points": [600, 2000, 600, 1380]},
+    {"type": "rect", "x": 300, "y": 700, "w": 300, "h": 600},
+    {"type": "poly", "points": [900, 300, 900, 0, 600, 0]},
+    {"type": "poly", "points": [0, 0, 300, 0, 0, 300]},
+    {"type": "poly", "points": [0, 2000, 0, 1700, 300, 2000]}
   ]
 }

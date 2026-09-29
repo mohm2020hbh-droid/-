@@ -1,12 +1,12 @@
 {
-  "name": "Twin Mirrors",
-  "bounces": 2,
-  "ball": [160, 1450],
-  "goal": [740, 1450],
+  "name": "Needle",
+  "bounces": 1,
+  "ball": [250, 1620],
+  "goal": [310, 500],
   "obstacles": [
-    {"type": "wall", "points": [450, 1800, 450, 450]},
-    {"type": "wall", "points": [300, 450, 600, 450]},
-    {"type": "wall", "points": [63.9, 386.1, 276.1, 173.9]},
-    {"type": "wall", "points": [836.1, 386.1, 623.9, 173.9]}
+    {"type": "wall", "points": [0, 1240, 480, 1240]},
+    {"type": "wall", "points": [780, 1240, 900, 1240]},
+    {"type": "wall", "points": [0, 760, 420, 760]},
+    {"type": "wall", "points": [720, 760, 900, 760]}
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "name": "Retro",
+  "bounces": 2,
+  "ball": [650, 500],
+  "goal": [250, 500],
+  "obstacles": [
+    {"type": "wall", "points": [450, 900, 450, 0]},
+    {"type": "wall", "points": [230, 1280, 450, 1500, 670, 1280]}
+  ]
+}

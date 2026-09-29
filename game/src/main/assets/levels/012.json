@@ -1,12 +1,12 @@
 {
-  "name": "Needle",
+  "name": "Baffles",
   "bounces": 1,
-  "ball": [250, 1520],
-  "goal": [340, 400],
+  "ball": [450, 1650],
+  "goal": [450, 350],
   "obstacles": [
-    {"type": "wall", "points": [0, 1140, 520, 1140]},
-    {"type": "wall", "points": [740, 1140, 900, 1140]},
-    {"type": "wall", "points": [0, 660, 522, 660]},
-    {"type": "wall", "points": [742, 660, 900, 660]}
+    {"type": "wall", "points": [200, 0, 200, 2000]},
+    {"type": "wall", "points": [700, 0, 700, 2000]},
+    {"type": "rect", "x": 420, "y": 1210, "w": 60, "h": 60},
+    {"type": "rect", "x": 420, "y": 730, "w": 60, "h": 60}
   ]
 }

@@ -39,13 +39,14 @@ class UiButton(
         val content: Int
         when (style) {
             Style.PRIMARY -> {
-                kit.fill.color = if (pressed) Palette.withAlpha(Palette.ACCENT, 0.75f) else Palette.ACCENT
+                val accent = kit.palette.accent
+                kit.fill.color = if (pressed) Palette.withAlpha(accent, 0.75f) else accent
                 canvas.drawRoundRect(bounds, radius, radius, kit.fill)
-                content = Palette.ON_ACCENT
+                content = kit.palette.background
             }
             Style.OUTLINE -> {
                 if (pressed) {
-                    kit.fill.color = Palette.LINE
+                    kit.fill.color = Palette.withAlpha(Palette.TEXT, 0.1f)
                     canvas.drawRoundRect(bounds, radius, radius, kit.fill)
                 }
                 kit.stroke.color = Palette.LINE
@@ -55,7 +56,7 @@ class UiButton(
             }
             Style.ICON -> {
                 if (pressed) {
-                    kit.fill.color = Palette.LINE
+                    kit.fill.color = Palette.withAlpha(Palette.TEXT, 0.12f)
                     canvas.drawCircle(bounds.centerX(), cy, bounds.height() / 2, kit.fill)
                 }
                 icon?.let { Icons.draw(canvas, kit, it, bounds.centerX(), cy, bounds.height() * 0.45f, Palette.TEXT) }

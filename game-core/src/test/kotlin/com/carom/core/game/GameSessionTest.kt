@@ -27,9 +27,9 @@ class GameSessionTest {
         return this
     }
 
-    /** Aim at a point by mirroring the goal in the top wall, so the shot bounces once to score. */
+    /** Aim at a point by mirroring the goal in the top edge, so the shot bounces once to score. */
     private fun GameSession.bankShotOffTop() {
-        val topInner = level.wallThickness / 2 + level.ballRadius
+        val topInner = level.ballRadius // the edge is an invisible zero-thickness wall
         val mirroredGoalY = 2 * topInner - level.goal.y
         launch(level.goal.x - level.ball.x, mirroredGoalY - level.ball.y, 1.0)
     }

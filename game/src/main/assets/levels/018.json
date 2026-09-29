@@ -1,13 +1,12 @@
 {
-  "name": "Stairwell",
-  "bounces": 3,
-  "ball": [450, 1620],
-  "goal": [450, 200],
+  "name": "Twin Mirrors",
+  "bounces": 2,
+  "ball": [160, 1550],
+  "goal": [740, 1550],
   "obstacles": [
-    {"type": "wall", "points": [150, 1800, 150, 300]},
-    {"type": "wall", "points": [750, 1800, 750, 300]},
-    {"type": "wall", "points": [150, 1383, 420, 1383]},
-    {"type": "wall", "points": [750, 910, 480, 910]},
-    {"type": "wall", "points": [150, 437, 420, 437]}
+    {"type": "wall", "points": [450, 2000, 450, 550]},
+    {"type": "wall", "points": [300, 550, 600, 550]},
+    {"type": "wall", "points": [63.9, 486.1, 276.1, 273.9]},
+    {"type": "wall", "points": [836.1, 486.1, 623.9, 273.9]}
   ]
 }

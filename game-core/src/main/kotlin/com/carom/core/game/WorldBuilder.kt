@@ -14,11 +14,13 @@ object WorldBuilder {
     fun build(level: LevelData): PhysicsWorld {
         val segments = ArrayList<Segment>()
         if (level.border) {
+            // The level's edges are the screen's edges: invisible, zero-thickness walls, so the
+            // ball bounces the moment its edge meets the edge of the screen.
             val corners = listOf(
                 Vec2(0.0, 0.0), Vec2(level.width, 0.0),
                 Vec2(level.width, level.height), Vec2(0.0, level.height),
             )
-            addChain(segments, corners, closed = true, radius = level.wallThickness / 2)
+            addChain(segments, corners, closed = true, radius = 0.0)
         }
         for (obstacle in level.obstacles) {
             when (obstacle) {

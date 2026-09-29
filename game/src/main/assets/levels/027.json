@@ -1,0 +1,13 @@
+{
+  "name": "Gauntlet",
+  "bounces": 4,
+  "ball": [450, 1650],
+  "goal": [450, 460],
+  "goalRadius": 56,
+  "obstacles": [
+    {"type": "wall", "points": [0, 1501, 560, 1501]},
+    {"type": "wall", "points": [340, 1204, 900, 1204]},
+    {"type": "wall", "points": [0, 907, 560, 907]},
+    {"type": "wall", "points": [340, 610, 900, 610]}
+  ]
+}

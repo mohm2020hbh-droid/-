@@ -1,9 +1,9 @@
 {
-  "name": "Rebound",
-  "bounces": 2,
-  "ball": [620, 1400],
-  "goal": [190, 1400],
+  "name": "Window",
+  "bounces": 1,
+  "ball": [700, 1650],
+  "goal": [700, 450],
   "obstacles": [
-    {"type": "wall", "points": [330, 1800, 330, 800]}
+    {"type": "wall", "points": [340, 1000, 900, 1000]}
   ]
 }

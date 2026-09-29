@@ -1,10 +1,13 @@
 {
-  "name": "Hidden Pocket",
-  "bounces": 3,
-  "ball": [700, 1450],
-  "goal": [720, 550],
+  "name": "Periscope",
+  "bounces": 2,
+  "ball": [700, 1600],
+  "goal": [200, 400],
   "obstacles": [
-    {"type": "wall", "points": [900, 1000, 380, 1000]},
-    {"type": "wall", "points": [900, 700, 500, 700, 500, 350]}
+    {"type": "wall", "points": [450, 2000, 450, 1340]},
+    {"type": "wall", "points": [450, 1140, 450, 0]},
+    {"type": "wall", "points": [0, 650, 140, 650]},
+    {"type": "wall", "points": [791.9, 1290.9, 608.1, 1107.1]},
+    {"type": "wall", "points": [291.9, 1372.9, 108.1, 1189.1]}
   ]
 }

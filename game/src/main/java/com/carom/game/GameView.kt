@@ -76,9 +76,10 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         screen.update(dt)
         fade = max(0f, fade - dt / FADE_SECONDS)
 
-        canvas.drawColor(Palette.BACKGROUND)
+        kit.palette = screen.palette
+        canvas.drawColor(kit.palette.background)
         screen.draw(canvas)
-        if (fade > 0f) canvas.drawColor(Palette.withAlpha(Palette.BACKGROUND, fade))
+        if (fade > 0f) canvas.drawColor(Palette.withAlpha(kit.palette.background, fade))
 
         if (screen.isAnimating || fade > 0f) {
             postInvalidateOnAnimation()

@@ -47,12 +47,12 @@ object LevelPreview {
         g.translate(margin, margin + 6)
         g.scale(scale, scale)
 
+        // The level's edges are invisible in the game; outline them faintly here for reference.
+        g.color = Color(0x2C3545)
+        g.stroke = BasicStroke(4f)
+        g.drawRect(0, 0, level.width.toInt(), level.height.toInt())
         val wallColor = Color(0xE8DCC4)
         g.color = wallColor
-        if (level.border) {
-            g.stroke = BasicStroke(level.wallThickness.toFloat(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-            g.drawRect(0, 0, level.width.toInt(), level.height.toInt())
-        }
         for (o in level.obstacles) {
             when (o) {
                 is Wall -> {
