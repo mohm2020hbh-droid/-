@@ -1,10 +1,10 @@
 {
-  "name": "Retro",
-  "bounces": 2,
-  "ball": [1300, 650],
-  "goal": [1300, 250],
+  "name": "Hidden Pocket",
+  "bounces": 3,
+  "ball": [700, 1450],
+  "goal": [720, 550],
   "obstacles": [
-    {"type": "wall", "points": [900, 450, 1600, 450]},
-    {"type": "wall", "points": [520, 230, 300, 450, 520, 670]}
+    {"type": "wall", "points": [900, 1000, 380, 1000]},
+    {"type": "wall", "points": [900, 700, 500, 700, 500, 350]}
   ]
 }

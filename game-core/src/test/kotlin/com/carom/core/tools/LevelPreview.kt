@@ -18,10 +18,10 @@ import javax.imageio.ImageIO
 /** Renders levels (with a sample solution path) to PNG contact sheets for reviewing level design. */
 object LevelPreview {
 
-    private const val CELL_W = 480
-    private const val CELL_H = 300
+    private const val CELL_W = 300
+    private const val CELL_H = 560
 
-    fun writeSheet(file: File, entries: List<Pair<LevelData, List<Vec2>>>, columns: Int = 3) {
+    fun writeSheet(file: File, entries: List<Pair<LevelData, List<Vec2>>>, columns: Int = 5) {
         val rows = (entries.size + columns - 1) / columns
         val image = BufferedImage(CELL_W * columns, CELL_H * rows, BufferedImage.TYPE_INT_RGB)
         val g = image.createGraphics()
@@ -43,7 +43,7 @@ object LevelPreview {
         val scale = minOf((CELL_W - 2 * margin) / level.width, (CELL_H - 2 * margin - 14) / level.height)
         g.color = Color(0x8A93A6)
         g.font = Font(Font.SANS_SERIF, Font.PLAIN, 12)
-        g.drawString("${level.id}  ${level.name}  · bounces ${level.bounces}", margin.toInt(), 14)
+        g.drawString("${level.id} ${level.name} · ${level.bounces}", margin.toInt(), 14)
         g.translate(margin, margin + 6)
         g.scale(scale, scale)
 

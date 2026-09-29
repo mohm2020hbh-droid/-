@@ -15,9 +15,10 @@ object Palette {
     const val BALL = 0xFF6FE3B4.toInt()
     const val DANGER = 0xFFEE6E68.toInt()
 
-    const val LEVELS_PER_CHAPTER = 15
+    /** One chapter = one page of the level list. */
+    const val LEVELS_PER_CHAPTER = 20
 
-    /** Each chapter of 15 levels gets its own wall colour. */
+    /** Each chapter gets its own wall colour. */
     private val WALLS = intArrayOf(0xFFE6D9BF.toInt(), 0xFF9FC9EE.toInt(), 0xFFC9B9F2.toInt(), 0xFFF2B5A2.toInt())
 
     fun wallColor(levelIndex: Int): Int = WALLS[(levelIndex / LEVELS_PER_CHAPTER) % WALLS.size]
@@ -27,8 +28,9 @@ object Palette {
 }
 
 /**
- * Shared paints and measurements for the canvas-drawn UI. [unit] is one "UI unit": the screen is
- * designed as 640×360 units, so the interface keeps its proportions on every screen size.
+ * Shared paints and measurements for the canvas-drawn UI. [unit] is one "UI unit": the game is
+ * designed on a 360×640 portrait grid (one unit ≈ 1dp on a typical phone), so the interface keeps
+ * its proportions on every screen size.
  */
 class UiKit(val unit: Float, val text: UiText) {
 
@@ -42,11 +44,11 @@ class UiKit(val unit: Float, val text: UiText) {
         strokeJoin = Paint.Join.ROUND
     }
 
-    val title = textPaint(LIGHT, 30f, 0.42f)
-    val heading = textPaint(LIGHT, 17f, 0.3f)
-    val number = textPaint(LIGHT, 15f, 0.06f)
-    val label = textPaint(MEDIUM, 9.5f, 0.24f)
-    val small = textPaint(REGULAR, 8.5f, 0.2f)
+    val title = textPaint(LIGHT, 40f, 0.42f)
+    val heading = textPaint(LIGHT, 22f, 0.28f)
+    val number = textPaint(LIGHT, 20f, 0.06f)
+    val label = textPaint(MEDIUM, 14f, 0.2f)
+    val small = textPaint(REGULAR, 12f, 0.16f)
 
     private fun textPaint(typeface: Typeface, size: Float, spacing: Float) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.typeface = typeface
@@ -62,9 +64,12 @@ class UiKit(val unit: Float, val text: UiText) {
         canvas.drawText(value, x, cy - (fm.ascent + fm.descent) / 2f, paint)
     }
 
-    private companion object {
-        val LIGHT: Typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-        val REGULAR: Typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-        val MEDIUM: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+    companion object {
+        /** The design grid: a portrait screen is 360×640 units. */
+        fun unitFor(width: Int, height: Int): Float = minOf(width / 360f, height / 640f)
+
+        private val LIGHT: Typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+        private val REGULAR: Typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        private val MEDIUM: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
 }

@@ -4,6 +4,8 @@ import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
+import android.graphics.Typeface
 import com.carom.core.level.Block
 import com.carom.core.level.LevelData
 import com.carom.core.level.Wall
@@ -43,6 +45,14 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
         strokeJoin = Paint.Join.ROUND
     }
     private var dash: DashPathEffect? = null
+
+    private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        textAlign = Paint.Align.CENTER
+        color = Palette.BACKGROUND
+    }
+    private val numberBounds = Rect()
+    private val numbers = Array(100) { it.toString() }
 
     fun layout(scale: Float, originX: Float, originY: Float) {
         this.scale = scale
@@ -99,13 +109,21 @@ class BoardRenderer(private val level: LevelData, private val wallColor: Int) {
         }
     }
 
-    /** The ball at screen position (sx, sy). */
-    fun drawBall(canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, color: Int) {
-        val r = level.ballRadius.toFloat() * scale * sizeFactor
+    /** Radius of the ball on screen, in pixels. */
+    val ballScreenRadius: Float get() = level.ballRadius.toFloat() * scale
+
+    /**
+     * The ball at screen position (sx, sy), with the bounces it has left written in its centre.
+     * The number is part of the ball: same position, same scale, always inside its edge.
+     */
+    fun drawBall(canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, color: Int, bouncesLeft: Int) {
+        val r = ballScreenRadius * sizeFactor
         fillPaint.color = color
         canvas.drawCircle(sx, sy, r, fillPaint)
-        fillPaint.color = Palette.BACKGROUND
-        canvas.drawCircle(sx, sy, r * 0.32f, fillPaint)
+        val text = numbers[bouncesLeft.coerceIn(0, numbers.size - 1)]
+        numberPaint.textSize = r * if (text.length == 1) 1.1f else 0.85f
+        numberPaint.getTextBounds(text, 0, text.length, numberBounds)
+        canvas.drawText(text, sx, sy - numberBounds.exactCenterY(), numberPaint)
     }
 
     /** A shot's path through [points], optionally continued to the ball's current screen position. */

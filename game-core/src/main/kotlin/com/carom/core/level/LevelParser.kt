@@ -11,9 +11,9 @@ import kotlin.math.sin
  * {
  *   "name": "First Bounce",           // optional, defaults to the id
  *   "bounces": 1,
- *   "ball": [200, 450],
- *   "goal": [1400, 450],
- *   "size": [1600, 900],              // optional
+ *   "ball": [450, 1500],
+ *   "goal": [450, 300],
+ *   "size": [900, 1800],              // optional
  *   "goalRadius": 48,                 // optional
  *   "speed": 2400, "friction": 600,   // optional launch power and deceleration
  *   "border": true,                   // optional rectangular border wall

@@ -53,7 +53,7 @@ class ShippedLevelsTest {
         }
 
         System.getProperty("preview.dir")?.let { out ->
-            results.chunked(9).forEachIndexed { i, chunk ->
+            results.chunked(10).forEachIndexed { i, chunk ->
                 val entries = chunk.map { r ->
                     r.level to (r.sampleAngle?.let { ShotSearch.fire(r.level, it).path } ?: emptyList())
                 }

@@ -9,13 +9,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Carom">
 
-        <!-- Handles rotation and size changes itself: the view just re-lays out, so a level in
-             progress is never restarted by the system. -->
+        <!-- A portrait game. Size changes (split screen, foldables, and large screens where
+             Android may ignore the orientation) are handled by re-laying out the view, so a level
+             in progress is never restarted by the system. -->
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density"
             android:exported="true"
-            android:screenOrientation="sensorLandscape">
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

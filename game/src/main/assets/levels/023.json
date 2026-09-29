@@ -1,11 +1,10 @@
 {
-  "name": "Triple Chicane",
-  "bounces": 5,
-  "ball": [180, 780],
-  "goal": [1420, 120],
+  "name": "Retro",
+  "bounces": 2,
+  "ball": [650, 400],
+  "goal": [250, 400],
   "obstacles": [
-    {"type": "wall", "points": [450, 0, 450, 600]},
-    {"type": "wall", "points": [800, 900, 800, 300]},
-    {"type": "wall", "points": [1150, 0, 1150, 600]}
+    {"type": "wall", "points": [450, 800, 450, 0]},
+    {"type": "wall", "points": [230, 1180, 450, 1400, 670, 1180]}
   ]
 }

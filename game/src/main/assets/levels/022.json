@@ -1,18 +1,13 @@
 {
-  "name": "Mirror Maze II",
-  "bounces": 3,
-  "ball": [150, 750],
-  "goal": [540, 150],
+  "name": "Gauntlet",
+  "bounces": 4,
+  "ball": [450, 1550],
+  "goal": [450, 360],
+  "goalRadius": 56,
   "obstacles": [
-    {"type": "wall", "points": [0, 600, 950, 600]},
-    {"type": "wall", "points": [0, 300, 380, 300]},
-    {"type": "wall", "points": [620, 300, 1600, 300]},
-    {"type": "wall", "points": [1056.1, 834.9, 1225.9, 665.1]},
-    {"type": "wall", "points": [1015.1, 365.1, 1184.9, 534.9]},
-    {"type": "wall", "points": [374.1, 406.1, 543.9, 575.9]},
-    {"type": "wall", "points": [1329.3, 520.7, 1470.7, 379.3]},
-    {"type": "wall", "points": [729.3, 220.7, 870.7, 79.3]},
-    {"type": "wall", "points": [1329.3, 679.3, 1470.7, 820.7]},
-    {"type": "wall", "points": [193.4, 547.6, 306.6, 434.4]}
+    {"type": "wall", "points": [0, 1401, 560, 1401]},
+    {"type": "wall", "points": [340, 1104, 900, 1104]},
+    {"type": "wall", "points": [0, 807, 560, 807]},
+    {"type": "wall", "points": [340, 510, 900, 510]}
   ]
 }

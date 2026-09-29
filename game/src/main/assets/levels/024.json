@@ -1,12 +1,15 @@
 {
-  "name": "Gauntlet",
+  "name": "Serpent",
   "bounces": 4,
-  "ball": [150, 450],
-  "goal": [1450, 450],
+  "ball": [150, 1550],
+  "goal": [750, 250],
+  "goalRadius": 56,
   "obstacles": [
-    {"type": "wall", "points": [400, 0, 400, 560]},
-    {"type": "wall", "points": [700, 900, 700, 340]},
-    {"type": "wall", "points": [1000, 0, 1000, 560]},
-    {"type": "wall", "points": [1300, 900, 1300, 340]}
+    {"type": "wall", "points": [300, 1800, 300, 400]},
+    {"type": "wall", "points": [600, 1400, 600, 0]},
+    {"type": "wall", "points": [65.1, 324.9, 234.9, 155.1]},
+    {"type": "wall", "points": [534.9, 324.9, 365.1, 155.1]},
+    {"type": "wall", "points": [534.9, 1644.9, 365.1, 1475.1]},
+    {"type": "wall", "points": [665.1, 1644.9, 834.9, 1475.1]}
   ]
 }

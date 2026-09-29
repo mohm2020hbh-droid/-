@@ -21,7 +21,6 @@ import com.carom.game.ui.Palette
 import com.carom.game.ui.UiKit
 import com.carom.game.ui.UiText
 import kotlin.math.max
-import kotlin.math.min
 
 /**
  * The game's only view. It runs the frame loop, routes input to the current [Screen] and handles
@@ -48,7 +47,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        kit = UiKit(min(w / 640f, h / 360f), kit.text)
+        kit = UiKit(UiKit.unitFor(w, h), kit.text)
         screen.layout(w, h, insets)
     }
 

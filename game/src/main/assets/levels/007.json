@@ -1,11 +1,11 @@
 {
-  "name": "Hexagon",
+  "name": "Echo Chamber",
   "bounces": 1,
-  "ball": [500, 450],
-  "goal": [1100, 450],
-  "border": false,
+  "ball": [450, 1550],
+  "goal": [450, 250],
   "obstacles": [
-    {"type": "wall", "points": [1230, 450, 1015, 822, 585, 822, 370, 450, 585, 78, 1015, 78], "closed": true},
-    {"type": "wall", "points": [800, 250, 800, 650]}
+    {"type": "wall", "points": [250, 0, 250, 1800]},
+    {"type": "wall", "points": [650, 0, 650, 1800]},
+    {"type": "rect", "x": 420, "y": 870, "w": 60, "h": 60}
   ]
 }

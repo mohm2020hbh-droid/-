@@ -1,10 +1,14 @@
 package com.carom.game.screens
 
 import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
 import android.view.MotionEvent
 import com.carom.game.ui.Icon
 import com.carom.game.ui.Palette
 import com.carom.game.ui.UiButton
+import kotlin.math.min
 
 /** Title screen: continue playing, open the level list, toggle vibration. */
 class HomeScreen(host: GameHost) : Screen(host) {
@@ -36,64 +40,68 @@ class HomeScreen(host: GameHost) : Screen(host) {
     }
 
     override fun onLayout() {
-        columnX = safe.left + (safe.width() * 0.34f)
-        titleY = safe.top + safe.height() * 0.28f
-        val w = kit.u(160f)
-        playButton.setCenter(columnX, titleY + kit.u(78f), w, kit.u(32f))
-        levelsButton.setCenter(columnX, titleY + kit.u(118f), w, kit.u(32f))
-        vibrationButton.setCenter(columnX, titleY + kit.u(158f), w, kit.u(28f))
+        columnX = width / 2
+        titleY = safe.top + safe.height() * 0.49f
+        // Buttons sit in the lower half, where the thumb rests on a phone held upright.
+        val w = min(safe.width() - kit.u(64f), kit.u(260f))
+        val top = safe.top + safe.height() * 0.66f
+        playButton.setCenter(columnX, top, w, kit.u(54f))
+        levelsButton.setCenter(columnX, top + kit.u(68f), w, kit.u(50f))
+        vibrationButton.setCenter(columnX, top + kit.u(132f), w, kit.u(46f))
     }
 
     override fun onTouch(e: MotionEvent): Boolean = routeToButtons(e, buttons)
 
     override fun draw(canvas: Canvas) {
+        drawEmblem(canvas)
         kit.title.color = Palette.TEXT
         kit.drawText(canvas, "CAROM", columnX, titleY, kit.title)
         kit.small.color = Palette.TEXT_DIM
-        kit.drawText(canvas, kit.text.tagline, columnX, titleY + kit.u(30f), kit.small)
+        kit.drawText(canvas, kit.text.tagline, columnX, titleY + kit.u(38f), kit.small)
         kit.small.color = Palette.TEXT
         for (b in buttons) b.draw(canvas, kit)
-        drawEmblem(canvas)
     }
 
-    /** The game in one picture: a ball, one bounce off a wall, into the goal. */
+    /** The game in one picture: the ball (with its bounce count), one bounce off a wall, the goal. */
     private fun drawEmblem(canvas: Canvas) {
-        val left = columnX + kit.u(120f)
-        val right = safe.right - kit.u(30f)
-        if (right - left < kit.u(140f)) return
-        val cx = (left + right) / 2
-        val span = minOf((right - left) / 2, kit.u(120f))
-        val topY = safe.top + safe.height() * 0.3f
-        val wallY = safe.top + safe.height() * 0.74f
-        val ballR = kit.u(8f)
-        val bounceY = wallY - ballR - kit.u(2f)
-        val ballX = cx - span * 0.8f
-        val goalX = cx + span * 0.8f
+        val span = min(safe.width() * 0.34f, kit.u(130f))
+        val topY = safe.top + safe.height() * 0.16f
+        val wallY = safe.top + safe.height() * 0.36f
+        val ballR = kit.u(17f)
+        val bounceY = wallY - ballR - kit.u(3f)
+        val ballX = columnX - span * 0.8f
+        val goalX = columnX + span * 0.8f
 
         kit.stroke.color = Palette.wallColor(0)
-        kit.stroke.strokeWidth = kit.u(4f)
-        canvas.drawLine(cx - span, wallY, cx + span, wallY, kit.stroke)
+        kit.stroke.strokeWidth = kit.u(5f)
+        canvas.drawLine(columnX - span, wallY, columnX + span, wallY, kit.stroke)
 
         // Dotted path: down to the wall, then up into the goal (a mirror-image V).
         kit.fill.color = Palette.withAlpha(Palette.BALL, 0.5f)
-        val steps = 14
-        for (i in 1 until steps) {
+        val steps = 16
+        for (i in 2 until steps - 1) {
             val t = i / steps.toFloat()
             val k = if (t < 0.5f) t * 2 else (1f - t) * 2
-            val x = ballX + (goalX - ballX) * t
-            val y = topY + (bounceY - topY) * k
-            canvas.drawCircle(x, y, kit.u(1.6f), kit.fill)
+            canvas.drawCircle(ballX + (goalX - ballX) * t, topY + (bounceY - topY) * k, kit.u(2f), kit.fill)
         }
 
         kit.stroke.color = Palette.ACCENT
-        kit.stroke.strokeWidth = kit.u(4f)
-        canvas.drawCircle(goalX, topY, kit.u(17f), kit.stroke)
+        kit.stroke.strokeWidth = kit.u(5f)
+        canvas.drawCircle(goalX, topY, kit.u(24f), kit.stroke)
         kit.fill.color = Palette.ACCENT
-        canvas.drawCircle(goalX, topY, kit.u(4f), kit.fill)
+        canvas.drawCircle(goalX, topY, kit.u(5f), kit.fill)
 
         kit.fill.color = Palette.BALL
         canvas.drawCircle(ballX, topY, ballR, kit.fill)
-        kit.fill.color = Palette.BACKGROUND
-        canvas.drawCircle(ballX, topY, ballR * 0.32f, kit.fill)
+        emblemDigit.textSize = ballR * 1.1f
+        emblemDigit.getTextBounds("1", 0, 1, digitBounds)
+        canvas.drawText("1", ballX, topY - digitBounds.exactCenterY(), emblemDigit)
     }
+
+    private val emblemDigit = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("sans-serif", Typeface.BOLD)
+        textAlign = Paint.Align.CENTER
+        color = Palette.BACKGROUND
+    }
+    private val digitBounds = Rect()
 }

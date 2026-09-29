@@ -57,12 +57,16 @@ data class Wall(
 /** A solid filled polygon (rectangles and triangles are polygons too). Points in order. */
 data class Block(val points: List<Vec2>) : Obstacle
 
+/**
+ * Levels are portrait (1:2) to fill a phone held upright. The ball is deliberately large — about a
+ * tenth of the board's width — so it is easy to see, grab and read the bounce count inside it.
+ */
 object LevelDefaults {
-    const val WIDTH = 1600.0
-    const val HEIGHT = 900.0
-    const val BALL_RADIUS = 22.0
-    const val GOAL_RADIUS = 48.0
-    const val WALL_THICKNESS = 14.0
+    const val WIDTH = 900.0
+    const val HEIGHT = 1800.0
+    const val BALL_RADIUS = 46.0
+    const val GOAL_RADIUS = 64.0
+    const val WALL_THICKNESS = 16.0
     const val MAX_SPEED = 2400.0
     const val FRICTION = 600.0
 }

@@ -1,12 +1,18 @@
 {
-  "name": "Baffles",
-  "bounces": 2,
-  "ball": [150, 450],
-  "goal": [1450, 450],
+  "name": "Mirror Maze II",
+  "bounces": 3,
+  "ball": [750, 1550],
+  "goal": [150, 1160],
   "obstacles": [
-    {"type": "wall", "points": [0, 330, 1600, 330]},
-    {"type": "wall", "points": [0, 570, 1600, 570]},
-    {"type": "rect", "x": 530, "y": 420, "w": 60, "h": 60},
-    {"type": "rect", "x": 1010, "y": 420, "w": 60, "h": 60}
+    {"type": "wall", "points": [600, 1800, 600, 750]},
+    {"type": "wall", "points": [300, 1800, 300, 1320]},
+    {"type": "wall", "points": [300, 1080, 300, 0]},
+    {"type": "wall", "points": [834.9, 643.9, 665.1, 474.1]},
+    {"type": "wall", "points": [365.1, 684.9, 534.9, 515.1]},
+    {"type": "wall", "points": [406.1, 1325.9, 575.9, 1156.1]},
+    {"type": "wall", "points": [520.7, 370.7, 379.3, 229.3]},
+    {"type": "wall", "points": [220.7, 970.7, 79.3, 829.3]},
+    {"type": "wall", "points": [679.3, 370.7, 820.7, 229.3]},
+    {"type": "wall", "points": [547.6, 1506.6, 434.4, 1393.4]}
   ]
 }

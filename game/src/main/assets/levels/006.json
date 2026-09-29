@@ -1,9 +1,11 @@
 {
-  "name": "Rebound",
-  "bounces": 2,
-  "ball": [300, 620],
-  "goal": [300, 190],
+  "name": "Hexagon",
+  "bounces": 1,
+  "ball": [450, 1450],
+  "goal": [450, 350],
+  "border": false,
   "obstacles": [
-    {"type": "wall", "points": [0, 330, 900, 330]}
+    {"type": "wall", "points": [450, 60, 860, 440, 860, 1360, 450, 1740, 40, 1360, 40, 440], "closed": true},
+    {"type": "wall", "points": [250, 900, 650, 900]}
   ]
 }

@@ -43,10 +43,10 @@ class GameFlowTest {
         val app = GameApp(LevelRepository(DirectorySource(levelsDir)), store)
         val view = GameView(RuntimeEnvironment.getApplication(), app)
         view.measure(
-            View.MeasureSpec.makeMeasureSpec(2400, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(2400, View.MeasureSpec.EXACTLY),
         )
-        view.layout(0, 0, 2400, 1080)
+        view.layout(0, 0, 1080, 2400)
         return view
     }
 
@@ -65,6 +65,16 @@ class GameFlowTest {
         }
     }
 
+    /** Grabs the ball and pulls straight down by [pullPx], so it fires straight up. */
+    private fun pullDownAndRelease(view: GameView, play: PlayScreen, pullPx: Float) {
+        val bx = play.board.x(play.session.ball.x)
+        val by = play.board.y(play.session.ball.y)
+        touch(view, MotionEvent.ACTION_DOWN, bx, by)
+        touch(view, MotionEvent.ACTION_MOVE, bx, by + pullPx / 2)
+        touch(view, MotionEvent.ACTION_MOVE, bx, by + pullPx)
+        touch(view, MotionEvent.ACTION_UP, bx, by + pullPx)
+    }
+
     @Test
     fun pullingBackFromTheBallFiresItAndWinningSavesProgress() {
         val store = MapStore()
@@ -73,19 +83,26 @@ class GameFlowTest {
 
         view.play(0)
         val play = view.currentScreen as PlayScreen
-        val bx = play.board.x(play.session.ball.x)
-        val by = play.board.y(play.session.ball.y)
-        // Level 1 is a straight shot: pull left, release, the ball flies right into the goal.
-        touch(view, MotionEvent.ACTION_DOWN, bx, by)
-        touch(view, MotionEvent.ACTION_MOVE, bx - 200f, by)
-        touch(view, MotionEvent.ACTION_MOVE, bx - 400f, by)
-        touch(view, MotionEvent.ACTION_UP, bx - 400f, by)
+        // Level 1 is a straight shot: the goal is right above the ball.
+        pullDownAndRelease(view, play, 400f)
         assertEquals(GameSession.State.MOVING, play.session.state)
 
         runFor(view, 4f)
         assertEquals(GameSession.State.WON, play.session.state)
         assertTrue(store.map["progress.completed"]!!.split(',').contains("001"))
         assertEquals(1, GameApp(LevelRepository(DirectorySource(levelsDir)), store).progress.currentIndex)
+    }
+
+    @Test
+    fun aBounceLowersTheCountInTheBall() {
+        val view = newView(MapStore())
+        view.play(1)
+        val play = view.currentScreen as PlayScreen
+        assertEquals(2, play.session.bouncesLeft)
+        // Straight up from level 2's start hits the wall above the ball.
+        pullDownAndRelease(view, play, 400f)
+        runFor(view, 0.35f) // first wall at ~0.21 s, the next one at ~0.57 s
+        assertEquals(1, play.session.bouncesLeft)
     }
 
     @Test
@@ -104,14 +121,16 @@ class GameFlowTest {
     fun lockedLevelsCannotBeOpenedAndBackReturnsHome() {
         val view = newView(MapStore())
         view.showLevels(0)
-        assertTrue(view.currentScreen is LevelSelectScreen)
-        // Level 2 (second cell of the first row) is still locked: tapping it stays on the list.
-        touch(view, MotionEvent.ACTION_DOWN, 915f, 297f)
-        touch(view, MotionEvent.ACTION_UP, 915f, 297f)
+        val list = view.currentScreen as LevelSelectScreen
+        // Level 2 is still locked: tapping it stays on the list.
+        val (x2, y2) = list.cellCenter(1)
+        touch(view, MotionEvent.ACTION_DOWN, x2, y2)
+        touch(view, MotionEvent.ACTION_UP, x2, y2)
         assertTrue(view.currentScreen is LevelSelectScreen)
         // Level 1 opens.
-        touch(view, MotionEvent.ACTION_DOWN, 635f, 297f)
-        touch(view, MotionEvent.ACTION_UP, 635f, 297f)
+        val (x1, y1) = list.cellCenter(0)
+        touch(view, MotionEvent.ACTION_DOWN, x1, y1)
+        touch(view, MotionEvent.ACTION_UP, x1, y1)
         assertTrue(view.currentScreen is PlayScreen)
         assertTrue(view.onBack())
         assertTrue(view.currentScreen is LevelSelectScreen)

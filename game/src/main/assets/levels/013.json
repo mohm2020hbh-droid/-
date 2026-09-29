@@ -1,13 +1,12 @@
 {
-  "name": "Periscope",
+  "name": "Twin Mirrors",
   "bounces": 2,
-  "ball": [200, 700],
-  "goal": [1400, 200],
+  "ball": [160, 1450],
+  "goal": [740, 1450],
   "obstacles": [
-    {"type": "wall", "points": [0, 450, 460, 450]},
-    {"type": "wall", "points": [660, 450, 1600, 450]},
-    {"type": "wall", "points": [1150, 0, 1150, 140]},
-    {"type": "wall", "points": [509.1, 791.9, 692.9, 608.1]},
-    {"type": "wall", "points": [427.1, 291.9, 610.9, 108.1]}
+    {"type": "wall", "points": [450, 1800, 450, 450]},
+    {"type": "wall", "points": [300, 450, 600, 450]},
+    {"type": "wall", "points": [63.9, 386.1, 276.1, 173.9]},
+    {"type": "wall", "points": [836.1, 386.1, 623.9, 173.9]}
   ]
 }

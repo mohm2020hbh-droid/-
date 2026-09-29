@@ -1,12 +1,13 @@
 {
-  "name": "Needle",
-  "bounces": 1,
-  "ball": [180, 250],
-  "goal": [1300, 372],
+  "name": "Stairwell",
+  "bounces": 3,
+  "ball": [450, 1620],
+  "goal": [450, 200],
   "obstacles": [
-    {"type": "wall", "points": [560, 0, 560, 560]},
-    {"type": "wall", "points": [560, 700, 560, 900]},
-    {"type": "wall", "points": [1040, 0, 1040, 562]},
-    {"type": "wall", "points": [1040, 702, 1040, 900]}
+    {"type": "wall", "points": [150, 1800, 150, 300]},
+    {"type": "wall", "points": [750, 1800, 750, 300]},
+    {"type": "wall", "points": [150, 1383, 420, 1383]},
+    {"type": "wall", "points": [750, 910, 480, 910]},
+    {"type": "wall", "points": [150, 437, 420, 437]}
   ]
 }

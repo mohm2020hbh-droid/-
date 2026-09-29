@@ -1,9 +1,12 @@
 {
-  "name": "Corner Pocket",
-  "bounces": 2,
-  "ball": [200, 700],
-  "goal": [1440, 170],
+  "name": "Needle",
+  "bounces": 1,
+  "ball": [250, 1520],
+  "goal": [340, 400],
   "obstacles": [
-    {"type": "wall", "points": [1250, 0, 1250, 260, 1440, 260]}
+    {"type": "wall", "points": [0, 1140, 520, 1140]},
+    {"type": "wall", "points": [740, 1140, 900, 1140]},
+    {"type": "wall", "points": [0, 660, 522, 660]},
+    {"type": "wall", "points": [742, 660, 900, 660]}
   ]
 }

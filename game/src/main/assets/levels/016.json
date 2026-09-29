@@ -1,13 +1,16 @@
 {
-  "name": "Stairwell",
-  "bounces": 3,
-  "ball": [800, 820],
-  "goal": [800, 110],
+  "name": "Mirror Maze",
+  "bounces": 2,
+  "ball": [150, 1550],
+  "goal": [750, 250],
   "obstacles": [
-    {"type": "wall", "points": [600, 900, 600, 200]},
-    {"type": "wall", "points": [1000, 900, 1000, 200]},
-    {"type": "wall", "points": [600, 650, 780, 650]},
-    {"type": "wall", "points": [1000, 450, 820, 450]},
-    {"type": "wall", "points": [600, 260, 760, 260]}
+    {"type": "wall", "points": [300, 1400, 300, 1000]},
+    {"type": "wall", "points": [600, 800, 600, 400]},
+    {"type": "wall", "points": [65.1, 984.9, 234.9, 815.1]},
+    {"type": "wall", "points": [665.1, 984.9, 834.9, 815.1]},
+    {"type": "wall", "points": [520.7, 1370.7, 379.3, 1229.3]},
+    {"type": "wall", "points": [379.3, 570.7, 520.7, 429.3]},
+    {"type": "wall", "points": [820.7, 1370.7, 679.3, 1229.3]},
+    {"type": "wall", "points": [220.7, 570.7, 79.3, 429.3]}
   ]
 }

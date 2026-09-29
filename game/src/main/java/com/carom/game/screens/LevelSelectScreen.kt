@@ -15,8 +15,9 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
- * Pages of 15 levels (5×3). Completed levels are marked, the next level to play is highlighted,
- * locked levels are dimmed. Swipe or use the arrows to change page; tap a level to play it.
+ * Pages of 20 levels (4 columns × 5 rows, sized for a phone held upright). Completed levels are
+ * marked, the next level to play is highlighted, locked levels are dimmed. Swipe or use the arrows
+ * beside the page dots to change page; tap a level to play it.
  */
 class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
 
@@ -46,20 +47,26 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
     private var ringRadius = 0f
 
     override fun onLayout() {
-        headerY = safe.top + kit.u(30f)
-        dotsY = safe.bottom - kit.u(20f)
-        val gridW = min(safe.width() - kit.u(120f), kit.u(470f))
-        gridTop = headerY + kit.u(24f)
-        val gridH = dotsY - kit.u(14f) - gridTop
+        headerY = safe.top + kit.u(36f)
+        dotsY = safe.bottom - kit.u(40f)
+        val gridW = min(safe.width() - kit.u(24f), kit.u(420f))
+        gridTop = headerY + kit.u(40f)
+        val gridH = dotsY - kit.u(36f) - gridTop
         cellW = gridW / COLUMNS
         cellH = gridH / ROWS
         gridLeft = safe.left + (safe.width() - gridW) / 2
-        ringRadius = min(cellW, cellH) * 0.33f
-        val b = kit.u(40f)
-        backButton.setCenter(safe.left + kit.u(30f), headerY, b, b)
-        prevButton.setCenter(safe.left + kit.u(30f), gridTop + gridH / 2, b, b)
-        nextButton.setCenter(safe.right - kit.u(30f), gridTop + gridH / 2, b, b)
+        ringRadius = min(cellW, cellH) * 0.34f
+        val b = kit.u(48f)
+        backButton.setCenter(safe.left + kit.u(32f), headerY, b, b)
+        prevButton.setCenter(width / 2 - kit.u(96f), dotsY, b, b)
+        nextButton.setCenter(width / 2 + kit.u(96f), dotsY, b, b)
         updateArrows()
+    }
+
+    /** Screen position of level [i]'s cell on its page (for tests). */
+    internal fun cellCenter(i: Int): Pair<Float, Float> {
+        val slot = i % PER_PAGE
+        return (gridLeft + (slot % COLUMNS + 0.5f) * cellW) to (gridTop + (slot / COLUMNS + 0.5f) * cellH)
     }
 
     private fun goTo(target: Int) {
@@ -134,7 +141,7 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
         kit.drawText(canvas, kit.text.levels, width / 2, headerY, kit.heading)
         val count = String.format(Locale.ROOT, "%d / %d", progress.completedCount, levelCount)
         kit.small.color = Palette.TEXT_DIM
-        kit.drawText(canvas, count, safe.right - kit.u(40f), headerY, kit.small)
+        kit.drawText(canvas, count, safe.right - kit.u(36f), headerY, kit.small)
         kit.small.color = Palette.TEXT
 
         val first = floor(scroll).toInt()
@@ -148,11 +155,11 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
         prevButton.draw(canvas, kit)
         nextButton.draw(canvas, kit)
         if (pageCount > 1) {
-            val gap = kit.u(12f)
+            val gap = kit.u(14f)
             val startX = width / 2 - gap * (pageCount - 1) / 2
             for (p in 0 until pageCount) {
                 kit.fill.color = if (p == page) Palette.TEXT else Palette.LINE
-                canvas.drawCircle(startX + p * gap, dotsY, kit.u(2.4f), kit.fill)
+                canvas.drawCircle(startX + p * gap, dotsY, kit.u(3f), kit.fill)
             }
         }
     }
@@ -173,13 +180,13 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
         val label = String.format(Locale.ROOT, "%02d", i + 1)
         val unlocked = progress.isUnlocked(i)
         val completed = progress.isCompleted(i)
-        kit.stroke.strokeWidth = kit.u(1.4f)
+        kit.stroke.strokeWidth = kit.u(1.6f)
         when {
             isCurrent -> {
                 kit.stroke.color = Palette.withAlpha(Palette.ACCENT, 0.25f)
                 canvas.drawCircle(cx, cy, r + kit.u(4f), kit.stroke)
                 kit.stroke.color = Palette.ACCENT
-                kit.stroke.strokeWidth = kit.u(2f)
+                kit.stroke.strokeWidth = kit.u(2.4f)
                 canvas.drawCircle(cx, cy, r, kit.stroke)
                 kit.number.color = Palette.ACCENT
                 kit.drawText(canvas, label, cx, cy, kit.number)
@@ -195,8 +202,8 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
                 val bx = cx + r * 0.7f
                 val by = cy + r * 0.7f
                 kit.fill.color = Palette.BALL
-                canvas.drawCircle(bx, by, kit.u(5.5f), kit.fill)
-                Icons.draw(canvas, kit, Icon.CHECK, bx, by, kit.u(7f), Palette.BACKGROUND)
+                canvas.drawCircle(bx, by, kit.u(7f), kit.fill)
+                Icons.draw(canvas, kit, Icon.CHECK, bx, by, kit.u(9f), Palette.BACKGROUND)
             }
             unlocked -> {
                 kit.stroke.color = Palette.TEXT_DIM
@@ -216,8 +223,8 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
     }
 
     private companion object {
-        const val COLUMNS = 5
-        const val ROWS = 3
+        const val COLUMNS = 4
+        const val ROWS = 5
         const val PER_PAGE = COLUMNS * ROWS
     }
 }

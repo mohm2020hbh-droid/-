@@ -1,6 +1,7 @@
 package com.carom.game.screens
 
 import android.graphics.Canvas
+import android.graphics.DashPathEffect
 import android.graphics.Path
 import android.graphics.RectF
 import android.view.MotionEvent
@@ -19,8 +20,11 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * A level being played. Owns the [GameSession] (rules), the slingshot input and everything drawn
- * on top of the board: HUD, feedback effects and the result overlay.
+ * A level being played, laid out for a phone held upright: a slim top bar (level, restart, level
+ * list), the board filling the width below it, and a strip under the board for the hint.
+ *
+ * Owns the [GameSession] (rules), the slingshot input and everything drawn on top of the board.
+ * The bounces left are shown inside the ball itself.
  */
 class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) : Screen(host), GameSession.Listener {
 
@@ -30,18 +34,20 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     private var aim = SlingshotAim(maxPull = 1.0)
     private var grabRadius = 1.0
+    private var maxPullPx = 1f
+    private var touchStartX = 0f
+    private var touchStartY = 0f
     private var fingerX = 0f
     private var fingerY = 0f
     private var shotsFired = 0
     private val hint: String? = level.hintFor(kit.text.language)
+    private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
 
     private val restartButton = UiButton(UiButton.Style.ICON, icon = Icon.RESTART) { restart() }
     private val levelsButton = UiButton(UiButton.Style.ICON, icon = Icon.GRID) { host.showLevels(index) }
     private val hudButtons = listOf(restartButton, levelsButton)
-    private var levelLabelX = 0f
-    private var levelLabelY = 0f
-    private var counterX = 0f
-    private var counterY = 0f
+    private var topBarY = 0f
+    private var hintY = 0f
 
     private val isLastLevel = index == host.app.levels.size - 1
     private val nextButton = UiButton(UiButton.Style.PRIMARY, kit.text.next, Icon.PLAY) { host.play(index + 1) }
@@ -51,11 +57,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     /** Seconds since the attempt was won or lost. */
     private var endTime = 0f
-    private var counterPulse = 0f
     private val ripples = ArrayList<Ripple>()
     private val particles = ArrayList<Particle>()
     private val shape = Path()
     private val hintBox = RectF()
+    private var pullRingDash: DashPathEffect? = null
 
     private class Ripple(val x: Double, val y: Double) {
         var age = 0f
@@ -80,49 +86,35 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     // ---------------------------------------------------------------- layout
 
     override fun onLayout() {
+        val topBar = kit.u(60f)
+        val bottomStrip = kit.u(44f)
+        val margin = kit.u(10f)
+        topBarY = safe.top + topBar / 2
+        hintY = safe.bottom - bottomStrip / 2
+
+        // The board takes all the space between the bars: full width on a phone held upright.
+        val areaLeft = safe.left + margin
+        val areaTop = safe.top + topBar
+        val areaW = safe.width() - 2 * margin
+        val areaH = safe.height() - topBar - bottomStrip
         val lw = level.width.toFloat()
         val lh = level.height.toFloat()
-        val margin = kit.u(12f)
-        val sideColumn = kit.u(78f)
-        val topStrip = kit.u(46f)
-        // HUD beside the board (wide phones) or above it (16:9 and tablets): whichever lets the
-        // board be bigger.
-        val scaleSide = min((safe.width() - 2 * sideColumn) / lw, (safe.height() - 2 * margin) / lh)
-        val scaleTop = min((safe.width() - 2 * margin) / lw, (safe.height() - topStrip - margin) / lh)
-        val hudBeside = scaleSide >= scaleTop
-        val scale = max(scaleSide, scaleTop)
-        val left = safe.left + (safe.width() - lw * scale) / 2
-        val top = if (hudBeside) {
-            safe.top + (safe.height() - lh * scale) / 2
-        } else {
-            safe.top + topStrip + (safe.height() - topStrip - margin - lh * scale) / 2
-        }
+        val scale = min(areaW / lw, areaH / lh)
+        val left = areaLeft + (areaW - lw * scale) / 2
+        val top = areaTop + (areaH - lh * scale) / 2
         board.layout(scale, left, top)
         boardRect.set(left, top, left + lw * scale, top + lh * scale)
 
-        val button = kit.u(40f)
-        if (hudBeside) {
-            val leftX = (safe.left + boardRect.left) / 2
-            val rightX = (boardRect.right + safe.right) / 2
-            levelLabelX = leftX
-            levelLabelY = boardRect.top + kit.u(20f)
-            counterX = leftX
-            counterY = boardRect.top + kit.u(52f)
-            restartButton.setCenter(rightX, boardRect.top + kit.u(20f), button, button)
-            levelsButton.setCenter(rightX, boardRect.top + kit.u(66f), button, button)
-        } else {
-            val y = safe.top + topStrip / 2
-            levelLabelX = boardRect.left + kit.u(16f)
-            levelLabelY = y
-            counterX = boardRect.left + kit.u(60f)
-            counterY = y
-            levelsButton.setCenter(boardRect.right - kit.u(16f), y, button, button)
-            restartButton.setCenter(boardRect.right - kit.u(62f), y, button, button)
-        }
+        val button = kit.u(48f)
+        levelsButton.setCenter(boardRect.right - button / 2, topBarY, button, button)
+        restartButton.setCenter(boardRect.right - button * 1.5f - kit.u(4f), topBarY, button, button)
 
-        // Aiming is sized in screen terms so it feels the same on every device and level size.
-        aim = SlingshotAim(maxPull = (kit.u(105f) / scale).toDouble())
-        grabRadius = (max(level.ballRadius.toFloat() * scale * 2.6f, kit.u(26f)) / scale).toDouble()
+        // Aiming is sized in screen terms so it feels the same on every device. The ball can be
+        // grabbed well outside its edge: at least a fingertip's width around its centre.
+        maxPullPx = kit.u(110f)
+        aim = SlingshotAim(maxPull = (maxPullPx / scale).toDouble())
+        grabRadius = (max(board.ballScreenRadius * 1.6f, kit.u(34f)) / scale).toDouble()
+        pullRingDash = DashPathEffect(floatArrayOf(kit.u(4f), kit.u(6f)), 0f)
 
         arrangeResultButtons()
     }
@@ -130,7 +122,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** Stacks the result buttons that apply to the current outcome under the title. */
     private fun arrangeResultButtons() {
         overlayButtons().forEachIndexed { i, b ->
-            b.setCenter(width / 2, height / 2 + kit.u(28f + 38f * i), kit.u(150f), kit.u(30f))
+            b.setCenter(width / 2, height / 2 + kit.u(40f + 60f * i), kit.u(230f), kit.u(48f))
         }
     }
 
@@ -139,7 +131,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     override fun update(dt: Float) {
         session.advance(dt.toDouble())
         if (ended) endTime += dt
-        counterPulse = max(0f, counterPulse - dt * 4f)
         ripples.forEach { it.age += dt }
         ripples.removeAll { it.age > RIPPLE_LIFE }
         for (p in particles) {
@@ -152,7 +143,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override val isAnimating: Boolean
         get() = session.state == GameSession.State.MOVING || ripples.isNotEmpty() || particles.isNotEmpty() ||
-            counterPulse > 0f || (ended && overlayProgress < 1f)
+            (ended && overlayProgress < 1f)
 
     override fun onLaunch() {
         shotsFired++
@@ -161,7 +152,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override fun onBounce(x: Double, y: Double, bouncesLeft: Int) {
         ripples += Ripple(x, y)
-        counterPulse = 1f
         host.haptic(Haptic.BOUNCE)
     }
 
@@ -174,7 +164,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val colors = intArrayOf(Palette.ACCENT, Palette.BALL, Palette.wallColor(index))
         for (i in 0 until 16) {
             val a = i / 16.0 * Math.PI * 2 + (i % 3) * 0.3
-            val speed = kit.u(60f + (i * 37 % 50))
+            val speed = kit.u(70f + (i * 37 % 60))
             particles += Particle(
                 gx, gy, (cos(a) * speed).toFloat(), (sin(a) * speed).toFloat(),
                 if (i % 2 == 0) 4f else -3f, colors[i % colors.size],
@@ -191,7 +181,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         session.restart()
         aim.cancel()
         endTime = 0f
-        counterPulse = 0f
         ripples.clear()
         particles.clear()
     }
@@ -206,6 +195,8 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                 if (session.state == GameSession.State.AIMING &&
                     aim.tryBegin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, grabRadius)
                 ) {
+                    touchStartX = e.x
+                    touchStartY = e.y
                     fingerX = e.x
                     fingerY = e.y
                     return true
@@ -256,16 +247,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val scoring = session.state == GameSession.State.WON && endTime < GOAL_PULSE
         board.drawGoal(canvas, if (scoring) endTime / GOAL_PULSE else 0f)
         drawRipples(canvas)
-
-        if (aim.isActive) {
-            kit.stroke.color = Palette.LINE
-            kit.stroke.strokeWidth = kit.u(1.2f)
-            canvas.drawLine(ballX, ballY, fingerX, fingerY, kit.stroke)
-            board.drawAim(
-                canvas, ballX, ballY, aim.dirX.toFloat(), aim.dirY.toFloat(),
-                aim.power.toFloat(), aim.isShotReady, kit.unit,
-            )
-        }
+        if (aim.isActive) drawAiming(canvas, ballX, ballY)
         drawBall(canvas, ballX, ballY)
         drawParticles(canvas)
         drawHud(canvas)
@@ -274,7 +256,28 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         if (overlay > 0f) drawResult(canvas, overlay)
     }
 
+    /**
+     * While the ball is held: a dashed ring showing how far to pull for full power, a thin band
+     * from the ball to the finger, and the launch guide.
+     */
+    private fun drawAiming(canvas: Canvas, ballX: Float, ballY: Float) {
+        kit.stroke.color = Palette.withAlpha(Palette.TEXT, 0.18f)
+        kit.stroke.strokeWidth = kit.u(1.5f)
+        kit.stroke.pathEffect = pullRingDash
+        canvas.drawCircle(touchStartX, touchStartY, maxPullPx, kit.stroke)
+        kit.stroke.pathEffect = null
+
+        kit.stroke.color = Palette.LINE
+        kit.stroke.strokeWidth = kit.u(2f)
+        canvas.drawLine(ballX, ballY, fingerX, fingerY, kit.stroke)
+        board.drawAim(
+            canvas, ballX, ballY, aim.dirX.toFloat(), aim.dirY.toFloat(),
+            aim.power.toFloat(), aim.isShotReady, kit.unit,
+        )
+    }
+
     private fun drawBall(canvas: Canvas, x: Float, y: Float) {
+        val left = session.bouncesLeft
         when (session.state) {
             GameSession.State.WON -> {
                 // Glide into the centre of the goal and settle.
@@ -282,28 +285,31 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                 val ease = 1f - (1f - t) * (1f - t)
                 val gx = board.x(level.goal.x)
                 val gy = board.y(level.goal.y)
-                board.drawBall(canvas, x + (gx - x) * ease, y + (gy - y) * ease, 1f - 0.3f * ease, Palette.BALL)
+                board.drawBall(canvas, x + (gx - x) * ease, y + (gy - y) * ease, 1f - 0.3f * ease, Palette.BALL, left)
             }
             GameSession.State.FAILED -> {
                 val shake = if (endTime < 0.3f) sin(endTime * 70f) * kit.u(2.5f) * (1f - endTime / 0.3f) else 0f
-                board.drawBall(canvas, x + shake, y, 1f, Palette.DANGER)
+                board.drawBall(canvas, x + shake, y, 1f, Palette.DANGER, left)
             }
-            else -> board.drawBall(canvas, x, y, 1f, Palette.BALL)
+            // Out of bounces in flight: the next wall ends the attempt, so the ball turns red.
+            GameSession.State.MOVING ->
+                board.drawBall(canvas, x, y, 1f, if (left == 0) Palette.DANGER else Palette.BALL, left)
+            GameSession.State.AIMING -> board.drawBall(canvas, x, y, 1f, Palette.BALL, left)
         }
     }
 
     private fun drawRipples(canvas: Canvas) {
-        val r = level.ballRadius.toFloat() * board.scale
+        val r = board.ballScreenRadius
         for (ripple in ripples) {
             val t = ripple.age / RIPPLE_LIFE
             kit.stroke.color = Palette.withAlpha(Palette.BALL, 0.7f * (1f - t))
-            kit.stroke.strokeWidth = kit.u(1.5f)
-            canvas.drawCircle(board.x(ripple.x), board.y(ripple.y), r * (1f + t * 1.8f), kit.stroke)
+            kit.stroke.strokeWidth = kit.u(2f)
+            canvas.drawCircle(board.x(ripple.x), board.y(ripple.y), r * (1f + t * 1.2f), kit.stroke)
         }
     }
 
     private fun drawParticles(canvas: Canvas) {
-        val s = kit.u(4f)
+        val s = kit.u(5f)
         for (p in particles) {
             val t = p.age / PARTICLE_LIFE
             val a = p.age * p.spin
@@ -321,29 +327,31 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     private fun drawHud(canvas: Canvas) {
+        // "LEVEL 07" at the top left, aligned with the board's edge (number first in Arabic, so
+        // it still reads word-then-number right to left).
+        val gap = kit.u(8f)
+        val word = kit.small.measureText(kit.text.level)
+        val digits = kit.number.measureText(levelNumber)
+        val left = boardRect.left + kit.u(4f)
+        val arabic = kit.text.language == "ar"
+        val wordX = if (arabic) left + digits + gap + word / 2 else left + word / 2
+        val numberX = if (arabic) left + digits / 2 else left + word + gap + digits / 2
+        kit.small.color = Palette.TEXT_DIM
+        kit.drawText(canvas, kit.text.level, wordX, topBarY, kit.small)
+        kit.small.color = Palette.TEXT
         kit.number.color = Palette.TEXT
-        kit.drawText(canvas, String.format(Locale.ROOT, "%02d", index + 1), levelLabelX, levelLabelY, kit.number)
-
-        val warn = session.state == GameSession.State.MOVING && session.bouncesLeft == 0
-        val color = if (warn) Palette.DANGER else Palette.TEXT
-        val grow = 1f + 0.35f * counterPulse
-        Icons.draw(canvas, kit, Icon.RING, counterX - kit.u(10f), counterY, kit.u(15f) * grow, color)
-        kit.number.color = color
-        kit.number.textSize = kit.u(15f) * grow
-        kit.drawText(canvas, session.bouncesLeft.toString(), counterX + kit.u(8f), counterY, kit.number)
-        kit.number.textSize = kit.u(15f)
-        kit.number.color = Palette.TEXT
+        kit.drawText(canvas, levelNumber, numberX, topBarY, kit.number)
 
         for (b in hudButtons) b.draw(canvas, kit)
 
         if (hint != null && shotsFired == 0 && session.state == GameSession.State.AIMING) {
-            val y = boardRect.top + kit.u(24f)
-            val w = kit.small.measureText(hint) + kit.u(24f)
-            hintBox.set(boardRect.centerX() - w / 2, y - kit.u(11f), boardRect.centerX() + w / 2, y + kit.u(11f))
-            kit.fill.color = Palette.withAlpha(Palette.BACKGROUND, 0.85f)
-            canvas.drawRoundRect(hintBox, kit.u(11f), kit.u(11f), kit.fill)
+            val w = min(kit.small.measureText(hint) + kit.u(28f), safe.width() - kit.u(16f))
+            hintBox.set(width / 2 - w / 2, hintY - kit.u(15f), width / 2 + w / 2, hintY + kit.u(15f))
+            kit.stroke.color = Palette.LINE
+            kit.stroke.strokeWidth = kit.u(1f)
+            canvas.drawRoundRect(hintBox, kit.u(15f), kit.u(15f), kit.stroke)
             kit.small.color = Palette.TEXT_DIM
-            kit.drawText(canvas, hint, boardRect.centerX(), y, kit.small)
+            kit.drawText(canvas, hint, width / 2, hintY, kit.small)
             kit.small.color = Palette.TEXT
         }
     }
@@ -351,18 +359,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun drawResult(canvas: Canvas, progress: Float) {
         canvas.drawColor(Palette.withAlpha(Palette.BACKGROUND, 0.93f * progress))
         val cx = width / 2
-        val lift = (1f - progress) * kit.u(12f)
+        val lift = (1f - progress) * kit.u(14f)
         val cy = height / 2 + lift
         val won = session.state == GameSession.State.WON
         val color = if (won) Palette.BALL else Palette.DANGER
 
         kit.stroke.color = color
-        kit.stroke.strokeWidth = kit.u(2f)
-        canvas.drawCircle(cx, cy - kit.u(66f), kit.u(22f), kit.stroke)
-        Icons.draw(canvas, kit, if (won) Icon.CHECK else Icon.CROSS, cx, cy - kit.u(66f), kit.u(24f), color)
+        kit.stroke.strokeWidth = kit.u(2.5f)
+        canvas.drawCircle(cx, cy - kit.u(96f), kit.u(30f), kit.stroke)
+        Icons.draw(canvas, kit, if (won) Icon.CHECK else Icon.CROSS, cx, cy - kit.u(96f), kit.u(32f), color)
 
         kit.heading.color = Palette.TEXT
-        kit.drawText(canvas, if (won) kit.text.levelComplete else kit.text.levelFailed, cx, cy - kit.u(24f), kit.heading)
+        kit.drawText(canvas, if (won) kit.text.levelComplete else kit.text.levelFailed, cx, cy - kit.u(38f), kit.heading)
         val detail = when {
             !won && session.failReason == GameSession.FailReason.STOPPED -> kit.text.ballStopped
             !won -> kit.text.outOfBounces
@@ -371,7 +379,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         }
         if (detail != null) {
             kit.small.color = Palette.TEXT_DIM
-            kit.drawText(canvas, detail, cx, cy - kit.u(4f), kit.small)
+            kit.drawText(canvas, detail, cx, cy - kit.u(12f), kit.small)
             kit.small.color = Palette.TEXT
         }
 
