@@ -1,0 +1,50 @@
+{
+  "name": "Breakable",
+  "bounces": 3,
+  "ball": [
+    450,
+    1650
+  ],
+  "goal": [
+    450,
+    320
+  ],
+  "hint": {
+    "en": "Cracked barriers break after a hit",
+    "ar": "الحواجز المشقوقة تنكسر بعد ضربة"
+  },
+  "obstacles": [
+    {
+      "type": "wall",
+      "points": [
+        0,
+        1000,
+        160,
+        1000
+      ]
+    },
+    {
+      "type": "wall",
+      "points": [
+        740,
+        1000,
+        900,
+        1000
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "kind": "destructible",
+      "pos": [
+        450,
+        1000
+      ],
+      "scale": [
+        520,
+        44
+      ],
+      "value": 1
+    }
+  ]
+}

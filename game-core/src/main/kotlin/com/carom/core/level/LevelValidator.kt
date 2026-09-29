@@ -1,5 +1,6 @@
 package com.carom.core.level
 
+import com.carom.core.game.ElementRuntime
 import com.carom.core.game.WorldBuilder
 import com.carom.core.math.Vec2
 
@@ -33,6 +34,35 @@ object LevelValidator {
             }
             if (points.zipWithNext().any { (a, b) -> a == b }) problems += "obstacle has a zero-length edge"
         }
+        problems += elementProblems(level)
+        return problems
+    }
+
+    /** Checks of the level's [Element]s: where they are, what they refer to, and whether the exit can be satisfied. */
+    private fun elementProblems(level: LevelData): List<String> {
+        val problems = ArrayList<String>()
+        val ids = HashSet<String>()
+        val portalIds = level.elements.filter { it.kind == ElementKind.PORTAL }.map { it.id }.toSet()
+        var extraBalls = 0
+        for ((i, e) in level.elements.withIndex()) {
+            val name = "element #$i (${e.kind.name.lowercase()}${if (e.id.isNotEmpty()) " '${e.id}'" else ""})"
+            if (e.x < 0 || e.y < 0 || e.x > level.width || e.y > level.height) problems += "$name is outside the level"
+            if (e.id.isNotEmpty() && !ids.add(e.id)) problems += "$name: the id is used twice"
+            if (e.channel !in 0..15) problems += "$name: channel must be 0..15"
+            if (e.kind == ElementKind.PORTAL) {
+                if (e.link.isEmpty()) problems += "$name has no 'link'"
+                else if (e.link !in portalIds) problems += "$name links to '${e.link}', which is not a portal"
+                else if (e.link == e.id) problems += "$name links to itself"
+            }
+            if (e.kind == ElementKind.BALL_CONTAINER) extraBalls += e.value.toInt().coerceAtLeast(1)
+            if (e.kind == ElementKind.DESTRUCTIBLE && e.value < 1) problems += "$name needs a 'value' of at least 1 hit"
+            if (!e.physical && (e.deathTrigger || e.kind == ElementKind.PORTAL || e.kind == ElementKind.SWITCH) &&
+                ElementRuntime(e, i).contains(level.ball.x, level.ball.y)
+            ) {
+                problems += "the ball starts inside $name"
+            }
+        }
+        if (level.exitRequired > 1 + extraBalls) problems += "the exit needs ${level.exitRequired} balls but at most ${1 + extraBalls} can exist"
         return problems
     }
 

@@ -1,0 +1,30 @@
+{
+  "name": "Danger",
+  "bounces": 1,
+  "ball": [
+    450,
+    1650
+  ],
+  "goal": [
+    450,
+    320
+  ],
+  "hint": {
+    "en": "Red zones destroy the ball",
+    "ar": "المناطق الحمراء تدمّر الكرة"
+  },
+  "obstacles": [],
+  "elements": [
+    {
+      "kind": "death",
+      "pos": [
+        450,
+        1000
+      ],
+      "scale": [
+        280,
+        360
+      ]
+    }
+  ]
+}

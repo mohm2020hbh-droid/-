@@ -11,7 +11,14 @@ import com.carom.core.physics.Segment
 /** Converts level data into collision geometry. This is where each obstacle kind gets its physics. */
 object WorldBuilder {
 
-    fun build(level: LevelData): PhysicsWorld {
+    /** The elements of [level] in their starting state; a session keeps these and animates them. */
+    fun runtimes(level: LevelData): List<ElementRuntime> = level.elements.mapIndexed { i, e -> ElementRuntime(e, i) }
+
+    /**
+     * The collision world of [level]: its walls and blocks, plus the barriers among [elements] (their segments
+     * are shared, so when an element moves or turns the world sees it).
+     */
+    fun build(level: LevelData, elements: List<ElementRuntime> = runtimes(level)): PhysicsWorld {
         val segments = ArrayList<Segment>()
         if (level.border) {
             // The level's edges are the screen's edges: invisible, zero-thickness walls, so the
@@ -29,6 +36,7 @@ object WorldBuilder {
                 is Block -> addChain(segments, obstacle.core, closed = true, radius = obstacle.radius)
             }
         }
+        for (e in elements) segments.addAll(e.segments)
         val goal = CircleTrigger(level.goal.x, level.goal.y, level.goalRadius)
         return PhysicsWorld(segments, listOf(goal))
     }

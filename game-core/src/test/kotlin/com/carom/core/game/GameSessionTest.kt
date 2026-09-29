@@ -14,7 +14,7 @@ class GameSessionTest {
         "test",
         """
         {
-          "size": [1000, 600], "bounces": $bounces, "friction": $friction, "launchZone": $zone,
+          "size": [1000, 600], "bounces": $bounces, "friction": $friction, "drag": 0, "launchZone": $zone,
           "ball": [100, 300], "goal": [900, 300],
           "obstacles": [ {"type": "wall", "points": [500, 200, 500, 450]} $extra ]
         }
@@ -91,7 +91,7 @@ class GameSessionTest {
     fun travelDistanceGrowsLinearlyWithPower() {
         val lvl = LevelParser.parse(
             "open",
-            """{"size": [100000, 1000], "bounces": 0, "ball": [100, 500], "goal": [99000, 500], "friction": 600}""",
+            """{"size": [100000, 1000], "bounces": 0, "ball": [100, 500], "goal": [99000, 500], "friction": 600, "drag": 0}""",
         )
         fun distance(power: Double): Double {
             val s = GameSession(lvl)

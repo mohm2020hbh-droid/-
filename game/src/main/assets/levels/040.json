@@ -1,0 +1,38 @@
+{
+  "name": "Reinforcements",
+  "bounces": 2,
+  "exitRequired": 2,
+  "hardcore": true,
+  "ball": [
+    450,
+    1650
+  ],
+  "goal": [
+    450,
+    320
+  ],
+  "hint": {
+    "en": "Hit the container to free a second ball; both must reach the exit",
+    "ar": "اضرب الحاوية لتحرّر كرة ثانية؛ يجب أن تصل الكرتان إلى المخرج"
+  },
+  "obstacles": [],
+  "elements": [
+    {
+      "kind": "ballContainer",
+      "pos": [
+        220,
+        1000
+      ],
+      "scale": [
+        150,
+        150
+      ],
+      "value": 1,
+      "vector": [
+        0.32,
+        -0.95
+      ],
+      "force": 60
+    }
+  ]
+}

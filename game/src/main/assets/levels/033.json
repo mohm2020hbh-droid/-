@@ -1,0 +1,31 @@
+{
+  "name": "Repel",
+  "bounces": 1,
+  "ball": [
+    450,
+    1650
+  ],
+  "goal": [
+    450,
+    320
+  ],
+  "hint": {
+    "en": "Repulsive zones push the ball away",
+    "ar": "مناطق الطرد تدفع الكرة بعيدًا عن مركزها"
+  },
+  "obstacles": [],
+  "elements": [
+    {
+      "kind": "repulsive",
+      "pos": [
+        450,
+        1000
+      ],
+      "scale": [
+        460,
+        460
+      ],
+      "force": 100
+    }
+  ]
+}

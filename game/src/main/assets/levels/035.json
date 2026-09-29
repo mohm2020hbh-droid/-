@@ -1,0 +1,56 @@
+{
+  "name": "Portal",
+  "bounces": 1,
+  "ball": [
+    250,
+    1650
+  ],
+  "goal": [
+    650,
+    320
+  ],
+  "hint": {
+    "en": "Enter one portal, leave by the other",
+    "ar": "ادخل من بوابة واخرج من الأخرى"
+  },
+  "obstacles": [
+    {
+      "type": "wall",
+      "points": [
+        0,
+        1000,
+        900,
+        1000
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "kind": "portal",
+      "id": "a",
+      "link": "b",
+      "pos": [
+        250,
+        1350
+      ],
+      "scale": [
+        150,
+        150
+      ]
+    },
+    {
+      "kind": "portal",
+      "id": "b",
+      "link": "a",
+      "pos": [
+        250,
+        700
+      ],
+      "scale": [
+        150,
+        150
+      ],
+      "rotation": 45
+    }
+  ]
+}

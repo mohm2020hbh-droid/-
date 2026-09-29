@@ -22,7 +22,7 @@ data class LevelData(
     val bounces: Int,
     /** Launch speed at full power, in units per second. */
     val maxSpeed: Double,
-    /** Constant deceleration in units per second²; 0 means the ball never slows down. */
+    /** Constant deceleration in units per second² on top of the drag; 0 (the default) means none. */
     val friction: Double,
     /** Whether the level's edges (the screen's edges) bounce the ball. They are never drawn. */
     val border: Boolean,
@@ -39,10 +39,26 @@ data class LevelData(
     val hint: Map<String, String> = emptyMap(),
     /** Optional path hint for a hard level, shown only to a player who keeps failing it. */
     val guide: Guide? = null,
+    /** Things in the level that are more than a wall: force zones, portals, breakable and moving barriers... */
+    val elements: List<Element> = emptyList(),
+    /** Balls that must reach the exit before the level is won. */
+    val exitRequired: Int = 1,
+    /** Linear drag of the ball, per second: its speed decays as e^(−drag·t). */
+    val drag: Double = LevelDefaults.DRAG,
+    /** A level meant to be hard: it gets the intense music. */
+    val hardcore: Boolean = false,
 ) {
-    /** Distance a full-power shot travels before friction stops it (infinite without friction). */
+    /**
+     * Distance a full-power shot travels before it stops: speed / drag with drag alone, and less with friction
+     * added (infinite when neither slows the ball).
+     */
     val maxReach: Double
-        get() = if (friction > 0.0) maxSpeed * maxSpeed / (2.0 * friction) else Double.POSITIVE_INFINITY
+        get() = when {
+            friction > 0.0 && drag <= 0.0 -> maxSpeed * maxSpeed / (2.0 * friction)
+            friction > 0.0 -> minOf(maxSpeed * maxSpeed / (2.0 * friction), maxSpeed / drag)
+            drag > 0.0 -> maxSpeed / drag
+            else -> Double.POSITIVE_INFINITY
+        }
 
     /** The hint in [language], falling back to English, or null if the level has none. */
     fun hintFor(language: String): String? = hint[language] ?: hint["en"]
@@ -110,7 +126,12 @@ object LevelDefaults {
     const val WALL_THICKNESS = 44.0
     const val BLOCK_ROUNDING = 18.0
     const val MAX_SPEED = 2400.0
-    const val FRICTION = 600.0
+
+    /** No constant friction: the ball slows down by drag alone, as in the reference. */
+    const val FRICTION = 0.0
+
+    /** The reference ball's linear drag. */
+    const val DRAG = 0.25
 
     /** The ball can be moved this far from its start before a throw: about two ball widths across. */
     const val LAUNCH_ZONE = 130.0

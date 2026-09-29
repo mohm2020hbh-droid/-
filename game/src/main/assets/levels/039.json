@@ -1,0 +1,43 @@
+{
+  "name": "Switch",
+  "bounces": 2,
+  "ball": [
+    450,
+    1650
+  ],
+  "goal": [
+    700,
+    320
+  ],
+  "hint": {
+    "en": "Touch a switch to open the gate",
+    "ar": "المس المفتاح لتفتح البوابة"
+  },
+  "obstacles": [],
+  "elements": [
+    {
+      "kind": "switch",
+      "pos": [
+        180,
+        1300
+      ],
+      "scale": [
+        150,
+        150
+      ],
+      "channel": 1
+    },
+    {
+      "kind": "switchable",
+      "pos": [
+        450,
+        900
+      ],
+      "scale": [
+        760,
+        44
+      ],
+      "channel": 1
+    }
+  ]
+}

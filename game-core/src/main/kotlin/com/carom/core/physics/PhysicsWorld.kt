@@ -35,6 +35,14 @@ class PhysicsWorld(
 
         /** The ball's centre entered [trigger] at (x, y). Return false to stop there. */
         fun onTrigger(trigger: CircleTrigger, x: Double, y: Double): Boolean
+
+        /**
+         * The velocity of the surface at (x, y) if the wall just touched is itself moving (a sliding or
+         * turning obstacle), written into [out] as (vx, vy). The ball then bounces off the surface as
+         * seen from the surface, so a wall that moves into the ball throws it faster. False = still.
+         * [world] is the world, whose [contactSegment] says which wall it was.
+         */
+        fun surfaceVelocity(world: PhysicsWorld, x: Double, y: Double, out: DoubleArray): Boolean = false
     }
 
     // Per-segment results of the current sweep, preallocated so moving the ball allocates nothing.
@@ -42,6 +50,11 @@ class PhysicsWorld(
     private val hitNx = DoubleArray(segments.size)
     private val hitNy = DoubleArray(segments.size)
     private val contact = Contact()
+    private val surface = DoubleArray(2)
+
+    /** Index (in [segments]) of the wall touched by the contact being reported to the listener. */
+    var contactSegment = -1
+        private set
 
     /**
      * Moves [ball] a [distance] along its direction, bouncing off walls on the way.
@@ -60,7 +73,7 @@ class PhysicsWorld(
             // whose normal is the average of theirs.
             var tWall = Double.POSITIVE_INFINITY
             for (i in segments.indices) {
-                if (Sweep.circleVsSegment(ball.x, ball.y, dx, dy, ball.radius, segments[i], contact)) {
+                if (segments[i].enabled && Sweep.circleVsSegment(ball.x, ball.y, dx, dy, ball.radius, segments[i], contact)) {
                     hitT[i] = contact.t
                     hitNx[i] = contact.nx
                     hitNy[i] = contact.ny
@@ -93,12 +106,15 @@ class PhysicsWorld(
 
             var nx = 0.0
             var ny = 0.0
+            var first = -1
             for (i in segments.indices) {
                 if (hitT[i] <= tWall + SIMULTANEOUS) {
                     nx += hitNx[i]
                     ny += hitNy[i]
+                    if (first < 0 || hitT[i] < hitT[first]) first = i
                 }
             }
+            contactSegment = first
             val nLen = sqrt(nx * nx + ny * ny)
             if (nLen > 0.0) {
                 nx /= nLen
@@ -114,16 +130,20 @@ class PhysicsWorld(
             remaining -= remaining * tWall
             if (!listener.onWallContact(ball.x, ball.y, nx, ny)) return false
 
-            // Reflect: d' = d - 2(d·n)n, then renormalise to keep drift out of the direction.
-            val dn = ball.dirX * nx + ball.dirY * ny
-            if (dn < 0.0) {
-                var rx = ball.dirX - 2.0 * dn * nx
-                var ry = ball.dirY - 2.0 * dn * ny
-                val rLen = sqrt(rx * rx + ry * ry)
-                rx /= rLen
-                ry /= rLen
-                ball.dirX = rx
-                ball.dirY = ry
+            if (first >= 0 && listener.surfaceVelocity(this, ball.x, ball.y, surface)) {
+                reflectOffMovingSurface(ball, nx, ny, surface[0], surface[1])
+            } else {
+                // Reflect: d' = d - 2(d·n)n, then renormalise to keep drift out of the direction.
+                val dn = ball.dirX * nx + ball.dirY * ny
+                if (dn < 0.0) {
+                    var rx = ball.dirX - 2.0 * dn * nx
+                    var ry = ball.dirY - 2.0 * dn * ny
+                    val rLen = sqrt(rx * rx + ry * ry)
+                    rx /= rLen
+                    ry /= rLen
+                    ball.dirX = rx
+                    ball.dirY = ry
+                }
             }
             // Step off the surface so the next sweep starts cleanly outside it.
             ball.x += nx * SKIN
@@ -134,6 +154,22 @@ class PhysicsWorld(
         return true
     }
 
+    /** Bounce as seen from the wall: reflect the ball's velocity relative to it, then add the wall's velocity back. */
+    private fun reflectOffMovingSurface(ball: Ball, nx: Double, ny: Double, sx: Double, sy: Double) {
+        val vx = ball.dirX * ball.speed - sx
+        val vy = ball.dirY * ball.speed - sy
+        val vn = vx * nx + vy * ny
+        if (vn >= 0.0) return // already moving apart from the surface
+        val rx = vx - 2.0 * vn * nx + sx
+        val ry = vy - 2.0 * vn * ny + sy
+        val speed = sqrt(rx * rx + ry * ry)
+        if (speed > 0.0) {
+            ball.dirX = rx / speed
+            ball.dirY = ry / speed
+            ball.speed = speed
+        }
+    }
+
     /**
      * Safety net: if the ball ever overlaps a wall (it shouldn't, but floating point is finite),
      * push it straight out so it can never get stuck inside geometry.
@@ -142,6 +178,7 @@ class PhysicsWorld(
         repeat(MAX_DEPENETRATION_PASSES) {
             var moved = false
             for (seg in segments) {
+                if (!seg.enabled) continue
                 val limit = ball.radius + seg.radius
                 val d = Sweep.distanceToSegment(ball.x, ball.y, seg, contact)
                 if (d < limit - Sweep.TOUCH_TOLERANCE) {
@@ -157,7 +194,7 @@ class PhysicsWorld(
 
     /** True if a ball of [radius] centred at (x, y) would overlap any wall. */
     fun overlaps(x: Double, y: Double, radius: Double): Boolean =
-        segments.any { Sweep.distanceToSegment(x, y, it, contact) < radius + it.radius }
+        segments.any { it.enabled && Sweep.distanceToSegment(x, y, it, contact) < radius + it.radius }
 
     private companion object {
         const val MIN_DISTANCE = 1e-9

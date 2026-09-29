@@ -1,7 +1,10 @@
 package com.carom.core.tools
 
 import com.carom.core.level.Block
+import com.carom.core.level.Element
+import com.carom.core.level.ElementKind
 import com.carom.core.level.LevelData
+import com.carom.core.level.Shape
 import com.carom.core.level.Wall
 import com.carom.core.math.Vec2
 import java.awt.BasicStroke
@@ -21,7 +24,11 @@ object LevelPreview {
     private const val CELL_W = 300
     private const val CELL_H = 560
 
-    fun writeSheet(file: File, entries: List<Pair<LevelData, List<Vec2>>>, columns: Int = 5) {
+    fun writeSheet(file: File, entries: List<Pair<LevelData, List<Vec2>>>, columns: Int = 5) =
+        writePaths(file, entries.map { (l, p) -> l to listOf(p) }, columns)
+
+    /** Like [writeSheet] with several paths per level (the first is drawn brightest). */
+    fun writePaths(file: File, entries: List<Pair<LevelData, List<List<Vec2>>>>, columns: Int = 5) {
         val rows = (entries.size + columns - 1) / columns
         val image = BufferedImage(CELL_W * columns, CELL_H * rows, BufferedImage.TYPE_INT_RGB)
         val g = image.createGraphics()
@@ -38,7 +45,7 @@ object LevelPreview {
         ImageIO.write(image, "png", file)
     }
 
-    private fun draw(g: Graphics2D, level: LevelData, path: List<Vec2>) {
+    private fun draw(g: Graphics2D, level: LevelData, paths: List<List<Vec2>>) {
         val margin = 20.0
         val scale = minOf((CELL_W - 2 * margin) / level.width, (CELL_H - 2 * margin - 14) / level.height)
         g.color = Color(0x8A93A6)
@@ -71,19 +78,52 @@ object LevelPreview {
             }
         }
 
+        for (e in level.elements) drawElement(g, e)
+
         g.color = Color(0xFBBF24)
         g.stroke = BasicStroke(8f)
         val gr = level.goalRadius
         g.draw(Ellipse2D.Double(level.goal.x - gr + 4, level.goal.y - gr + 4, 2 * gr - 8, 2 * gr - 8))
 
-        if (path.size > 1) {
-            g.color = Color(0x6EE7B7)
-            g.stroke = BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, floatArrayOf(12f, 12f), 0f)
-            g.draw(polyline(path, closed = false))
+        paths.forEachIndexed { i, path ->
+            if (path.size > 1) {
+                g.color = if (i == 0) Color(0x6EE7B7) else Color(0x6EE7B7 or (0x60 shl 24), true)
+                g.stroke = BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, floatArrayOf(12f, 12f), 0f)
+                g.draw(polyline(path, closed = false))
+            }
         }
         g.color = Color(0x6EE7B7)
         val br = level.ballRadius
         g.fill(Ellipse2D.Double(level.ball.x - br, level.ball.y - br, 2 * br, 2 * br))
+    }
+
+    private fun drawElement(g: Graphics2D, e: Element) {
+        val c = when (e.kind) {
+            ElementKind.BOOSTER -> Color(0x60A5FA)
+            ElementKind.ATTRACTIVE -> Color(0xA78BFA)
+            ElementKind.REPULSIVE -> Color(0xF472B6)
+            ElementKind.SLOWER -> Color(0x94A3B8)
+            ElementKind.DEATH -> Color(0xEF4444)
+            ElementKind.PORTAL -> Color(0x22D3EE)
+            ElementKind.SLOWMO_ZONE, ElementKind.TOUCH_ZONE -> Color(0x34D399)
+            ElementKind.SWITCH -> Color(0xFACC15)
+            ElementKind.BALL_CONTAINER -> Color(0xFB923C)
+            else -> Color(0xE8DCC4)
+        }
+        val saved = g.transform
+        g.translate(e.x, e.y)
+        g.rotate(Math.toRadians(e.rotation))
+        g.color = Color(c.red, c.green, c.blue, if (e.physical) 255 else 90)
+        if (e.shape == Shape.CIRCLE) g.fill(Ellipse2D.Double(-e.scaleX / 2, -e.scaleX / 2, e.scaleX, e.scaleX))
+        else g.fill(java.awt.geom.RoundRectangle2D.Double(-e.scaleX / 2, -e.scaleY / 2, e.scaleX, e.scaleY, 36.0, 36.0))
+        if (e.kind == ElementKind.BOOSTER) {
+            g.color = Color.WHITE
+            g.stroke = BasicStroke(8f)
+            g.drawLine((-e.scaleX / 3).toInt(), 0, (e.scaleX / 3).toInt(), 0)
+            g.drawLine((e.scaleX / 3).toInt(), 0, (e.scaleX / 6).toInt(), -30)
+            g.drawLine((e.scaleX / 3).toInt(), 0, (e.scaleX / 6).toInt(), 30)
+        }
+        g.transform = saved
     }
 
     private fun polyline(points: List<Vec2>, closed: Boolean) = Path2D.Double().apply {

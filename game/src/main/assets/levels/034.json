@@ -1,0 +1,50 @@
+{
+  "name": "Timing",
+  "bounces": 2,
+  "ball": [
+    450,
+    1650
+  ],
+  "goal": [
+    450,
+    320
+  ],
+  "hint": {
+    "en": "Slower zones drain speed; time your throw",
+    "ar": "مناطق الإبطاء تستنزف السرعة؛ اختر توقيت قذفتك"
+  },
+  "obstacles": [],
+  "elements": [
+    {
+      "kind": "slower",
+      "pos": [
+        450,
+        1350
+      ],
+      "scale": [
+        900,
+        300
+      ],
+      "force": 1.0
+    },
+    {
+      "kind": "solid",
+      "pos": [
+        450,
+        1000
+      ],
+      "scale": [
+        360,
+        44
+      ],
+      "moving": {
+        "to": [
+          830,
+          1000
+        ],
+        "period": 4,
+        "phase": 0.25
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "name": "Slow Time",
+  "bounces": 1,
+  "launchZone": 30,
+  "ball": [
+    450,
+    1650
+  ],
+  "goal": [
+    450,
+    320
+  ],
+  "hint": {
+    "en": "Inside this zone time slows and you can swipe again",
+    "ar": "داخل هذه المنطقة يتباطأ الزمن ويمكنك السحب من جديد"
+  },
+  "obstacles": [],
+  "elements": [
+    {
+      "kind": "slowMo",
+      "pos": [
+        450,
+        1300
+      ],
+      "scale": [
+        520,
+        520
+      ]
+    },
+    {
+      "kind": "solid",
+      "pos": [
+        610,
+        800
+      ],
+      "scale": [
+        340,
+        40
+      ],
+      "rotating": {
+        "speed": 60
+      }
+    }
+  ]
+}

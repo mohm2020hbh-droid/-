@@ -1,0 +1,42 @@
+{
+  "name": "Boost",
+  "bounces": 1,
+  "ball": [
+    700,
+    1650
+  ],
+  "goal": [
+    200,
+    300
+  ],
+  "hint": {
+    "en": "Boosters push the ball along their arrows",
+    "ar": "المعزّزات تدفع الكرة في اتجاه أسهمها"
+  },
+  "obstacles": [
+    {
+      "type": "wall",
+      "points": [
+        450,
+        0,
+        450,
+        1200
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "kind": "booster",
+      "pos": [
+        260,
+        1400
+      ],
+      "scale": [
+        300,
+        300
+      ],
+      "rotation": -90,
+      "force": 6.3
+    }
+  ]
+}
