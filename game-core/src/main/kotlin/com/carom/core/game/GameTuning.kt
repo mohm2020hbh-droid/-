@@ -19,8 +19,12 @@ data class GameTuning(
     val freezeRotation: Boolean = true,
 
     // ---- touch control: swipe → delta × sensibility → impulse ----
-    /** How a touch acts on the ball: [ControlMode.SWIPE] (the reference) or the earlier hold-and-throw. */
-    val controlMode: ControlMode = ControlMode.SWIPE,
+    /**
+     * How a touch acts on the ball before the throw: [ControlMode.HOLD] (hold the ball, move it, pull away, let go)
+     * or [ControlMode.SWIPE] (a swipe anywhere is the impulse). Once the ball is flying, only a ball in a touch zone
+     * can be pushed again, and that is always by a swipe.
+     */
+    val controlMode: ControlMode = ControlMode.HOLD,
     val touchSensibility: Double = 0.5,
     /** A touch that moves less than this (in dp) is not a swipe. */
     val swipeTolerance: Double = 4.0,
@@ -30,6 +34,22 @@ data class GameTuning(
     val doubleTapWait: Double = 0.2,
     /** Taps closer together than this are one bounce of the finger, not two taps. */
     val tapWait: Double = 0.1,
+
+    // ---- hold and pull (in dp, like the swipe) ----
+    /** How fast a held ball can follow the finger; a finger that moves faster than this pulls away from the ball. */
+    val pullFollowSpeed: Double = 700.0,
+    /** A finger this far from the ball has pulled away from it: the pull (the throw being prepared) begins. */
+    val pullDetach: Double = 30.0,
+    /** A pull brought back closer than this to the ball is cancelled. */
+    val pullReattach: Double = 16.0,
+    /** Letting go of a pull shorter than this throws nothing. */
+    val pullMin: Double = 30.0,
+    /** A pull this long is a full-power throw. */
+    val pullMax: Double = 110.0,
+    /** Finger speeds (dp per second) at release where a flick starts and stops adding power, and how much it adds. */
+    val flickStart: Double = 900.0,
+    val flickFull: Double = 2600.0,
+    val flickBoost: Double = 0.25,
 
     // ---- speed ----
     /** The top speed in ref units. It caps the ball's speed whatever pushes it: swipes, boosters, fields, portals. */
@@ -91,7 +111,7 @@ data class GameTuning(
         /** Touch → drag → delta × sensibility → impulse. The ball does not go to the finger. */
         SWIPE,
 
-        /** The ball follows the finger around its launch zone and is thrown by a stroke (the earlier control). */
+        /** Hold the ball and move it round its launch zone; pull away from it and let go to throw it ([PullAim]). */
         HOLD,
     }
 

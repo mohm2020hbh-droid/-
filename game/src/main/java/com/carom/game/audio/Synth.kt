@@ -142,25 +142,59 @@ object Synth {
         return finish(out, peak = 0.5)
     }
 
-    /** The throw: a soft air "whoosh" rising and settling, over a gentle low puff. */
+    /**
+     * The throw: a soft, clean whoosh that swells and settles (no sharp attack), a rounded "bwup" of an elastic letting
+     * go (its pitch rises a little, it never falls like a punch) and a faint mechanical tick at the moment of release.
+     * Three layers, each set to the same loudness first and then mixed, so nothing in it is a crack or a bang.
+     */
     fun launch(): ShortArray {
-        val n = seconds(0.55)
-        val out = FloatArray(n)
+        val length = 0.5
+        val whoosh = FloatArray(seconds(length))
         val rnd = Random(5)
-        val filter = Svf()
-        for (i in 0 until seconds(0.36)) {
+        val air = Svf()
+        val soften = Svf()
+        for (i in 0 until seconds(0.44)) {
             val t = i.toDouble() / SAMPLE_RATE
-            val centre = if (t < 0.16) 350.0 + (1500.0 - 350.0) * (t / 0.16) else 1500.0 - 600.0 * min(1.0, (t - 0.16) / 0.2)
-            val env = min(1.0, t / 0.05).pow(2.0) * exp(-max(0.0, t - 0.06) / 0.09)
-            out[i] += (0.9 * env * filter.bandpass(rnd.nextDouble(-1.0, 1.0), centre, q = 1.3)).toFloat()
+            val rise = min(1.0, t / 0.22)
+            val centre = if (t < 0.22) 420.0 + (1500.0 - 420.0) * rise * rise * (3 - 2 * rise) else 1500.0 - 450.0 * min(1.0, (t - 0.22) / 0.22)
+            val swell = sin(PI / 2 * min(1.0, t / 0.09)).pow(2.0)
+            val env = swell * exp(-max(0.0, t - 0.1) / 0.11)
+            whoosh[i] = (env * soften.lowpass(air.bandpass(rnd.nextDouble(-1.0, 1.0), centre, q = 0.9), 3200.0, q = 0.7)).toFloat()
         }
-        for (i in 0 until seconds(0.12)) {
+
+        val bwup = FloatArray(seconds(length))
+        var phase = 0.0
+        for (i in 0 until seconds(0.24)) {
             val t = i.toDouble() / SAMPLE_RATE
-            val freq = 90.0 - 30.0 * min(1.0, t / 0.08)
-            out[i] += (0.35 * exp(-t / 0.04) * sin(2 * PI * freq * t) * min(1.0, t / 0.004)).toFloat()
+            val freq = 210.0 - 90.0 * exp(-t / 0.03) // 120 Hz rising to 210
+            phase += 2 * PI * freq / SAMPLE_RATE
+            val rise = min(1.0, t / 0.014)
+            val env = rise * rise * (3 - 2 * rise) * exp(-t / 0.055)
+            bwup[i] = (env * (sin(phase) + 0.3 * sin(2 * phase))).toFloat()
         }
-        reverb(out, mix = 0.12)
-        return finish(out, peak = 0.8)
+
+        val tick = FloatArray(seconds(length))
+        val click = Svf()
+        for (i in 0 until seconds(0.03)) {
+            val t = i.toDouble() / SAMPLE_RATE
+            val env = min(1.0, t / 0.0015) * exp(-t / 0.004)
+            tick[i] = (env * (click.bandpass(rnd.nextDouble(-1.0, 1.0), 2200.0, q = 2.0) + 0.5 * sin(2 * PI * 1800.0 * t))).toFloat()
+        }
+
+        val out = FloatArray(seconds(length))
+        mixLayer(out, whoosh, 0.62)
+        mixLayer(out, bwup, 0.38)
+        mixLayer(out, tick, 0.1)
+        reverb(out, mix = 0.06)
+        return finish(out, peak = 0.75)
+    }
+
+    /** Adds [layer] to [out], first scaled so its loudest sample is [gain]. */
+    private fun mixLayer(out: FloatArray, layer: FloatArray, gain: Double) {
+        var loudest = 1e-6f
+        for (v in layer) loudest = max(loudest, abs(v))
+        val k = (gain / loudest).toFloat()
+        for (i in out.indices) out[i] += layer[i] * k
     }
 
     /**
@@ -194,30 +228,36 @@ object Synth {
         return finish(out, peak = 0.5, edges = false)
     }
 
+    /** Seconds from the first pulse of the success sound to the second. */
+    const val PULSE_GAP = 0.34
+
     /**
-     * Scoring: a bright bell arpeggio (C6, E6, G6, C7) over a soft warm chord, with a shimmer of
-     * tiny sparkles as the ball swirls into the ring.
+     * Success: a heart beating twice, "dum... dum". Each pulse is a deep, soft thump whose pitch settles as it fades
+     * (the second a little lower and softer, as in a real heartbeat), with a few harmonics so small speakers carry
+     * it. No bell, no chime, no rising notes: the second pulse is the landing.
      */
     fun win(): ShortArray {
-        val out = FloatArray(seconds(2.2))
-        val notes = doubleArrayOf(1046.5, 1318.5, 1568.0, 2093.0)
-        val starts = doubleArrayOf(0.0, 0.08, 0.16, 0.27)
-        for (k in notes.indices) {
-            val amp = if (k == notes.size - 1) 0.9 else 0.7
-            partial(out, starts[k], notes[k], amp, 0.9, attack = 0.003)
-            partial(out, starts[k], notes[k] * 2.0, amp * 0.3, 0.5, attack = 0.003)
-            partial(out, starts[k], notes[k] * 3.0, amp * 0.1, 0.3, attack = 0.003)
-            partial(out, starts[k], notes[k] * 4.2, amp * 0.06, 0.15, attack = 0.002)
-        }
-        partial(out, 0.0, 523.25, 0.14, 0.9, attack = 0.06)
-        partial(out, 0.0, 783.99, 0.1, 0.9, attack = 0.06)
-        val rnd = Random(21)
-        repeat(22) {
-            val start = 0.05 + 0.85 * rnd.nextDouble()
-            partial(out, start, 4000.0 + 4000.0 * rnd.nextDouble(), 0.04 + 0.04 * rnd.nextDouble(), 0.025 + 0.035 * rnd.nextDouble(), attack = 0.001)
-        }
-        reverb(out, mix = 0.3)
+        val out = FloatArray(seconds(PULSE_GAP + 0.45))
+        pulse(out, 0.0, 150.0, 80.0, 1.0, Random(21))
+        pulse(out, PULSE_GAP, 134.0, 72.0, 0.78, Random(22))
+        reverb(out, mix = 0.05)
         return finish(out, peak = 0.85)
+    }
+
+    /** One heart pulse starting at [start]: a thump falling from [from] to [to] Hz, its octave and third partial, and a soft low thud. */
+    private fun pulse(out: FloatArray, start: Double, from: Double, to: Double, amp: Double, rnd: Random) {
+        val first = seconds(start)
+        val thud = Svf()
+        var phase = 0.0
+        for (k in 0 until min(out.size - first, seconds(0.36))) {
+            val t = k.toDouble() / SAMPLE_RATE
+            phase += 2 * PI * (to + (from - to) * exp(-t / 0.035)) / SAMPLE_RATE
+            val rise = min(1.0, t / 0.007)
+            val attack = rise * rise * (3 - 2 * rise)
+            val body = attack * exp(-t / 0.08) * (sin(phase) + 0.8 * exp(-t / 0.06) * sin(2 * phase + 0.4) + 0.32 * exp(-t / 0.04) * sin(3 * phase))
+            val soft = 0.3 * attack * exp(-t / 0.022) * thud.lowpass(rnd.nextDouble(-1.0, 1.0), 420.0, q = 0.8)
+            out[first + k] += (amp * (body + soft)).toFloat()
+        }
     }
 
     /**

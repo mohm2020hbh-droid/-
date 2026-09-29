@@ -3,5 +3,5 @@
   "bounces": 3,
   "ball": [450, 1540],
   "goal": [450, 460],
-  "hint": {"en": "Swipe to throw the ball", "ar": "اسحب بإصبعك لتقذف الكرة"}
+  "hint": {"en": "Hold the ball, pull away, then let go", "ar": "امسك الكرة، اسحب بعيدًا، ثم اترك"}
 }

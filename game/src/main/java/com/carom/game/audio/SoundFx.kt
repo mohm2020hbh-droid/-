@@ -124,7 +124,7 @@ class SoundFx {
 
     fun shatter() = play("shatter", 0.85f, priority = VoicePool.Priority.EXPLOSION)
 
-    fun win() = play("win", 0.6f, priority = VoicePool.Priority.EXIT_COMPLETE)
+    fun win() = play("win", 0.9f, priority = VoicePool.Priority.EXIT_COMPLETE)
 
     fun tap() = play("tap", 0.35f, priority = VoicePool.Priority.UI)
 

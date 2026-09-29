@@ -422,39 +422,38 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         }
     }
 
+    private var zoneDash: DashPathEffect? = null
+    private var zoneDashUnit = 0f
+
     /**
-     * The launch zone: a soft disc with a fine ring, centred on the level's start, covering
-     * everywhere the ball can be moved to before a throw, with a small mark at the start. While the
-     * ball is held ([active]), the ring brightens and a thin arc fills it clockwise from the top
-     * with the throw's [power], like a dial, so it never points anywhere.
+     * The control zone: everywhere the ball can be moved to before a throw, marked by a dashed line round it and a very
+     * faint fill. A picture only: it is not a wall and stops nothing. The dashes are evenly spaced all the way round
+     * the circle, and the line brightens while the ball is being held.
      */
-    fun drawLaunchZone(canvas: Canvas, unit: Float, active: Boolean, power: Float, ready: Boolean) {
+    fun drawControlZone(canvas: Canvas, unit: Float, active: Boolean) {
         val cx = x(level.ball.x)
         val cy = y(level.ball.y)
         val radius = zoneScreenRadius
         canvas.save()
         canvas.translate(cx, cy)
+        zonePaint.alpha = 140
         canvas.drawCircle(0f, 0f, radius, zonePaint)
+        zonePaint.alpha = 255
         canvas.restore()
-        linePaint.pathEffect = null
+        if (zoneDash == null || zoneDashUnit != unit) {
+            // A whole number of dash + gap pairs round the circle.
+            val circumference = 2f * Math.PI.toFloat() * radius
+            val pairs = max(8, Math.round(circumference / (14f * unit)))
+            val part = circumference / (2f * pairs)
+            zoneDash = DashPathEffect(floatArrayOf(part, part), 0f)
+            zoneDashUnit = unit
+        }
         linePaint.shader = null
-        linePaint.color = Palette.withAlpha(palette.accent, if (active) 0.45f else 0.26f)
-        linePaint.strokeWidth = 1.5f * unit
+        linePaint.pathEffect = zoneDash
+        linePaint.color = Palette.withAlpha(palette.accent, if (active) 0.75f else 0.5f)
+        linePaint.strokeWidth = 2f * unit
         canvas.drawCircle(cx, cy, radius, linePaint)
-        linePaint.color = Palette.withAlpha(palette.accent, 0.3f)
-        linePaint.strokeWidth = unit
-        canvas.drawCircle(cx, cy, 4f * unit, linePaint)
-        if (!active || power <= 0f) return
-
-        val color = if (ready) palette.accent else Palette.withAlpha(palette.accent, 0.45f)
-        linePaint.color = color
-        linePaint.strokeWidth = 3f * unit
-        arcBox.set(cx - radius, cy - radius, cx + radius, cy + radius)
-        val sweep = 360f * power.coerceIn(0f, 1f)
-        canvas.drawArc(arcBox, -90f, sweep, false, linePaint)
-        val end = Math.toRadians((sweep - 90f).toDouble())
-        fillPaint.color = color
-        canvas.drawCircle(cx + radius * Math.cos(end).toFloat(), cy + radius * Math.sin(end).toFloat(), 3.4f * unit, fillPaint)
+        linePaint.pathEffect = null
     }
 
     /**

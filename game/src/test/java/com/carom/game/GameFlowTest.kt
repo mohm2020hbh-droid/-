@@ -65,19 +65,18 @@ class GameFlowTest {
         }
     }
 
-    /** Swipes straight up by [dragPx] from the ball: touch, drag, let go. The swipe is the impulse. */
-    private fun dragUpAndRelease(view: GameView, play: PlayScreen, dragPx: Float) {
+    /** Holds the ball and pulls straight up by [pullPx], hard: touch, pull away, let go. */
+    private fun dragUpAndRelease(view: GameView, play: PlayScreen, pullPx: Float) {
         val bx = play.board.x(play.session.ball.x)
         val by = play.board.y(play.session.ball.y)
         val t = SystemClock.uptimeMillis()
         touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
-        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx / 2, t + 40)
-        touch(view, MotionEvent.ACTION_MOVE, bx, by - dragPx, t + 80)
-        touch(view, MotionEvent.ACTION_UP, bx, by - dragPx, t + 90)
+        touch(view, MotionEvent.ACTION_MOVE, bx, by - pullPx, t + 30) // a hard stroke: the ball cannot keep up with it
+        touch(view, MotionEvent.ACTION_UP, bx, by - pullPx, t + 60)
     }
 
     @Test
-    fun draggingTheBallFiresItThatWayAndWinningSavesProgress() {
+    fun pullingTheBallAwayAndLettingGoFiresItThatWayAndWinningSavesProgress() {
         val store = MapStore()
         val view = newView(store)
         assertTrue(view.currentScreen is HomeScreen)
@@ -87,7 +86,7 @@ class GameFlowTest {
         // Level 1 is a straight shot: the goal is right above the ball.
         dragUpAndRelease(view, play, 400f)
         assertEquals(GameSession.State.MOVING, play.session.state)
-        assertTrue(play.session.ball.dirY < -0.999) // up, the way it was dragged
+        assertTrue(play.session.ball.dirY < -0.999) // up, the way it was pulled
 
         runFor(view, 2f) // the ball reaches the ring in about a second
         assertEquals(GameSession.State.WON, play.session.state)
@@ -105,14 +104,14 @@ class GameFlowTest {
         view.play(1)
         val play = view.currentScreen as PlayScreen
         assertEquals(2, play.session.bouncesLeft)
-        // Straight up from level 2's start hits the wall above the ball (a 400 px swipe is a bit over half speed).
-        dragUpAndRelease(view, play, 400f)
+        // Straight up from level 2's start hits the wall above the ball (a pull of 130 px is a bit over a third of the power).
+        dragUpAndRelease(view, play, 130f)
         runFor(view, 0.6f) // first wall at ~0.4 s, the next one at ~1.0 s
         assertEquals(1, play.session.bouncesLeft)
     }
 
     @Test
-    fun theBallStaysWhereItIsWhileTheFingerMovesAndASwipeIsAnImpulse() {
+    fun holdingTheBallMovesItAndLettingGoLeavesItThereWithoutThrowing() {
         val view = newView(MapStore())
         view.play(0)
         val play = view.currentScreen as PlayScreen
@@ -121,24 +120,68 @@ class GameFlowTest {
         val by = play.board.y(play.session.ball.y)
         val t = SystemClock.uptimeMillis()
         touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
-        touch(view, MotionEvent.ACTION_MOVE, bx + 150f, by, t + 30)
-        assertEquals("the ball does not follow the finger", startX, play.session.ball.x, 1e-9)
-        // Let go after a drag of 150 px: 150 / 3 = 50 dp × 0.5 = 25 ref units × 20 = 500 units per second.
-        touch(view, MotionEvent.ACTION_UP, bx + 150f, by, t + 60)
-        assertEquals(GameSession.State.MOVING, play.session.state)
-        assertEquals(500.0, play.session.ball.speed, 1.0)
-        assertEquals(1.0, play.session.ball.dirX, 1e-9)
+        touch(view, MotionEvent.ACTION_MOVE, bx + 60f, by, t + 40)
+        assertEquals("the held ball follows the finger", play.board.worldX(bx + 60f), play.session.ball.x, 1e-3)
+        touch(view, MotionEvent.ACTION_MOVE, bx + 120f, by, t + 80)
+        touch(view, MotionEvent.ACTION_UP, bx + 120f, by, t + 120)
+        assertEquals("letting go of a ball that was only moved throws nothing", GameSession.State.AIMING, play.session.state)
+        assertEquals("...it stays where it was put", play.board.worldX(bx + 120f), play.session.ball.x, 1e-3)
+        assertEquals(3, play.session.bouncesLeft)
     }
 
     @Test
-    fun aTapOrAShortDragDoesNotThrow() {
+    fun movingTheBallAroundGentlyAndOutToTheEdgeOfTheZoneNeverThrows() {
+        val view = newView(MapStore())
+        view.play(0)
+        val play = view.currentScreen as PlayScreen
+        val bx = play.board.x(play.session.ball.x)
+        val by = play.board.y(play.session.ball.y)
+        var t = SystemClock.uptimeMillis()
+        touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
+        // A long, calm drag up-right, then back: 20 px every 30 ms (about 670 px/s), staying inside the zone.
+        for (i in 1..8) touch(view, MotionEvent.ACTION_MOVE, bx + 20f * i, by - 10f * i, t + 30L * i)
+        t += 400
+        for (i in 1..8) touch(view, MotionEvent.ACTION_MOVE, bx + 160f - 20f * i, by - 80f + 10f * i, t + 30L * i)
+        val ball = play.session.ball
+        assertTrue(
+            "the ball stays inside the dashed zone",
+            Math.hypot((play.board.x(ball.x) - bx).toDouble(), (play.board.y(ball.y) - by).toDouble()) <= play.board.zoneScreenRadius,
+        )
+        touch(view, MotionEvent.ACTION_UP, bx, by, t + 30L * 9)
+        assertEquals(GameSession.State.AIMING, play.session.state)
+    }
+
+    @Test
+    fun aHardPullLeavesTheBallWhereItIsAndNothingFollowsTheFingerAfterTheThrow() {
+        val view = newView(MapStore())
+        view.play(0)
+        val play = view.currentScreen as PlayScreen
+        val bx = play.board.x(play.session.ball.x)
+        val by = play.board.y(play.session.ball.y)
+        val t = SystemClock.uptimeMillis()
+        touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
+        touch(view, MotionEvent.ACTION_MOVE, bx + 200f, by - 60f, t + 30) // far and fast: the ball is left behind
+        assertEquals(play.session.level.ball.x, play.session.ball.x, 1e-9)
+        assertEquals(play.session.level.ball.y, play.session.ball.y, 1e-9)
+        assertEquals(GameSession.State.AIMING, play.session.state)
+        touch(view, MotionEvent.ACTION_UP, bx + 200f, by - 60f, t + 60)
+        assertEquals(GameSession.State.MOVING, play.session.state)
+        assertTrue(play.session.ball.dirX > 0.9) // right and a little up: the way it was pulled
+        val dirX = play.session.ball.dirX
+        touch(view, MotionEvent.ACTION_DOWN, bx - 300f, by - 300f, t + 100) // a touch while it flies: nothing follows a finger
+        touch(view, MotionEvent.ACTION_MOVE, bx - 350f, by - 300f, t + 130)
+        assertEquals(dirX, play.session.ball.dirX, 1e-6)
+    }
+
+    @Test
+    fun aTapOrATinyNudgeDoesNotThrow() {
         val view = newView(MapStore())
         view.play(0)
         val play = view.currentScreen as PlayScreen
         val bx = play.board.x(play.session.ball.x)
         val by = play.board.y(play.session.ball.y)
         touch(view, MotionEvent.ACTION_DOWN, bx, by)
-        touch(view, MotionEvent.ACTION_UP, bx + 6f, by + 4f) // about 2 dp: under the 4 dp swipe tolerance
+        touch(view, MotionEvent.ACTION_UP, bx + 6f, by + 4f) // about 2 dp: a tap, not a pull
         assertEquals(GameSession.State.AIMING, play.session.state)
     }
 
