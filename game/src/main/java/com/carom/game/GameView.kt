@@ -5,6 +5,9 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
@@ -36,6 +39,15 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
 
     private var screen: Screen = HomeScreen(this)
     private val soundFx = SoundFx()
+    private val vibrator: Vibrator? = try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
+        } else {
+            context.getSystemService(Vibrator::class.java)
+        }?.takeIf { it.hasVibrator() }
+    } catch (e: RuntimeException) {
+        null
+    }
     private val insets = Rect()
     private var lastFrameNanos = 0L
 
@@ -125,6 +137,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
 
     private fun switchTo(next: Screen) {
         soundFx.roll(0f)
+        soundFx.stopSpin()
         screen.onExit()
         screen = next
         keepScreenOn = next is PlayScreen
@@ -134,28 +147,53 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         invalidate()
     }
 
-    override fun haptic(kind: Haptic) {
+    override fun haptic(kind: Haptic, strength: Double) {
         if (!app.settings.hapticsEnabled) return
-        val constant = when (kind) {
-            Haptic.CLICK -> HapticFeedbackConstants.KEYBOARD_TAP
-            Haptic.BOUNCE -> HapticFeedbackConstants.CLOCK_TICK
-            Haptic.SUCCESS ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY
-            Haptic.FAILURE ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS
+        val s = strength.coerceIn(0.0, 1.0)
+        when (kind) {
+            Haptic.CLICK -> performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            // A short, light tap on every wall hit, firmer for a harder hit.
+            Haptic.BOUNCE -> pulse(14L, (50 + 130 * s).toInt(), HapticFeedbackConstants.CLOCK_TICK)
+            Haptic.BREAK -> pulse(30L, 180, HapticFeedbackConstants.VIRTUAL_KEY)
+            Haptic.EXPLOSION -> pulse(60L, 255, HapticFeedbackConstants.LONG_PRESS)
+            Haptic.SUCCESS -> performHapticFeedback(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY,
+            )
         }
-        performHapticFeedback(constant)
     }
 
-    override fun sound(kind: Sound, strength: Double, step: Int) {
+    /** One vibration of [millis] at [amplitude] (1..255), or the view's [fallback] feedback without a motor. */
+    private fun pulse(millis: Long, amplitude: Int, fallback: Int) {
+        val motor = vibrator ?: return run { performHapticFeedback(fallback) }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                motor.vibrate(VibrationEffect.createOneShot(millis, amplitude.coerceIn(1, 255)))
+            } else {
+                @Suppress("DEPRECATION")
+                motor.vibrate(millis)
+            }
+        } catch (e: RuntimeException) {
+            performHapticFeedback(fallback)
+        }
+    }
+
+    override fun sound(kind: Sound, strength: Double) {
         if (!app.settings.soundEnabled) return
         when (kind) {
-            Sound.IMPACT -> soundFx.impact(strength, step)
+            Sound.IMPACT -> soundFx.impact(strength)
             Sound.LAUNCH -> soundFx.launch(strength)
             Sound.SHATTER -> soundFx.shatter()
             Sound.WIN -> soundFx.win()
             Sound.TAP -> soundFx.tap()
+            Sound.SPIN -> soundFx.spin()
+            Sound.EXPLOSION -> soundFx.explosion()
+            Sound.RESPAWN -> soundFx.respawn()
+            Sound.FIZZLE -> soundFx.fizzle()
         }
+    }
+
+    override fun stopSound(kind: Sound) {
+        if (kind == Sound.SPIN) soundFx.stopSpin()
     }
 
     override fun rolling(level: Float) = soundFx.roll(if (app.settings.soundEnabled) level else 0f)

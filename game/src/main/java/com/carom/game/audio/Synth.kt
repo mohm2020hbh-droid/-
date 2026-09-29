@@ -12,29 +12,134 @@ import kotlin.random.Random
 
 /**
  * The game's sounds, synthesised once at start-up instead of shipped as files. Each is built from
- * a few decaying partials, shaped noise and a touch of room (a small reverb), so they are soft,
- * musical and tiny. Bounces are marimba-like notes that climb a pentatonic scale, so a shot plays
- * a little melody.
+ * a few decaying partials, shaped noise and a touch of room (a small reverb), so they are clean
+ * and tiny.
  */
 object Synth {
     const val SAMPLE_RATE = 44100
 
-    /** Pitch steps for successive bounces: a major pentatonic scale, as playback-rate ratios. */
-    val PENTATONIC = floatArrayOf(1f, 9f / 8f, 5f / 4f, 3f / 2f, 5f / 3f, 2f)
-
     /**
-     * A bounce: a warm mallet note (C5) with the bright short overtone of a wooden bar, a soft
-     * felt attack and a short room tail.
+     * A bounce: a short, clear knock of a hard ball on something solid. A sharp click on
+     * contact, a brief resonant "tok" and a firm low thump underneath, over almost at once.
      */
     fun impact(): ShortArray {
-        val out = FloatArray(seconds(0.9))
-        val f = 523.25
-        partial(out, 0.0, f, 1.0, 0.32, attack = 0.0015)
-        partial(out, 0.0, f * 3.98, 0.22, 0.06, attack = 0.001)
-        partial(out, 0.0, f * 9.1, 0.05, 0.02, attack = 0.001)
-        noiseBurst(out, 0.0, amp = 0.12, decay = 0.004, cutoff = 2500.0, seed = 3)
-        reverb(out, mix = 0.18)
-        return finish(out, peak = 0.9)
+        val out = FloatArray(seconds(0.3))
+        val rnd = Random(3)
+        val click = Svf()
+        for (k in 0 until seconds(0.03)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            out[k] += (0.6 * min(1.0, t / 0.0003) * exp(-t / 0.0025) * click.bandpass(rnd.nextDouble(-1.0, 1.0), 3500.0, q = 1.2)).toFloat()
+        }
+        for (k in 0 until seconds(0.12)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            val body = sin(2 * PI * 950.0 * t + 6.0 * (1 - exp(-t / 0.004)))
+            out[k] += (0.55 * min(1.0, t / 0.0005) * exp(-t / 0.018) * body).toFloat()
+            out[k] += (0.2 * min(1.0, t / 0.0005) * exp(-t / 0.01) * sin(2 * PI * 2350.0 * t)).toFloat()
+        }
+        var phase = 0.0
+        for (k in 0 until seconds(0.2)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            phase += 2 * PI * (110.0 + 40.0 * exp(-t / 0.01)) / SAMPLE_RATE
+            out[k] += (0.7 * min(1.0, t / 0.001) * exp(-t / 0.04) * sin(phase)).toFloat()
+        }
+        reverb(out, mix = 0.08)
+        return finish(out, peak = 0.95)
+    }
+
+    /**
+     * The ball turning into a fan and spinning up: a small motor winding up from a low hum to a
+     * high whine, with the whoosh of the blades pulsing faster and faster. Ends abruptly, where
+     * the fan explodes.
+     */
+    fun spin(): ShortArray {
+        val length = 1.1
+        val out = FloatArray(seconds(length))
+        val rnd = Random(13)
+        val air = Svf()
+        var motor = 0.0
+        var blades = 0.0
+        for (k in out.indices) {
+            val t = k.toDouble() / SAMPLE_RATE
+            val p = t / length
+            val pitch = 90.0 + 700.0 * p.pow(1.4)
+            motor += 2 * PI * pitch / SAMPLE_RATE
+            // Four blades: the whoosh pulses four times per turn, from 3 to 60 turns a second.
+            blades += 2 * PI * 4.0 * (3.0 + 57.0 * p.pow(1.6)) / SAMPLE_RATE
+            var tone = 0.0
+            for (h in 1..6) tone += sin(motor * h) / h
+            val whoosh = air.bandpass(rnd.nextDouble(-1.0, 1.0), 800.0 + 2500.0 * p, q = 1.5) * (0.5 + 0.5 * sin(blades))
+            val env = 0.3 + 0.7 * p
+            out[k] = (env * (0.35 * tone + 0.6 * whoosh) * min(1.0, t / 0.01)).toFloat()
+        }
+        reverb(out, mix = 0.1)
+        return finish(out, peak = 0.8)
+    }
+
+    /**
+     * The fan exploding: a sharp crack, a deep boom whose rumble closes down from bright to dark,
+     * a falling sub-bass drop and a scatter of crackles. Clearly unlike a wall knock.
+     */
+    fun explosion(): ShortArray {
+        val out = FloatArray(seconds(1.5))
+        val rnd = Random(17)
+        val bright = Svf()
+        for (k in 0 until seconds(0.06)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            out[k] += (0.8 * min(1.0, t / 0.0003) * exp(-t / 0.008) * bright.lowpass(rnd.nextDouble(-1.0, 1.0), 5000.0, q = 0.7)).toFloat()
+        }
+        val rumble = Svf()
+        for (k in 0 until seconds(1.3)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            val cutoff = 150.0 + 1650.0 * exp(-t / 0.15)
+            out[k] += (1.0 * min(1.0, t / 0.002) * exp(-t / 0.35) * rumble.lowpass(rnd.nextDouble(-1.0, 1.0), cutoff, q = 0.9)).toFloat()
+        }
+        var phase = 0.0
+        for (k in 0 until seconds(1.0)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            phase += 2 * PI * (35.0 + 35.0 * exp(-t / 0.12)) / SAMPLE_RATE
+            out[k] += (0.9 * min(1.0, t / 0.003) * exp(-t / 0.4) * sin(phase)).toFloat()
+        }
+        repeat(40) {
+            val start = 0.05 + 0.75 * rnd.nextDouble().pow(1.5)
+            val amp = 0.25 * (1.0 - start / 0.9)
+            val filter = Svf()
+            val first = seconds(start)
+            for (k in 0 until min(out.size - first, seconds(0.006))) {
+                val t = k.toDouble() / SAMPLE_RATE
+                out[first + k] += (amp * exp(-t / 0.0015) * filter.bandpass(rnd.nextDouble(-1.0, 1.0), 2000.0, q = 1.0)).toFloat()
+            }
+        }
+        reverb(out, mix = 0.3)
+        return finish(out, peak = 0.95)
+    }
+
+    /** A new ball appearing at the start: a quick, light rising "pop". */
+    fun respawn(): ShortArray {
+        val out = FloatArray(seconds(0.35))
+        var phase = 0.0
+        for (k in 0 until seconds(0.15)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            phase += 2 * PI * (380.0 * (880.0 / 380.0).pow(min(1.0, t / 0.06))) / SAMPLE_RATE
+            out[k] += (min(1.0, t / 0.003) * exp(-t / 0.05) * sin(phase)).toFloat()
+        }
+        reverb(out, mix = 0.12)
+        return finish(out, peak = 0.6)
+    }
+
+    /** The ball running out of speed: a soft falling "whoo", deflating. */
+    fun fizzle(): ShortArray {
+        val out = FloatArray(seconds(0.5))
+        var phase = 0.0
+        val rnd = Random(19)
+        val breath = Svf()
+        for (k in 0 until seconds(0.35)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            phase += 2 * PI * (520.0 * (160.0 / 520.0).pow(min(1.0, t / 0.3))) / SAMPLE_RATE
+            val env = min(1.0, t / 0.01) * exp(-t / 0.12)
+            out[k] += (env * (sin(phase) + 0.25 * breath.lowpass(rnd.nextDouble(-1.0, 1.0), 900.0, q = 0.7))).toFloat()
+        }
+        reverb(out, mix = 0.12)
+        return finish(out, peak = 0.5)
     }
 
     /** The throw: a soft air "whoosh" rising and settling, over a gentle low puff. */
@@ -165,17 +270,6 @@ object Synth {
             val k = i - first
             val t = k.toDouble() / SAMPLE_RATE
             out[i] += (amp * min(1.0, t / attack) * exp(-t / decay) * sin(w * k)).toFloat()
-        }
-    }
-
-    /** A few milliseconds of low-passed noise: the soft contact of a mallet. */
-    private fun noiseBurst(out: FloatArray, start: Double, amp: Double, decay: Double, cutoff: Double, seed: Int) {
-        val rnd = Random(seed)
-        val filter = Svf()
-        val first = seconds(start)
-        for (k in 0 until min(out.size - first, seconds(decay * 8))) {
-            val t = k.toDouble() / SAMPLE_RATE
-            out[first + k] += (amp * exp(-t / decay) * filter.lowpass(rnd.nextDouble(-1.0, 1.0), cutoff, q = 0.7)).toFloat()
         }
     }
 

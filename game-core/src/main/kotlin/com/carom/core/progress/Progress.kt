@@ -41,6 +41,17 @@ class Progress(private val store: KeyValueStore, private val levelIds: List<Stri
         if (completed.add(id)) store.putString(KEY_COMPLETED, completed.sorted().joinToString(","))
     }
 
+    /** How many attempts at level [index] have failed, over all sessions. */
+    fun failCount(index: Int): Int = levelIds.getOrNull(index)?.let { store.getString(KEY_FAILS + it)?.toIntOrNull() } ?: 0
+
+    /** Counts one more failed attempt at level [index] and returns the new total. */
+    fun recordFail(index: Int): Int {
+        val id = levelIds.getOrNull(index) ?: return 0
+        val count = failCount(index) + 1
+        store.putString(KEY_FAILS + id, count.toString())
+        return count
+    }
+
     var lastPlayedIndex: Int
         get() = levelIds.indexOf(store.getString(KEY_LAST_PLAYED))
         set(value) {
@@ -50,6 +61,7 @@ class Progress(private val store: KeyValueStore, private val levelIds: List<Stri
     private companion object {
         const val KEY_COMPLETED = "progress.completed"
         const val KEY_LAST_PLAYED = "progress.lastPlayed"
+        const val KEY_FAILS = "progress.fails."
     }
 }
 

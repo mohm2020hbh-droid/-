@@ -24,60 +24,76 @@ class SoundFx {
             next = (next + 1) % voices.size
         }
 
+        fun stop() = voices.forEach { it.stop() }
+
         fun release() = voices.forEach { it.release() }
     }
 
-    @Volatile private var impact: Bank? = null
-    @Volatile private var launch: Bank? = null
-    @Volatile private var shatter: Bank? = null
-    @Volatile private var win: Bank? = null
-    @Volatile private var tap: Bank? = null
+    @Volatile private var banks: Map<String, Bank> = emptyMap()
     @Volatile private var roll: Voice? = null
     @Volatile private var released = false
     private var rolling = false
+    private var impactCount = 0
 
     init {
         Thread({
-            val banks = listOf(
-                Synth.impact() to 4, Synth.launch() to 2, Synth.shatter() to 1, Synth.win() to 1, Synth.tap() to 2,
-            ).map { (pcm, count) -> Bank(List(count) { Voice.create(pcm, loop = false) }.filterNotNull()) }
+            val made = linkedMapOf(
+                "impact" to (Synth.impact() to 4),
+                "launch" to (Synth.launch() to 2),
+                "shatter" to (Synth.shatter() to 1),
+                "win" to (Synth.win() to 1),
+                "tap" to (Synth.tap() to 2),
+                "spin" to (Synth.spin() to 1),
+                "explosion" to (Synth.explosion() to 1),
+                "respawn" to (Synth.respawn() to 2),
+                "fizzle" to (Synth.fizzle() to 1),
+            ).mapValues { (_, v) -> Bank(List(v.second) { Voice.create(v.first, loop = false) }.filterNotNull()) }
             val rollVoice = Voice.create(Synth.roll(), loop = true)
             synchronized(this) {
                 if (released) {
-                    banks.forEach { it.release() }
+                    made.values.forEach { it.release() }
                     rollVoice?.release()
                 } else {
-                    impact = banks[0]
-                    launch = banks[1]
-                    shatter = banks[2]
-                    win = banks[3]
-                    tap = banks[4]
+                    banks = made
                     roll = rollVoice
                 }
             }
         }, "carom-sounds").start()
     }
 
+    private fun play(name: String, volume: Float, rate: Float = 1f) = banks[name]?.play(volume, rate)
+
     /**
-     * A bounce. [strength] (0..1, how hard the ball hit) sets the volume; [step] is which bounce of
-     * the shot this is, and picks the note, so successive bounces climb a pentatonic scale.
+     * A wall hit: louder for a harder hit ([strength] 0..1), with a slight change of pitch from one
+     * knock to the next so a quick run of bounces never sounds mechanical.
      */
-    fun impact(strength: Double, step: Int) {
+    fun impact(strength: Double) {
         val s = strength.coerceIn(0.0, 1.0).toFloat()
-        val note = Synth.PENTATONIC[Math.floorMod(step, Synth.PENTATONIC.size)]
-        impact?.play(volume = 0.35f + 0.6f * s, rate = note)
+        val wobble = IMPACT_PITCHES[impactCount++ % IMPACT_PITCHES.size]
+        play("impact", volume = 0.45f + 0.55f * s, rate = wobble * (0.96f + 0.08f * s))
     }
 
     /** The throw; louder for a stronger one. */
     fun launch(power: Double) {
-        launch?.play(volume = 0.3f + 0.5f * power.coerceIn(0.0, 1.0).toFloat(), rate = 0.92f + 0.16f * power.toFloat())
+        play("launch", volume = 0.3f + 0.5f * power.coerceIn(0.0, 1.0).toFloat(), rate = 0.92f + 0.16f * power.toFloat())
     }
 
-    fun shatter() = shatter?.play(volume = 0.85f, rate = 1f)
+    fun shatter() = play("shatter", 0.85f)
 
-    fun win() = win?.play(volume = 0.8f, rate = 1f)
+    fun win() = play("win", 0.6f)
 
-    fun tap() = tap?.play(volume = 0.35f, rate = 1f)
+    fun tap() = play("tap", 0.35f)
+
+    fun spin() = play("spin", 0.8f)
+
+    /** Stops a spin-up that was cut short (the level was restarted or left). */
+    fun stopSpin() = banks["spin"]?.stop()
+
+    fun explosion() = play("explosion", 0.95f)
+
+    fun respawn() = play("respawn", 0.5f)
+
+    fun fizzle() = play("fizzle", 0.6f)
 
     /** The rolling sound at [level] (0..1, from the ball's speed); 0 silences it. */
     fun roll(level: Float) {
@@ -98,7 +114,7 @@ class SoundFx {
     fun release() {
         synchronized(this) {
             released = true
-            listOfNotNull(impact, launch, shatter, win, tap).forEach { it.release() }
+            banks.values.forEach { it.release() }
             roll?.release()
         }
     }
@@ -113,6 +129,14 @@ class SoundFx {
                 track.play()
             } catch (e: IllegalStateException) {
                 Log.w(TAG, "Could not play a sound", e)
+            }
+        }
+
+        fun stop() {
+            try {
+                track.stop()
+            } catch (e: IllegalStateException) {
+                Log.w(TAG, "Could not stop a sound", e)
             }
         }
 
@@ -169,5 +193,8 @@ class SoundFx {
 
     private companion object {
         const val TAG = "Carom"
+
+        /** Tiny pitch differences between successive knocks. */
+        val IMPACT_PITCHES = floatArrayOf(1f, 0.97f, 1.03f, 0.99f, 1.02f)
     }
 }

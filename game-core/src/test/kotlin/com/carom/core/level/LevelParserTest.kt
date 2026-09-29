@@ -99,6 +99,19 @@ class LevelParserTest {
     }
 
     @Test
+    fun parsesAPathHint() {
+        val level = LevelParser.parse(
+            "g",
+            """{"bounces": 1, "ball": [100, 100], "goal": [500, 500], "guide": {"angle": 45.5, "from": [120, 110]}}""",
+        )
+        assertEquals(Guide(afterFails = 10, angle = 45.5, from = Vec2(120.0, 110.0)), level.guide)
+        assertEquals(null, LevelParser.parse("n", """{"bounces": 0, "ball": [100, 100], "goal": [500, 500]}""").guide)
+        assertThrows(LevelFormatException::class.java) {
+            LevelParser.parse("bad", """{"bounces": 0, "ball": [100, 100], "goal": [500, 500], "guide": {"afterFails": 3}}""")
+        }
+    }
+
+    @Test
     fun rotatedRectKeepsItsCentreAndSize() {
         val level = LevelParser.parse(
             "r",

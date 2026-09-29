@@ -3,6 +3,7 @@
   "bounces": 2,
   "ball": [450, 1700],
   "goal": [450, 350],
+  "guide": {"afterFails": 10, "angle": 64.78},
   "obstacles": [
     {"type": "wall", "points": [60, 1000, 300, 650]},
     {"type": "wall", "points": [845.8, 996, 609.8, 651.8]},

@@ -19,6 +19,7 @@ import kotlin.math.sin
  *   "border": true,                   // optional: the edges bounce the ball (never drawn)
  *   "launchZone": 130,                // optional: how far the player may move the ball before a throw
  *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
+ *   "guide": {"afterFails": 10, "angle": 271.5}, // optional path hint for players who keep failing
  *   "obstacles": [
  *     {"type": "wall", "points": [800, 0, 800, 600], "thickness": 30, "closed": false},
  *     {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 40, "angle": 45, "round": 14},
@@ -61,6 +62,7 @@ object LevelParser {
                     if (it < 0) throw LevelFormatException("'launchZone' must be ≥ 0")
                 },
                 hint = parseHint(root["hint"]),
+                guide = root["guide"]?.let { parseGuide(it) },
             )
         } catch (e: LevelFormatException) {
             throw LevelFormatException("$id: ${e.message}")
@@ -99,6 +101,19 @@ object LevelParser {
         (obj.number("round") ?: LevelDefaults.BLOCK_ROUNDING).also {
             if (it < 0) throw LevelFormatException("$where.round must be ≥ 0")
         }
+
+    private fun parseGuide(value: Any): Guide {
+        val obj = value as? Map<*, *> ?: throw LevelFormatException("'guide' must be an object")
+        val after = obj.number("afterFails") ?: DEFAULT_GUIDE_AFTER
+        if (after < 0 || after != Math.floor(after)) throw LevelFormatException("'guide.afterFails' must be a whole number ≥ 0")
+        return Guide(
+            afterFails = after.toInt(),
+            angle = obj.number("angle") ?: throw LevelFormatException("'guide.angle' is required"),
+            from = obj["from"]?.let { point(it, "guide.from") },
+        )
+    }
+
+    private const val DEFAULT_GUIDE_AFTER = 10.0
 
     private fun parseHint(value: Any?): Map<String, String> = when (value) {
         null -> emptyMap()

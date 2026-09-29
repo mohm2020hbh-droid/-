@@ -23,6 +23,7 @@ class UiText private constructor(
     val vibrationOff: String,
     val soundOn: String,
     val soundOff: String,
+    val guideCaption: String,
 ) {
     fun worldUnlocked(worldNumber: Int): String = String.format(Locale.ROOT, worldUnlockedFormat, worldNumber)
 
@@ -50,6 +51,7 @@ class UiText private constructor(
             vibrationOff = "VIBRATION OFF",
             soundOn = "SOUND ON",
             soundOff = "SOUND OFF",
+            guideCaption = "Hint: the ball goes roughly this way",
         )
 
         private val ARABIC = UiText(
@@ -72,6 +74,7 @@ class UiText private constructor(
             vibrationOff = "الاهتزاز: متوقف",
             soundOn = "الصوت: يعمل",
             soundOff = "الصوت: متوقف",
+            guideCaption = "تلميح: الكرة تسير تقريبًا في هذا المسار",
         )
 
         fun forLocale(locale: Locale = Locale.getDefault()): UiText =

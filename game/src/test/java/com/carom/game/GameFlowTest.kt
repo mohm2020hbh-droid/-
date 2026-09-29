@@ -11,6 +11,7 @@ import com.carom.game.screens.HomeScreen
 import com.carom.game.screens.LevelSelectScreen
 import com.carom.game.screens.PlayScreen
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -126,16 +127,43 @@ class GameFlowTest {
     }
 
     @Test
-    fun runningOutOfBouncesBreaksTheBall() {
-        val view = newView(MapStore())
+    fun runningOutOfBouncesBreaksTheBallAndTheNextOneIsReadyAtOnce() {
+        val store = MapStore()
+        val view = newView(store)
         view.play(1)
         val play = view.currentScreen as PlayScreen
         // Straight up and down between the wall above and the bottom edge: two bounces, then it breaks.
         dragUpAndRelease(view, play, 400f)
-        runFor(view, 6f)
+        var guard = 0
+        while (play.session.state == GameSession.State.MOVING && guard++ < 2000) play.update(1 / 120f)
         assertEquals(GameSession.State.FAILED, play.session.state)
         assertEquals(GameSession.FailReason.OUT_OF_BOUNCES, play.session.failReason)
-        assertTrue(play.session.lastImpact != null)
+
+        // No result screen and nothing to press: a moment later a new ball waits at the start.
+        runFor(view, 1f)
+        assertEquals(GameSession.State.AIMING, play.session.state)
+        assertEquals(2, play.session.bouncesLeft)
+        assertEquals(play.session.level.ball.x, play.session.ball.x, 1e-9)
+        assertEquals(play.session.level.ball.y, play.session.ball.y, 1e-9)
+        assertEquals(1, view.app.progress.failCount(1))
+    }
+
+    @Test
+    fun theHintForLevel23ShowsOnlyAfterMoreThanTenLossesAndHidesOnTheNextThrow() {
+        val view = newView(MapStore())
+        repeat(10) { view.app.progress.recordFail(22) }
+        view.play(22)
+        val play = view.currentScreen as PlayScreen
+        assertEquals("023", play.session.level.id)
+        assertFalse(play.isGuideShown) // ten losses are not "more than ten"
+
+        play.session.launch(0.0, 1.0, 0.005) // a throw so weak it stops: the eleventh loss
+        runFor(view, 1f)
+        assertEquals(GameSession.State.AIMING, play.session.state)
+        assertTrue(play.isGuideShown)
+
+        play.session.launch(0.0, -1.0, 1.0) // using it: the hint gets out of the way
+        assertFalse(play.isGuideShown)
     }
 
     @Test

@@ -37,6 +37,8 @@ data class LevelData(
     val launchZone: Double = LevelDefaults.LAUNCH_ZONE,
     /** Optional teaching text by language code ("en", "ar", ...). */
     val hint: Map<String, String> = emptyMap(),
+    /** Optional path hint for a hard level, shown only to a player who keeps failing it. */
+    val guide: Guide? = null,
 ) {
     /** Distance a full-power shot travels before friction stops it (infinite without friction). */
     val maxReach: Double
@@ -45,6 +47,13 @@ data class LevelData(
     /** The hint in [language], falling back to English, or null if the level has none. */
     fun hintFor(language: String): String? = hint[language] ?: hint["en"]
 }
+
+/**
+ * A hint for a hard level: a full-power throw at [angle] degrees (clockwise from +x), from [from]
+ * or else from the level's start, that scores. Its path is shown, roughly, once the player has
+ * failed the level more than [afterFails] times.
+ */
+data class Guide(val afterFails: Int, val angle: Double, val from: Vec2? = null)
 
 /**
  * Level geometry. The hierarchy is sealed so that adding a new kind makes the compiler point at

@@ -1,5 +1,6 @@
 package com.carom.core.level
 
+import com.carom.core.game.HintRoute
 import com.carom.core.tools.LevelPreview
 import com.carom.core.tools.ShotSearch
 import org.junit.Assert.assertEquals
@@ -73,6 +74,17 @@ class ShippedLevelsTest {
                 r.widestWindow >= MIN_FAIR_WINDOW_DEGREES,
             )
         }
+    }
+
+    /** A level's path hint must be a throw that really scores, or it would mislead the player. */
+    @Test
+    fun everyPathHintScores() {
+        val wrong = levels.filter { it.guide != null }.mapNotNull { level ->
+            val route = HintRoute.plan(level, level.guide!!)
+            if (route.scores && route.points.size >= 2) null else "${level.id}: the hinted throw does not score"
+        }
+        assertEquals(emptyList<String>(), wrong)
+        assertTrue("level 23 has a path hint", levels.any { it.id == "023" && it.guide != null })
     }
 
     /**

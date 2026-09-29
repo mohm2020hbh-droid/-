@@ -10,9 +10,9 @@ import com.carom.game.ui.UiButton
 import com.carom.game.ui.UiKit
 import com.carom.game.ui.WorldPalette
 
-enum class Haptic { CLICK, BOUNCE, SUCCESS, FAILURE }
+enum class Haptic { CLICK, BOUNCE, BREAK, EXPLOSION, SUCCESS }
 
-enum class Sound { IMPACT, LAUNCH, SHATTER, WIN, TAP }
+enum class Sound { IMPACT, LAUNCH, SHATTER, WIN, TAP, SPIN, EXPLOSION, RESPAWN, FIZZLE }
 
 /** What screens can ask of the game shell: navigation, feedback, shared state. */
 interface GameHost {
@@ -21,13 +21,14 @@ interface GameHost {
     fun showHome()
     fun showLevels(focusIndex: Int)
     fun play(index: Int)
-    fun haptic(kind: Haptic)
+    /** A vibration; [strength] (0..1) scales a bounce's. */
+    fun haptic(kind: Haptic, strength: Double = 1.0)
 
-    /**
-     * Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts) or was thrown (launch);
-     * [step] is which bounce of the shot an impact is, so the notes climb.
-     */
-    fun sound(kind: Sound, strength: Double = 1.0, step: Int = 0)
+    /** Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts) or was thrown (launch). */
+    fun sound(kind: Sound, strength: Double = 1.0)
+
+    /** Cuts [kind] short if it is playing (a spin-up interrupted by a restart). */
+    fun stopSound(kind: Sound)
 
     /** The rolling sound, at [level] (0..1) of full speed; 0 silences it. */
     fun rolling(level: Float)

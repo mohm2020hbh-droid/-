@@ -5,6 +5,7 @@ import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.LinearGradient
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RadialGradient
@@ -14,6 +15,7 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import com.carom.core.level.Block
 import com.carom.core.level.LevelData
+import com.carom.core.level.Obstacle
 import com.carom.core.level.Wall
 import com.carom.core.math.Vec2
 import com.carom.game.ui.Palette
@@ -93,6 +95,9 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         dash = DashPathEffect(floatArrayOf(6f * scale, 10f * scale), 0f)
 
         val r = ballScreenRadius
+        bladePx.set(blade)
+        bladePx.transform(Matrix().apply { setScale(r, r) })
+        outlines.clear()
         ballPaint.shader = RadialGradient(
             -0.35f * r, -0.4f * r, 1.45f * r,
             intArrayOf(Palette.blend(palette.accent, WHITE, 0.75f), palette.accent, Palette.blend(palette.accent, BLACK, 0.22f)),
@@ -307,6 +312,9 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         }
     }
 
+    /** The ground's colour at the screen's edge: what shows if the board is nudged by a shake. */
+    val edgeColor: Int = Palette.blend(palette.background, BLACK, 0.32f)
+
     private val lightColor = Palette.blend(palette.primary, WHITE, 0.26f)
     private val darkColor = Palette.blend(palette.primary, BLACK, 0.3f)
     private val rimColor = Palette.blend(palette.primary, WHITE, 0.42f)
@@ -432,6 +440,112 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         val end = Math.toRadians((sweep - 90f).toDouble())
         fillPaint.color = color
         canvas.drawCircle(cx + radius * Math.cos(end).toFloat(), cy + radius * Math.sin(end).toFloat(), 3.4f * unit, fillPaint)
+    }
+
+    /**
+     * The ball turned into a small fan at (cx, cy): a hub and four curved blades. [grow] (0..1) is
+     * how far the blades have come out of the ball (the ball's number fades as they do); [angle]
+     * is its turn in degrees; [blur] (0..1) is how fast it spins, which smears the blades into a
+     * faint disc with a bright rim.
+     */
+    fun drawFan(canvas: Canvas, cx: Float, cy: Float, grow: Float, angle: Float, blur: Float, bouncesLeft: Int) {
+        val r = ballScreenRadius
+        val g = grow.coerceIn(0f, 1f)
+        if (blur > 0f) {
+            fillPaint.color = Palette.withAlpha(palette.accent, 0.12f * blur)
+            canvas.drawCircle(cx, cy, r * 1.2f, fillPaint)
+            linePaint.pathEffect = null
+            linePaint.shader = null
+            linePaint.color = Palette.withAlpha(palette.accent, 0.55f * blur)
+            linePaint.strokeWidth = r * 0.05f
+            canvas.drawCircle(cx, cy, r * 1.2f, linePaint)
+        }
+        canvas.save()
+        canvas.translate(cx, cy)
+        // Motion blur: fainter copies trailing behind the blades.
+        val ghosts = if (blur > 0.05f) 3 else 1
+        for (k in ghosts - 1 downTo 0) {
+            canvas.save()
+            canvas.rotate(angle - k * 22f * blur)
+            ballPaint.alpha = if (k == 0) 255 else (255 * (0.4f / k) * blur).toInt()
+            for (b in 0 until 4) {
+                canvas.save()
+                canvas.rotate(b * 90f)
+                canvas.scale(g, g)
+                canvas.drawPath(bladePx, ballPaint)
+                canvas.restore()
+            }
+            canvas.restore()
+        }
+        ballPaint.alpha = 255
+        canvas.drawCircle(0f, 0f, r * (1f - 0.58f * g), ballPaint)
+        fillPaint.color = palette.background
+        canvas.drawCircle(0f, 0f, r * 0.1f * g, fillPaint)
+        canvas.restore()
+        if (g < 1f) {
+            val text = numbers[bouncesLeft.coerceIn(0, numbers.size - 1)]
+            val size = r * (1f - 0.58f * g)
+            numberPaint.color = Palette.withAlpha(palette.background, 1f - g)
+            numberPaint.textSize = size * if (text.length == 1) 1.1f else 0.85f
+            numberPaint.getTextBounds(text, 0, text.length, numberBounds)
+            canvas.drawText(text, cx, cy - numberBounds.exactCenterY(), numberPaint)
+        }
+    }
+
+    /** One fan blade in units of the ball's radius, pointing along +x: a curved petal. */
+    private val blade = Path().apply {
+        moveTo(0.25f, -0.16f)
+        cubicTo(0.6f, -0.36f, 1.05f, -0.32f, 1.2f, -0.05f)
+        cubicTo(1.12f, 0.12f, 0.62f, 0.2f, 0.25f, 0.14f)
+        close()
+    }
+
+    /** The blade at the ball's size on screen. */
+    private val bladePx = Path()
+
+    private val outlines = HashMap<Int, Path>()
+
+    /**
+     * A thin glowing outline, a little outside obstacle [index], to point it out; [strength] (0..1)
+     * sets how bright. The outline follows the obstacle's exact rounded shape.
+     */
+    fun drawObstacleOutline(canvas: Canvas, index: Int, unit: Float, strength: Float) {
+        val path = outlines.getOrPut(index) { outlineOf(level.obstacles[index], gap = 5f * unit) }
+        linePaint.pathEffect = null
+        linePaint.shader = null
+        linePaint.color = Palette.withAlpha(palette.accent, 0.2f * strength)
+        linePaint.strokeWidth = 7f * unit
+        canvas.drawPath(path, linePaint)
+        linePaint.color = Palette.withAlpha(palette.accent, 0.85f * strength)
+        linePaint.strokeWidth = 2f * unit
+        canvas.drawPath(path, linePaint)
+    }
+
+    private fun outlineOf(obstacle: Obstacle, gap: Float): Path {
+        val src = Path()
+        val stroke = Paint().apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        val core = Path()
+        when (obstacle) {
+            is Wall -> {
+                addPolyline(src, obstacle.points, obstacle.closed)
+                stroke.strokeWidth = obstacle.thickness.toFloat() * scale + 2 * gap
+            }
+            is Block -> {
+                addPolyline(src, obstacle.core, closed = true)
+                addPolyline(core, obstacle.core, closed = true)
+                stroke.strokeWidth = (obstacle.radius * 2).toFloat() * scale + 2 * gap
+            }
+        }
+        val region = Path()
+        @Suppress("DEPRECATION")
+        stroke.getFillPath(src, region)
+        // Merging with the block's own shape keeps only the outer edge.
+        val out = Path()
+        return if (out.op(region, core, Path.Op.UNION)) out else region
     }
 
     /** A shot's path through [points], optionally continued to the ball's current screen position. */

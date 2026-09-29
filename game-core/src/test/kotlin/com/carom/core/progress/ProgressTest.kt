@@ -74,6 +74,17 @@ class ProgressTest {
     }
 
     @Test
+    fun failedAttemptsAreCountedPerLevelAndKept() {
+        val store = MapStore()
+        val progress = Progress(store, listOf("001", "002"))
+        assertEquals(0, progress.failCount(0))
+        assertEquals(1, progress.recordFail(0))
+        assertEquals(2, progress.recordFail(0))
+        assertEquals(0, progress.failCount(1))
+        assertEquals(2, Progress(store, listOf("001", "002")).failCount(0))
+    }
+
+    @Test
     fun settingsPersistAndAreSeparate() {
         val store = MapStore()
         assertTrue(Settings(store).hapticsEnabled)
