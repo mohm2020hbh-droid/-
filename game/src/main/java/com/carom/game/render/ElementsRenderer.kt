@@ -18,6 +18,7 @@ import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.floor
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
@@ -136,7 +137,10 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
         canvas.drawPath(path, line)
     }
 
-    /** A ball container: a round mark inside, with small dots for the balls it holds. */
+    /**
+     * A ball container: a round mark inside, with small dots for the balls it holds, and (when it lets its balls out along a
+     * fixed line) a small chevron on its rim that points the way they will go.
+     */
     private fun drawContainerMark(canvas: Canvas, size: Float, e: ElementRuntime, unit: Float) {
         line.color = Palette.withAlpha(palette.background, if (e.spent) 0.35f else 0.8f)
         line.strokeWidth = max(1f, 2f * unit)
@@ -145,6 +149,20 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
             val n = e.data.value.toInt().coerceIn(1, 4)
             fill.color = Palette.withAlpha(palette.background, 0.8f)
             for (i in 0 until n) canvas.drawCircle((i - (n - 1) / 2f) * size * 0.14f, 0f, size * 0.04f, fill)
+            val v = e.data.vector
+            val len = hypot(v.x, v.y).toFloat()
+            if (len > 0f) {
+                val ux = v.x.toFloat() / len
+                val uy = v.y.toFloat() / len
+                val cx = ux * size * 0.37f
+                val cy = uy * size * 0.37f
+                val a = size * 0.07f
+                path.reset()
+                path.moveTo(cx - ux * a - uy * a, cy - uy * a + ux * a)
+                path.lineTo(cx + ux * a, cy + uy * a)
+                path.lineTo(cx - ux * a + uy * a, cy - uy * a - ux * a)
+                canvas.drawPath(path, line)
+            }
         }
     }
 

@@ -1,0 +1,16 @@
+{
+  "name": "Two Paths",
+  "difficulty": 8,
+  "concept": "Multiple balls: one hit, two balls, one goal",
+  "bounces": 1,
+  "exitRequired": 2,
+  "controlZone": {"rect": [0, 1300, 440, 700]},
+  "ball": [200, 1600],
+  "goal": [570, 450],
+  "obstacles": [
+    {"type": "wall", "points": [440, 2000, 440, 750]}
+  ],
+  "elements": [
+    {"kind": "ballContainer", "pos": [320, 730], "scale": [150, 150], "value": 2, "vector": [0.856, -0.516], "force": 50}
+  ]
+}

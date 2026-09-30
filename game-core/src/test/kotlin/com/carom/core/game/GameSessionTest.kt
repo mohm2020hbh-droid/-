@@ -102,6 +102,41 @@ class GameSessionTest {
     }
 
     @Test
+    fun theBallLeavesWithTheVelocityItHadAndAWeakOneStillMoves() {
+        for (speed in listOf(30.0, 300.0, 1200.0)) {
+            val s = GameSession(level(bounces = 3))
+            assertTrue(s.launchAt(0.0, -speed))
+            assertEquals(GameSession.State.MOVING, s.state)
+            assertEquals(speed, s.ball.speed, 1e-9)
+            assertEquals(-1.0, s.ball.dirY, 1e-9)
+        }
+        val fast = GameSession(level(bounces = 3))
+        assertTrue(fast.launchAt(6000.0, 8000.0)) // faster than the top speed: limited to it
+        assertEquals(fast.level.maxSpeed, fast.ball.speed, 1e-9)
+        assertEquals(0.6, fast.ball.dirX, 1e-9)
+        val still = GameSession(level(bounces = 3))
+        assertFalse(still.launchAt(0.0, 0.0))
+        assertFalse(still.launchAt(1e-6, 0.0)) // slower than a ball that would be dead at once
+        assertEquals(GameSession.State.AIMING, still.state)
+        assertFalse("only before the first throw", fast.launchAt(100.0, 0.0))
+    }
+
+    @Test
+    fun aWeakThrowTravelsLessFarThanAStrongOne() {
+        fun reach(speed: Double): Double {
+            val s = GameSession(LevelParser.parse("open", """{"size": [100000, 1000], "bounces": 0, "ball": [100, 500], "goal": [99000, 500], "drag": 0.25}"""))
+            s.launchAt(speed, 0.0)
+            var guard = 0
+            while (s.state == GameSession.State.MOVING && guard++ < 400_000) s.step()
+            return s.ball.x - 100
+        }
+        val weak = reach(120.0)
+        val medium = reach(600.0)
+        val strong = reach(2400.0)
+        assertTrue("$weak < $medium < $strong", weak > 100 && weak < medium && medium < strong)
+    }
+
+    @Test
     fun frictionStopsAWeakShot() {
         val s = GameSession(level(bounces = 3, friction = 600.0))
         s.launch(0.0, 1.0, 0.01)

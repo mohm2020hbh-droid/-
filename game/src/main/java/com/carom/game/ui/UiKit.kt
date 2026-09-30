@@ -29,6 +29,7 @@ object Palette {
         WorldPalette(0xFF0D211D.toInt(), 0xFF5E9A86.toInt(), 0xFFEFF6F2.toInt()), // green + white
         WorldPalette(0xFF24150F.toInt(), 0xFFC5835A.toInt(), 0xFFFBF2EA.toInt()), // orange + white
         WorldPalette(0xFF08121F.toInt(), 0xFF34597F.toInt(), 0xFF86D5E6.toInt()), // deep blue + cyan
+        WorldPalette(0xFF1E0F17.toInt(), 0xFFB0627E.toInt(), 0xFFFBEFF3.toInt()), // rose + white
     )
 
     fun forWorld(world: Int): WorldPalette = WORLDS[Math.floorMod(world, WORLDS.size)]

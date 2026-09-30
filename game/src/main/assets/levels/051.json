@@ -1,0 +1,17 @@
+{
+  "name": "First Portal",
+  "difficulty": 7,
+  "concept": "Portal routing: the only way into the room is through a portal",
+  "bounces": 0,
+  "controlZone": {"top": 1300},
+  "ball": [760, 1360],
+  "goal": [520, 650],
+  "hint": {"en": "Enter one portal and leave by the other", "ar": "ادخل من بوابة واخرج من الأخرى"},
+  "obstacles": [
+    {"type": "wall", "points": [410, 540, 790, 540, 790, 960, 410, 960], "closed": true}
+  ],
+  "elements": [
+    {"kind": "portal", "pos": [300, 1050], "scale": [170, 170], "id": "a", "link": "b", "rotation": 0},
+    {"kind": "portal", "pos": [530, 800], "scale": [170, 170], "id": "b", "link": "a", "rotation": 90}
+  ]
+}

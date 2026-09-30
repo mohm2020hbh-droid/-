@@ -14,7 +14,6 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import com.carom.core.level.Block
-import com.carom.core.level.ControlZone
 import com.carom.core.level.LevelData
 import com.carom.core.level.Obstacle
 import com.carom.core.level.Wall
@@ -83,16 +82,6 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     private val goalGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val zonePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    /** The control zone's dashed line: flat-ended dashes, like the line across the reference. */
-    private val zoneLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.BUTT
-    }
-    private val zoneStrokes = ArrayList<ZoneStroke>()
-
-    /** One run of the control zone's line on screen with the dashes laid out along it. */
-    private class ZoneStroke(val path: Path, val effect: DashPathEffect)
-
     /**
      * Lays the level out at [scale] with its top-left corner at (originX, originY), on a view of
      * [width]×[height] pixels, and paints the still parts.
@@ -128,7 +117,6 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
             intArrayOf(Palette.withAlpha(palette.accent, 0.075f), Palette.withAlpha(palette.accent, 0.04f), Palette.withAlpha(palette.accent, 0.015f)),
             floatArrayOf(0f, 0.8f, 1f), Shader.TileMode.CLAMP,
         )
-        buildZoneStrokes()
 
         backdrop?.recycle()
         backdrop = null
@@ -376,76 +364,6 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     val ballScreenRadius: Float get() = level.ballRadius.toFloat() * scale
 
     /**
-     * The control zone's boundary: a dashed line in the accent colour, like the one across the reference, marking
-     * where the ball may be moved before a throw. It is drawn where the ball is stopped (the ball's edge rests on it),
-     * a little stronger while the ball is being [held].
-     */
-    fun drawControlZone(canvas: Canvas, held: Boolean) {
-        if (zoneStrokes.isEmpty()) return
-        canvas.save()
-        canvas.clipRect(x(0.0), y(0.0), x(level.width), y(level.height))
-        zoneLinePaint.color = Palette.withAlpha(palette.accent, if (held) ZONE_ALPHA_HELD else ZONE_ALPHA)
-        zoneLinePaint.strokeWidth = ZONE_LINE_WIDTH * scale
-        for (s in zoneStrokes) {
-            zoneLinePaint.pathEffect = s.effect
-            canvas.drawPath(s.path, zoneLinePaint)
-        }
-        zoneLinePaint.pathEffect = null
-        canvas.restore()
-    }
-
-    /**
-     * Lays the zone's line out in screen pixels. Along every straight run the dashes are equal and so are the gaps,
-     * the run starts and ends with a dash, and the dash is about as long as the reference's (ten across the width).
-     * A run that lies on the level's edge is not drawn (the edge of the screen is the boundary already); a run that
-     * stops at the edge stops a little short of it, like the reference's line; where two runs meet they join.
-     */
-    private fun buildZoneStrokes() {
-        zoneStrokes.clear()
-        val w = level.width
-        val h = level.height
-        when (val zone = level.zone) {
-            is ControlZone.Box -> {
-                val left = zone.x > 0.0
-                val right = zone.right < w
-                val top = zone.y > 0.0
-                val bottom = zone.bottom < h
-                val half = ZONE_LINE_WIDTH / 2
-                // A run's ends: joined to a neighbouring run (out to its outer edge), or short of the level's edge.
-                val xa = if (left) zone.x - half else ZONE_INSET
-                val xb = if (right) zone.right + half else w - ZONE_INSET
-                val ya = if (top) zone.y - half else ZONE_INSET
-                val yb = if (bottom) zone.bottom + half else h - ZONE_INSET
-                if (top) addZoneRun(xa, zone.y, xb, zone.y)
-                if (bottom) addZoneRun(xa, zone.bottom, xb, zone.bottom)
-                if (left) addZoneRun(zone.x, ya, zone.x, yb)
-                if (right) addZoneRun(zone.right, ya, zone.right, yb)
-            }
-            is ControlZone.Circle -> {
-                val radius = zone.radius
-                val circumference = 2 * Math.PI * radius
-                val n = max(ZONE_MIN_CIRCLE_DASHES, Math.round(circumference / ZONE_PERIOD).toInt())
-                val path = Path().apply { addCircle(x(zone.x), y(zone.y), (radius * scale).toFloat(), Path.Direction.CW) }
-                val d = (circumference / (2 * n) * scale).toFloat()
-                zoneStrokes += ZoneStroke(path, DashPathEffect(floatArrayOf(d, d), 0f))
-            }
-        }
-    }
-
-    /** One straight run of the zone's line from (x1, y1) to (x2, y2), in world units. */
-    private fun addZoneRun(x1: Double, y1: Double, x2: Double, y2: Double) {
-        val length = hypot(x2 - x1, y2 - y1)
-        if (length < 1.0) return
-        val dashes = max(1, Math.round((length + ZONE_PERIOD / 2) / ZONE_PERIOD).toInt())
-        val d = (length / (2 * dashes - 1) * scale).toFloat()
-        val path = Path().apply {
-            moveTo(x(x1), y(y1))
-            lineTo(x(x2), y(y2))
-        }
-        zoneStrokes += ZoneStroke(path, DashPathEffect(floatArrayOf(d, d), 0f))
-    }
-
-    /**
      * The ball at screen position (sx, sy): a small glossy sphere with the bounces it has left
      * written in its centre. The number is part of the ball: same position, same scale.
      */
@@ -684,19 +602,5 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
 
         /** The swipe dial's radius, in ball radii. */
         const val DIAL_RADIUS = 1.7f
-
-        /** The control zone's line: how thick it is (world units), and how far from the level's edge it stops short. */
-        const val ZONE_LINE_WIDTH = 10f
-        const val ZONE_INSET = 20.0
-
-        /** One dash and one gap along the line, in world units: ten dashes fit across the level's width. */
-        const val ZONE_PERIOD = 88.0
-
-        /** A round zone's line has at least this many dashes. */
-        const val ZONE_MIN_CIRCLE_DASHES = 6
-
-        /** How strongly the line shows: at rest, and while the ball is held. */
-        const val ZONE_ALPHA = 0.65f
-        const val ZONE_ALPHA_HELD = 0.9f
     }
 }

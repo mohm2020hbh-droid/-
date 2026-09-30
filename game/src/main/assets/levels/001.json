@@ -1,7 +1,10 @@
 {
-  "name": "First Shot",
+  "name": "First Flick",
+  "difficulty": 1,
+  "concept": "Positioning: pick the ball up, move it, let go",
   "bounces": 3,
-  "ball": [450, 1540],
-  "goal": [450, 460],
-  "hint": {"en": "Hold the ball, pull away, then let go", "ar": "امسك الكرة، اسحب بعيدًا، ثم اترك"}
+  "goalRadius": 96,
+  "ball": [450, 1650],
+  "goal": [450, 450],
+  "hint": {"en": "Drag the ball up and let go: it keeps moving the way you moved it", "ar": "اسحب الكرة إلى الأعلى ثم اتركها: تكمل الحركة بالطريقة التي حرّكتها بها"}
 }

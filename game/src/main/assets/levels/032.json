@@ -1,50 +1,15 @@
 {
-  "name": "Gravity Well",
-  "bounces": 1,
-  "ball": [
-    450,
-    1650
-  ],
-  "goal": [
-    450,
-    300
-  ],
-  "hint": {
-    "en": "Attractive zones pull the ball in",
-    "ar": "مناطق الجذب تسحب الكرة نحو مركزها"
-  },
+  "name": "Slingshot",
+  "difficulty": 5,
+  "concept": "Momentum: a slow ball is pulled round further than a fast one",
+  "bounces": 0,
+  "controlZone": {"rect": [420, 1300, 480, 700]},
+  "ball": [580, 1800],
+  "goal": [250, 300],
   "obstacles": [
-    {
-      "type": "wall",
-      "points": [
-        0,
-        900,
-        330,
-        900
-      ]
-    },
-    {
-      "type": "wall",
-      "points": [
-        570,
-        900,
-        900,
-        900
-      ]
-    }
+    {"type": "wall", "points": [420, 0, 420, 1150]}
   ],
   "elements": [
-    {
-      "kind": "attractive",
-      "pos": [
-        450,
-        1000
-      ],
-      "scale": [
-        600,
-        600
-      ],
-      "force": 150
-    }
+    {"kind": "attractive", "pos": [560, 1360], "scale": [540, 540], "force": 300}
   ]
 }

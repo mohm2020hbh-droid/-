@@ -1,13 +1,13 @@
 {
-  "name": "Baffles",
+  "name": "Tilted Bar",
+  "difficulty": 3,
+  "concept": "Bounce: a tilted rectangle hides the goal",
   "bounces": 1,
-  "controlZone": {"rect": [280, 1460, 340, 430]},
-  "ball": [450, 1650],
-  "goal": [450, 350],
+  "goalRadius": 90,
+  "controlZone": {"rect": [100, 1300, 600, 700]},
+  "ball": [400, 1700],
+  "goal": [350, 600],
   "obstacles": [
-    {"type": "wall", "points": [186, 0, 186, 2000]},
-    {"type": "wall", "points": [700, 0, 700, 2000]},
-    {"type": "rect", "x": 420, "y": 1210, "w": 60, "h": 60},
-    {"type": "rect", "x": 420, "y": 730, "w": 60, "h": 60}
+    {"type": "rect", "x": 230, "y": 990, "w": 540, "h": 120, "angle": 30}
   ]
 }

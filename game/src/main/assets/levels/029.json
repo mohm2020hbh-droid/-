@@ -1,11 +1,17 @@
 {
-  "name": "Retro",
-  "bounces": 2,
-  "controlZone": {"rect": [280, 240, 600, 460]},
-  "ball": [650, 500],
-  "goal": [250, 500],
+  "name": "Two Pads",
+  "difficulty": 6,
+  "concept": "Combination: two pads, one after the other",
+  "bounces": 0,
+  "controlZone": {"top": 1300},
+  "ball": [740, 1500],
+  "goal": [250, 450],
   "obstacles": [
-    {"type": "wall", "points": [450, 900, 450, 0]},
-    {"type": "wall", "points": [220.1, 1289.8, 450, 1519.8, 679.9, 1289.8]}
+    {"type": "wall", "points": [0, 1200, 450, 1200]},
+    {"type": "wall", "points": [900, 750, 450, 750]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [630, 1060], "scale": [320, 260], "rotation": -117.1, "force": 6},
+    {"kind": "booster", "pos": [160, 915], "scale": [260, 300], "rotation": -101.6, "force": 6}
   ]
 }

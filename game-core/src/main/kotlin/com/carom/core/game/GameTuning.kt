@@ -20,8 +20,8 @@ data class GameTuning(
 
     // ---- touch control: swipe → delta × sensibility → impulse ----
     /**
-     * How a touch acts on the ball before the throw: [ControlMode.HOLD] (hold the ball, move it, pull away, let go)
-     * or [ControlMode.SWIPE] (a swipe anywhere is the impulse). Once the ball is flying, only a ball in a touch zone
+     * How a touch acts on the ball before the throw: [ControlMode.HOLD] (hold the ball, move it, let go: it leaves with
+     * the velocity it had, see [MomentumAim]) or [ControlMode.SWIPE] (a swipe anywhere is the impulse). Once the ball is flying, only a ball in a touch zone
      * can be pushed again, and that is always by a swipe.
      */
     val controlMode: ControlMode = ControlMode.HOLD,
@@ -35,21 +35,11 @@ data class GameTuning(
     /** Taps closer together than this are one bounce of the finger, not two taps. */
     val tapWait: Double = 0.1,
 
-    // ---- hold and pull (in dp, like the swipe) ----
-    /** How fast a held ball can follow the finger; a finger that moves faster than this pulls away from the ball. */
-    val pullFollowSpeed: Double = 700.0,
-    /** A finger this far from the ball has pulled away from it: the pull (the throw being prepared) begins. */
-    val pullDetach: Double = 30.0,
-    /** A pull brought back closer than this to the ball is cancelled. */
-    val pullReattach: Double = 16.0,
-    /** Letting go of a pull shorter than this throws nothing. */
-    val pullMin: Double = 30.0,
-    /** A pull this long is a full-power throw. */
-    val pullMax: Double = 110.0,
-    /** Finger speeds (dp per second) at release where a flick starts and stops adding power, and how much it adds. */
-    val flickStart: Double = 900.0,
-    val flickFull: Double = 2600.0,
-    val flickBoost: Double = 0.25,
+    // ---- hold and let go: the ball leaves with the velocity it had ----
+    /** The ball's speed at release is measured over this many seconds just before the finger lifts. */
+    val releaseWindow: Double = 0.08,
+    /** World velocity of the ball per unit of the velocity it had while it was held (1 = exactly as fast as it moved). */
+    val releaseGain: Double = 1.0,
 
     // ---- speed ----
     /** The top speed in ref units. It caps the ball's speed whatever pushes it: swipes, boosters, fields, portals. */
@@ -101,7 +91,7 @@ data class GameTuning(
         /** Touch → drag → delta × sensibility → impulse. The ball does not go to the finger. */
         SWIPE,
 
-        /** Hold the ball and move it round its launch zone; pull away from it and let go to throw it ([PullAim]). */
+        /** Hold the ball and move it round its control zone; let go and it leaves with the velocity it had ([MomentumAim]). */
         HOLD,
     }
 

@@ -1,11 +1,15 @@
 {
-  "name": "Canyon",
-  "bounces": 2,
-  "controlZone": {"top": 1380},
-  "ball": [700, 1560],
-  "goal": [300, 600],
+  "name": "Corridor",
+  "difficulty": 4,
+  "concept": "Bounce: play inside a narrow corridor",
+  "bounces": 1,
+  "goalRadius": 90,
+  "controlZone": {"top": 1300},
+  "ball": [250, 1600],
+  "goal": [350, 700],
   "obstacles": [
-    {"type": "wall", "points": [400, 1700, 850, 1700, 850, 1293, 407, 1293]},
-    {"type": "wall", "points": [493, 800, 100, 800, 100, 400, 500, 400]}
+    {"type": "wall", "points": [150, 2000, 150, 400]},
+    {"type": "wall", "points": [600, 2000, 600, 400]},
+    {"type": "rect", "x": 260, "y": 870, "w": 180, "h": 60, "angle": 45}
   ]
 }

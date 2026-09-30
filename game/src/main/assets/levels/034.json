@@ -1,50 +1,16 @@
 {
-  "name": "Timing",
-  "bounces": 2,
-  "ball": [
-    450,
-    1650
+  "name": "Pull and Bank",
+  "difficulty": 6,
+  "concept": "Combination: a well, then one bank",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [540, 1500],
+  "goal": [100, 400],
+  "obstacles": [
+    {"type": "wall", "points": [0, 1150, 550, 1150]},
+    {"type": "wall", "points": [900, 700, 400, 700]}
   ],
-  "goal": [
-    450,
-    320
-  ],
-  "hint": {
-    "en": "Slower zones drain speed; time your throw",
-    "ar": "مناطق الإبطاء تستنزف السرعة؛ اختر توقيت قذفتك"
-  },
-  "obstacles": [],
   "elements": [
-    {
-      "kind": "slower",
-      "pos": [
-        450,
-        1350
-      ],
-      "scale": [
-        900,
-        300
-      ],
-      "force": 1.0
-    },
-    {
-      "kind": "solid",
-      "pos": [
-        450,
-        1000
-      ],
-      "scale": [
-        360,
-        44
-      ],
-      "moving": {
-        "to": [
-          830,
-          1000
-        ],
-        "period": 4,
-        "phase": 0.25
-      }
-    }
+    {"kind": "attractive", "pos": [630, 1050], "scale": [500, 500], "force": 300}
   ]
 }

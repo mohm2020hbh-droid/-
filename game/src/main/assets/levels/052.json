@@ -1,0 +1,16 @@
+{
+  "name": "Portal and Bank",
+  "difficulty": 8,
+  "concept": "Angles: the portal throws the ball away, bank it back",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [660, 1600],
+  "goal": [450, 510],
+  "obstacles": [
+    {"type": "wall", "points": [140, 400, 560, 400, 560, 800, 140, 800], "closed": true}
+  ],
+  "elements": [
+    {"kind": "portal", "pos": [300, 950], "scale": [170, 170], "id": "a", "link": "b", "rotation": 0},
+    {"kind": "portal", "pos": [320, 640], "scale": [170, 170], "id": "b", "link": "a", "rotation": 225}
+  ]
+}

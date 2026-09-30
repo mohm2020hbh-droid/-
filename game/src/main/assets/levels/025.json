@@ -1,13 +1,17 @@
 {
-  "name": "Triple Chicane",
-  "bounces": 3,
-  "controlZone": {"rect": [60, 1440, 840, 560]},
-  "ball": [450, 1700],
-  "goal": [450, 350],
-  "goalRadius": 56,
+  "name": "Pad and Mirror",
+  "difficulty": 5,
+  "concept": "Angles: the pad sets the angle, the mirror finishes the job",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [440, 1660],
+  "goal": [100, 550],
   "obstacles": [
-    {"type": "wall", "points": [307, 1475, 900, 1475]},
-    {"type": "wall", "points": [0, 1025, 593, 1025]},
-    {"type": "wall", "points": [307, 575, 900, 575]}
+    {"type": "wall", "points": [0, 1150, 550, 1150]},
+    {"type": "wall", "points": [900, 700, 350, 700]},
+    {"type": "wall", "points": [211.6, 368.1, 588.4, 631.9]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [750, 990], "scale": [280, 260], "rotation": -164.1, "force": 6}
   ]
 }

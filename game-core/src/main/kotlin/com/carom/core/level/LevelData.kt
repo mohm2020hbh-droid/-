@@ -45,8 +45,10 @@ data class LevelData(
     val exitRequired: Int = 1,
     /** Linear drag of the ball, per second: its speed decays as e^(−drag·t). */
     val drag: Double = LevelDefaults.DRAG,
-    /** A level meant to be hard: it gets the intense music. */
-    val hardcore: Boolean = false,
+    /** How hard the level is meant to be, 1 (the first taste) to 10 (the last level); 0 = not rated. Only for tools and tests. */
+    val difficulty: Int = 0,
+    /** A few words on what the level teaches or asks ("one bounce off the wall"). Only for tools and tests. */
+    val concept: String = "",
 ) {
     /**
      * Distance a full-power shot travels before it stops: speed / drag with drag alone, and less with friction
@@ -135,8 +137,8 @@ object LevelDefaults {
 
     /**
      * A level that sets no control zone gets a band across the whole level starting this far above the ball's start
-     * (like the reference's dashed line). A level whose puzzle such a band would short-cut, because a shot from
-     * somewhere else in it needs fewer bounces than the level is built around, sets a smaller zone.
+     * (down to the bottom edge): a big, comfortable area that is never drawn. A level whose puzzle such a band would
+     * short-cut sets its own.
      */
-    const val ZONE_ABOVE_BALL = 260.0
+    const val ZONE_ABOVE_BALL = 400.0
 }

@@ -1,11 +1,15 @@
 {
-  "name": "Hidden Pocket",
-  "bounces": 3,
-  "controlZone": {"rect": [550, 1290, 350, 420]},
-  "ball": [700, 1550],
-  "goal": [720, 650],
+  "name": "Over the Wall",
+  "difficulty": 4,
+  "concept": "Momentum: a gentle booster bends slow balls more than fast ones",
+  "bounces": 0,
+  "controlZone": {"rect": [0, 1300, 450, 700]},
+  "ball": [60, 1400],
+  "goal": [800, 350],
   "obstacles": [
-    {"type": "wall", "points": [900, 1100, 380, 1100]},
-    {"type": "wall", "points": [900, 800, 500, 800, 500, 450]}
+    {"type": "wall", "points": [450, 2000, 450, 900]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [250, 800], "scale": [320, 260], "rotation": 0, "force": 3}
   ]
 }

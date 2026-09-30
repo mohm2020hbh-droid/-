@@ -1,12 +1,13 @@
 {
-  "name": "Echo Chamber",
+  "name": "Wedge",
+  "difficulty": 2,
+  "concept": "Angles: a triangle hides the goal, bank round it",
   "bounces": 1,
-  "controlZone": {"rect": [290, 1510, 610, 490]},
-  "ball": [450, 1650],
-  "goal": [450, 350],
+  "goalRadius": 96,
+  "controlZone": {"rect": [0, 1300, 700, 700]},
+  "ball": [350, 1700],
+  "goal": [650, 700],
   "obstacles": [
-    {"type": "wall", "points": [236, 0, 236, 2000]},
-    {"type": "wall", "points": [650, 0, 650, 2000]},
-    {"type": "rect", "x": 420, "y": 970, "w": 60, "h": 60}
+    {"type": "poly", "points": [500, 700, 717, 1075, 283, 1075]}
   ]
 }

@@ -44,6 +44,37 @@ class ProgressTest {
         assertEquals(2, reloaded.completedCount)
     }
 
+    /** The campaign: six worlds of ten. Only level 1 is open; a world opens when the last level of the one before it is finished. */
+    @Test
+    fun aWorldOpensOnlyWhenTheWorldBeforeIsFinished() {
+        val campaign = (1..60).map { "%03d".format(it) }
+        val p = Progress(MapStore(), campaign)
+        assertEquals("only level 1 is open", listOf(0), campaign.indices.filter(p::isUnlocked))
+        for (world in 0 until 6) {
+            val first = world * 10
+            assertTrue("world ${world + 1} is open once its first level is", p.isUnlocked(first))
+            for (slot in 0 until 10) {
+                val level = first + slot
+                assertFalse("nothing past level ${level + 1} is open until it is finished", campaign.indices.any { it > level && p.isUnlocked(it) })
+                p.markCompleted(level)
+                if (slot < 9) assertTrue(p.isUnlocked(level + 1)) else if (world < 5) assertTrue("finishing the last level of world ${world + 1} opens world ${world + 2}", p.isUnlocked(level + 1))
+            }
+        }
+        assertEquals(59, p.highestUnlockedIndex)
+        assertEquals(60, p.completedCount)
+    }
+
+    @Test
+    fun theNextWorldStaysShutWhileOneLevelOfTheWorldIsLeft() {
+        val campaign = (1..60).map { "%03d".format(it) }
+        val p = Progress(MapStore(), campaign)
+        (0 until 9).forEach(p::markCompleted)
+        assertTrue(p.isUnlocked(9))
+        assertFalse("world 2 is shut while level 10 is not finished", p.isUnlocked(10))
+        p.markCompleted(9)
+        assertTrue(p.isUnlocked(10))
+    }
+
     @Test
     fun replayingAnOldLevelDoesNotLockAnything() {
         val p = Progress(MapStore(), ids)

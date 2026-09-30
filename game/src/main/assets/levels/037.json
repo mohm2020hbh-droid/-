@@ -1,31 +1,15 @@
 {
-  "name": "Danger",
+  "name": "Push and Hexagon",
+  "difficulty": 7,
+  "concept": "Combination: the push sends the ball round the hexagon",
   "bounces": 1,
-  "controlZone": {"rect": [180, 1390, 540, 610]},
-  "ball": [
-    450,
-    1650
+  "controlZone": {"top": 1300},
+  "ball": [350, 1600],
+  "goal": [400, 650],
+  "obstacles": [
+    {"type": "poly", "points": [650, 1050, 550, 1223.2, 350, 1223.2, 250, 1050, 350, 876.8, 550, 876.8]}
   ],
-  "goal": [
-    450,
-    320
-  ],
-  "hint": {
-    "en": "Striped zones destroy the ball",
-    "ar": "المناطق المخططة تدمّر الكرة"
-  },
-  "obstacles": [],
   "elements": [
-    {
-      "kind": "death",
-      "pos": [
-        450,
-        1000
-      ],
-      "scale": [
-        280,
-        360
-      ]
-    }
+    {"kind": "repulsive", "pos": [150, 1190], "scale": [520, 520], "force": 300}
   ]
 }

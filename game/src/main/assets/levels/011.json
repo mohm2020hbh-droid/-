@@ -1,9 +1,13 @@
 {
-  "name": "Corner Pocket",
-  "bounces": 2,
-  "ball": [700, 1600],
-  "goal": [170, 360],
+  "name": "Square Room",
+  "difficulty": 3,
+  "concept": "Angles: bank round a tilted square",
+  "bounces": 1,
+  "goalRadius": 90,
+  "controlZone": {"rect": [200, 1300, 500, 700]},
+  "ball": [450, 1700],
+  "goal": [450, 500],
   "obstacles": [
-    {"type": "wall", "points": [0, 550, 260, 550, 260, 367]}
+    {"type": "rect", "x": 210, "y": 910, "w": 280, "h": 280, "angle": 30}
   ]
 }

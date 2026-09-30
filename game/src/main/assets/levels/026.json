@@ -1,18 +1,17 @@
 {
-  "name": "Mirror Maze II",
-  "bounces": 3,
-  "ball": [750, 1650],
-  "goal": [150, 1260],
+  "name": "Patience",
+  "difficulty": 5,
+  "concept": "Momentum: the door opens by itself, throw gently",
+  "bounces": 0,
+  "controlZone": {"top": 1300},
+  "ball": [450, 1740],
+  "goal": [400, 350],
+  "hint": {"en": "Some doors take a moment to open: a gentle throw arrives later", "ar": "بعض الأبواب تحتاج لحظة لتنفتح: الرمية الهادئة تصل متأخرة"},
   "obstacles": [
-    {"type": "wall", "points": [600, 2000, 600, 864]},
-    {"type": "wall", "points": [300, 2000, 300, 1420]},
-    {"type": "wall", "points": [300, 1166, 300, 0]},
-    {"type": "wall", "points": [844.7, 734.1, 674.9, 564.3]},
-    {"type": "wall", "points": [355.3, 775.1, 525.1, 605.3]},
-    {"type": "wall", "points": [415.9, 1435.7, 585.7, 1265.9]},
-    {"type": "wall", "points": [520.7, 470.7, 379.3, 329.3]},
-    {"type": "wall", "points": [220.7, 1070.7, 79.3, 929.3]},
-    {"type": "wall", "points": [679.3, 470.7, 820.7, 329.3]},
-    {"type": "wall", "points": [547.6, 1606.6, 434.4, 1493.4]}
+    {"type": "wall", "points": [0, 1000, 300, 1000]},
+    {"type": "wall", "points": [600, 1000, 900, 1000]}
+  ],
+  "elements": [
+    {"kind": "solid", "pos": [450, 1000], "scale": [300, 44], "moving": {"to": [760, 1000], "period": 2.4, "wave": "ONCE"}}
   ]
 }

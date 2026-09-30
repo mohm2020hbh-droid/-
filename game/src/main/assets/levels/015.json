@@ -1,11 +1,13 @@
 {
-  "name": "Crossroads",
-  "bounces": 2,
-  "controlZone": {"rect": [0, 1440, 300, 390]},
-  "ball": [180, 1700],
-  "goal": [720, 350],
+  "name": "Half Moon",
+  "difficulty": 4,
+  "concept": "Bounce: a half disc hides the goal",
+  "bounces": 1,
+  "goalRadius": 90,
+  "controlZone": {"rect": [300, 1300, 500, 700]},
+  "ball": [550, 1700],
+  "goal": [450, 550],
   "obstacles": [
-    {"type": "wall", "points": [450, 850, 450, 1150]},
-    {"type": "wall", "points": [300, 993, 586, 993]}
+    {"type": "poly", "points": [400, 710, 474, 722, 541, 756, 594, 809, 628, 876, 640, 950, 628, 1024, 594, 1091, 541, 1144, 474, 1178, 400, 1190]}
   ]
 }

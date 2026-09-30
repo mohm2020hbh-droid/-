@@ -18,7 +18,8 @@ import kotlin.math.sin
  *   "speed": 2400, "drag": 0.25,      // optional top speed, and how fast a free ball loses speed (1/s)
  *   "friction": 0,                    // optional extra constant deceleration (units/s²)
  *   "exitRequired": 1,                // optional: balls that must reach the exit
- *   "hardcore": false,                // optional: a hard level (intense music)
+ *   "difficulty": 4,                  // optional: 1 (first taste) .. 10 (last level), for tools and tests
+ *   "concept": "one bounce",          // optional: what the level teaches or asks, for tools and tests
  *   "border": true,                   // optional: the edges bounce the ball (never drawn)
  *   "controlZone": {"top": 1280},     // optional: where the ball may be moved before a throw (see [parseZone])
  *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
@@ -26,7 +27,8 @@ import kotlin.math.sin
  *   "obstacles": [
  *     {"type": "wall", "points": [800, 0, 800, 600], "thickness": 30, "closed": false},
  *     {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 40, "angle": 45, "round": 14},
- *     {"type": "poly", "points": [1000, 900, 1200, 600, 1400, 900]}
+ *     {"type": "poly", "points": [1000, 900, 1200, 600, 1400, 900]},
+ *     {"type": "circle", "x": 450, "y": 1000, "r": 90}
  *   ],
  *   "elements": [                     // optional: things with rules (see [parseElement])
  *     {"kind": "booster", "pos": [450, 900], "scale": [300, 120], "rotation": -90, "force": 6.3},
@@ -89,7 +91,10 @@ object LevelParser {
                 drag = (root.number("drag") ?: LevelDefaults.DRAG).also {
                     if (it < 0) throw LevelFormatException("'drag' must be ≥ 0")
                 },
-                hardcore = root["hardcore"] as? Boolean ?: false,
+                difficulty = (root.number("difficulty") ?: 0.0).also {
+                    if (it < 0 || it > 10 || it != Math.floor(it)) throw LevelFormatException("'difficulty' must be a whole number 0..10")
+                }.toInt(),
+                concept = root["concept"] as? String ?: "",
             )
         } catch (e: LevelFormatException) {
             throw LevelFormatException("$id: ${e.message}")
@@ -120,8 +125,30 @@ object LevelParser {
                 val h = positive(obj.number("h") ?: 0.0, "$where.h")
                 Block(rotatedRect(x, y, w, h, obj.number("angle") ?: 0.0), rounding(obj, where))
             }
+            "circle" -> {
+                val x = obj.number("x") ?: throw LevelFormatException("$where: 'x' is required")
+                val y = obj.number("y") ?: throw LevelFormatException("$where: 'y' is required")
+                val r = positive(obj.number("r") ?: 0.0, "$where.r")
+                if (r < 8.0) throw LevelFormatException("$where: 'r' must be at least 8")
+                circleBlock(x, y, r)
+            }
             else -> throw LevelFormatException("$where: unknown type '$type'")
         }
+
+    /**
+     * A solid disc of radius [r] at ([x], [y]). Every block is its outline pulled in and grown back by a rounding, so a
+     * disc is a tiny octagon (its core, 4 across) grown by the rest of the radius: as round as the physics can be,
+     * and it collides and draws exactly like any other block.
+     */
+    private fun circleBlock(x: Double, y: Double, r: Double): Block {
+        val core = 4.0
+        val outline = (0 until 8).map { i ->
+            val a = (i + 0.5) * Math.PI / 4
+            val corner = r / cos(Math.PI / 8) // an octagon of inradius r has its corners this far out
+            Vec2(x + cos(a) * corner, y + sin(a) * corner)
+        }
+        return Block(outline, rounding = r - core)
+    }
 
     /**
      * The control zone, in one of three forms (all in world units):

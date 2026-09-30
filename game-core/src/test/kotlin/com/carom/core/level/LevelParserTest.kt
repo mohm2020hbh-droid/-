@@ -154,4 +154,54 @@ class LevelParserTest {
     fun levelOrderIsNumeric() {
         assertEquals(listOf("1", "2", "10", "011", "bonus"), LevelRepository.sortIds(listOf("bonus", "10", "2", "011", "1")))
     }
+
+    @Test
+    fun aCircleObstacleIsARoundSolidThatBouncesLikeOne() {
+        val level = LevelParser.parse(
+            "c",
+            """{"bounces": 1, "drag": 0, "ball": [450, 1700], "goal": [100, 100], "difficulty": 3, "concept": "a disc",
+                "obstacles": [{"type": "circle", "x": 450, "y": 1000, "r": 100}]}""",
+        )
+        assertEquals(3, level.difficulty)
+        assertEquals("a disc", level.concept)
+        val disc = level.obstacles.single() as Block
+        // Round: the solid is the same distance (radius 100) from the centre all the way round.
+        val world = WorldBuilder.build(level)
+        for (deg in 0 until 360 step 15) {
+            val a = Math.toRadians(deg.toDouble())
+            val reach = 100.0 + level.ballRadius
+            assertTrue("touching at $deg", world.overlaps(450 + Math.cos(a) * (reach - 2.0), 1000 + Math.sin(a) * (reach - 2.0), level.ballRadius))
+            assertFalse("clear at $deg", world.overlaps(450 + Math.cos(a) * (reach + 2.0), 1000 + Math.sin(a) * (reach + 2.0), level.ballRadius))
+        }
+        assertTrue(disc.core.size == 8)
+    }
+
+    @Test
+    fun aBallOffCentreLeavesACircleAtTheMirrorAngle() {
+        // A ball fired straight up 60 to the right of a disc's centre meets its rim where the normal makes
+        // asin(60 / (100 + 60)) with the vertical, so it is turned by 180° − twice that angle from the way it came.
+        val level = LevelParser.parse(
+            "c",
+            """{"bounces": 2, "drag": 0, "ball": [510, 1700], "goal": [100, 100],
+                "obstacles": [{"type": "circle", "x": 450, "y": 1000, "r": 100}]}""",
+        )
+        val s = com.carom.core.game.GameSession(level)
+        s.launch(0.0, -1.0, 1.0)
+        var guard = 0
+        while (s.bouncesUsed == 0 && guard++ < 100_000) s.step()
+        repeat(3) { s.step() }
+        val expected = 180.0 - 2 * Math.toDegrees(Math.asin(60.0 / 160.0))
+        val turned = Math.toDegrees(Math.atan2(s.ball.dirX, -s.ball.dirY)) // from straight up, clockwise
+        assertEquals(expected, turned, 0.6)
+    }
+
+    @Test
+    fun badCirclesAndRatingsAreRefused() {
+        for (bad in listOf(
+            """{"type": "circle", "x": 1, "y": 1, "r": 3}""", """{"type": "circle", "y": 1, "r": 30}""", """{"type": "circle", "x": 1, "y": 1}""",
+        )) {
+            assertThrows(LevelFormatException::class.java) { LevelParser.parse("c", """{"bounces": 1, "ball": [10, 10], "goal": [50, 50], "obstacles": [$bad]}""") }
+        }
+        assertThrows(LevelFormatException::class.java) { LevelParser.parse("c", """{"bounces": 1, "ball": [10, 10], "goal": [50, 50], "difficulty": 11}""") }
+    }
 }

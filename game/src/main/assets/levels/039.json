@@ -1,44 +1,16 @@
 {
-  "name": "Switch",
-  "bounces": 2,
-  "controlZone": {"rect": [150, 1390, 750, 610]},
-  "ball": [
-    450,
-    1650
+  "name": "Force Chain",
+  "difficulty": 7,
+  "concept": "Combination: pull, then push",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [340, 1500],
+  "goal": [480, 840],
+  "obstacles": [
+    {"type": "wall", "points": [540, 600, 200, 600, 200, 980, 540, 980]}
   ],
-  "goal": [
-    700,
-    320
-  ],
-  "hint": {
-    "en": "Touch a switch to open the gate",
-    "ar": "المس المفتاح لتفتح البوابة"
-  },
-  "obstacles": [],
   "elements": [
-    {
-      "kind": "switch",
-      "pos": [
-        180,
-        1300
-      ],
-      "scale": [
-        150,
-        150
-      ],
-      "channel": 1
-    },
-    {
-      "kind": "switchable",
-      "pos": [
-        450,
-        900
-      ],
-      "scale": [
-        760,
-        44
-      ],
-      "channel": 1
-    }
+    {"kind": "attractive", "pos": [730, 910], "scale": [440, 440], "force": 150},
+    {"kind": "repulsive", "pos": [460, 690], "scale": [420, 420], "force": 300}
   ]
 }

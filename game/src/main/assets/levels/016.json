@@ -1,10 +1,14 @@
 {
-  "name": "Chicane",
+  "name": "Hexagon",
+  "difficulty": 4,
+  "concept": "Precision: a hexagon in the middle of the room",
   "bounces": 2,
-  "ball": [450, 1600],
-  "goal": [450, 400],
+  "goalRadius": 90,
+  "controlZone": {"rect": [100, 1300, 700, 700]},
+  "ball": [450, 1700],
+  "goal": [150, 600],
   "obstacles": [
-    {"type": "wall", "points": [0, 1207, 546, 1207]},
-    {"type": "wall", "points": [900, 793, 354, 793]}
+    {"type": "poly", "points": [623, 1150, 450, 1250, 277, 1150, 277, 950, 450, 850, 623, 950]},
+    {"type": "wall", "points": [0, 750, 200, 750]}
   ]
 }

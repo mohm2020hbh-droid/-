@@ -1,14 +1,16 @@
 {
-  "name": "Stairwell",
-  "bounces": 3,
-  "controlZone": {"top": 1620},
-  "ball": [450, 1720],
-  "goal": [450, 300],
+  "name": "Boost",
+  "difficulty": 4,
+  "concept": "Forces: a booster turns the ball where you cannot aim",
+  "bounces": 0,
+  "controlZone": {"top": 1300},
+  "ball": [840, 1440],
+  "goal": [300, 500],
+  "hint": {"en": "Boosters push the ball along their arrows", "ar": "المعزّزات تدفع الكرة في اتجاه أسهمها"},
   "obstacles": [
-    {"type": "wall", "points": [136, 2000, 136, 400]},
-    {"type": "wall", "points": [764, 2000, 764, 400]},
-    {"type": "wall", "points": [150, 1483, 420, 1483]},
-    {"type": "wall", "points": [750, 1010, 480, 1010]},
-    {"type": "wall", "points": [150, 537, 420, 537]}
+    {"type": "wall", "points": [0, 1050, 600, 1050]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [700, 760], "scale": [300, 260], "rotation": 180, "force": 6}
   ]
 }

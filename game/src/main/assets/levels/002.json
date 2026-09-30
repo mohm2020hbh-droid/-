@@ -1,10 +1,13 @@
 {
-  "name": "Over the Wall",
-  "bounces": 2,
-  "ball": [660, 1540],
-  "goal": [660, 460],
-  "hint": {"en": "Walls and screen edges each use one bounce", "ar": "كل اصطدام بجدار أو بحافة الشاشة يستهلك ارتدادًا واحدًا"},
+  "name": "Side Step",
+  "difficulty": 1,
+  "concept": "Positioning: move the ball past the wall's end first",
+  "bounces": 1,
+  "goalRadius": 96,
+  "ball": [450, 1650],
+  "goal": [780, 450],
+  "hint": {"en": "Move the ball anywhere near it before you let go", "ar": "حرّك الكرة إلى أي مكان قربها قبل أن تتركها"},
   "obstacles": [
-    {"type": "wall", "points": [300, 1000, 900, 1000]}
+    {"type": "wall", "points": [0, 1000, 650, 1000]}
   ]
 }

@@ -1,11 +1,13 @@
 {
-  "name": "Bumper",
-  "bounces": 1,
-  "controlZone": {"circle": [150, 1420, 320]},
-  "ball": [150, 1420],
-  "goal": [740, 420],
+  "name": "Round the Corner",
+  "difficulty": 3,
+  "concept": "Bounce: an indirect path over a shelf",
+  "bounces": 2,
+  "goalRadius": 96,
+  "ball": [450, 1700],
+  "goal": [200, 600],
   "obstacles": [
-    {"type": "wall", "points": [0, 1243, 413, 1243]},
-    {"type": "poly", "points": [650, 1330, 770, 1450, 650, 1570, 530, 1450]}
+    {"type": "wall", "points": [600, 2000, 600, 1400]},
+    {"type": "wall", "points": [0, 750, 450, 750]}
   ]
 }

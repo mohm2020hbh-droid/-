@@ -1,0 +1,15 @@
+{
+  "name": "Slow Hexagon",
+  "difficulty": 7,
+  "concept": "Precision: a slow-motion zone beside a hexagon",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [440, 1560],
+  "goal": [450, 350],
+  "obstacles": [
+    {"type": "poly", "points": [640.5, 910, 450, 1020, 259.5, 910, 259.5, 690, 450, 580, 640.5, 690]}
+  ],
+  "elements": [
+    {"kind": "slowMo", "pos": [150, 880], "scale": [540, 540]}
+  ]
+}

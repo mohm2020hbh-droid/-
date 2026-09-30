@@ -1,10 +1,13 @@
 {
-  "name": "Diamond",
+  "name": "Over the Top",
+  "difficulty": 2,
+  "concept": "Bounce: one bounce off the ceiling",
   "bounces": 1,
-  "controlZone": {"rect": [20, 1440, 860, 560]},
-  "ball": [450, 1700],
-  "goal": [450, 450],
+  "goalRadius": 96,
+  "ball": [750, 1700],
+  "goal": [150, 450],
+  "hint": {"en": "Every wall or edge you hit uses one bounce", "ar": "كل اصطدام بجدار أو بحافة يستهلك ارتدادًا واحدًا"},
   "obstacles": [
-    {"type": "poly", "points": [450, 800, 650, 1100, 450, 1400, 250, 1100]}
+    {"type": "wall", "points": [350, 2000, 350, 700]}
   ]
 }

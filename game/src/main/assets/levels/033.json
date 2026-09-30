@@ -1,31 +1,15 @@
 {
-  "name": "Repel",
-  "bounces": 1,
-  "ball": [
-    450,
-    1650
+  "name": "Bent Path",
+  "difficulty": 6,
+  "concept": "Forces: the well turns the ball round a corner",
+  "bounces": 0,
+  "controlZone": {"rect": [520, 1300, 380, 700]},
+  "ball": [600, 1840],
+  "goal": [400, 300],
+  "obstacles": [
+    {"type": "wall", "points": [520, 0, 520, 1100]}
   ],
-  "goal": [
-    450,
-    320
-  ],
-  "hint": {
-    "en": "Repulsive zones push the ball away",
-    "ar": "مناطق الطرد تدفع الكرة بعيدًا عن مركزها"
-  },
-  "obstacles": [],
   "elements": [
-    {
-      "kind": "repulsive",
-      "pos": [
-        450,
-        1000
-      ],
-      "scale": [
-        460,
-        460
-      ],
-      "force": 100
-    }
+    {"kind": "attractive", "pos": [660, 1230], "scale": [560, 560], "force": 150}
   ]
 }

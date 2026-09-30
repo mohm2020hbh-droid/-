@@ -1,14 +1,16 @@
 {
-  "name": "Gauntlet",
-  "bounces": 4,
-  "controlZone": {"rect": [0, 1410, 740, 590]},
-  "ball": [450, 1650],
-  "goal": [450, 460],
-  "goalRadius": 56,
+  "name": "Which Pad?",
+  "difficulty": 6,
+  "concept": "Positioning: one pad leads into the cup, the other does not",
+  "bounces": 0,
+  "controlZone": {"top": 1300},
+  "ball": [540, 1660],
+  "goal": [680, 890],
   "obstacles": [
-    {"type": "wall", "points": [0, 1501, 546, 1501]},
-    {"type": "wall", "points": [354, 1204, 900, 1204]},
-    {"type": "wall", "points": [0, 907, 546, 907]},
-    {"type": "wall", "points": [354, 610, 900, 610]}
+    {"type": "wall", "points": [520, 650, 780, 650, 780, 1010, 520, 1010]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [200, 950], "scale": [320, 220], "rotation": 38, "force": 6},
+    {"kind": "booster", "pos": [440, 790], "scale": [240, 240], "rotation": 26.3, "force": 5}
   ]
 }

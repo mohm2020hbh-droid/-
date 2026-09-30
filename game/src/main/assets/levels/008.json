@@ -1,9 +1,13 @@
 {
-  "name": "Window",
-  "bounces": 1,
-  "ball": [700, 1650],
-  "goal": [700, 450],
+  "name": "Narrow Gate",
+  "difficulty": 3,
+  "concept": "Precision: a gate that wants a careful aim",
+  "bounces": 0,
+  "goalRadius": 96,
+  "ball": [450, 1700],
+  "goal": [750, 450],
   "obstacles": [
-    {"type": "wall", "points": [340, 1000, 900, 1000]}
+    {"type": "wall", "points": [0, 1000, 330, 1000]},
+    {"type": "wall", "points": [560, 1000, 900, 1000]}
   ]
 }

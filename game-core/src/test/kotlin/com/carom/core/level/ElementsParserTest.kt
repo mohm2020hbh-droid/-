@@ -21,7 +21,6 @@ class ElementsParserTest {
         assertEquals(1, l.exitRequired)
         assertEquals(LevelDefaults.DRAG, l.drag, 0.0)
         assertEquals(0.0, l.friction, 0.0)
-        assertFalse(l.hardcore)
     }
 
     @Test

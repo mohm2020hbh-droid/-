@@ -1,13 +1,14 @@
 {
-  "name": "Twin Mirrors",
+  "name": "Elbow",
+  "difficulty": 5,
+  "concept": "Positioning: turn the corner of an L",
   "bounces": 2,
-  "controlZone": {"rect": [0, 1290, 710, 710]},
-  "ball": [160, 1550],
-  "goal": [740, 1550],
+  "goalRadius": 90,
+  "controlZone": {"rect": [150, 1350, 300, 650]},
+  "ball": [300, 1500],
+  "goal": [800, 1100],
   "obstacles": [
-    {"type": "wall", "points": [450, 2000, 450, 564]},
-    {"type": "wall", "points": [307, 557, 586, 557]},
-    {"type": "wall", "points": [54.1, 476.3, 266.3, 264.1]},
-    {"type": "wall", "points": [845.9, 476.3, 633.7, 264.1]}
+    {"type": "wall", "points": [150, 2000, 150, 800, 900, 800]},
+    {"type": "wall", "points": [450, 2000, 450, 1300, 900, 1300]}
   ]
 }

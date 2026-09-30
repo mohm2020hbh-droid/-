@@ -1,0 +1,18 @@
+{
+  "name": "Time Master",
+  "difficulty": 8,
+  "concept": "Combination: balls, slow time and a well",
+  "bounces": 1,
+  "exitRequired": 2,
+  "controlZone": {"top": 1300},
+  "ball": [440, 1600],
+  "goal": [500, 840],
+  "obstacles": [
+    {"type": "wall", "points": [440, 600, 720, 600, 720, 1000, 440, 1000]}
+  ],
+  "elements": [
+    {"kind": "ballContainer", "pos": [150, 780], "scale": [150, 150], "value": 2, "vector": [0.999, 0.048], "force": 50},
+    {"kind": "slowMo", "pos": [400, 680], "scale": [460, 460]},
+    {"kind": "attractive", "pos": [290, 900], "scale": [500, 500], "force": 300}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "Systems",
+  "difficulty": 9,
+  "concept": "Combination: portal, pad and well",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [560, 1500],
+  "goal": [460, 700],
+  "obstacles": [
+    {"type": "wall", "points": [350, 440, 750, 440, 750, 860, 350, 860], "closed": true}
+  ],
+  "elements": [
+    {"kind": "portal", "pos": [200, 1050], "scale": [170, 170], "id": "a", "link": "b", "rotation": 180},
+    {"kind": "portal", "pos": [540, 640], "scale": [170, 170], "id": "b", "link": "a", "rotation": 225},
+    {"kind": "booster", "pos": [450, 1160], "scale": [260, 280], "rotation": -28.9, "force": 5},
+    {"kind": "attractive", "pos": [650, 1120], "scale": [480, 480], "force": 150}
+  ]
+}

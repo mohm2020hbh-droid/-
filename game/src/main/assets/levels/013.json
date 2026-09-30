@@ -1,13 +1,13 @@
 {
-  "name": "Needle",
-  "bounces": 1,
-  "controlZone": {"rect": [0, 1360, 790, 640]},
-  "ball": [250, 1620],
-  "goal": [310, 500],
+  "name": "Peak",
+  "difficulty": 3,
+  "concept": "Bounce: two banks round a triangle and a ledge",
+  "bounces": 2,
+  "goalRadius": 90,
+  "controlZone": {"rect": [300, 1300, 400, 700]},
+  "ball": [500, 1700],
+  "goal": [550, 500],
   "obstacles": [
-    {"type": "wall", "points": [0, 1233, 466, 1233]},
-    {"type": "wall", "points": [794, 1247, 900, 1247]},
-    {"type": "wall", "points": [0, 767, 406, 767]},
-    {"type": "wall", "points": [734, 753, 900, 753]}
+    {"type": "poly", "points": [758, 630, 550, 990, 342, 630]}
   ]
 }

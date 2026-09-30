@@ -1,10 +1,17 @@
 {
-  "name": "Vault",
-  "bounces": 3,
-  "controlZone": {"rect": [270, 1340, 380, 460]},
-  "ball": [450, 1600],
-  "goal": [450, 1000],
+  "name": "Boost Master",
+  "difficulty": 6,
+  "concept": "Combination: two pads, a mirror and a cup",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [150, 1440],
+  "goal": [640, 940],
   "obstacles": [
-    {"type": "wall", "points": [346, 800, 264, 800, 264, 1200, 650, 1200, 650, 800, 554, 800]}
+    {"type": "wall", "points": [480, 700, 800, 700, 800, 1100, 480, 1100]},
+    {"type": "wall", "points": [169.8, 523.8, 530.2, 776.2]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [150, 1180], "scale": [260, 260], "rotation": -55.3, "force": 6},
+    {"kind": "booster", "pos": [370, 900], "scale": [260, 300], "rotation": -37.5, "force": 3}
   ]
 }

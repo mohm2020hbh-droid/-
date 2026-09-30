@@ -1,56 +1,16 @@
 {
-  "name": "Portal",
-  "bounces": 1,
-  "ball": [
-    250,
-    1650
-  ],
-  "goal": [
-    650,
-    320
-  ],
-  "hint": {
-    "en": "Enter one portal, leave by the other",
-    "ar": "ادخل من بوابة واخرج من الأخرى"
-  },
+  "name": "Well and Pad",
+  "difficulty": 6,
+  "concept": "Combination: a pad launches, a well finishes",
+  "bounces": 0,
+  "controlZone": {"top": 1300},
+  "ball": [750, 1400],
+  "goal": [680, 940],
   "obstacles": [
-    {
-      "type": "wall",
-      "points": [
-        0,
-        1000,
-        900,
-        1000
-      ]
-    }
+    {"type": "wall", "points": [520, 700, 800, 700, 800, 1060, 520, 1060]}
   ],
   "elements": [
-    {
-      "kind": "portal",
-      "id": "a",
-      "link": "b",
-      "pos": [
-        250,
-        1350
-      ],
-      "scale": [
-        150,
-        150
-      ]
-    },
-    {
-      "kind": "portal",
-      "id": "b",
-      "link": "a",
-      "pos": [
-        250,
-        700
-      ],
-      "scale": [
-        150,
-        150
-      ],
-      "rotation": 45
-    }
+    {"kind": "booster", "pos": [210, 1000], "scale": [260, 280], "rotation": 14.7, "force": 5},
+    {"kind": "attractive", "pos": [630, 860], "scale": [540, 540], "force": 200}
   ]
 }

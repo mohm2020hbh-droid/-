@@ -1,13 +1,15 @@
 {
-  "name": "Periscope",
-  "bounces": 2,
-  "ball": [700, 1600],
-  "goal": [200, 400],
+  "name": "Wide Way",
+  "difficulty": 5,
+  "concept": "Combination: the wide way is a dead end",
+  "bounces": 1,
+  "goalRadius": 90,
+  "controlZone": {"top": 1300},
+  "ball": [640, 1460],
+  "goal": [450, 350],
   "obstacles": [
-    {"type": "wall", "points": [450, 2000, 450, 1354]},
-    {"type": "wall", "points": [450, 1140, 450, 0]},
-    {"type": "wall", "points": [0, 650, 126, 650]},
-    {"type": "wall", "points": [801.7, 1281.1, 617.9, 1097.3]},
-    {"type": "wall", "points": [282.1, 1382.7, 98.3, 1198.9]}
+    {"type": "wall", "points": [0, 1150, 250, 1150]},
+    {"type": "wall", "points": [650, 1150, 900, 1150]},
+    {"type": "wall", "points": [250, 800, 650, 800]}
   ]
 }

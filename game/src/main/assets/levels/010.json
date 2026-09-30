@@ -1,10 +1,14 @@
 {
-  "name": "Rebound",
-  "bounces": 2,
-  "controlZone": {"rect": [220, 1240, 680, 720]},
-  "ball": [620, 1500],
-  "goal": [190, 1500],
+  "name": "Foundation Exam",
+  "difficulty": 3,
+  "concept": "Combination: a narrow gate, then a slanted wall",
+  "bounces": 1,
+  "goalRadius": 96,
+  "ball": [700, 1700],
+  "goal": [250, 900],
   "obstacles": [
-    {"type": "wall", "points": [330, 2000, 330, 900]}
+    {"type": "wall", "points": [0, 1050, 485, 1050]},
+    {"type": "wall", "points": [715, 1050, 900, 1050]},
+    {"type": "wall", "points": [375, 492, 825, 808]}
   ]
 }

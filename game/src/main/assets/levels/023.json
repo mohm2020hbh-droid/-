@@ -1,13 +1,16 @@
 {
-  "name": "Funnel",
-  "bounces": 2,
-  "controlZone": {"rect": [250, 1440, 380, 430]},
-  "ball": [450, 1700],
-  "goal": [450, 350],
-  "guide": {"afterFails": 10, "angle": 64.78},
+  "name": "Elbow Pad",
+  "difficulty": 5,
+  "concept": "Precision: go straight up, let the pad turn the corner",
+  "bounces": 0,
+  "controlZone": {"rect": [100, 1300, 350, 700]},
+  "ball": [275, 1560],
+  "goal": [550, 400],
   "obstacles": [
-    {"type": "wall", "points": [60, 1000, 300, 650]},
-    {"type": "wall", "points": [845.8, 996, 609.8, 651.8]},
-    {"type": "rect", "x": 390, "y": 1250, "w": 120, "h": 40}
+    {"type": "wall", "points": [100, 2000, 100, 300, 900, 300]},
+    {"type": "wall", "points": [450, 2000, 450, 800, 900, 800]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [275, 560], "scale": [300, 300], "rotation": 0, "force": 5}
   ]
 }

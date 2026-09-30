@@ -1,14 +1,15 @@
 {
-  "name": "Loop",
-  "bounces": 3,
-  "controlZone": {"circle": [780, 1600, 320]},
-  "ball": [780, 1600],
-  "goal": [450, 1725],
+  "name": "Cup Shot",
+  "difficulty": 5,
+  "concept": "Positioning: the pad throws the ball into the cup",
+  "bounces": 0,
+  "controlZone": {"top": 1300},
+  "ball": [60, 1440],
+  "goal": [620, 640],
   "obstacles": [
-    {"type": "wall", "points": [600, 2000, 600, 1380]},
-    {"type": "rect", "x": 300, "y": 700, "w": 300, "h": 600},
-    {"type": "poly", "points": [900, 300, 900, 0, 600, 0]},
-    {"type": "poly", "points": [0, 0, 300, 0, 0, 300]},
-    {"type": "poly", "points": [0, 2000, 0, 1700, 300, 2000]}
+    {"type": "wall", "points": [460, 500, 740, 500, 740, 880, 460, 880]}
+  ],
+  "elements": [
+    {"kind": "booster", "pos": [270, 810], "scale": [300, 280], "rotation": -15.6, "force": 5}
   ]
 }

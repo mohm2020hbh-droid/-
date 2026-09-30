@@ -10,7 +10,7 @@ import com.carom.core.audio.TrackSpec
 import com.carom.core.game.GameSession
 import com.carom.core.game.GameTuning
 import com.carom.core.game.HintRoute
-import com.carom.core.game.PullAim
+import com.carom.core.game.MomentumAim
 import com.carom.core.game.TouchControl
 import com.carom.core.level.ElementKind
 import com.carom.core.level.LevelData
@@ -44,11 +44,11 @@ import kotlin.random.Random
  * Owns the [GameSession] (rules), the touch input and everything drawn on top of the board. The
  * bounces left are shown inside the ball itself.
  *
- * - Throwing: hold the ball and move it about its control zone (it follows the finger), bounded by the dashed line
- *   (no ring, no power dial, no arrow). Pull the finger away from the ball, out past the zone's edge or with
- *   a hard stroke, and let go: the ball is thrown the way it was pulled, and from then on it is physics, never
- *   following the finger again. Moving the ball gently, however far, never throws it. (The reference swipe control is
- *   still there, chosen by [GameTuning.controlMode]; a ball in a touch zone is always pushed by a swipe.)
+ * - Throwing: hold the ball and move it about its control zone (it goes where the finger goes), which is never drawn:
+ *   no edge, no ring, no arrow, no power. Let go and the ball leaves with the velocity it had, in the direction it
+ *   was travelling: a slow movement is a weak throw, a fast one a strong throw, and from then on it is physics,
+ *   never following the finger again. (The reference swipe control is still there, chosen by
+ *   [GameTuning.controlMode]; a ball in a touch zone is always pushed by a swipe.)
  * - A collision is felt, and only a collision (the throw and the flight are silent and still): the recorded bounce
  *   sound, one firm pulse of the vibration motor, a short random shake that starts strong and dies at once, a flash
  *   at the contact point and the ball squashed for a moment, all on the same frame ([collide]), stronger for a
@@ -69,15 +69,15 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     internal val board = BoardRenderer(level, palette)
     private val elementsView = ElementsRenderer(level, palette, board)
 
-    /** The music for this level: its world's, or the hardcore folder's for a hard level. */
-    internal val track: TrackSpec = MusicLibrary.trackFor(index, Worlds.worldOf(index), level.hardcore)
+    /** The music for this level: its world's. */
+    internal val track: TrackSpec = MusicLibrary.trackFor(index, Worlds.worldOf(index))
 
     /** The swipe control: touches in dp in, gestures and impulses out. */
     private val swipe = TouchControl(tuning)
     private var swipeActive = false
 
-    /** Hold, pull, let go: sized for the screen in [onLayout]. */
-    private var pull = PullAim(1.0, 1.0, 1.0, 1.0, 1.0)
+    /** Hold, move, let go: the ball leaves with the velocity it had. */
+    private val aim = MomentumAim(window = tuning.releaseWindow, gain = tuning.releaseGain)
     private var shotsFired = 0
     private val hint: String? = level.hintFor(kit.text.language)
     private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
@@ -215,18 +215,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         levelsButton.setCenter(safe.right - kit.u(8f) - button / 2, topBarY, button, button)
         restartButton.setCenter(safe.right - kit.u(12f) - button * 1.5f, topBarY, button, button)
 
-        // Throwing is sized in screen terms (dp), so it feels the same on every device.
-        val perDp = (kit.unit / scale).toDouble()
-        pull = PullAim(
-            followSpeed = tuning.pullFollowSpeed * perDp,
-            detach = tuning.pullDetach * perDp,
-            reattach = tuning.pullReattach * perDp,
-            minPull = tuning.pullMin * perDp,
-            maxPull = tuning.pullMax * perDp,
-            flickStart = tuning.flickStart * perDp,
-            flickFull = tuning.flickFull * perDp,
-            flickBoost = tuning.flickBoost,
-        )
         arrangeResultButtons()
     }
 
@@ -241,11 +229,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override fun update(dt: Float) {
         clock += dt
-        if (pull.isActive) {
-            // The held ball follows the finger, at a limited speed: a hard pull leaves it behind.
-            pull.advanceBy(dt.toDouble(), session.ball.x, session.ball.y)
-            placeHeldBall()
-        }
         session.advance(dt.toDouble())
         if (ended) endTime += dt
 
@@ -295,7 +278,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override val isAnimating: Boolean
         get() = session.state == GameSession.State.MOVING || anyRipple() || anySpark() || anyShatter() ||
-            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || pull.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f ||
+            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || aim.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f ||
             (session.state == GameSession.State.WON && (overlayProgress < 1f || !showsResult)) || (guideShown && session.state == GameSession.State.AIMING)
 
     /** A level with force zones, portals and the like keeps moving even while the player aims (at a gentle rate). */
@@ -522,7 +505,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         session.restart()
         swipe.cancel()
         swipeActive = false
-        pull.cancel()
+        aim.cancel()
         endTime = 0f
         for (r in ripples) r.alive = false
         respawnTime = 0f
@@ -543,7 +526,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         session.restart()
         swipe.cancel()
         swipeActive = false
-        pull.cancel()
+        aim.cancel()
         endTime = 0f
         for (s in shatters) s.advance(BallShatter.DURATION)
         respawnTime = -1f
@@ -631,11 +614,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override fun onTouch(e: MotionEvent): Boolean {
         if (overlayProgress > 0f) return routeToButtons(e, overlayButtons())
-        if (!swipeActive && !pull.isActive && routeToButtons(e, hudButtons)) return true
+        if (!swipeActive && !aim.isActive && routeToButtons(e, hudButtons)) return true
         // Before the throw the ball is held and pulled; once it flies, only a ball in a touch zone can be pushed
         // again, and that is a swipe.
         val holding = tuning.controlMode == GameTuning.ControlMode.HOLD && !swipeActive &&
-            (session.state == GameSession.State.AIMING || pull.isActive)
+            (session.state == GameSession.State.AIMING || aim.isActive)
         return if (holding) onHoldTouch(e) else onSwipeTouch(e)
     }
 
@@ -673,54 +656,50 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     /**
-     * Touch and hold on the ball (or anywhere in its zone) to pick it up and move it; pull away from it to prepare
-     * the throw; let go to throw. Letting go of a ball that was only moved leaves it where it was put.
+     * Touch and hold on the ball (or anywhere in its zone) to pick it up and move it wherever the zone allows; let go
+     * and it leaves with the velocity it had: a slow movement is a weak throw, a fast one a strong throw. A ball that
+     * was not moving when the finger lifted stays where it was put. After the release nothing follows the finger.
      */
     private fun onHoldTouch(e: MotionEvent): Boolean {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 if (session.state == GameSession.State.AIMING && canPickUp(e.x, e.y)) {
                     respawnTime = -1f
-                    pull.begin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, seconds(e))
+                    aim.begin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, seconds(e))
                     return true
                 }
             }
-            MotionEvent.ACTION_MOVE -> if (pull.isActive) {
-                // Every point the finger passed through, so a hard stroke is measured faithfully.
+            MotionEvent.ACTION_MOVE -> if (aim.isActive) {
+                // Every point the finger passed through, so the ball's speed is measured faithfully.
                 for (h in 0 until e.historySize) {
                     followFinger(board.worldX(e.getHistoricalX(h)), board.worldY(e.getHistoricalY(h)), e.getHistoricalEventTime(h) / 1000.0)
                 }
                 followFinger(board.worldX(e.x), board.worldY(e.y), seconds(e))
                 return true
             }
-            MotionEvent.ACTION_UP -> if (pull.isActive) {
-                val thrown = pull.release(board.worldX(e.x), board.worldY(e.y), seconds(e), session.ball.x, session.ball.y)
-                if (thrown != null) {
-                    session.launch(thrown.dirX, thrown.dirY, thrown.power)
-                }
+            MotionEvent.ACTION_UP -> if (aim.isActive) {
+                followFinger(board.worldX(e.x), board.worldY(e.y), seconds(e))
+                val leaving = aim.release(seconds(e))
+                if (leaving != null) session.launchAt(leaving.vx, leaving.vy)
                 return true
             }
-            MotionEvent.ACTION_CANCEL -> pull.cancel()
+            MotionEvent.ACTION_CANCEL -> aim.cancel()
         }
         return false
     }
 
+    /** The ball goes where the finger takes it, as near as its zone and the walls allow; the velocity counts the finger's way. */
     private fun followFinger(worldX: Double, worldY: Double, time: Double) {
-        pull.move(worldX, worldY, time, session.ball.x, session.ball.y)
-        placeHeldBall()
-    }
-
-    /** While the ball is held it goes where the finger takes it (within the zone, and never through a wall). */
-    private fun placeHeldBall() {
-        if (pull.phase == PullAim.Phase.HOLDING) session.placeBall(pull.wantX, pull.wantY)
+        aim.move(worldX, worldY, time)
+        session.placeBall(aim.wantX, aim.wantY)
     }
 
     /**
-     * The ball is picked up by a touch anywhere in its control zone (the boundary the dashed line marks; a thumb that
-     * lands just outside the line still counts) or on the ball itself. A touch anywhere else leaves the ball alone.
+     * The ball is picked up by a touch anywhere in its control zone (which is not drawn, so a thumb that lands a little
+     * outside still counts) or on the ball itself. A touch anywhere else leaves the ball alone.
      */
     private fun canPickUp(sx: Float, sy: Float): Boolean {
-        val margin = (kit.u(12f) / board.scale).toDouble()
+        val margin = (kit.u(PICKUP_MARGIN) / board.scale).toDouble()
         val inZone = level.zone.reaches(board.worldX(sx), board.worldY(sy), margin)
         val onBall = hypot(sx - board.x(session.ball.x), sy - board.y(session.ball.y)) <= max(board.ballScreenRadius * 1.6f, kit.u(34f))
         return inZone || onBall
@@ -730,7 +709,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         if (swipeActive) {
             swipe.cancel()
             swipeActive = false
-        } else if (pull.isActive) pull.cancel() else host.showLevels(index)
+        } else if (aim.isActive) aim.cancel() else host.showLevels(index)
         return true
     }
 
@@ -798,16 +777,14 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     /**
-     * What shows where the player can act. Before the throw with the hold control: the dashed line that bounds the
-     * control zone, where the ball may be moved (a little stronger while it is held). With the swipe control the ball
-     * wears a ring that fills with the swipe's power; a ball in a touch zone wears it too, for its swipe.
+     * What shows where the player can act. Before the throw with the hold control: nothing (the control zone is in the
+     * rules only: no edge, no ring, no arrow, no power). With the swipe control the ball wears a ring that fills with
+     * the swipe's power; a ball in a touch zone wears it too, for its swipe.
      */
     private fun drawAimingAids(canvas: Canvas) {
         val dialPower = if (swipeActive) swipe.power.toFloat() else 0f
         if (session.state == GameSession.State.AIMING) {
-            if (tuning.controlMode == GameTuning.ControlMode.HOLD) {
-                board.drawControlZone(canvas, pull.isActive)
-            } else if (respawnTime < 0f) {
+            if (tuning.controlMode == GameTuning.ControlMode.SWIPE && respawnTime < 0f) {
                 board.drawSwipeDial(canvas, board.x(session.renderX), board.y(session.renderY), kit.unit, swipeActive, dialPower, swipe.isSwipe)
             }
         } else if (session.state == GameSession.State.MOVING) {
@@ -847,7 +824,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             val size = (1f + (c + 1f) * q * q * q + c * q * q).coerceAtLeast(0.01f)
             board.drawBall(canvas, x, y, size, style, left)
         } else {
-            board.drawBall(canvas, x, y, if (pull.isActive || swipeActive) 1.06f else 1f, style, left)
+            board.drawBall(canvas, x, y, if (aim.isActive || swipeActive) 1.06f else 1f, style, left)
         }
     }
 
@@ -1167,6 +1144,9 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         const val BREAK_SHAKE_TIME = 0.17f
         const val EXPLOSION_SHAKE_TIME = 0.3f
         const val SHAKE_CAP = 10f
+
+        // How far outside the (invisible) control zone a touch still picks the ball up, in dp.
+        const val PICKUP_MARGIN = 48f
 
         // A hit's flash at the contact point, and the ball's squash (how much of its width, at the least and at the most,
         // and for how long).

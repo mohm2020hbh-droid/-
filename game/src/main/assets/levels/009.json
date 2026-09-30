@@ -1,11 +1,12 @@
 {
-  "name": "Keyhole",
-  "bounces": 2,
-  "controlZone": {"rect": [330, 1290, 570, 710]},
-  "ball": [780, 1550],
-  "goal": [478, 350],
+  "name": "Mirror",
+  "difficulty": 3,
+  "concept": "Angles: read the slant of a wall",
+  "bounces": 1,
+  "goalRadius": 96,
+  "ball": [450, 1700],
+  "goal": [500, 700],
   "obstacles": [
-    {"type": "wall", "points": [0, 1107, 186, 1107]},
-    {"type": "wall", "points": [474, 1093, 900, 1093]}
+    {"type": "wall", "points": [223, 1227, 577, 873]}
   ]
 }

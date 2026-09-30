@@ -237,6 +237,22 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         return true
     }
 
+    /**
+     * Sets the ball off with the velocity it had when the finger let go of it ([vx], [vy] in world units per second, the
+     * direction it was travelling and how fast), limited to the level's top speed. Any real movement throws, however
+     * weak; false only for a ball that was not moving (slower than one that would be dead at once) or a wrong state.
+     */
+    fun launchAt(vx: Double, vy: Double): Boolean {
+        val speed = hypot(vx, vy)
+        if (state != State.AIMING || speed <= stopSpeed) return false
+        val b = balls[0]
+        b.body.dirX = vx / speed
+        b.body.dirY = vy / speed
+        b.body.speed = min(speed, level.maxSpeed)
+        startFlight()
+        return true
+    }
+
     /** A swipe of (dxDp, dyDp) dp: delta × sensibility is the impulse. False if nothing was in a state to take it. */
     fun swipe(dxDp: Double, dyDp: Double): Boolean {
         val len = hypot(dxDp, dyDp)

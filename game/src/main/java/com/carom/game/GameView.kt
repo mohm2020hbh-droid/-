@@ -150,7 +150,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         // The music follows the world (and the kind of level) and carries on across levels that share a track.
         val here = app.progress.currentIndex
         music.setEnabled(app.settings.soundEnabled)
-        music.play((next as? PlayScreen)?.track ?: MusicLibrary.trackFor(here, Worlds.worldOf(here), false))
+        music.play((next as? PlayScreen)?.track ?: MusicLibrary.trackFor(here, Worlds.worldOf(here)))
         keepScreenOn = next is PlayScreen
         if (width > 0) next.layout(width, height, insets)
         next.onEnter()

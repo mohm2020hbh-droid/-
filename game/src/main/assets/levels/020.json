@@ -1,16 +1,14 @@
 {
-  "name": "Mirror Maze",
+  "name": "Shape Shifter",
+  "difficulty": 5,
+  "concept": "Combination: a disc and a triangle to bank round",
   "bounces": 2,
-  "ball": [150, 1650],
-  "goal": [750, 350],
+  "goalRadius": 90,
+  "controlZone": {"rect": [100, 1300, 500, 700]},
+  "ball": [350, 1700],
+  "goal": [550, 500],
   "obstacles": [
-    {"type": "wall", "points": [300, 1500, 300, 1114]},
-    {"type": "wall", "points": [600, 886, 600, 500]},
-    {"type": "wall", "points": [55.3, 1075.1, 225.1, 905.3]},
-    {"type": "wall", "points": [674.9, 1094.7, 844.7, 924.9]},
-    {"type": "wall", "points": [520.7, 1470.7, 379.3, 1329.3]},
-    {"type": "wall", "points": [379.3, 670.7, 520.7, 529.3]},
-    {"type": "wall", "points": [820.7, 1470.7, 679.3, 1329.3]},
-    {"type": "wall", "points": [220.7, 670.7, 79.3, 529.3]}
+    {"type": "circle", "x": 250, "y": 1100, "r": 100},
+    {"type": "poly", "points": [650, 1040, 485, 755, 815, 755]}
   ]
 }

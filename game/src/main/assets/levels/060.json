@@ -1,0 +1,20 @@
+{
+  "name": "CAROM",
+  "difficulty": 10,
+  "concept": "Combination: every system at once",
+  "bounces": 1,
+  "exitRequired": 2,
+  "controlZone": {"top": 1300},
+  "ball": [460, 1640],
+  "goal": [330, 640],
+  "obstacles": [
+    {"type": "wall", "points": [220, 430, 580, 430, 580, 770, 220, 770], "closed": true}
+  ],
+  "elements": [
+    {"kind": "portal", "pos": [600, 1150], "scale": [170, 170], "id": "a", "link": "b", "rotation": 180},
+    {"kind": "portal", "pos": [470, 640], "scale": [170, 170], "id": "b", "link": "a", "rotation": -45},
+    {"kind": "booster", "pos": [150, 1210], "scale": [300, 300], "rotation": -82.7, "force": 3},
+    {"kind": "ballContainer", "pos": [320, 950], "scale": [150, 150], "value": 2, "vector": [0.223, -0.975], "force": 50},
+    {"kind": "attractive", "pos": [380, 1110], "scale": [460, 460], "force": 100}
+  ]
+}

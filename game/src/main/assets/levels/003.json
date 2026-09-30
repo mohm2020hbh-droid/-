@@ -1,11 +1,12 @@
 {
-  "name": "Mirror",
-  "bounces": 1,
-  "ball": [700, 1580],
-  "goal": [290, 500],
-  "hint": {"en": "Angled walls turn the ball", "ar": "الجدران المائلة تغيّر اتجاه الكرة"},
+  "name": "Angle",
+  "difficulty": 1,
+  "concept": "Angles: a diagonal shot past a block",
+  "bounces": 2,
+  "goalRadius": 96,
+  "ball": [200, 1700],
+  "goal": [700, 450],
   "obstacles": [
-    {"type": "wall", "points": [430, 2000, 430, 720]},
-    {"type": "wall", "points": [869.9, 610.3, 609.7, 350.1]}
+    {"type": "rect", "x": 505, "y": 1145, "w": 110, "h": 110}
   ]
 }

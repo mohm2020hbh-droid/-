@@ -97,22 +97,23 @@ class AudioLogicTest {
     // ------------------------------------------------------------------ music folders
 
     @Test
-    fun aLevelTakesItsTrackFromItsWorldsFolderAndHardLevelsFromTheHardcoreOne() {
-        val first = MusicLibrary.trackFor(0, 0, false)
+    fun aLevelTakesItsTrackFromItsWorldsFolder() {
+        val first = MusicLibrary.trackFor(0, 0)
         assertEquals("world0", first.folder)
-        assertEquals("neighbouring levels share a track", first, MusicLibrary.trackFor(3, 0, false))
-        assertEquals("world2", MusicLibrary.trackFor(21, 2, false).folder)
-        assertEquals(MusicLibrary.HARDCORE, MusicLibrary.trackFor(21, 2, true).folder)
-        assertEquals("worlds past the folders wrap round", "world0", MusicLibrary.trackFor(0, 4, false).folder)
+        assertEquals("neighbouring levels share a track", first, MusicLibrary.trackFor(3, 0))
+        assertEquals("world2", MusicLibrary.trackFor(21, 2).folder)
+        for (world in 0 until 6) assertEquals("every one of the six worlds has its own folder", "world$world", MusicLibrary.trackFor(world * 10, world).folder)
+        assertEquals("worlds past the folders wrap round", "world0", MusicLibrary.trackFor(0, 6).folder)
         assertTrue(first.loopSeconds > 5.0)
+        assertTrue("no hardcore folder", MusicLibrary.folders.keys.none { it.contains("hardcore") })
     }
 
     @Test
     fun theMusicKeepsPlayingBetweenLevelsOfTheSameTrackAndCrossfadesOtherwise() {
-        val a = MusicLibrary.trackFor(0, 0, false)
-        val b = MusicLibrary.trackFor(0, 0, true)
+        val a = MusicLibrary.trackFor(0, 0)
+        val b = MusicLibrary.trackFor(0, 1)
         assertTrue(MusicLibrary.change(null, a) is MusicLibrary.Change.Start)
-        assertEquals(MusicLibrary.Change.Continue, MusicLibrary.change(a, MusicLibrary.trackFor(2, 0, false)))
+        assertEquals(MusicLibrary.Change.Continue, MusicLibrary.change(a, MusicLibrary.trackFor(2, 0)))
         val change = MusicLibrary.change(a, b)
         assertTrue(change is MusicLibrary.Change.Crossfade && change.to == b && change.seconds > 0.5)
     }

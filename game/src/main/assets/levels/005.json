@@ -1,12 +1,13 @@
 {
-  "name": "Wedge",
+  "name": "Two Banks",
+  "difficulty": 2,
+  "concept": "Bounce: two banks round two shelves",
   "bounces": 2,
-  "controlZone": {"circle": [750, 1550, 320]},
-  "ball": [750, 1550],
-  "goal": [140, 450],
-  "hint": {"en": "Solid shapes bounce the ball too", "ar": "الأشكال الصلبة ترتد عنها الكرة أيضًا"},
+  "goalRadius": 96,
+  "ball": [250, 1700],
+  "goal": [800, 400],
   "obstacles": [
-    {"type": "wall", "points": [464, 1380, 464, 0]},
-    {"type": "poly", "points": [0, 2000, 0, 1640, 360, 2000]}
+    {"type": "wall", "points": [900, 750, 350, 750]},
+    {"type": "wall", "points": [900, 1000, 450, 1000]}
   ]
 }

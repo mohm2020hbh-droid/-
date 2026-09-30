@@ -1,0 +1,17 @@
+{
+  "name": "Portal and Slow Time",
+  "difficulty": 9,
+  "concept": "Timing: slow time beside the portal",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [260, 1560],
+  "goal": [350, 600],
+  "obstacles": [
+    {"type": "wall", "points": [240, 440, 660, 440, 660, 860, 240, 860], "closed": true}
+  ],
+  "elements": [
+    {"kind": "portal", "pos": [700, 1050], "scale": [170, 170], "id": "a", "link": "b", "rotation": 90},
+    {"kind": "portal", "pos": [510, 710], "scale": [170, 170], "id": "b", "link": "a", "rotation": 225},
+    {"kind": "slowMo", "pos": [370, 980], "scale": [540, 540]}
+  ]
+}

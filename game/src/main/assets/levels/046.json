@@ -1,0 +1,16 @@
+{
+  "name": "Container",
+  "difficulty": 8,
+  "concept": "Multiple balls: reach the container behind the wall",
+  "bounces": 1,
+  "exitRequired": 2,
+  "controlZone": {"rect": [500, 1300, 400, 700]},
+  "ball": [700, 1600],
+  "goal": [400, 500],
+  "obstacles": [
+    {"type": "wall", "points": [500, 2000, 500, 800]}
+  ],
+  "elements": [
+    {"kind": "ballContainer", "pos": [600, 680], "scale": [150, 150], "value": 2, "vector": [-0.934, -0.357], "force": 50}
+  ]
+}

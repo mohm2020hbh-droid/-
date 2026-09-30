@@ -132,29 +132,36 @@ object ShotSearch {
         return out
     }
 
-    /** The fewest bounces a full-power shot needs from [spot], or null if none scores. Stops early below [enough]. */
-    fun fewestBouncesFrom(level: LevelData, spot: Vec2, stepDegrees: Double = 0.5, enough: Int = -1): Int? {
+    /**
+     * The fewest bounces a full-power shot needs from [spot], or null if none scores. Stops early below [enough].
+     * With [minWindow] a shot only counts if every throw within that many degrees of it scores with no more bounces:
+     * a way through that needs a hair's-breadth aim is no short cut a finger can take.
+     */
+    fun fewestBouncesFrom(level: LevelData, spot: Vec2, stepDegrees: Double = 0.5, enough: Int = -1, minWindow: Double = 0.0): Int? {
         val session = GameSession(level.copy(ball = spot))
-        var best: Int? = null
-        var a = 0.0
-        while (a < 360.0) {
+        val samples = (360.0 / stepDegrees).toInt()
+        val used = IntArray(samples) { Int.MAX_VALUE }
+        for (i in 0 until samples) {
             session.restart()
-            val d = Vec2.fromDegrees(a)
+            val d = Vec2.fromDegrees(i * stepDegrees)
             session.launch(d.x, d.y, 1.0)
             var guard = 0
             while (session.state == GameSession.State.MOVING && guard++ < 200_000) session.step()
-            if (session.state == GameSession.State.WON) {
-                best = minOf(best ?: Int.MAX_VALUE, session.bouncesUsed)
-                if (best <= enough) return best
-            }
-            a += stepDegrees
+            if (session.state == GameSession.State.WON) used[i] = session.bouncesUsed
+        }
+        val width = Math.ceil(minWindow / stepDegrees - 1e-9).toInt().coerceAtLeast(1)
+        var best: Int? = null
+        for (i in 0 until samples) {
+            var worst = 0
+            for (k in 0 until width) worst = maxOf(worst, used[(i + k) % samples])
+            if (worst != Int.MAX_VALUE && (best == null || worst < best)) best = worst
         }
         return best
     }
 
     /**
      * The fewest bounces any full-power shot needs from anywhere the ball can be moved to inside [zone], or null if
-     * nothing scores. With [below] it stops as soon as a spot needs fewer bounces than that (a short cut).
+     * nothing scores. With [below] it stops as soon as a spot needs fewer bounces than that (a short cut). See [fewestBouncesFrom] for [minWindow].
      */
     fun minBouncesFromZone(
         level: LevelData,
@@ -162,10 +169,11 @@ object ShotSearch {
         spacing: Double = 40.0,
         stepDegrees: Double = 0.5,
         below: Int? = null,
+        minWindow: Double = 0.0,
     ): Int? {
         var best: Int? = null
         for (spot in reachableSpots(level, zone, spacing)) {
-            val n = fewestBouncesFrom(level, spot, stepDegrees, enough = (below ?: 0) - 1) ?: continue
+            val n = fewestBouncesFrom(level, spot, stepDegrees, enough = (below ?: 0) - 1, minWindow = minWindow) ?: continue
             best = minOf(best ?: Int.MAX_VALUE, n)
             if (below != null && n < below) return best
         }

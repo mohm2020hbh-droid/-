@@ -1,43 +1,16 @@
 {
-  "name": "Boost",
-  "bounces": 1,
-  "controlZone": {"rect": [510, 1390, 390, 470]},
-  "ball": [
-    700,
-    1650
-  ],
-  "goal": [
-    200,
-    300
-  ],
-  "hint": {
-    "en": "Boosters push the ball along their arrows",
-    "ar": "المعزّزات تدفع الكرة في اتجاه أسهمها"
-  },
+  "name": "Gravity Well",
+  "difficulty": 5,
+  "concept": "Forces: a well bends the path of a ball that passes near it",
+  "bounces": 0,
+  "controlZone": {"rect": [0, 1300, 460, 700]},
+  "ball": [110, 1400],
+  "goal": [790, 300],
+  "hint": {"en": "Attractive zones pull the ball towards their centre", "ar": "مناطق الجذب تسحب الكرة نحو مركزها"},
   "obstacles": [
-    {
-      "type": "wall",
-      "points": [
-        450,
-        0,
-        450,
-        1200
-      ]
-    }
+    {"type": "wall", "points": [460, 2000, 460, 850]}
   ],
   "elements": [
-    {
-      "kind": "booster",
-      "pos": [
-        260,
-        1400
-      ],
-      "scale": [
-        300,
-        300
-      ],
-      "rotation": -90,
-      "force": 6.3
-    }
+    {"kind": "attractive", "pos": [630, 615], "scale": [560, 560], "force": 300}
   ]
 }

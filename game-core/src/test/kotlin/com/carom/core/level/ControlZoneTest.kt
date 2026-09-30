@@ -72,7 +72,7 @@ class ControlZoneTest {
 
     @Test
     fun aLevelWithoutAZoneGetsTheStandardBand() {
-        assertEquals(ControlZone.Box(0.0, 1240.0, 900.0, 760.0), level(null).zone) // 260 above the start, down to the bottom edge
+        assertEquals(ControlZone.Box(0.0, 1100.0, 900.0, 900.0), level(null).zone) // 400 above the start, down to the bottom edge
         assertEquals(ControlZone.Box(0.0, 0.0, 900.0, 2000.0), level(null, ball = "[500, 100]", goal = "[500, 1800]").zone)
     }
 

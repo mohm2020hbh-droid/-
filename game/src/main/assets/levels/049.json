@@ -1,0 +1,18 @@
+{
+  "name": "Switch",
+  "difficulty": 8,
+  "concept": "Timing: touch the switch on the way, the door opens",
+  "bounces": 1,
+  "controlZone": {"top": 1300},
+  "ball": [460, 1460],
+  "goal": [100, 300],
+  "hint": {"en": "Touch a switch to open its door", "ar": "المس المفتاح لتفتح بابه"},
+  "obstacles": [
+    {"type": "wall", "points": [0, 1000, 280, 1000]},
+    {"type": "wall", "points": [620, 1000, 900, 1000]}
+  ],
+  "elements": [
+    {"kind": "switch", "pos": [350, 1200], "scale": [140, 140], "channel": 1},
+    {"kind": "switchable", "pos": [450, 1000], "scale": [300, 44], "channel": 1}
+  ]
+}

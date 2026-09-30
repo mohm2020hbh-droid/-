@@ -3,8 +3,6 @@ package com.carom.game
 import android.graphics.Rect
 import com.carom.core.game.GameSession
 import com.carom.core.level.LevelRepository
-import com.carom.core.level.LevelSource
-import com.carom.core.progress.KeyValueStore
 import com.carom.game.screens.GameHost
 import com.carom.game.screens.Haptic
 import com.carom.game.screens.PlayScreen
@@ -17,26 +15,12 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
-import java.io.File
 import kotlin.math.hypot
 
 /** What a collision does to the sound, the vibration and the picture, and that nothing else does. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class CollisionFeelTest {
-
-    private class MapStore : KeyValueStore {
-        val map = HashMap<String, String>()
-        override fun getString(key: String) = map[key]
-        override fun putString(key: String, value: String) {
-            map[key] = value
-        }
-    }
-
-    private class DirectorySource(private val dir: File) : LevelSource {
-        override fun list() = dir.listFiles { f -> f.name.endsWith(".json") }!!.map { it.name.removeSuffix(".json") }
-        override fun read(id: String) = File(dir, "$id.json").readText()
-    }
 
     /** The real shell, except that every sound and vibration is written down (with the frame it happened on). */
     private class Recorder(private val real: GameView) : GameHost by real {
@@ -64,10 +48,8 @@ class CollisionFeelTest {
         fun run(frames: Int) = repeat(frames) { tick() }
     }
 
-    private val levelsDir = File(System.getProperty("levels.dir") ?: "src/main/assets/levels")
-
     private fun rig(index: Int): Rig {
-        val app = GameApp(LevelRepository(DirectorySource(levelsDir)), MapStore())
+        val app = GameApp(LevelRepository(MemoryLevels()), MapStore())
         val view = GameView(RuntimeEnvironment.getApplication(), app)
         val host = Recorder(view)
         val play = PlayScreen(host, index, app.levels.load(index))
