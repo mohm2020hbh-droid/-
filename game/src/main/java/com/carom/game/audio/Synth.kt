@@ -19,34 +19,6 @@ object Synth {
     const val SAMPLE_RATE = 44100
 
     /**
-     * A bounce: a short, clear knock of a hard ball on something solid. A sharp click on
-     * contact, a brief resonant "tok" and a firm low thump underneath, over almost at once.
-     */
-    fun impact(): ShortArray {
-        val out = FloatArray(seconds(0.3))
-        val rnd = Random(3)
-        val click = Svf()
-        for (k in 0 until seconds(0.03)) {
-            val t = k.toDouble() / SAMPLE_RATE
-            out[k] += (0.6 * min(1.0, t / 0.0003) * exp(-t / 0.0025) * click.bandpass(rnd.nextDouble(-1.0, 1.0), 3500.0, q = 1.2)).toFloat()
-        }
-        for (k in 0 until seconds(0.12)) {
-            val t = k.toDouble() / SAMPLE_RATE
-            val body = sin(2 * PI * 950.0 * t + 6.0 * (1 - exp(-t / 0.004)))
-            out[k] += (0.55 * min(1.0, t / 0.0005) * exp(-t / 0.018) * body).toFloat()
-            out[k] += (0.2 * min(1.0, t / 0.0005) * exp(-t / 0.01) * sin(2 * PI * 2350.0 * t)).toFloat()
-        }
-        var phase = 0.0
-        for (k in 0 until seconds(0.2)) {
-            val t = k.toDouble() / SAMPLE_RATE
-            phase += 2 * PI * (110.0 + 40.0 * exp(-t / 0.01)) / SAMPLE_RATE
-            out[k] += (0.7 * min(1.0, t / 0.001) * exp(-t / 0.04) * sin(phase)).toFloat()
-        }
-        reverb(out, mix = 0.08)
-        return finish(out, peak = 0.95)
-    }
-
-    /**
      * The ball turning into a fan and spinning up: a small motor winding up from a low hum to a
      * high whine, with the whoosh of the blades pulsing faster and faster. Ends abruptly, where
      * the fan explodes.
@@ -268,30 +240,6 @@ object Synth {
         partial(out, 0.09, 494.0, 0.7, 0.07, attack = 0.002)
         partial(out, 0.09, 988.0, 0.12, 0.04, attack = 0.002)
         return finish(out, peak = 0.5)
-    }
-
-    /** A ball hitting a ball container: a wooden clack with a little rattle of the balls inside. */
-    fun containerHit(): ShortArray {
-        val out = FloatArray(seconds(0.35))
-        val rnd = Random(41)
-        val click = Svf()
-        for (k in 0 until seconds(0.03)) {
-            val t = k.toDouble() / SAMPLE_RATE
-            out[k] += (0.6 * min(1.0, t / 0.0003) * exp(-t / 0.003) * click.bandpass(rnd.nextDouble(-1.0, 1.0), 2600.0, q = 1.2)).toFloat()
-        }
-        partial(out, 0.0, 620.0, 0.55, 0.035, attack = 0.0006)
-        partial(out, 0.0, 1340.0, 0.3, 0.025, attack = 0.0006)
-        partial(out, 0.0, 190.0, 0.5, 0.05, attack = 0.001)
-        for (i in 0 until 3) {
-            val f = Svf()
-            val first = seconds(0.05 + 0.045 * i)
-            for (k in 0 until min(out.size - first, seconds(0.02))) {
-                val t = k.toDouble() / SAMPLE_RATE
-                out[first + k] += (0.25 * (1.0 - 0.25 * i) * exp(-t / 0.004) * f.bandpass(rnd.nextDouble(-1.0, 1.0), 3200.0, q = 1.5)).toFloat()
-            }
-        }
-        reverb(out, mix = 0.08)
-        return finish(out, peak = 0.9)
     }
 
     // ---------------------------------------------------------------- music

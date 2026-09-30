@@ -41,7 +41,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         private set
 
     private var screen: Screen = HomeScreen(this)
-    private val soundFx = SoundFx()
+    private val soundFx = SoundFx { context.assets.openFd("sounds/ball_bounce_exact.ogg") }
     private val music = MusicPlayer()
     private val vibrator: Vibrator? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -163,9 +163,9 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         val s = strength.coerceIn(0.0, 1.0)
         when (kind) {
             Haptic.CLICK -> performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-            // A short, light tap on every wall hit, firmer for a harder hit.
-            Haptic.BOUNCE -> pulse(14L, (50 + 130 * s).toInt(), HapticFeedbackConstants.CLOCK_TICK)
-            Haptic.BREAK -> pulse(30L, 180, HapticFeedbackConstants.VIRTUAL_KEY)
+            // One short, firm pulse for every collision, firmer for a harder hit; the hit that breaks the ball is the firmest.
+            Haptic.BOUNCE -> pulse(22L, (150 + 105 * s).toInt(), HapticFeedbackConstants.CLOCK_TICK)
+            Haptic.BREAK -> pulse(30L, 255, HapticFeedbackConstants.VIRTUAL_KEY)
             Haptic.EXPLOSION -> pulse(60L, 255, HapticFeedbackConstants.LONG_PRESS)
             Haptic.SUCCESS -> performHapticFeedback(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY,
@@ -188,11 +188,10 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         }
     }
 
-    override fun sound(kind: Sound, strength: Double, pitch: Float) {
+    override fun sound(kind: Sound, strength: Double) {
         if (!app.settings.soundEnabled) return
         when (kind) {
-            Sound.IMPACT -> soundFx.impact(strength, pitch)
-            Sound.IMPACT_CONTAINER -> soundFx.containerHit(strength, pitch)
+            Sound.IMPACT -> soundFx.impact(strength)
             Sound.PORTAL -> soundFx.portal()
             Sound.SLOW_IN -> soundFx.slowIn()
             Sound.SLOW_OUT -> soundFx.slowOut()

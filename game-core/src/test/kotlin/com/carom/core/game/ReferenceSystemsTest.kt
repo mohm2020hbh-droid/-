@@ -339,17 +339,13 @@ class ReferenceSystemsTest {
     // ------------------------------------------------------------------ collisions and counting
 
     @Test
-    fun theBounceSoundPitchStartsLowAndRisesAsTheBouncesRunOut() {
+    fun anImpactSaysHowFarThroughItsBouncesTheBallWas() {
         val log = Log()
         val s = session(level(bounces = 3), log)
         s.applyImpulse(0.0, 2400.0) // straight down and up between the edges
         s.seconds(3.0)
         assertTrue(log.progress.size >= 3)
         assertEquals(listOf(0.0, 1.0 / 3, 2.0 / 3), log.progress.take(3))
-        val t = GameTuning()
-        assertEquals(0.8, t.bouncePitch(0.0), 1e-12)
-        assertTrue(t.bouncePitch(2.0 / 3) > t.bouncePitch(1.0 / 3))
-        assertEquals(1.25, t.bouncePitch(1.0), 1e-12)
     }
 
     @Test

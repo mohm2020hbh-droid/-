@@ -449,7 +449,21 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
      * The ball at screen position (sx, sy): a small glossy sphere with the bounces it has left
      * written in its centre. The number is part of the ball: same position, same scale.
      */
-    fun drawBall(canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, style: BallStyle, bouncesLeft: Int, alpha: Float = 1f) {
+    fun drawBall(
+        canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, style: BallStyle, bouncesLeft: Int, alpha: Float = 1f,
+        squash: Float = 0f, squashAngle: Float = 0f,
+    ) {
+        if (squash > 0f) {
+            // Just after a hit the ball is pressed flat against the wall: shorter along the wall's normal (at
+            // [squashAngle] degrees), a little wider across it. It is only the picture; the ball's body does not change.
+            canvas.save()
+            canvas.rotate(squashAngle, sx, sy)
+            canvas.scale(1f - squash, 1f + 0.6f * squash, sx, sy)
+            canvas.rotate(-squashAngle, sx, sy)
+            drawBall(canvas, sx, sy, sizeFactor, style, bouncesLeft, alpha)
+            canvas.restore()
+            return
+        }
         val r = ballScreenRadius * sizeFactor
         val a = (alpha * 255).toInt().coerceIn(0, 255)
         if (style == BallStyle.HOLLOW) {

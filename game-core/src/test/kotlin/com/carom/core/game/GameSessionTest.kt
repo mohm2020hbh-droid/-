@@ -80,6 +80,28 @@ class GameSessionTest {
     }
 
     @Test
+    fun onlyTheHitThatBreaksTheBallIsFatalAndItIsReportedWithTheLoss() {
+        val bounced = mutableListOf<Boolean>()
+        val lost = mutableListOf<GameSession.Impact?>()
+        val s = GameSession(level(bounces = 2))
+        s.listener = object : GameSession.Listener {
+            override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) {
+                bounced += impact.fatal
+            }
+
+            override fun onBallLost(ball: Int, reason: GameSession.FailReason, x: Double, y: Double) {
+                lost += s.lastImpact
+            }
+        }
+        s.launch(0.0, -1.0, 1.0) // straight up and down: two counted bounces, then the third hit breaks it
+        s.runToEnd()
+        assertEquals(listOf(false, false), bounced) // a fatal hit never comes through onBounce...
+        assertEquals(1, lost.size)
+        assertTrue(lost[0]!!.fatal) // ...it is the lastImpact of the loss it causes
+        assertEquals(0, lost[0]!!.ball)
+    }
+
+    @Test
     fun frictionStopsAWeakShot() {
         val s = GameSession(level(bounces = 3, friction = 600.0))
         s.launch(0.0, 1.0, 0.01)

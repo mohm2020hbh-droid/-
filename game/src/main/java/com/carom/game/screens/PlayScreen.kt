@@ -26,6 +26,7 @@ import com.carom.game.ui.UiButton
 import com.carom.game.ui.WorldPalette
 import java.util.Locale
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.hypot
@@ -43,13 +44,15 @@ import kotlin.random.Random
  * Owns the [GameSession] (rules), the touch input and everything drawn on top of the board. The
  * bounces left are shown inside the ball itself.
  *
- * - Throwing: hold the ball and move it about its control zone (it follows the finger). The zone is not drawn:
- *   no edge, no ring, no power dial, no arrow. Pull the finger away from the ball, out past the zone's edge or with
+ * - Throwing: hold the ball and move it about its control zone (it follows the finger), bounded by the dashed line
+ *   (no ring, no power dial, no arrow). Pull the finger away from the ball, out past the zone's edge or with
  *   a hard stroke, and let go: the ball is thrown the way it was pulled, and from then on it is physics, never
  *   following the finger again. Moving the ball gently, however far, never throws it. (The reference swipe control is
  *   still there, chosen by [GameTuning.controlMode]; a ball in a touch zone is always pushed by a swipe.)
- * - A wall hit is felt: a hard knock, a short screen shake and a light tap of the vibration motor,
- *   all on the same frame, a little stronger for a harder hit.
+ * - A collision is felt, and only a collision (the throw and the flight are silent and still): the recorded bounce
+ *   sound, one firm pulse of the vibration motor, a short random shake that starts strong and dies at once, a flash
+ *   at the contact point and the ball squashed for a moment, all on the same frame ([collide]), stronger for a
+ *   harder hit.
  * - Losing costs a second at most: a ball breaks (or fades, if it just stopped), and when the last
  *   one is gone a new ball is back at the start, ready to throw. No screen, no button.
  * - Scoring: the ball stops in the ring, turns into a small fan, spins up with a whir and
@@ -113,10 +116,19 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private var captionLines: List<String> = emptyList()
     private var captionWidth = 0f
 
-    // Screen shake: how long it has run, for how long, and how far.
+    // Screen shake: how long it has run, for how long, and how far at first; and this frame's offset of the picture, a small
+    // random jump as big as the shake still is. The offset is worked out afresh every frame (never added up), so when the
+    // shake is over the picture is exactly where it was.
     private var shakeTime = 0f
     private var shakeLength = 0f
     private var shakeSize = 0f
+    private var shakeX = 0f
+    private var shakeY = 0f
+
+    // A ball's squash when it hits: how long ago, which way (the wall's normal) and how hard, for each ball.
+    private val squashAge = FloatArray(MAX_SQUASH) { SQUASH_TIME }
+    private val squashAngle = FloatArray(MAX_SQUASH)
+    private val squashAmount = FloatArray(MAX_SQUASH)
 
     /** Balls breaking; each plays out even as the next ball appears. */
     private val shatters = Array(MAX_SHATTERS) { BallShatter() }
@@ -146,6 +158,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         var x = 0.0
         var y = 0.0
         var age = 0f
+
+        /** How hard the flash where the ball touched the wall is (0 = none, just the ring), and where that is. */
+        var power = 0f
+        var flashX = 0.0
+        var flashY = 0.0
     }
 
     private enum class SparkKind { STREAK, STAR, CHUNK }
@@ -234,7 +251,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
         // Effects run on game time: in slow motion the sparks, rings, breaks and the shake slow down with the ball.
         val fx = dt * session.timeScale.toFloat()
-        if (shakeTime < shakeLength) shakeTime += fx
+        if (shakeTime < shakeLength) {
+            shakeTime += fx
+            jolt()
+        }
+        for (i in 0 until MAX_SQUASH) if (squashAge[i] < SQUASH_TIME) squashAge[i] += fx
         for (s in shatters) s.advance(fx)
         if (respawnTime >= 0f) {
             respawnTime += dt
@@ -274,7 +295,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override val isAnimating: Boolean
         get() = session.state == GameSession.State.MOVING || anyRipple() || anySpark() || anyShatter() ||
-            shakeTime < shakeLength || respawnTime >= 0f || pull.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f ||
+            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || pull.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f ||
             (session.state == GameSession.State.WON && (overlayProgress < 1f || !showsResult)) || (guideShown && session.state == GameSession.State.AIMING)
 
     /** A level with force zones, portals and the like keeps moving even while the player aims (at a gentle rate). */
@@ -283,13 +304,17 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun anyRipple() = ripples.any { it.alive }
     private fun anySpark() = sparks.any { it.alive }
     private fun anyShatter() = shatters.any { it.isPlaying }
+    private fun anySquash() = squashAge.any { it < SQUASH_TIME }
 
-    private fun addRipple(x: Double, y: Double) {
+    private fun addRipple(x: Double, y: Double, power: Float = 0f, flashX: Double = x, flashY: Double = y) {
         val r = ripples.firstOrNull { !it.alive } ?: ripples.minByOrNull { -it.age } ?: return
         r.alive = true
         r.x = x
         r.y = y
         r.age = 0f
+        r.power = power
+        r.flashX = flashX
+        r.flashY = flashY
     }
 
     /** Sets a spark going, in a free slot (or the oldest slot if all are busy). */
@@ -328,35 +353,74 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         s.start(x, y, board.ballScreenRadius, awayX, awayY)
     }
 
+    /**
+     * Starts a shake of [size] pixels that dies away over [length] seconds. It never cuts a stronger one short, and it
+     * never stacks: the strongest of the shakes running is the one that shows, and no shake is larger than the cap.
+     */
     private fun shake(size: Float, length: Float) {
-        // A new shake never cuts a stronger one short.
-        val left = if (shakeTime < shakeLength) shakeSize * (1f - shakeTime / shakeLength) else 0f
-        if (size < left) return
-        shakeSize = size
+        val capped = min(size, kit.u(SHAKE_CAP))
+        val left = if (shakeTime < shakeLength) shakeSize * (1f - shakeTime / shakeLength).pow(2) else 0f
+        if (capped < left) return
+        shakeSize = capped
         shakeLength = length
         shakeTime = 0f
+        jolt()
     }
 
+    /** This frame's offset of the picture: a small jump in a random direction, as large as the shake still is. */
+    private fun jolt() {
+        if (shakeTime >= shakeLength) {
+            shakeX = 0f
+            shakeY = 0f
+            return
+        }
+        val size = shakeSize * (1f - shakeTime / shakeLength).pow(2)
+        val angle = random.nextFloat() * 2f * PI.toFloat()
+        val reach = size * (0.6f + 0.4f * random.nextFloat())
+        shakeX = cos(angle) * reach
+        shakeY = sin(angle) * reach * 0.85f
+    }
+
+    /** The ball at [ball] is squashed against a wall whose normal is (nx, ny), by [strength] (0..1) of a hit. */
+    private fun squash(ball: Int, nx: Double, ny: Double, strength: Float) {
+        val i = ball.coerceIn(0, MAX_SQUASH - 1)
+        squashAge[i] = 0f
+        squashAngle[i] = Math.toDegrees(atan2(ny, nx)).toFloat()
+        squashAmount[i] = SQUASH_MIN + (SQUASH_MAX - SQUASH_MIN) * strength
+    }
+
+    /** How squashed ball [i] is now (0 = not at all): full at the moment of the hit, back to round in a moment. */
+    private fun squashNow(i: Int): Float {
+        val t = squashAge[i.coerceIn(0, MAX_SQUASH - 1)] / SQUASH_TIME
+        return if (t >= 1f) 0f else squashAmount[i.coerceIn(0, MAX_SQUASH - 1)] * (1f - t).pow(2)
+    }
+
+    // The throw and the flight make no sound and no vibration: nothing but a collision does.
     override fun onLaunch() {
         shotsFired++
         guideShown = false
         respawnTime = -1f
-        host.haptic(Haptic.CLICK) // (the throw makes no sound)
     }
 
-    override fun onImpulse(ball: Int) {
-        host.haptic(Haptic.CLICK)
-    }
+    override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) = collide(impact)
 
-    override fun onBounce(impact: GameSession.Impact, bouncesLeft: Int) {
-        // The knock: sound, shake and vibration together, on this very frame. The pitch starts low and rises
-        // with every bounce the ball has used, so the sound tells how many it has left.
-        val s = impact.strength
-        val pitch = tuning.bouncePitch(impact.progress).toFloat()
-        host.sound(if (impact.kind == ElementKind.BALL_CONTAINER) Sound.IMPACT_CONTAINER else Sound.IMPACT, s, pitch)
-        host.haptic(Haptic.BOUNCE, s)
-        shake(kit.u(1.5f + 3.5f * s.toFloat()), BOUNCE_SHAKE_TIME)
-        addRipple(impact.x, impact.y)
+    /**
+     * The one place a collision becomes feedback, all on the frame it happens and all together: the recorded bounce
+     * sound, one vibration pulse, a shake that starts strong and is gone in a moment, a flash and a ring at the
+     * contact point, and the ball squashed against the wall. A hit that breaks the ball ([GameSession.Impact.fatal])
+     * comes here too, from [onBallLost]. None of it touches the physics.
+     */
+    private fun collide(impact: GameSession.Impact) {
+        val s = impact.strength.toFloat().coerceIn(0f, 1f)
+        host.sound(Sound.IMPACT, impact.strength)
+        host.haptic(if (impact.fatal) Haptic.BREAK else Haptic.BOUNCE, impact.strength)
+        shake(kit.u((if (impact.fatal) 4f else 3f) + 6f * s), if (impact.fatal) BREAK_SHAKE_TIME else BOUNCE_SHAKE_TIME)
+        // The ring is round the ball; the flash is where it touched the wall (the ball's centre, back along the wall's normal).
+        addRipple(
+            impact.x, impact.y, power = 0.4f + 0.6f * s,
+            flashX = impact.x - impact.nx * level.ballRadius, flashY = impact.y - impact.ny * level.ballRadius,
+        )
+        if (!impact.fatal) squash(impact.ball, impact.nx, impact.ny, s)
     }
 
     override fun onWin(x: Double, y: Double) {
@@ -388,17 +452,21 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     override fun onBallLost(ball: Int, reason: GameSession.FailReason, x: Double, y: Double) {
         if (reason == GameSession.FailReason.STOPPED) {
             host.sound(Sound.FIZZLE)
-            host.haptic(Haptic.BOUNCE, 0.3)
             return
         }
-        val hit = session.lastImpact?.takeIf { reason == GameSession.FailReason.OUT_OF_BOUNCES }
+        // The hit that broke the ball is a collision like any other (a ball lost in a deadly zone it flew into had none).
+        val hit = session.lastImpact?.takeIf { it.fatal && it.ball == ball }
         val b = session.balls[ball].body
         val awayX = hit?.nx?.toFloat() ?: -b.dirX.toFloat()
         val awayY = hit?.ny?.toFloat() ?: -b.dirY.toFloat()
+        if (hit != null) {
+            collide(hit)
+        } else {
+            host.haptic(Haptic.BREAK)
+            shake(kit.u(4f), BREAK_SHAKE_TIME)
+        }
         startShatter(board.x(x), board.y(y), awayX, awayY)
         host.sound(Sound.SHATTER, hit?.strength ?: 1.0)
-        host.haptic(Haptic.BREAK)
-        shake(kit.u(4f), BREAK_SHAKE_TIME)
     }
 
     /** Every ball is gone: after a moment the level starts again by itself. */
@@ -437,8 +505,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                         kind = SparkKind.CHUNK, spin = (4f + 6f * random.nextFloat()) * if (random.nextBoolean()) 1f else -1f)
                 }
                 host.sound(Sound.SHATTER, 0.5)
-                host.haptic(Haptic.BREAK)
-                shake(kit.u(3f), BREAK_SHAKE_TIME)
+                shake(kit.u(3f), BREAK_SHAKE_TIME) // (the hit that broke it brings the vibration)
             }
             GameSession.ElementEvent.SWITCHED -> {
                 host.sound(Sound.TAP)
@@ -481,6 +548,9 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         for (s in shatters) s.advance(BallShatter.DURATION)
         respawnTime = -1f
         shakeTime = shakeLength
+        shakeX = 0f
+        shakeY = 0f
+        squashAge.fill(SQUASH_TIME)
         for (r in ripples) r.alive = false
         for (s in sparks) s.alive = false
         slowAmount = 0f
@@ -668,19 +738,21 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     private fun overlayButtons(): List<UiButton> = if (isLastLevel) listOf(replayButton, menuButton) else listOf(nextButton, replayButton, menuButton)
 
-    /** Test hooks: whether the path hint is showing, and whether a lost ball is still on its way back. */
+    /** Test hooks: whether the path hint is showing, whether a lost ball is still on its way back, and the hit's feedback. */
     internal val isGuideShown: Boolean get() = guideShown
     internal val isRespawning: Boolean get() = respawnTime >= 0f
+    internal val shakeOffsetX: Float get() = shakeX
+    internal val shakeOffsetY: Float get() = shakeY
+    internal fun squashOf(ball: Int): Float = squashNow(ball)
 
     // ---------------------------------------------------------------- drawing
 
     override fun draw(canvas: Canvas) {
-        val shaking = shakeTime < shakeLength
+        val shaking = shakeX != 0f || shakeY != 0f
         if (shaking) {
-            val k = (1f - shakeTime / shakeLength).pow(2)
             canvas.drawColor(board.edgeColor)
             canvas.save()
-            canvas.translate(shakeSize * k * sin(shakeTime * 2f * PI.toFloat() * 31f), shakeSize * k * 0.8f * cos(shakeTime * 2f * PI.toFloat() * 23f))
+            canvas.translate(shakeX, shakeY)
         }
         board.drawBackdrop(canvas)
         elementsView.draw(canvas, session, clock, kit.unit)
@@ -754,7 +826,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             GameSession.State.MOVING -> for (b in session.balls) {
                 if (!b.alive) continue
                 val style = if (b.left == 0) BallStyle.CRACKED else BallStyle.SOLID
-                board.drawBall(canvas, board.x(session.renderX(b)), board.y(session.renderY(b)), 1f, style, b.left, b.alpha.toFloat())
+                board.drawBall(
+                    canvas, board.x(session.renderX(b)), board.y(session.renderY(b)), 1f, style, b.left, b.alpha.toFloat(),
+                    squash = squashNow(b.index), squashAngle = squashAngle[b.index.coerceIn(0, MAX_SQUASH - 1)],
+                )
             }
             GameSession.State.AIMING -> drawWaitingBall(canvas, board.x(session.renderX), board.y(session.renderY))
         }
@@ -909,6 +984,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         for (ripple in ripples) {
             if (!ripple.alive) continue
             val t = ripple.age / RIPPLE_LIFE
+            if (ripple.power > 0f && ripple.age < IMPACT_FLASH_TIME) {
+                // The flash of a hit: a soft disc where the ball touched the wall that swells and is gone in a blink.
+                val f = 1f - ripple.age / IMPACT_FLASH_TIME
+                kit.fill.color = Palette.withAlpha(palette.accent, 0.45f * ripple.power * f)
+                canvas.drawCircle(board.x(ripple.flashX), board.y(ripple.flashY), r * (0.55f + 0.6f * (1f - f)), kit.fill)
+            }
             kit.stroke.color = Palette.withAlpha(palette.accent, 0.7f * (1f - t))
             kit.stroke.strokeWidth = kit.u(2f)
             canvas.drawCircle(board.x(ripple.x), board.y(ripple.y), r * (1f + t * 1.2f), kit.stroke)
@@ -1080,10 +1161,20 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         // Losing: the new ball's arrival. (How long a loss shows first is GameTuning.retryDelay.)
         const val RESPAWN_TIME = 0.25f
 
-        // Shakes: a quick flick on a wall hit, a little more for a break, a real jolt for the explosion.
-        const val BOUNCE_SHAKE_TIME = 0.13f
-        const val BREAK_SHAKE_TIME = 0.16f
+        // Shakes: a quick flick on a wall hit, a little more for a break, a real jolt for the explosion. No shake is
+        // larger than SHAKE_CAP dp, whatever the hit.
+        const val BOUNCE_SHAKE_TIME = 0.14f
+        const val BREAK_SHAKE_TIME = 0.17f
         const val EXPLOSION_SHAKE_TIME = 0.3f
+        const val SHAKE_CAP = 10f
+
+        // A hit's flash at the contact point, and the ball's squash (how much of its width, at the least and at the most,
+        // and for how long).
+        const val IMPACT_FLASH_TIME = 0.09f
+        const val MAX_SQUASH = 16
+        const val SQUASH_TIME = 0.11f
+        const val SQUASH_MIN = 0.05f
+        const val SQUASH_MAX = 0.14f
 
         const val RIPPLE_LIFE = 0.45f
     }

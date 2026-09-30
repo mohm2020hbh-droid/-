@@ -91,21 +91,11 @@ data class GameTuning(
     /** From the win to the next level. */
     val nextLevelDelay: Double = 2.5,
 
-    // ---- bounce sound pitch: starts low and rises as the bounces run out ----
-    val bouncePitchStart: Double = 0.8,
-    val bouncePitchEnd: Double = 1.25,
-
     /** Balls that can exist at once (extra balls come from a pool of this size; nothing is created during play). */
     val maxBalls: Int = 12,
 ) {
     /** World units per ref unit for a level whose top speed is [maxSpeed]. */
     fun refToWorld(maxSpeed: Double): Double = maxSpeed / maxSpeedRef
-
-    /** The pitch of a bounce sound: [bouncePitchStart] on the first bounce, rising to [bouncePitchEnd] on the last. */
-    fun bouncePitch(progress: Double): Double {
-        val p = progress.coerceIn(0.0, 1.0)
-        return bouncePitchStart + (bouncePitchEnd - bouncePitchStart) * p
-    }
 
     enum class ControlMode {
         /** Touch → drag → delta × sensibility → impulse. The ball does not go to the finger. */

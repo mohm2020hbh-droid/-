@@ -45,11 +45,13 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
     /**
      * One wall contact: the ball's centre at the moment of contact, the wall's unit normal (pointing towards the
      * ball) and how hard the ball hit, from 0 (grazing) to 1 (head-on at full speed). [progress] is how far
-     * through its bounces the ball was (0 on the first hit), for the pitch of the sound.
+     * through its bounces the ball was (0 on the first hit). A [fatal] hit is one that breaks the ball (no bounces
+     * left, or a deadly barrier): it is reported through [Listener.onBallLost] and [lastImpact], not [Listener.onBounce].
      */
     class Impact(
         val x: Double, val y: Double, val nx: Double, val ny: Double, val strength: Double,
         val ball: Int = 0, val element: Int = -1, val kind: ElementKind? = null, val progress: Double = 0.0,
+        val fatal: Boolean = false,
     )
 
     /** Presentation hooks (sound, haptics, effects). The rules never depend on them. */
@@ -509,13 +511,15 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         b.lastHitX = x
         b.lastHitY = y
 
-        val impact = Impact(x, y, nx, ny, strength, b.index, owner, el?.data?.kind, b.progress)
+        val deadly = el != null && el.data.deathTrigger
+        val counts = el == null || el.data.countsAsBounce
+        val impact = Impact(x, y, nx, ny, strength, b.index, owner, el?.data?.kind, b.progress, fatal = deadly || (counts && b.left == 0))
         lastImpact = impact
-        if (el != null && el.data.deathTrigger) {
+        if (deadly) {
             kill(b, FailReason.DEATH_ZONE)
             return false
         }
-        if (el == null || el.data.countsAsBounce) {
+        if (counts) {
             if (b.left == 0) {
                 kill(b, FailReason.OUT_OF_BOUNCES)
                 return false

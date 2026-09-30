@@ -13,7 +13,7 @@ import com.carom.game.ui.WorldPalette
 enum class Haptic { CLICK, BOUNCE, BREAK, EXPLOSION, SUCCESS }
 
 enum class Sound {
-    IMPACT, IMPACT_CONTAINER, SHATTER, WIN, TAP, SPIN, EXPLOSION, RESPAWN, FIZZLE,
+    IMPACT, SHATTER, WIN, TAP, SPIN, EXPLOSION, RESPAWN, FIZZLE,
 
     /** A ball entering a portal. */
     PORTAL,
@@ -36,11 +36,10 @@ interface GameHost {
     fun haptic(kind: Haptic, strength: Double = 1.0)
 
     /**
-     * Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts); [pitch] is a multiplier for impacts,
-     * which start low and rise as the ball's bounces run out. (The ball makes no sound of its own: not when it is
-     * thrown and not while it flies.)
+     * Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts). (The ball makes no sound of its own: not when
+     * it is thrown and not while it flies; only a collision does.)
      */
-    fun sound(kind: Sound, strength: Double = 1.0, pitch: Float = 1f)
+    fun sound(kind: Sound, strength: Double = 1.0)
 
     /** The playback speed of all sound and music: 1 normally, about a third in slow motion. */
     fun soundPitch(scale: Float)

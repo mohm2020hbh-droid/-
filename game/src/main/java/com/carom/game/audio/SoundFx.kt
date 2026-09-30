@@ -1,8 +1,10 @@
 package com.carom.game.audio
 
+import android.content.res.AssetFileDescriptor
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.media.SoundPool
 import android.os.SystemClock
 import android.util.Log
 import com.carom.core.audio.VoicePool
@@ -10,17 +12,19 @@ import com.carom.core.audio.VoicePool
 /**
  * Plays the game's sound effects. Each sound is synthesised once (on a background thread, so
  * start-up never waits for it) into static [AudioTrack]s; sounds that can overlap get a few
- * tracks in rotation. The ball itself is silent: nothing plays for the throw or while it flies.
+ * tracks in rotation. The one exception is the collision sound, the recorded `ball_bounce_exact.ogg`
+ * ([bounceFile] opens it), which plays exactly as recorded. The ball itself is silent: nothing plays
+ * for the throw or while it flies, only for a collision.
  *
  * The sources are a fixed pool: nothing is created while playing. On top of each sound's own
  * tracks a shared [VoicePool] caps how many play at once and lets the important sounds (a ball
- * exploding, the exit) take over from the small ones (bounces) when a busy moment fills it.
+ * exploding, the exit) take over from the small ones when a busy moment fills it.
  * [setPitch] scales the playback speed of everything, playing or not, for slow motion.
  *
  * Sound is decoration: until the sounds are ready, or if the device refuses audio tracks, the game
  * simply stays silent.
  */
-class SoundFx {
+class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
 
     private class Bank(val voices: List<Voice>, val seconds: Float) {
         private var next = 0
@@ -39,9 +43,60 @@ class SoundFx {
         fun release() = voices.forEach { it.release() }
     }
 
+    /**
+     * The collision sound: the recorded bounce, exactly as it is (its own pitch and length), started afresh for every
+     * collision so quick successive ones each sound. A [SoundPool] decodes the file once when it loads.
+     */
+    private class Bounce(private val pool: SoundPool) {
+        /** The loaded sample's id once the pool has decoded it; 0 until then (and so silence). */
+        @Volatile private var ready = 0
+        private val streams = IntArray(STREAMS)
+        private var next = 0
+
+        init {
+            pool.setOnLoadCompleteListener { _, id, status -> if (status == 0) ready = id }
+        }
+
+        fun play(volume: Float, rate: Float) {
+            val id = ready
+            if (id == 0) return
+            val stream = pool.play(id, volume, volume, 1, 0, rate.coerceIn(MIN_BOUNCE_RATE, MAX_BOUNCE_RATE))
+            if (stream != 0) {
+                streams[next] = stream
+                next = (next + 1) % STREAMS
+            }
+        }
+
+        /** Slow motion slows what is still ringing too. */
+        fun setRate(rate: Float) {
+            for (s in streams) if (s != 0) pool.setRate(s, rate.coerceIn(MIN_BOUNCE_RATE, MAX_BOUNCE_RATE))
+        }
+
+        fun release() = pool.release()
+
+        companion object {
+            /** Loads the recorded file, or null (and so silence) if the device or the file will not have it. */
+            fun create(file: () -> AssetFileDescriptor): Bounce? = try {
+                val pool = SoundPool.Builder()
+                    .setMaxStreams(STREAMS)
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_GAME)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build(),
+                    )
+                    .build()
+                Bounce(pool).also { file().use { f -> pool.load(f, 1) } }
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not load the bounce sound", e)
+                null
+            }
+        }
+    }
+
     @Volatile private var banks: Map<String, Bank> = emptyMap()
+    @Volatile private var bounce: Bounce? = null
     @Volatile private var released = false
-    private var impactCount = 0
 
     /** The playback speed everything plays at: 1 normally, lower in slow motion. */
     private var pitch = 1f
@@ -52,8 +107,6 @@ class SoundFx {
     init {
         Thread({
             val made = linkedMapOf(
-                "impact" to (Synth.impact() to 4),
-                "container" to (Synth.containerHit() to 2),
                 "shatter" to (Synth.shatter() to 2),
                 "win" to (Synth.win() to 1),
                 "tap" to (Synth.tap() to 2),
@@ -68,11 +121,14 @@ class SoundFx {
             ).mapValues { (_, v) ->
                 Bank(List(v.second) { Voice.create(v.first) }.filterNotNull(), v.first.size.toFloat() / Synth.SAMPLE_RATE)
             }
+            val recorded = Bounce.create(bounceFile)
             synchronized(this) {
                 if (released) {
                     made.values.forEach { it.release() }
+                    recorded?.release()
                 } else {
                     banks = made
+                    bounce = recorded
                 }
             }
         }, "carom-sounds").start()
@@ -95,20 +151,11 @@ class SoundFx {
     }
 
     /**
-     * A wall hit: louder for a harder hit ([strength] 0..1). [pitch] is the bounce's place in the ball's life
-     * (low on the first bounce, rising towards the last); a slight change from one knock to the next keeps a
-     * quick run of bounces from sounding mechanical.
+     * A collision of the ball with anything: the recorded bounce, exactly as it is, a little louder for a harder hit
+     * ([strength] 0..1). Every collision starts its own.
      */
-    fun impact(strength: Double, pitch: Float = 1f) {
-        val s = strength.coerceIn(0.0, 1.0).toFloat()
-        val wobble = IMPACT_PITCHES[impactCount++ % IMPACT_PITCHES.size]
-        play("impact", volume = 0.45f + 0.55f * s, rate = pitch * wobble * (0.96f + 0.08f * s), priority = VoicePool.Priority.BOUNCE)
-    }
-
-    /** A hit on a ball container: its own, brighter clack, with the same rising pitch. */
-    fun containerHit(strength: Double, pitch: Float = 1f) {
-        val s = strength.coerceIn(0.0, 1.0).toFloat()
-        play("container", volume = 0.5f + 0.5f * s, rate = pitch * (0.96f + 0.08f * s), priority = VoicePool.Priority.BOUNCE + 1)
+    fun impact(strength: Double) {
+        bounce?.play(volume = 0.7f + 0.3f * strength.coerceIn(0.0, 1.0).toFloat(), rate = pitch)
     }
 
     fun shatter() = play("shatter", 0.85f, priority = VoicePool.Priority.EXPLOSION)
@@ -144,12 +191,14 @@ class SoundFx {
         if (scale == pitch) return
         pitch = scale
         for (v in slots) v?.applyPitch(scale)
+        bounce?.setRate(scale)
     }
 
     fun release() {
         synchronized(this) {
             released = true
             banks.values.forEach { it.release() }
+            bounce?.release()
         }
     }
 
@@ -225,7 +274,9 @@ class SoundFx {
         /** AudioTrack refuses very low rates. */
         const val MIN_RATE = 4000
 
-        /** Tiny pitch differences between successive knocks. */
-        val IMPACT_PITCHES = floatArrayOf(1f, 0.97f, 1.03f, 0.99f, 1.02f)
+        /** Collisions that can ring at once, and the range of speeds a [SoundPool] plays at. */
+        const val STREAMS = 6
+        const val MIN_BOUNCE_RATE = 0.5f
+        const val MAX_BOUNCE_RATE = 2f
     }
 }
