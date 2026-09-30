@@ -6,25 +6,21 @@ import android.media.AudioTrack
 import android.os.SystemClock
 import android.util.Log
 import com.carom.core.audio.VoicePool
-import com.carom.core.audio.WavFile
 
 /**
  * Plays the game's sound effects. Each sound is synthesised once (on a background thread, so
  * start-up never waits for it) into static [AudioTrack]s; sounds that can overlap get a few
- * tracks in rotation. The rolling sound is a seamless loop whose volume follows the ball.
+ * tracks in rotation. The ball itself is silent: nothing plays for the throw or while it flies.
  *
  * The sources are a fixed pool: nothing is created while playing. On top of each sound's own
  * tracks a shared [VoicePool] caps how many play at once and lets the important sounds (a ball
  * exploding, the exit) take over from the small ones (bounces) when a busy moment fills it.
  * [setPitch] scales the playback speed of everything, playing or not, for slow motion.
  *
- * The launch sound is a recorded file ([launchSound] gives its bytes); it plays at its own sample rate, exactly as
- * recorded. Every other sound is synthesised.
- *
  * Sound is decoration: until the sounds are ready, or if the device refuses audio tracks, the game
  * simply stays silent.
  */
-class SoundFx(private val launchSound: () -> ByteArray) {
+class SoundFx {
 
     private class Bank(val voices: List<Voice>, val seconds: Float) {
         private var next = 0
@@ -44,9 +40,7 @@ class SoundFx(private val launchSound: () -> ByteArray) {
     }
 
     @Volatile private var banks: Map<String, Bank> = emptyMap()
-    @Volatile private var roll: Voice? = null
     @Volatile private var released = false
-    private var rolling = false
     private var impactCount = 0
 
     /** The playback speed everything plays at: 1 normally, lower in slow motion. */
@@ -72,32 +66,19 @@ class SoundFx(private val launchSound: () -> ByteArray) {
                 "slowOut" to (Synth.slowOut() to 1),
                 "exitPartial" to (Synth.exitPartial() to 1),
             ).mapValues { (_, v) ->
-                Bank(List(v.second) { Voice.create(v.first, loop = false) }.filterNotNull(), v.first.size.toFloat() / Synth.SAMPLE_RATE)
-            }.toMutableMap()
-            loadLaunch()?.let { pcm ->
-                made["launch"] = Bank(List(2) { Voice.create(pcm.samples, loop = false, sampleRate = pcm.sampleRate) }.filterNotNull(), pcm.seconds.toFloat())
+                Bank(List(v.second) { Voice.create(v.first) }.filterNotNull(), v.first.size.toFloat() / Synth.SAMPLE_RATE)
             }
-            val rollVoice = Voice.create(Synth.roll(), loop = true)
             synchronized(this) {
                 if (released) {
                     made.values.forEach { it.release() }
-                    rollVoice?.release()
                 } else {
                     banks = made
-                    roll = rollVoice
                 }
             }
         }, "carom-sounds").start()
     }
 
     private fun now(): Double = SystemClock.elapsedRealtime() / 1000.0
-
-    private fun loadLaunch(): WavFile.Pcm? = try {
-        WavFile.decode(launchSound())
-    } catch (e: Exception) {
-        Log.w(TAG, "Could not read the launch sound", e)
-        null
-    }
 
     /**
      * Plays a sound from its bank if the shared pool has room for it (or something less important to give up).
@@ -130,11 +111,6 @@ class SoundFx(private val launchSound: () -> ByteArray) {
         play("container", volume = 0.5f + 0.5f * s, rate = pitch * (0.96f + 0.08f * s), priority = VoicePool.Priority.BOUNCE + 1)
     }
 
-    /** The throw: the recorded launch sound at its own pitch, louder for a stronger throw. */
-    fun launch(power: Double) {
-        play("launch", volume = 0.3f + 0.5f * power.coerceIn(0.0, 1.0).toFloat(), priority = VoicePool.Priority.LAUNCH)
-    }
-
     fun shatter() = play("shatter", 0.85f, priority = VoicePool.Priority.EXPLOSION)
 
     fun win() = play("win", 0.9f, priority = VoicePool.Priority.EXIT_COMPLETE)
@@ -162,40 +138,22 @@ class SoundFx(private val launchSound: () -> ByteArray) {
 
     /**
      * Sets the playback speed of every sound, the ones already playing included (slow motion drops it to
-     * about a third, and it comes back to 1 when time does). The rolling sound follows too.
+     * about a third, and it comes back to 1 when time does).
      */
     fun setPitch(scale: Float) {
         if (scale == pitch) return
         pitch = scale
         for (v in slots) v?.applyPitch(scale)
-        roll?.applyPitch(scale)
-    }
-
-    /** The rolling sound at [level] (0..1, from the ball's speed); 0 silences it. */
-    fun roll(level: Float) {
-        val voice = roll ?: return
-        val volume = 0.3f * level.coerceIn(0f, 1f)
-        if (volume > 0.002f) {
-            voice.setVolume(volume)
-            if (!rolling) {
-                voice.resume()
-                rolling = true
-            }
-        } else if (rolling) {
-            voice.pause()
-            rolling = false
-        }
     }
 
     fun release() {
         synchronized(this) {
             released = true
             banks.values.forEach { it.release() }
-            roll?.release()
         }
     }
 
-    private class Voice(private val track: AudioTrack, private val sampleRate: Int) {
+    private class Voice(private val track: AudioTrack) {
         /** The playback speed this sound was started at, before the global pitch. */
         private var baseRate = 1f
 
@@ -204,7 +162,7 @@ class SoundFx(private val launchSound: () -> ByteArray) {
                 track.stop()
                 track.reloadStaticData()
                 baseRate = rate
-                track.playbackRate = (sampleRate * rate * pitch).toInt().coerceAtLeast(MIN_RATE)
+                track.playbackRate = (Synth.SAMPLE_RATE * rate * pitch).toInt().coerceAtLeast(MIN_RATE)
                 track.setVolume(volume)
                 track.play()
             } catch (e: IllegalStateException) {
@@ -214,7 +172,7 @@ class SoundFx(private val launchSound: () -> ByteArray) {
 
         fun applyPitch(pitch: Float) {
             try {
-                track.playbackRate = (sampleRate * baseRate * pitch).toInt().coerceAtLeast(MIN_RATE)
+                track.playbackRate = (Synth.SAMPLE_RATE * baseRate * pitch).toInt().coerceAtLeast(MIN_RATE)
             } catch (e: IllegalStateException) {
                 Log.w(TAG, "Could not change a sound's pitch", e)
             }
@@ -228,30 +186,10 @@ class SoundFx(private val launchSound: () -> ByteArray) {
             }
         }
 
-        fun setVolume(volume: Float) {
-            track.setVolume(volume)
-        }
-
-        fun resume() {
-            try {
-                track.play()
-            } catch (e: IllegalStateException) {
-                Log.w(TAG, "Could not play a sound", e)
-            }
-        }
-
-        fun pause() {
-            try {
-                track.pause()
-            } catch (e: IllegalStateException) {
-                Log.w(TAG, "Could not pause a sound", e)
-            }
-        }
-
         fun release() = track.release()
 
         companion object {
-            fun create(pcm: ShortArray, loop: Boolean, sampleRate: Int = Synth.SAMPLE_RATE): Voice? = try {
+            fun create(pcm: ShortArray): Voice? = try {
                 val track = AudioTrack.Builder()
                     .setAudioAttributes(
                         AudioAttributes.Builder()
@@ -262,7 +200,7 @@ class SoundFx(private val launchSound: () -> ByteArray) {
                     .setAudioFormat(
                         AudioFormat.Builder()
                             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(sampleRate)
+                            .setSampleRate(Synth.SAMPLE_RATE)
                             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                             .build(),
                     )
@@ -270,8 +208,7 @@ class SoundFx(private val launchSound: () -> ByteArray) {
                     .setBufferSizeInBytes(pcm.size * 2)
                     .build()
                 track.write(pcm, 0, pcm.size)
-                if (loop) track.setLoopPoints(0, pcm.size, -1)
-                if (track.state == AudioTrack.STATE_INITIALIZED) Voice(track, sampleRate) else null.also { track.release() }
+                if (track.state == AudioTrack.STATE_INITIALIZED) Voice(track) else null.also { track.release() }
             } catch (e: Exception) {
                 Log.w(TAG, "Audio unavailable", e)
                 null

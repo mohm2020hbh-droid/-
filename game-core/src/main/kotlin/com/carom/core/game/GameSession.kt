@@ -282,26 +282,17 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
     }
 
     /**
-     * Before a throw, moves the ball as close to (x, y) as it can go: within the launch zone around the level's
-     * start, inside the level, and clear of every wall. (The hold-and-throw control; the swipe control does not
-     * move the ball.) Returns true if the ball moved.
+     * Before a throw, moves the ball as close to (x, y) as it can go: within the level's control zone (its whole body
+     * stays inside the zone's line), inside the level, and clear of every wall. (The hold-and-throw control; the
+     * swipe control does not move the ball.) Returns true if the ball moved.
      */
     fun placeBall(x: Double, y: Double): Boolean {
         if (state != State.AIMING) return false
         val b = balls[0]
         val r = b.body.radius
-        var tx = x
-        var ty = y
-        val dx = tx - level.ball.x
-        val dy = ty - level.ball.y
-        val d = hypot(dx, dy)
-        if (d > level.launchZone) {
-            val k = if (d > 0.0) level.launchZone / d else 0.0
-            tx = level.ball.x + dx * k
-            ty = level.ball.y + dy * k
-        }
-        tx = tx.coerceIn(r, level.width - r)
-        ty = ty.coerceIn(r, level.height - r)
+        level.zone.nearestCentre(x, y, r, zonePoint)
+        val tx = zonePoint[0].coerceIn(r, level.width - r)
+        val ty = zonePoint[1].coerceIn(r, level.height - r)
         val dist = hypot(tx - b.body.x, ty - b.body.y)
         if (dist < 1e-9) return false
         // Slide a probe from the ball towards the target: it stops at the first wall in the way,
@@ -318,6 +309,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         return true
     }
 
+    private val zonePoint = DoubleArray(2)
     private val probe = Ball(level.ballRadius)
     private val stopAtWalls = object : PhysicsWorld.Listener {
         override fun onWallContact(x: Double, y: Double, nx: Double, ny: Double) = false

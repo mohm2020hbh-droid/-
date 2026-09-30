@@ -1,6 +1,7 @@
 {
   "name": "Twin Mirrors",
   "bounces": 2,
+  "controlZone": {"rect": [0, 1290, 710, 710]},
   "ball": [160, 1550],
   "goal": [740, 1550],
   "obstacles": [

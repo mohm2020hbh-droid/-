@@ -69,7 +69,6 @@ class VoicePool(val capacity: Int) {
     object Priority {
         const val BOUNCE = 1
         const val UI = 2
-        const val LAUNCH = 3
         const val PORTAL = 4
         const val SLOWMO = 5
         const val EXIT_PARTIAL = 6

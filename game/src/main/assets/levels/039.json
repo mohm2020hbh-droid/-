@@ -1,6 +1,7 @@
 {
   "name": "Switch",
   "bounces": 2,
+  "controlZone": {"rect": [150, 1390, 750, 610]},
   "ball": [
     450,
     1650

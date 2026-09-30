@@ -1,7 +1,7 @@
 {
   "name": "Slow Time",
   "bounces": 1,
-  "launchZone": 30,
+  "controlZone": {"rect": [380, 1390, 520, 320]},
   "ball": [
     450,
     1650

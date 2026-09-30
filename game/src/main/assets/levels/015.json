@@ -1,9 +1,9 @@
 {
   "name": "Crossroads",
   "bounces": 2,
+  "controlZone": {"rect": [0, 1440, 300, 390]},
   "ball": [180, 1700],
   "goal": [720, 350],
-  "launchZone": 90,
   "obstacles": [
     {"type": "wall", "points": [450, 850, 450, 1150]},
     {"type": "wall", "points": [300, 993, 586, 993]}

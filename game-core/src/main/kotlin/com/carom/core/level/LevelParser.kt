@@ -20,7 +20,7 @@ import kotlin.math.sin
  *   "exitRequired": 1,                // optional: balls that must reach the exit
  *   "hardcore": false,                // optional: a hard level (intense music)
  *   "border": true,                   // optional: the edges bounce the ball (never drawn)
- *   "launchZone": 260,                // optional: how far the player may move the ball before a throw
+ *   "controlZone": {"top": 1280},     // optional: where the ball may be moved before a throw (see [parseZone])
  *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
  *   "guide": {"afterFails": 10, "angle": 271.5}, // optional path hint for players who keep failing
  *   "obstacles": [
@@ -61,6 +61,7 @@ object LevelParser {
                 val obj = o as? Map<*, *> ?: throw LevelFormatException("element #$i must be an object")
                 parseElement(obj, "element #$i")
             }
+            val ball = point(root["ball"] ?: throw LevelFormatException("'ball' is required"), "ball")
             val exitRequired = root.number("exitRequired") ?: 1.0
             if (exitRequired < 1 || exitRequired != Math.floor(exitRequired)) throw LevelFormatException("'exitRequired' must be a whole number ≥ 1")
             return LevelData(
@@ -68,7 +69,7 @@ object LevelParser {
                 name = root["name"] as? String ?: id,
                 width = positive(size.x, "size"),
                 height = positive(size.y, "size"),
-                ball = point(root["ball"] ?: throw LevelFormatException("'ball' is required"), "ball"),
+                ball = ball,
                 goal = point(root["goal"] ?: throw LevelFormatException("'goal' is required"), "goal"),
                 goalRadius = positive(root.number("goalRadius") ?: LevelDefaults.GOAL_RADIUS, "goalRadius"),
                 bounces = bounces.toInt(),
@@ -80,9 +81,7 @@ object LevelParser {
                 wallThickness = positive(wallThickness, "wallThickness"),
                 ballRadius = positive(root.number("ballRadius") ?: LevelDefaults.BALL_RADIUS, "ballRadius"),
                 obstacles = obstacles,
-                launchZone = (root.number("launchZone") ?: LevelDefaults.LAUNCH_ZONE).also {
-                    if (it < 0) throw LevelFormatException("'launchZone' must be ≥ 0")
-                },
+                zone = parseZone(root, size, ball, root.number("ballRadius") ?: LevelDefaults.BALL_RADIUS),
                 hint = parseHint(root["hint"]),
                 guide = root["guide"]?.let { parseGuide(it) },
                 elements = elements,
@@ -123,6 +122,54 @@ object LevelParser {
             }
             else -> throw LevelFormatException("$where: unknown type '$type'")
         }
+
+    /**
+     * The control zone, in one of three forms (all in world units):
+     *
+     * - `"controlZone": {"top": 1280}` a band across the whole level, from y = 1280 down to the bottom edge;
+     * - `"controlZone": {"rect": [x, y, w, h]}` a rectangle (top-left corner and size);
+     * - `"controlZone": {"circle": [x, y, r]}` a disc.
+     *
+     * The older `"launchZone": n` (how far the ball's centre may go from its start) still works and means a disc round
+     * the start. With neither, the level gets the standard band ([LevelDefaults.ZONE_ABOVE_BALL] above the start).
+     */
+    private fun parseZone(root: Map<*, *>, size: Vec2, ball: Vec2, ballRadius: Double): ControlZone {
+        val zone = root["controlZone"]
+        if (zone != null) {
+            val obj = zone as? Map<*, *> ?: throw LevelFormatException("'controlZone' must be an object")
+            val keys = obj.keys.filterIsInstance<String>().filter { it in ZONE_KEYS }
+            if (keys.size != 1 || obj.size != 1) throw LevelFormatException("'controlZone' takes exactly one of 'top', 'rect' or 'circle'")
+            return when (keys[0]) {
+                "top" -> {
+                    val top = obj.number("top")!!
+                    if (top < 0 || top >= size.y) throw LevelFormatException("'controlZone.top' must be inside the level")
+                    ControlZone.Box(0.0, top, size.x, size.y - top)
+                }
+                "rect" -> {
+                    val r = numbers(obj["rect"], 4, "controlZone.rect")
+                    ControlZone.Box(r[0], r[1], positive(r[2], "controlZone.rect width"), positive(r[3], "controlZone.rect height"))
+                }
+                else -> {
+                    val c = numbers(obj["circle"], 3, "controlZone.circle")
+                    ControlZone.Circle(c[0], c[1], positive(c[2], "controlZone.circle radius"))
+                }
+            }
+        }
+        val launch = root.number("launchZone")
+        if (launch != null) {
+            if (launch < 0) throw LevelFormatException("'launchZone' must be ≥ 0")
+            return ControlZone.Circle(ball.x, ball.y, launch + ballRadius)
+        }
+        return ControlZone.band(size.x, size.y, ball.y)
+    }
+
+    private val ZONE_KEYS = setOf("top", "rect", "circle")
+
+    private fun numbers(value: Any?, count: Int, name: String): DoubleArray {
+        val list = value as? List<*>
+        if (list == null || list.size != count || list.any { it !is Double }) throw LevelFormatException("'$name' must be a list of $count numbers")
+        return DoubleArray(count) { list[it] as Double }
+    }
 
     /** One entry of `elements`. This is the one place element fields are named. */
     private fun parseElement(obj: Map<*, *>, where: String): Element {

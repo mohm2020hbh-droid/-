@@ -1,6 +1,7 @@
 {
   "name": "Triple Chicane",
   "bounces": 3,
+  "controlZone": {"rect": [60, 1440, 840, 560]},
   "ball": [450, 1700],
   "goal": [450, 350],
   "goalRadius": 56,

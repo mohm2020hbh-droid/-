@@ -10,11 +10,12 @@ import org.junit.Test
 class GameSessionTest {
 
     /** A 1000×600 box; ball on the left, goal on the right, a wall between them. */
-    private fun level(bounces: Int, friction: Double = 0.0, extra: String = "", zone: Double = 130.0) = LevelParser.parse(
+    private fun level(bounces: Int, friction: Double = 0.0, extra: String = "", zone: Double = 130.0, controlZone: String? = null) = LevelParser.parse(
         "test",
         """
         {
-          "size": [1000, 600], "bounces": $bounces, "friction": $friction, "drag": 0, "launchZone": $zone,
+          "size": [1000, 600], "bounces": $bounces, "friction": $friction, "drag": 0,
+          ${controlZone?.let { "\"controlZone\": $it," } ?: "\"launchZone\": $zone,"}
           "ball": [100, 300], "goal": [900, 300],
           "obstacles": [ {"type": "wall", "points": [500, 200, 500, 450]} $extra ]
         }
@@ -182,13 +183,13 @@ class GameSessionTest {
     }
 
     @Test
-    fun theBallCanBeMovedAroundItsLaunchZoneButNotThroughWalls() {
+    fun theBallCanBeMovedAroundItsControlZoneButNotThroughWalls() {
         val s = GameSession(level(bounces = 1))
         assertTrue(s.placeBall(100.0, 0.0)) // straight up, 300 away: stops at the zone's edge
         assertEquals(100.0, s.ball.x, 1e-9)
-        assertEquals(300.0 - s.level.launchZone, s.ball.y, 1e-9)
+        assertEquals(300.0 - 130.0, s.ball.y, 1e-9)
         s.launch(1.0, 0.0, 1.0)
-        assertEquals(300.0 - s.level.launchZone, s.path[0].y, 1e-9) // the shot starts where the ball was put
+        assertEquals(300.0 - 130.0, s.path[0].y, 1e-9) // the shot starts where the ball was put
         assertFalse(s.placeBall(100.0, 300.0)) // not while it is flying
         s.restart()
         assertEquals(300.0, s.ball.y, 1e-9) // a restart brings it back to the start

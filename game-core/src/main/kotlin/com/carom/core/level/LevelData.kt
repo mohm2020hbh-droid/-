@@ -31,10 +31,10 @@ data class LevelData(
     val ballRadius: Double,
     val obstacles: List<Obstacle>,
     /**
-     * How far from [ball] the player may move the ball before throwing it: its centre can go
-     * anywhere within this radius (and clear of walls). 0 fixes the start point.
+     * The control zone: where the player may move the ball before throwing it (and clear of walls). It is the boundary
+     * the dashed line marks. A [ControlZone.Circle] of the ball's own size fixes the start point.
      */
-    val launchZone: Double = LevelDefaults.LAUNCH_ZONE,
+    val zone: ControlZone = ControlZone.band(width, height, ball.y),
     /** Optional teaching text by language code ("en", "ar", ...). */
     val hint: Map<String, String> = emptyMap(),
     /** Optional path hint for a hard level, shown only to a player who keeps failing it. */
@@ -134,8 +134,9 @@ object LevelDefaults {
     const val DRAG = 0.25
 
     /**
-     * The ball can be moved this far from its start before a throw (the control zone, never drawn). A level whose
-     * puzzle a bigger zone would short-cut (a shot needing fewer bounces than it is built around) sets a smaller one.
+     * A level that sets no control zone gets a band across the whole level starting this far above the ball's start
+     * (like the reference's dashed line). A level whose puzzle such a band would short-cut, because a shot from
+     * somewhere else in it needs fewer bounces than the level is built around, sets a smaller zone.
      */
-    const val LAUNCH_ZONE = 260.0
+    const val ZONE_ABOVE_BALL = 260.0
 }

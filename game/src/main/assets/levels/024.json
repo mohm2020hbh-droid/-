@@ -1,6 +1,7 @@
 {
   "name": "Loop",
   "bounces": 3,
+  "controlZone": {"circle": [780, 1600, 320]},
   "ball": [780, 1600],
   "goal": [450, 1725],
   "obstacles": [

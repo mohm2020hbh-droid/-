@@ -1,6 +1,7 @@
 {
   "name": "Rebound",
   "bounces": 2,
+  "controlZone": {"rect": [220, 1240, 680, 720]},
   "ball": [620, 1500],
   "goal": [190, 1500],
   "obstacles": [

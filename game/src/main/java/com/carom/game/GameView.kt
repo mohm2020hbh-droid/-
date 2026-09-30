@@ -41,7 +41,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         private set
 
     private var screen: Screen = HomeScreen(this)
-    private val soundFx = SoundFx { context.assets.open("sounds/launch_sfx_heartbeat_soft.wav").use { it.readBytes() } }
+    private val soundFx = SoundFx()
     private val music = MusicPlayer()
     private val vibrator: Vibrator? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -120,7 +120,6 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         super.onWindowVisibilityChanged(visibility)
         // Don't let time spent in the background arrive as one giant frame.
         lastFrameNanos = 0L
-        if (visibility != VISIBLE) soundFx.roll(0f)
         music.setPaused(visibility != VISIBLE)
     }
 
@@ -143,7 +142,6 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     }
 
     private fun switchTo(next: Screen) {
-        soundFx.roll(0f)
         soundFx.stopSpin()
         soundFx.setPitch(1f)
         music.setPitch(1f)
@@ -199,7 +197,6 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
             Sound.SLOW_IN -> soundFx.slowIn()
             Sound.SLOW_OUT -> soundFx.slowOut()
             Sound.EXIT_PARTIAL -> soundFx.exitPartial()
-            Sound.LAUNCH -> soundFx.launch(strength)
             Sound.SHATTER -> soundFx.shatter()
             Sound.WIN -> soundFx.win()
             Sound.TAP -> soundFx.tap()
@@ -220,8 +217,6 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     override fun stopSound(kind: Sound) {
         if (kind == Sound.SPIN) soundFx.stopSpin()
     }
-
-    override fun rolling(level: Float) = soundFx.roll(if (app.settings.soundEnabled) level else 0f)
 
     /** Frees the audio tracks; the view is not used afterwards. */
     fun release() {

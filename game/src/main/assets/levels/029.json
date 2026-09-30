@@ -1,7 +1,7 @@
 {
   "name": "Retro",
   "bounces": 2,
-  "launchZone": 230,
+  "controlZone": {"rect": [280, 240, 600, 460]},
   "ball": [650, 500],
   "goal": [250, 500],
   "obstacles": [

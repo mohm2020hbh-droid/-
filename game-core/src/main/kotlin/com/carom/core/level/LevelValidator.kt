@@ -20,8 +20,9 @@ object LevelValidator {
         if (world.overlaps(level.ball.x, level.ball.y, r)) problems += "ball overlaps a wall"
         if (world.overlaps(level.goal.x, level.goal.y, r)) problems += "goal centre is too close to a wall for the ball"
         if (level.ball.distanceTo(level.goal) <= level.goalRadius) problems += "ball starts inside the goal"
-        // Moving the ball around the launch zone must never put it into the goal.
-        if (level.ball.distanceTo(level.goal) <= level.goalRadius + level.launchZone) problems += "launch zone reaches the goal"
+        // The ball starts inside its control zone, and moving it around the zone must never put it into the goal.
+        if (!level.zone.holds(level.ball.x, level.ball.y, r)) problems += "ball starts outside its control zone"
+        if (level.zone.distanceFromCentres(level.goal.x, level.goal.y, r) <= level.goalRadius) problems += "control zone reaches the goal"
         if ("," in level.id) problems += "level id must not contain ','"
         for (o in level.obstacles) {
             if (o is Block) {

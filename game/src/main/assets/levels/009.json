@@ -1,6 +1,7 @@
 {
   "name": "Keyhole",
   "bounces": 2,
+  "controlZone": {"rect": [330, 1290, 570, 710]},
   "ball": [780, 1550],
   "goal": [478, 350],
   "obstacles": [

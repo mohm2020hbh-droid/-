@@ -1,6 +1,7 @@
 {
   "name": "Bumper",
   "bounces": 1,
+  "controlZone": {"circle": [150, 1420, 320]},
   "ball": [150, 1420],
   "goal": [740, 420],
   "obstacles": [

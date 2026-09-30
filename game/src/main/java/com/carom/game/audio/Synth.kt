@@ -142,37 +142,6 @@ object Synth {
         return finish(out, peak = 0.5)
     }
 
-    /**
-     * The ball rolling: a soft, low, felt-like rumble with a faint breath of air and a slow
-     * wobble. It loops seamlessly; its volume follows the ball's speed.
-     */
-    fun roll(): ShortArray {
-        val loop = seconds(2.0)
-        val fade = seconds(0.25)
-        val raw = FloatArray(loop + fade)
-        val rnd = Random(9)
-        var brown = 0.0
-        val low = Svf()
-        val air = Svf()
-        for (i in raw.indices) {
-            val t = i.toDouble() / SAMPLE_RATE
-            val white = rnd.nextDouble(-1.0, 1.0)
-            brown = (brown + 0.02 * white) * 0.995
-            val body = low.lowpass(brown * 8.0, 380.0, q = 0.8)
-            val breath = air.bandpass(white, 1300.0, q = 0.9) * 0.05
-            val wobble = 1.0 + 0.15 * sin(2 * PI * 7.0 * t)
-            raw[i] = ((body + breath) * wobble).toFloat()
-        }
-        // Cross-fade the tail into the head so the loop has no seam.
-        val out = FloatArray(loop)
-        for (i in 0 until loop) out[i] = raw[i]
-        for (k in 0 until fade) {
-            val w = k.toFloat() / fade
-            out[k] = raw[loop + k] * (1 - w) + raw[k] * w
-        }
-        return finish(out, peak = 0.5, edges = false)
-    }
-
     /** Seconds from the first pulse of the success sound to the second. */
     const val PULSE_GAP = 0.34
 

@@ -88,17 +88,25 @@ class ShippedLevelsTest {
     }
 
     /**
-     * The player may move the ball around its launch zone before throwing. That may make a shot
-     * easier to line up, but it must never skip a bounce the level is built around.
+     * The player may move the ball around its control zone before throwing. That may make a shot easier to line up,
+     * but it must never skip a bounce the level is built around: from anywhere the ball can be moved to inside the
+     * zone, no full-power shot may score with fewer bounces than the best one from the level's start.
      */
     @Test
-    fun movingTheBallAroundItsLaunchZoneNeverSkipsABounce() {
-        val skips = levels.mapNotNull { level ->
-            val fromStart = ShotSearch.search(level, stepDegrees = 0.5).minBounces ?: return@mapNotNull null
-            val fromZone = ShotSearch.minBouncesFromZone(level) ?: return@mapNotNull null
-            if (fromZone < fromStart) "${level.id}: $fromStart bounces from the start, $fromZone from its launch zone" else null
+    fun movingTheBallAroundItsControlZoneNeverSkipsABounce() {
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors().coerceAtLeast(2))
+        try {
+            val jobs = levels.map { level ->
+                pool.submit<String?> {
+                    val fromStart = ShotSearch.search(level, stepDegrees = 0.5).minBounces ?: return@submit null
+                    val fromZone = ShotSearch.minBouncesFromZone(level, below = fromStart) ?: return@submit null
+                    if (fromZone < fromStart) "${level.id}: $fromStart bounces from the start, $fromZone from its control zone" else null
+                }
+            }
+            assertEquals(emptyList<String>(), jobs.mapNotNull { it.get() })
+        } finally {
+            pool.shutdown()
         }
-        assertEquals(emptyList<String>(), skips)
     }
 
     private companion object {

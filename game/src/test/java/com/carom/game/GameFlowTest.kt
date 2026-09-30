@@ -4,6 +4,7 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import com.carom.core.game.GameSession
+import com.carom.core.level.ControlZone
 import com.carom.core.level.LevelRepository
 import com.carom.core.level.LevelSource
 import com.carom.core.progress.KeyValueStore
@@ -140,15 +141,63 @@ class GameFlowTest {
         touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
         // A long, calm drag up-right, then back: 20 px every 30 ms (about 670 px/s), staying inside the zone.
         for (i in 1..8) touch(view, MotionEvent.ACTION_MOVE, bx + 20f * i, by - 10f * i, t + 30L * i)
+        assertTrue("the ball followed the finger", play.session.ball.x > play.session.level.ball.x + 50.0)
         t += 400
         for (i in 1..8) touch(view, MotionEvent.ACTION_MOVE, bx + 160f - 20f * i, by - 80f + 10f * i, t + 30L * i)
         val ball = play.session.ball
-        assertTrue(
-            "the ball stays inside the dashed zone",
-            Math.hypot((play.board.x(ball.x) - bx).toDouble(), (play.board.y(ball.y) - by).toDouble()) <= play.board.zoneScreenRadius,
-        )
+        assertTrue("the ball stays inside the dashed zone", play.session.level.zone.holds(ball.x, ball.y, play.session.level.ballRadius))
         touch(view, MotionEvent.ACTION_UP, bx, by, t + 30L * 9)
         assertEquals(GameSession.State.AIMING, play.session.state)
+    }
+
+    @Test
+    fun theBallStopsAtTheDashedLineAndDraggingOnPastItPreparesTheThrow() {
+        val view = newView(MapStore())
+        view.play(0)
+        val play = view.currentScreen as PlayScreen
+        val level = play.session.level
+        val zone = level.zone as ControlZone.Box // level 1: a band across the whole width, its line 260 above the start
+        val bx = play.board.x(play.session.ball.x)
+        val by = play.board.y(play.session.ball.y)
+        val t = SystemClock.uptimeMillis()
+        touch(view, MotionEvent.ACTION_DOWN, bx, by, t)
+        // Slowly, 20 px at a time, straight up: 400 px, well past the line (which is 312 px above the start).
+        for (i in 1..20) touch(view, MotionEvent.ACTION_MOVE, bx, by - 20f * i, t + 30L * i)
+        assertEquals("the ball's edge rests on the line", zone.y + level.ballRadius, play.session.ball.y, 1e-3)
+        assertEquals(bx, play.board.x(play.session.ball.x), 0.01f)
+        assertEquals("nothing is thrown yet", GameSession.State.AIMING, play.session.state)
+        touch(view, MotionEvent.ACTION_UP, bx, by - 400f, t + 30L * 21)
+        assertEquals("letting go after pulling past the line throws", GameSession.State.MOVING, play.session.state)
+        assertTrue("...away from the pull, up", play.session.ball.dirY < -0.99)
+        assertEquals("...from where the line stopped it", zone.y + level.ballRadius, play.session.ball.y, 1e-3)
+    }
+
+    @Test
+    fun aTouchOutsideTheZoneDoesNotPickUpTheBallButOneJustOutsideItsLineDoes() {
+        val view = newView(MapStore())
+        view.play(0)
+        val play = view.currentScreen as PlayScreen
+        val zone = play.session.level.zone as ControlZone.Box
+        val startX = play.session.ball.x
+        val startY = play.session.ball.y
+        val sx = play.board.x(startX)
+        var t = SystemClock.uptimeMillis()
+
+        val farY = play.board.y(zone.y - 200.0) // well above the line
+        touch(view, MotionEvent.ACTION_DOWN, sx, farY, t)
+        touch(view, MotionEvent.ACTION_MOVE, sx, farY + 200f, t + 30)
+        touch(view, MotionEvent.ACTION_MOVE, sx + 100f, farY + 400f, t + 60)
+        touch(view, MotionEvent.ACTION_UP, sx + 100f, farY + 400f, t + 90)
+        assertEquals("a drag that starts outside the zone does not move the ball", startX, play.session.ball.x, 1e-9)
+        assertEquals(startY, play.session.ball.y, 1e-9)
+        assertEquals("...and throws nothing", GameSession.State.AIMING, play.session.state)
+
+        t += 500
+        val nearY = play.board.y(zone.y - 6.0) // a thumb just outside the line
+        touch(view, MotionEvent.ACTION_DOWN, sx, nearY, t)
+        touch(view, MotionEvent.ACTION_MOVE, sx, nearY + 30f, t + 30)
+        assertTrue("a touch just outside the line still picks the ball up (it goes with the finger)", play.session.ball.y > startY + 1.0)
+        touch(view, MotionEvent.ACTION_UP, sx, nearY + 30f, t + 60)
     }
 
     @Test

@@ -1,7 +1,7 @@
 {
   "name": "Baffles",
   "bounces": 1,
-  "launchZone": 140,
+  "controlZone": {"rect": [280, 1460, 340, 430]},
   "ball": [450, 1650],
   "goal": [450, 350],
   "obstacles": [

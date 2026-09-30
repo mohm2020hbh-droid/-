@@ -1,9 +1,9 @@
 {
   "name": "Prism",
   "bounces": 2,
+  "controlZone": {"rect": [310, 1390, 270, 370]},
   "ball": [450, 1650],
   "goal": [450, 450],
-  "launchZone": 90,
   "obstacles": [
     {"type": "wall", "points": [180, 1250, 444.8, 1004.8, 710.1, 1250.3]}
   ]

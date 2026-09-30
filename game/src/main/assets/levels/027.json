@@ -1,6 +1,7 @@
 {
   "name": "Gauntlet",
   "bounces": 4,
+  "controlZone": {"rect": [0, 1410, 740, 590]},
   "ball": [450, 1650],
   "goal": [450, 460],
   "goalRadius": 56,

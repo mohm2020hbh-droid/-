@@ -1,6 +1,7 @@
 {
   "name": "Needle",
   "bounces": 1,
+  "controlZone": {"rect": [0, 1360, 790, 640]},
   "ball": [250, 1620],
   "goal": [310, 500],
   "obstacles": [

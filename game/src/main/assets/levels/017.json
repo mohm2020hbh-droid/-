@@ -1,6 +1,7 @@
 {
   "name": "Canyon",
   "bounces": 2,
+  "controlZone": {"top": 1380},
   "ball": [700, 1560],
   "goal": [300, 600],
   "obstacles": [

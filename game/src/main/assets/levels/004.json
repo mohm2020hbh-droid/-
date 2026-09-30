@@ -1,6 +1,7 @@
 {
   "name": "Diamond",
   "bounces": 1,
+  "controlZone": {"rect": [20, 1440, 860, 560]},
   "ball": [450, 1700],
   "goal": [450, 450],
   "obstacles": [
