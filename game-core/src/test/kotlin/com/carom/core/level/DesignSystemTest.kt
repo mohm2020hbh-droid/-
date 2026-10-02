@@ -11,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The design language of the campaign, as rules the shipped levels must keep so that all sixty look and play like one
+ * The design language of the campaign, as rules the shipped levels must keep so that all eighty look and play like one
  * game: one wall thickness, one goal size, one control zone kept clear of the puzzle and away from the screen's edges,
  * a goal that sits in the calm middle of the picture (never in the corners or under the top bar), walls that keep to
  * a few angles, and a shape vocabulary that is used and not just listed.
@@ -132,6 +132,57 @@ class DesignSystemTest {
         assertTrue("hexagons: $hexes", hexes >= 1)
         assertTrue("triangles: $triangles", triangles >= 1)
         assertTrue("boxes: $boxes", boxes >= 1)
+    }
+
+    /**
+     * A moving barrier keeps to the same rules as a still one for its whole trip: it never comes within 90 of the control zone's top line or within 45 of the goal's ring,
+     * and keeps its centre inside the picture (or at most a wall's thickness outside, hidden in the frame like an anchored wall).
+     */
+    @Test
+    fun movingBarriersStayOnTheScreenAndClearOfTheControlZone() {
+        val problems = levels.flatMap { level ->
+            val zone = level.zone as ControlZone.Box
+            level.elements.filter { it.moving != null && it.physical }.mapNotNull { e ->
+                val m = e.moving!!
+                val pts = DoubleArray(2 * 97)
+                m.track(96, e.x, e.y, pts)
+                val a = Math.toRadians(e.rotation)
+                val hx = (abs(Math.cos(a)) * e.scaleX + abs(Math.sin(a)) * e.scaleY) / 2
+                val hy = (abs(Math.sin(a)) * e.scaleX + abs(Math.cos(a)) * e.scaleY) / 2
+                var low = Double.NEGATIVE_INFINITY
+                var nearGoal = Double.POSITIVE_INFINITY
+                for (k in 0..96) {
+                    low = maxOf(low, pts[2 * k + 1] + hy)
+                    nearGoal = minOf(nearGoal, hypot(maxOf(abs(level.goal.x - pts[2 * k]) - hx, 0.0), maxOf(abs(level.goal.y - pts[2 * k + 1]) - hy, 0.0)) - level.goalRadius)
+                }
+                when {
+                    nearGoal < 45.0 -> "${level.id}: a mover comes within ${nearGoal.toInt()} of the goal's ring (45 needed)"
+                    low > zone.y - 90.0 -> "${level.id}: a mover comes within 90 of the zone's top line (${low.toInt()})"
+                    (0..96).any { k -> pts[2 * k] < -LevelDefaults.WALL_THICKNESS || pts[2 * k] > level.width + LevelDefaults.WALL_THICKNESS || pts[2 * k + 1] < -LevelDefaults.WALL_THICKNESS } ->
+                        "${level.id}: a mover leaves the picture (a barrier may hide in the frame, but its centre stays within a wall's thickness of it)"
+                    else -> null
+                }
+            }
+        }
+        assertEquals(emptyList<String>(), problems)
+    }
+
+    /** Every moving barrier is deterministic: it has a period, and the world 7 and 8 ones all run on the level clock so they can be watched while aiming. */
+    @Test
+    fun theMovingWorldsRunOnTheLevelClock() {
+        val first = Worlds.firstLevel(6)
+        val problems = levels.flatMapIndexed { i, level ->
+            level.elements.filter { it.moving != null }.mapNotNull { e ->
+                val m = e.moving!!
+                when {
+                    m.period <= 0.0 -> "${level.id}: a mover with no period"
+                    i >= first && m.clock != Clock.LEVEL -> "${level.id}: a mover of the moving worlds is not on the level clock"
+                    else -> null
+                }
+            }
+        }
+        assertEquals(emptyList<String>(), problems)
+        assertTrue("the moving worlds use movers", levels.drop(first).all { l -> l.elements.any { it.moving != null } })
     }
 
     /** A half disc has one straight side: its first and last point are the ends of a diameter. */

@@ -102,8 +102,8 @@ class AudioLogicTest {
         assertEquals("world0", first.folder)
         assertEquals("neighbouring levels share a track", first, MusicLibrary.trackFor(3, 0))
         assertEquals("world2", MusicLibrary.trackFor(21, 2).folder)
-        for (world in 0 until 6) assertEquals("every one of the six worlds has its own folder", "world$world", MusicLibrary.trackFor(world * 10, world).folder)
-        assertEquals("worlds past the folders wrap round", "world0", MusicLibrary.trackFor(0, 6).folder)
+        for (world in 0 until 8) assertEquals("every one of the eight worlds has its own folder", "world$world", MusicLibrary.trackFor(world * 10, world).folder)
+        assertEquals("worlds past the folders wrap round", "world0", MusicLibrary.trackFor(0, 8).folder)
         assertTrue(first.loopSeconds > 5.0)
         assertTrue("no hardcore folder", MusicLibrary.folders.keys.none { it.contains("hardcore") })
     }

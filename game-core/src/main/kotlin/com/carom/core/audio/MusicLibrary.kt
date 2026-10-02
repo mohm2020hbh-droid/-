@@ -53,6 +53,14 @@ object MusicLibrary {
             TrackSpec("w5a", "world5", 124.0, 51, true, 61, 0.75),
             TrackSpec("w5b", "world5", 128.0, 56, true, 62, 0.8),
         )),
+        world(6, listOf(
+            TrackSpec("w6a", "world6", 132.0, 55, true, 71, 0.82),
+            TrackSpec("w6b", "world6", 136.0, 59, false, 72, 0.86),
+        )),
+        world(7, listOf(
+            TrackSpec("w7a", "world7", 138.0, 52, true, 81, 0.9),
+            TrackSpec("w7b", "world7", 142.0, 57, true, 82, 0.95),
+        )),
     )
 
     /** Tracks per position: the number of levels in a row that share a track before the next one takes over. */
@@ -64,7 +72,7 @@ object MusicLibrary {
         return folder[(levelIndex / LEVELS_PER_TRACK) % folder.size]
     }
 
-    private const val WORLD_FOLDERS = 6
+    private const val WORLD_FOLDERS = 8
 
     /** What to do with the music when a level starts: nothing if the same track is playing, otherwise crossfade. */
     sealed interface Change {

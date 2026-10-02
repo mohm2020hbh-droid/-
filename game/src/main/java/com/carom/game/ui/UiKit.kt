@@ -33,6 +33,8 @@ object Palette {
         WorldPalette(0xFF15302A.toInt(), 0xFF5A967E.toInt(), 0xFFE9F4EC.toInt()), // pine + mint
         WorldPalette(0xFF241D33.toInt(), 0xFF8570B2.toInt(), 0xFFF2EEFA.toInt()), // plum + lilac
         WorldPalette(0xFF1B1C1F.toInt(), 0xFF868C99.toInt(), 0xFFF5F2EA.toInt()), // graphite + bone
+        WorldPalette(0xFF2A1722.toInt(), 0xFFA8657F.toInt(), 0xFFF8EAEE.toInt()), // wine + blush
+        WorldPalette(0xFF0F1B2B.toInt(), 0xFFC49A4F.toInt(), 0xFFFFF3DC.toInt()), // midnight + amber
     )
 
     fun forWorld(world: Int): WorldPalette = WORLDS[Math.floorMod(world, WORLDS.size)]

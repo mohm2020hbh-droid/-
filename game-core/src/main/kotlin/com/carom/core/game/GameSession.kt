@@ -191,6 +191,17 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
 
     /** Game time since the first swipe (slow motion makes it run slower than [flightTime]). Elements move by this clock. */
     var gameTime = 0.0
+
+    /**
+     * Time since the level began, which also runs while the player aims before the first throw (the world waits while a
+     * ball is held after that). Motions on the level clock follow it; everything else follows [gameTime].
+     */
+    var levelTime = 0.0
+        private set
+
+    /** Whether some obstacle moves on the level clock, so the picture must keep moving while the player aims. */
+    val animatesWhileAiming: Boolean = elements.any { it.runsOnLevelClock }
+    private var aimAccumulator = 0.0
         private set
 
     /** 1 normally; [GameTuning.slowMoScale] while a ball is in a slow-motion zone. */
@@ -407,8 +418,26 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
 
     // ------------------------------------------------------------------ time
 
+    /** For tools and tests: stands the level clock at [t], as if the player had been aiming for that long without a throw. */
+    fun warpClock(t: Double) {
+        levelTime = maxOf(0.0, t - STEP)
+        for (e in elements) if (e.runsOnLevelClock) e.animate(gameTime, levelTime, 0.0)
+        levelTime = t
+        for (e in elements) if (e.runsOnLevelClock) e.animate(gameTime, levelTime, STEP)
+    }
+
     /** Advances by one frame's worth of time, running as many fixed steps as fit. */
     fun advance(frameSeconds: Double) {
+        if (state == State.AIMING && throwCount == 0 && animatesWhileAiming) {
+            // Before the first throw the level's own clock runs, in the same fixed steps, so a motion is the same however the frames fall.
+            aimAccumulator += min(frameSeconds, MAX_FRAME)
+            while (aimAccumulator >= STEP - EPSILON) {
+                aimAccumulator = maxOf(0.0, aimAccumulator - STEP)
+                levelTime += STEP
+                for (i in elements.indices) if (elements[i].runsOnLevelClock) elements[i].animate(gameTime, levelTime, STEP)
+            }
+            return
+        }
         if (state != State.MOVING) return
         accumulator += min(frameSeconds, MAX_FRAME)
         // The small margin keeps the step count the same at every frame rate: 144 frames of 1/144 s must make
@@ -429,7 +458,8 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         gameTime += dt
         flightTime += STEP
         stepCounter++
-        for (i in elements.indices) elements[i].animate(gameTime, dt)
+        levelTime += dt
+        for (i in elements.indices) elements[i].animate(gameTime, levelTime, dt)
         for (i in balls.indices) {
             balls[i].prevX = balls[i].body.x
             balls[i].prevY = balls[i].body.y
@@ -833,7 +863,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
             flightTime = 0.0
             currentPath.clear()
             currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
-            for (i in elements.indices) elements[i].animate(0.0, 0.0)
+            for (i in elements.indices) elements[i].animate(0.0, levelTime, 0.0)
         } else {
             // Thrown again: the clock and the world carry on from where they paused; the path starts a new line here.
             currentPath.add(PATH_BREAK)
@@ -891,6 +921,8 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         exitCount = 0
         flightTime = 0.0
         gameTime = 0.0
+        levelTime = 0.0
+        aimAccumulator = 0.0
         lastLoss = FailReason.STOPPED
         currentPath.clear()
         setTimeScale(1.0)

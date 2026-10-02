@@ -39,6 +39,11 @@ data class LevelData(
     val hint: Map<String, String> = emptyMap(),
     /** Optional path hint for a hard level, shown only to a player who keeps failing it. */
     val guide: Guide? = null,
+    /**
+     * For a level whose obstacles run on the level clock: one throw that wins, with the span of release times (seconds into the
+     * level) it wins for. Tests and tools use it to show the level can be won and that the moment to let go is not a hair's breadth.
+     */
+    val timing: Timing? = null,
     /** Things in the level that are more than a wall: force zones, portals, breakable and moving barriers... */
     val elements: List<Element> = emptyList(),
     /** Balls that must reach the exit before the level is won. */
@@ -72,6 +77,14 @@ data class LevelData(
  * failed the level more than [afterFails] times.
  */
 data class Guide(val afterFails: Int, val angle: Double, val from: Vec2? = null)
+
+/**
+ * A winning throw on the level clock: the ball is let go at [from] (full speed times [speed]) at [angle] degrees, any time from [open] to [close]
+ * seconds after the level began, and the throw still wins for any angle between [angle] and [angle] + [width] degrees at the middle of that span.
+ */
+data class Timing(val from: Vec2, val angle: Double, val width: Double, val speed: Double, val open: Double, val close: Double) {
+    val duration: Double get() = close - open
+}
 
 /**
  * Level geometry. The hierarchy is sealed so that adding a new kind makes the compiler point at

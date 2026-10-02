@@ -288,7 +288,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override val isAnimating: Boolean
         get() = session.state == GameSession.State.MOVING || anyRipple() || anySpark() || anyShatter() ||
-            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || aim.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f || abs(zoneAlpha - zoneRest()) > 0.01f ||
+            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || aim.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f || (session.animatesWhileAiming && session.state == GameSession.State.AIMING && session.throwCount == 0) || abs(zoneAlpha - zoneRest()) > 0.01f ||
             (session.state == GameSession.State.WON && (overlayProgress < 1f || !showsResult)) || (guideShown && session.state == GameSession.State.AIMING)
 
     /** A level with force zones, portals and the like keeps moving even while the player aims (at a gentle rate). */

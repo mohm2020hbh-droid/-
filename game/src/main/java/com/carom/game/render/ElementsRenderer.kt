@@ -30,6 +30,11 @@ import kotlin.math.sin
  */
 class ElementsRenderer(private val level: LevelData, private val palette: WorldPalette, private val board: BoardRenderer) {
 
+    private companion object {
+        const val TRACK_POINTS = 48
+    }
+
+
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -44,15 +49,35 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
     /** A breakable barrier is one step quieter than a wall: it can be broken, so it does not look as solid as one that cannot. */
     private val soft = Palette.blend(palette.primary, palette.background, 0.42f)
 
+    /** The faint route of each moving barrier (null for the rest), in screen pixels. */
+    private var tracks: Array<Path?> = emptyArray()
+
     /** Rebuilds what depends on the screen scale; call after the board is laid out. */
     fun layout(unit: Float) {
         dashed = DashPathEffect(floatArrayOf(7f * unit, 7f * unit), 0f)
         dotted = DashPathEffect(floatArrayOf(1.5f * unit, 8f * unit), 0f)
+        val pts = DoubleArray(2 * (TRACK_POINTS + 1))
+        tracks = Array(level.elements.size) { i ->
+            val e = level.elements[i]
+            val m = e.moving
+            if (m == null || !e.physical) null else Path().also { p ->
+                m.track(TRACK_POINTS, e.x, e.y, pts)
+                p.moveTo(board.x(pts[0]), board.y(pts[1]))
+                for (k in 1..TRACK_POINTS) p.lineTo(board.x(pts[2 * k]), board.y(pts[2 * k + 1]))
+                if (m.cycle == com.carom.core.level.Cycle.LOOP && m.route != com.carom.core.level.Route.LINE) p.close()
+            }
+        }
     }
 
     /** Draws every element at time [clock] (seconds of screen time, for the looping motion). */
     fun draw(canvas: Canvas, session: GameSession, clock: Float, unit: Float) {
         val elements = session.elements
+        // The route of a moving barrier is shown faintly, so its motion can be read and expected.
+        line.pathEffect = dotted
+        line.color = Palette.withAlpha(palette.accent, 0.2f)
+        line.strokeWidth = 3f * unit
+        for (i in tracks.indices) tracks[i]?.let { canvas.drawPath(it, line) }
+        line.pathEffect = null
         // Zones first, so barriers and balls sit on top of them.
         for (i in elements.indices) if (!elements[i].data.physical) drawZone(canvas, elements[i], session, clock, unit)
         for (i in elements.indices) if (elements[i].data.physical) drawBarrier(canvas, elements[i], i, unit)

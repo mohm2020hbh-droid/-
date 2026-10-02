@@ -1,5 +1,6 @@
 package com.carom.core.game
 
+import com.carom.core.level.Clock
 import com.carom.core.level.Element
 import com.carom.core.level.ElementKind
 import com.carom.core.level.LevelDefaults
@@ -64,6 +65,8 @@ class ElementRuntime(val data: Element, val index: Int) {
     private val cornerX = DoubleArray(4)
     private val cornerY = DoubleArray(4)
 
+    private val place = DoubleArray(2)
+
     init {
         val physical = data.physical
         rounding = if (physical) min(LevelDefaults.BLOCK_ROUNDING, min(data.scaleX, data.scaleY) / 2 * 0.999) else 0.0
@@ -87,7 +90,7 @@ class ElementRuntime(val data: Element, val index: Int) {
         vx = 0.0
         vy = 0.0
         omega = 0.0
-        if (data.animated) pose(0.0, 0.0)
+        if (data.animated) pose(0.0, 0.0, 0.0)
         updateSegments()
     }
 
@@ -105,21 +108,27 @@ class ElementRuntime(val data: Element, val index: Int) {
         return true
     }
 
-    /** Moves the element to where it is at game time [t]; [dt] is the time since the last call, to get its velocity. */
-    fun animate(t: Double, dt: Double) {
+    /**
+     * Moves the element to where it is now; [t] is game time (since the first throw) and [levelTime] is the time since the level
+     * began (a motion on the level clock follows that one); [dt] is the time since the last call, to get its velocity.
+     */
+    fun animate(t: Double, levelTime: Double, dt: Double) {
         if (!data.animated) return
-        pose(t, dt)
+        pose(t, levelTime, dt)
         updateSegments()
     }
 
-    private fun pose(t: Double, dt: Double) {
+    /** Whether the element moves on the level clock, so it keeps going while the player aims. */
+    val runsOnLevelClock: Boolean get() = data.moving?.clock == Clock.LEVEL
+
+    private fun pose(t: Double, levelTime: Double, dt: Double) {
         val oldX = x
         val oldY = y
         val oldRot = rotation
         data.moving?.let { m ->
-            val f = wave(m.wave, t / m.period + m.phase)
-            x = data.x + (m.toX - data.x) * f
-            y = data.y + (m.toY - data.y) * f
+            m.at(if (m.clock == Clock.LEVEL) levelTime else t, data.x, data.y, place)
+            x = place[0]
+            y = place[1]
         }
         data.snap?.let { g ->
             if (g.x > 0.0) x = round(x / g.x) * g.x

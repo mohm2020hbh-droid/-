@@ -1,6 +1,7 @@
 package com.carom.core.level
 
 import com.carom.core.game.HintRoute
+import com.carom.core.game.GameSession
 import com.carom.core.tools.LevelLab
 import com.carom.core.tools.LevelPreview
 import com.carom.core.tools.ShotSearch
@@ -12,7 +13,7 @@ import java.io.File
 import java.util.concurrent.Executors
 
 /**
- * Checks every level shipped with the game: the campaign is six worlds of ten, every level parses, passes validation and
+ * Checks every level shipped with the game: the campaign is eight worlds of ten, every level parses, passes validation and
  * is solvable within its bounce budget by a window of throws wide enough to hit with a finger, nothing in the control zone
  * lets the player skip a bounce a level is built around, and the difficulty climbs a step at a time.
  */
@@ -42,10 +43,10 @@ class ShippedLevelsTest {
     }
 
     @Test
-    fun theCampaignIsSixWorldsOfTenLevels() {
-        assertEquals("six worlds of ${Worlds.SIZE} levels", 6 * Worlds.SIZE, repository.size)
+    fun theCampaignIsEightWorldsOfTenLevels() {
+        assertEquals("eight worlds of ${Worlds.SIZE} levels", 8 * Worlds.SIZE, repository.size)
         assertEquals((1..repository.size).map { "%03d".format(it) }, repository.ids)
-        assertEquals(6, Worlds.count(repository.size))
+        assertEquals(8, Worlds.count(repository.size))
     }
 
     @Test
@@ -67,19 +68,28 @@ class ShippedLevelsTest {
         }
     }
 
-    /** The difficulty climbs a step at a time: no jump up of more than one, no fall of more than one, and each world is harder than the last. */
+    /**
+     * The difficulty climbs a step at a time: no jump up of more than one, no fall of more than one, and each world is harder than the last.
+     * The campaign has three chapters: worlds 1-6, then world 7 and world 8, which bring in the moving obstacles. Each chapter climbs by itself
+     * (a new mechanic is taught from the beginning, so a chapter may start lower than the one before ended), and the campaign still ends on its hardest level.
+     */
     @Test
-    fun theDifficultyClimbsSmoothlyFromTheFirstLevelToTheLast() {
+    fun theDifficultyClimbsSmoothlyThroughEachChapter() {
         val d = levels.map { it.difficulty }
         assertEquals("the first level is the easiest", 1, d.first())
         assertEquals("the last level is the hardest", 10, d.last())
         assertEquals("the last level is the hardest of all", d.max(), d.last())
-        for (i in 1 until d.size) {
-            assertTrue("level ${i + 1} (${d[i]}) jumps up from level $i (${d[i - 1]})", d[i] - d[i - 1] <= 1)
-            assertTrue("level ${i + 1} (${d[i]}) falls back from level $i (${d[i - 1]})", d[i - 1] - d[i] <= 1)
+        val chapters = listOf(0 until 6 * Worlds.SIZE, 6 * Worlds.SIZE until 7 * Worlds.SIZE, 7 * Worlds.SIZE until 8 * Worlds.SIZE)
+        for (chapter in chapters) {
+            for (i in chapter.first + 1..chapter.last) {
+                assertTrue("level ${i + 1} (${d[i]}) jumps up from level $i (${d[i - 1]})", d[i] - d[i - 1] <= 1)
+                assertTrue("level ${i + 1} (${d[i]}) falls back from level $i (${d[i - 1]})", d[i - 1] - d[i] <= 1)
+            }
         }
+        for (chapter in chapters.drop(1)) assertTrue("a new chapter starts gently (level ${chapter.first + 1}: ${d[chapter.first]})", d[chapter.first] <= 4)
         val means = d.chunked(Worlds.SIZE).map { it.average() }
-        for (w in 1 until means.size) assertTrue("world ${w + 1} is not harder than world $w: $means", means[w] > means[w - 1])
+        for (w in 1 until 6) assertTrue("world ${w + 1} is not harder than world $w: $means", means[w] > means[w - 1])
+        assertTrue("world 8 is not harder than world 7: $means", means[7] > means[6])
     }
 
     /** Every level names the kind of challenge it is ("Angles: ..."), all ten kinds are used, and none runs on for more than four levels. */
@@ -105,9 +115,10 @@ class ShippedLevelsTest {
     fun everyLevelIsSolvableAndFair() {
         // A level built for a gentle throw (a door that opens by itself) has no answer at full speed: it is judged at gentle speeds.
         val reports = inParallel { level ->
+            if (GameSession(level).animatesWhileAiming) return@inParallel null   // won on the level clock: see theTimedLevelsCanBeWonInsideTheirWindow
             val full = LevelLab.analyze(level, spacing = 160.0, angleStep = 0.5)
             if (full.solvable) full else LevelLab.analyze(level, spacing = 240.0, angleStep = 1.0, speeds = GENTLE_SPEEDS)
-        }
+        }.filterNotNull()
         println(String.format("%-4s %-20s %6s %5s %5s %6s %9s %10s", "id", "name", "budget", "needs", "start", "spots", "window", "win.spots"))
         for (r in reports) {
             println(
@@ -155,6 +166,43 @@ class ShippedLevelsTest {
         return WINDOW_FLOOR[(number - 1) / Worlds.SIZE]
     }
 
+    /**
+     * A level whose obstacles run on the level clock is won by choosing the moment as well as the aim, so it carries one winning throw and the span
+     * of release times it wins for: that throw is replayed here at the start, middle and end of the span and across the width of its angles, and the span
+     * must be long enough for a finger to hit.
+     */
+    @Test
+    fun theTimedLevelsCanBeWonInsideTheirWindow() {
+        val timed = levels.filter { GameSession(it).animatesWhileAiming }
+        assertEquals("worlds 7 and 8 run on the level clock", 20, timed.size)
+        for (level in timed) {
+            val t = level.timing
+            assertTrue("level ${level.id} says how it is won", t != null)
+            t!!
+            val minimum = if (level.id.toInt() <= 70) 0.35 else if (level.id.toInt() < 80) 0.25 else 0.2
+            assertTrue("level ${level.id}: the timing window is ${t.duration}s, under $minimum", t.duration >= minimum)
+            assertTrue("level ${level.id}: the angle window is ${t.width}°, under 3°", t.width >= 3.0)
+            val mid = (t.open + t.close) / 2
+            val shots = listOf(
+                Triple(t.open + 0.02, t.angle + t.width / 2, "start of the window"),
+                Triple(mid, t.angle + t.width / 2, "middle"),
+                Triple(t.close - 0.02, t.angle + t.width / 2, "end of the window"),
+                Triple(mid, t.angle + 0.3, "one edge of the angles"),
+                Triple(mid, t.angle + t.width - 0.3, "the other edge"),
+            )
+            for ((at, angle, what) in shots) {
+                val s = GameSession(level.copy(ball = t.from))
+                s.warpClock(at)
+                val rad = Math.toRadians(angle)
+                s.launchAt(Math.cos(rad) * level.maxSpeed * t.speed, Math.sin(rad) * level.maxSpeed * t.speed)
+                var n = 0
+                while (s.state == GameSession.State.MOVING && n++ < 20000) s.step()
+                assertEquals("level ${level.id}, $what (release at ${"%.2f".format(at)}s, ${"%.1f".format(angle)}°)", GameSession.State.WON, s.state)
+                assertEquals("level ${level.id} needs all of its ${level.bounces} bounces", 0, s.balls[0].left)
+            }
+        }
+    }
+
     /** A soft launch: a door that opens by itself is shut for a hard throw and open in time for a gentle one. */
     @Test
     fun theDoorThatOpensByItselfNeedsAGentleThrow() {
@@ -196,7 +244,7 @@ class ShippedLevelsTest {
         val problems = inParallel { level ->
             val slack = if (level.difficulty <= 2) 3 else 0
             val built = level.bounces - slack
-            if (built <= 0) return@inParallel null
+            if (built <= 0 || GameSession(level).animatesWhileAiming) return@inParallel null   // a level on the level clock is searched over release times by the design lab
             val fromZone = ShotSearch.minBouncesFromZone(level, spacing = 80.0, stepDegrees = 1.0, below = built, minWindow = SHORTCUT_WINDOW)
             if (fromZone != null && fromZone < built) "${level.id}: built around $built bounces but $fromZone are enough from somewhere in its control zone" else null
         }

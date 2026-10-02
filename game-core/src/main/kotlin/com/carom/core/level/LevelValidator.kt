@@ -47,7 +47,9 @@ object LevelValidator {
         var extraBalls = 0
         for ((i, e) in level.elements.withIndex()) {
             val name = "element #$i (${e.kind.name.lowercase()}${if (e.id.isNotEmpty()) " '${e.id}'" else ""})"
-            if (e.x < 0 || e.y < 0 || e.x > level.width || e.y > level.height) problems += "$name is outside the level"
+            // A barrier may be anchored to the frame like a wall (centre up to 60 outside it); a zone or portal must be inside.
+            val bleed = if (e.physical) LevelDefaults.WALL_THICKNESS else 0.0
+            if (e.x < -bleed || e.y < -bleed || e.x > level.width + bleed || e.y > level.height + bleed) problems += "$name is outside the level"
             if (e.id.isNotEmpty() && !ids.add(e.id)) problems += "$name: the id is used twice"
             if (e.channel !in 0..15) problems += "$name: channel must be 0..15"
             if (e.kind == ElementKind.PORTAL) {

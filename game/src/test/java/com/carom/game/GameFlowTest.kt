@@ -300,9 +300,9 @@ class GameFlowTest {
     }
 
     @Test
-    fun theCampaignIsSixWorldsOfTenLevels() {
+    fun theCampaignIsEightWorldsOfTenLevels() {
         val app = GameApp(LevelRepository(DirectorySource(levelsDir)), MapStore())
-        assertEquals(60, app.levels.size)
+        assertEquals(80, app.levels.size)
     }
 
     @Test

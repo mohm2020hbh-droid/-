@@ -2,6 +2,7 @@ package com.carom.core.level
 
 import com.carom.core.math.Vec2
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 
 /**
@@ -24,6 +25,7 @@ import kotlin.math.sin
  *   "controlZone": {"top": 1280},     // optional: where the ball may be moved before a throw (see [parseZone])
  *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
  *   "guide": {"afterFails": 10, "angle": 271.5}, // optional path hint for players who keep failing
+ *   "timing": {"from": [450, 1620], "angle": 262, "width": 4, "speed": 1, "open": 3.1, "close": 4.4}, // optional: a throw that wins on the level clock (see Timing)
  *   "obstacles": [
  *     {"type": "wall", "points": [800, 0, 800, 600], "thickness": 30, "closed": false},
  *     {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 40, "angle": 45, "round": 14},
@@ -86,6 +88,7 @@ object LevelParser {
                 zone = parseZone(root, size, ball, root.number("ballRadius") ?: LevelDefaults.BALL_RADIUS),
                 hint = parseHint(root["hint"]),
                 guide = root["guide"]?.let { parseGuide(it) },
+                timing = root["timing"]?.let { parseTiming(it) },
                 elements = elements,
                 exitRequired = exitRequired.toInt(),
                 drag = (root.number("drag") ?: LevelDefaults.DRAG).also {
@@ -218,10 +221,7 @@ object LevelParser {
             ?: Vec2(obj.number("w") ?: DEFAULT_ZONE, obj.number("h") ?: obj.number("w") ?: DEFAULT_ZONE)
         fun flag(vararg keys: String, default: Boolean): Boolean = keys.firstNotNullOfOrNull { obj[it] as? Boolean } ?: default
         fun num(vararg keys: String, default: Double): Double = keys.firstNotNullOfOrNull { obj.number(it) } ?: default
-        val moving = if (flag("isMoving", default = true)) (obj["moving"] as? Map<*, *>)?.let { m ->
-            val to = m["to"]?.let { point(it, "$where.moving.to") } ?: throw LevelFormatException("$where.moving.to is required")
-            Moving(to.x, to.y, positive(m.number("period") ?: 4.0, "$where.moving.period"), wave(m["wave"], where), m.number("phase") ?: 0.0)
-        } else null
+        val moving = if (flag("isMoving", default = true)) (obj["moving"] as? Map<*, *>)?.let { m -> parseMoving(m, pos, "$where.moving") } else null
         val scaling = if (flag("isScaling", default = true)) (obj["scaling"] as? Map<*, *>)?.let { m ->
             val to = m["to"]?.let { point(it, "$where.scaling.to") } ?: throw LevelFormatException("$where.scaling.to is required")
             Scaling(to.x, to.y, positive(m.number("period") ?: 4.0, "$where.scaling.period"), wave(m["wave"], where), m.number("phase") ?: 0.0)
@@ -261,6 +261,73 @@ object LevelParser {
         )
     }
 
+
+    /**
+     * `moving`: `to` (the far end of a line), or `path` ("line", "circle", "polyline") with `points` (a chain), or `center`,
+     * `radius`, `angle` (a circle); `mode` ("pingpong" or "loop"); `period` seconds for a whole cycle, or `speed` in units per
+     * second instead; `delay`, `phase`, `pause`, `speedVar`, `wave`, `sweep`, `clockwise`; `clock` ("launch" or "level").
+     */
+    private fun parseMoving(m: Map<*, *>, start: Vec2, where: String): Moving {
+        val route = when (val r = (m["path"] as? String)?.lowercase()) {
+            null -> if (m["points"] != null) Route.POLYLINE else if (m["center"] != null) Route.CIRCLE else Route.LINE
+            "line" -> Route.LINE
+            "circle" -> Route.CIRCLE
+            "polyline", "chain" -> Route.POLYLINE
+            else -> throw LevelFormatException("$where: unknown path '$r'")
+        }
+        val cycle = when (val c = (m["mode"] as? String)?.lowercase()) {
+            null, "pingpong", "ping-pong" -> if (route == Route.CIRCLE && m["sweep"] == null && m["wave"] == null) Cycle.LOOP else Cycle.PINGPONG
+            "loop" -> Cycle.LOOP
+            else -> throw LevelFormatException("$where: unknown mode '$c'")
+        }
+        val clock = when (val c = (m["clock"] as? String)?.lowercase()) {
+            null, "launch" -> Clock.LAUNCH
+            "level" -> Clock.LEVEL
+            else -> throw LevelFormatException("$where: unknown clock '$c'")
+        }
+        val to = m["to"]?.let { point(it, "$where.to") }
+        val chain = (m["points"] as? List<*>)?.let { list -> (list.indices step 2).map { Vec2(list[it].toDouble(where), list[it + 1].toDouble(where)) } } ?: emptyList()
+        val center = m["center"]?.let { point(it, "$where.center") }
+        when (route) {
+            Route.LINE -> if (to == null) throw LevelFormatException("$where.to is required")
+            Route.POLYLINE -> if (chain.isEmpty()) throw LevelFormatException("$where.points needs at least one point")
+            Route.CIRCLE -> if (center == null || m.number("radius") == null) throw LevelFormatException("$where: a circle needs center and radius")
+        }
+        val pause = (m.number("pause") ?: 0.0).also { if (it < 0.0) throw LevelFormatException("$where.pause must not be negative") }
+        val sweep = m.number("sweep") ?: 180.0
+        val radius = m.number("radius") ?: 0.0
+        val pingpong = cycle == Cycle.PINGPONG
+        val length: Double = when (route) {
+            Route.LINE -> hypot((to?.x ?: 0.0) - start.x, (to?.y ?: 0.0) - start.y)
+            Route.POLYLINE -> {
+                var total = 0.0
+                var px = start.x
+                var py = start.y
+                for (p in chain) { total += hypot(p.x - px, p.y - py); px = p.x; py = p.y }
+                if (!pingpong) total += hypot(start.x - px, start.y - py)
+                total
+            }
+            Route.CIRCLE -> if (pingpong) Math.toRadians(sweep) * radius else 2 * Math.PI * radius
+        }
+        val speed = m.number("speed")
+        val period = when {
+            speed != null -> positive(speed, "$where.speed").let { (if (pingpong) 2 * length / it else length / it) + (if (pingpong) 2 * pause else 0.0) }
+            else -> positive(m.number("period") ?: m.number("duration") ?: 4.0, "$where.period")
+        }
+        if (pingpong && 2 * pause >= period) throw LevelFormatException("$where: the pauses leave no time to move")
+        val speedVar = m.number("speedVar") ?: 0.0
+        if (speedVar <= -1.0 || speedVar >= 1.0) throw LevelFormatException("$where.speedVar must be between -1 and 1")
+        return Moving(
+            toX = to?.x ?: start.x, toY = to?.y ?: start.y, period = period, wave = wave(m["wave"], where), phase = m.number("phase") ?: 0.0,
+            route = route, cycle = cycle, delay = (m.number("delay") ?: 0.0).also { if (it < 0.0) throw LevelFormatException("$where.delay must not be negative") },
+            pause = pause, speedVar = speedVar, clock = clock, points = chain,
+            centerX = center?.x ?: 0.0, centerY = center?.y ?: 0.0, radius = radius, startAngle = m.number("angle") ?: 0.0,
+            sweep = sweep, clockwise = m["clockwise"] as? Boolean ?: true,
+        )
+    }
+
+    private fun Any?.toDouble(where: String): Double = (this as? Number)?.toDouble() ?: throw LevelFormatException("$where: numbers expected")
+
     private fun wave(value: Any?, where: String): Wave = when (val w = (value as? String)?.lowercase()) {
         null, "sine", "pingpong", "smooth" -> Wave.SINE
         "linear", "triangle" -> Wave.LINEAR
@@ -284,6 +351,18 @@ object LevelParser {
             afterFails = after.toInt(),
             angle = obj.number("angle") ?: throw LevelFormatException("'guide.angle' is required"),
             from = obj["from"]?.let { point(it, "guide.from") },
+        )
+    }
+
+    private fun parseTiming(value: Any): Timing {
+        val obj = value as? Map<*, *> ?: throw LevelFormatException("'timing' must be an object")
+        fun need(key: String) = obj.number(key) ?: throw LevelFormatException("'timing.$key' is required")
+        val open = need("open")
+        val close = need("close")
+        if (close < open) throw LevelFormatException("'timing.close' must not be before 'timing.open'")
+        return Timing(
+            from = point(obj["from"] ?: throw LevelFormatException("'timing.from' is required"), "timing.from"),
+            angle = need("angle"), width = need("width"), speed = obj.number("speed") ?: 1.0, open = open, close = close,
         )
     }
 
