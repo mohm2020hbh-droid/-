@@ -11,6 +11,8 @@ import com.carom.core.game.GameSession
 import com.carom.core.game.GameTuning
 import com.carom.core.game.HintRoute
 import com.carom.core.game.MomentumAim
+import com.carom.core.game.PressCounter
+import com.carom.core.game.RestartKind
 import com.carom.core.game.TouchControl
 import com.carom.core.game.TripleTap
 import com.carom.core.level.ControlZone
@@ -87,12 +89,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** Three quick taps anywhere start the attempt over; the taps themselves are never taken for anything else. */
     private val taps = TripleTap()
 
+    /** Quick presses of the restart button: the third in a row is a full manual restart, like three taps on the screen. */
+    private val restartPresses = PressCounter()
+
+    /** When the touch being handled happened (seconds on the event clock): the time of a button press, which has none of its own. */
+    private var touchTime = 0.0
+
     /** How visible the control zone's line is now (0..1): full while the player has the ball, quieter while it flies, faint once it is beyond reach. */
     private var zoneAlpha = 1f
     private val hint: String? = level.hintFor(kit.text.language)
     private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
 
-    private val restartButton = UiButton(UiButton.Style.ICON, icon = Icon.RESTART) { restart() }
+    internal val restartButton = UiButton(UiButton.Style.ICON, icon = Icon.RESTART) { pressRestart() }
     private val levelsButton = UiButton(UiButton.Style.ICON, icon = Icon.GRID) { host.showLevels(index) }
     private val hudButtons = listOf(restartButton, levelsButton)
     private var topBarY = 0f
@@ -105,7 +113,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val showsResult = isLastLevel || opensNewWorld
     private var leftForNext = false
     private val nextButton = UiButton(UiButton.Style.PRIMARY, kit.text.next, Icon.PLAY) { host.play(index + 1) }
-    private val replayButton = UiButton(UiButton.Style.OUTLINE, kit.text.restart, Icon.RESTART) { restart() }
+    private val replayButton = UiButton(UiButton.Style.OUTLINE, kit.text.restart, Icon.RESTART) { pressRestart() }
     private val menuButton = UiButton(UiButton.Style.OUTLINE, kit.text.levels, Icon.GRID) { host.showLevels(index) }
 
     /** Seconds since the attempt was won or lost, and seconds on this screen (for looping animations). */
@@ -484,8 +492,8 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         addRipple(b.x, b.y)
     }
 
+    /** A ball released from a container: a ripple where it appears, and no sound (the generator is for a manual restart only). */
     override fun onBallSpawned(ball: Int, x: Double, y: Double) {
-        host.sound(Sound.RESPAWN)
         addRipple(x, y)
     }
 
@@ -514,7 +522,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         }
     }
 
-    /** Straight into the next attempt: a new ball at the start, everything as it was, nothing to press. */
+    /** Straight into the next attempt after a loss: a new ball at the start, everything as it was, nothing to press and nothing to hear. */
     private fun retry() {
         val fails = host.app.progress.recordFail(index)
         session.restart()
@@ -524,7 +532,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         endTime = 0f
         for (r in ripples) r.alive = false
         respawnTime = 0f
-        host.sound(Sound.RESPAWN)
         guideShown = guideDue(fails)
     }
 
@@ -534,7 +541,16 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         return fails > guide.afterFails && route?.scores == true
     }
 
-    private fun restart() {
+    /** A press of the restart button: quiet, unless it is the third in a row. */
+    private fun pressRestart() {
+        restart(if (restartPresses.press(touchTime)) RestartKind.TRIPLE else RestartKind.MANUAL)
+    }
+
+    /**
+     * The player starts the attempt over. Only a [RestartKind.TRIPLE] one, once everything is back at the start, charges the
+     * generator (a very soft hum); the other kinds are silent, and a lost try never comes through here at all.
+     */
+    private fun restart(kind: RestartKind) {
         host.stopSound(Sound.SPIN)
         session.restart()
         taps.cancel()
@@ -550,9 +566,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         for (r in ripples) r.alive = false
         for (s in sparks) s.alive = false
         host.soundPitch(1f)
-        host.sound(Sound.RESPAWN)
         respawnTime = 0f
         guideShown = guideDue()
+        if (kind.chargesGenerator) {
+            restartPresses.cancel()
+            host.sound(Sound.GENERATOR)
+        }
     }
 
     // ---------------------------------------------------------------- scoring: the fan
@@ -615,6 +634,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     // ---------------------------------------------------------------- input
 
     override fun onTouch(e: MotionEvent): Boolean {
+        touchTime = seconds(e)
         if (overlayProgress > 0f) return routeToButtons(e, overlayButtons())
         if (!swipeActive && !aim.isActive && routeToButtons(e, hudButtons)) {
             taps.cancel()
@@ -636,7 +656,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             MotionEvent.ACTION_DOWN -> taps.down(e.x / unit, e.y / unit, seconds(e))
             MotionEvent.ACTION_MOVE -> taps.move(e.x / unit, e.y / unit)
             MotionEvent.ACTION_UP -> if (taps.up(seconds(e)) && (session.state == GameSession.State.AIMING || session.state == GameSession.State.MOVING)) {
-                restart()
+                restart(RestartKind.TRIPLE)
                 return true
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_DOWN -> taps.cancel()

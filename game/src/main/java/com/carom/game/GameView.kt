@@ -200,7 +200,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
             Sound.TAP -> soundFx.tap()
             Sound.SPIN -> soundFx.spin()
             Sound.EXPLOSION -> soundFx.explosion()
-            Sound.RESPAWN -> soundFx.respawn()
+            Sound.GENERATOR -> soundFx.generator()
             Sound.FIZZLE -> soundFx.fizzle()
         }
     }

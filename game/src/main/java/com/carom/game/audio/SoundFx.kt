@@ -112,7 +112,7 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
                 "tap" to (Synth.tap() to 2),
                 "spin" to (Synth.spin() to 1),
                 "explosion" to (Synth.explosion() to 1),
-                "respawn" to (Synth.respawn() to 2),
+                "generator" to (Synth.generator() to 1),
                 "fizzle" to (Synth.fizzle() to 1),
                 "portal" to (Synth.portal() to 2),
                 "clock" to (Synth.clock() to 2),
@@ -170,8 +170,11 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
 
     fun explosion() = play("explosion", 0.95f, priority = VoicePool.Priority.EXIT_COMPLETE)
 
-    /** The ball being recharged at its start, whether a try was lost or the player started again. */
-    fun respawn() = play("respawn", 0.62f, priority = VoicePool.Priority.UI)
+    /**
+     * The small generator of a full manual restart (three presses of restart): a hum far below the bounce in loudness, in the
+     * background. Never for a lost try, a collision or a ball released from a container.
+     */
+    fun generator() = play("generator", GENERATOR_VOLUME, priority = VoicePool.Priority.UI)
 
     fun fizzle() = play("fizzle", 0.6f, priority = VoicePool.Priority.UI)
 
@@ -268,6 +271,9 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
 
         /** Sounds that can play at once. */
         const val POOL_SIZE = 10
+
+        /** The generator's playback volume: about a tenth of the bounce's (which is 0.7..1), so it stays in the background. */
+        const val GENERATOR_VOLUME = 0.14f
 
         /** AudioTrack refuses very low rates. */
         const val MIN_RATE = 4000

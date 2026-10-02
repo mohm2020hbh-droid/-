@@ -13,7 +13,11 @@ import com.carom.game.ui.WorldPalette
 enum class Haptic { CLICK, BOUNCE, BREAK, EXPLOSION, SUCCESS }
 
 enum class Sound {
-    IMPACT, SHATTER, WIN, TAP, SPIN, EXPLOSION, RESPAWN, FIZZLE,
+    IMPACT, SHATTER, WIN, TAP, SPIN, EXPLOSION,
+
+    /** The generator of a full manual restart (three presses of restart): very soft, short, and never a sign of a loss. */
+    GENERATOR,
+    FIZZLE,
 
     /** A ball entering a portal. */
     PORTAL,
