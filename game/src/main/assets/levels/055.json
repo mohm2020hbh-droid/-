@@ -1,17 +1,1 @@
-{
-  "name": "Portal and Well",
-  "difficulty": 9,
-  "concept": "Combination: a well bends the ball into the portal",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [140, 1360],
-  "goal": [560, 610],
-  "obstacles": [
-    {"type": "wall", "points": [300, 350, 700, 350, 700, 750, 300, 750], "closed": true}
-  ],
-  "elements": [
-    {"kind": "portal", "pos": [650, 1000], "scale": [170, 170], "id": "a", "link": "b", "rotation": 270},
-    {"kind": "portal", "pos": [450, 530], "scale": [170, 170], "id": "b", "link": "a", "rotation": -45},
-    {"kind": "attractive", "pos": [420, 990], "scale": [480, 480], "force": 300}
-  ]
-}
+{"name":"Portal and Corner","difficulty":9,"concept":"Portal routing: a hexagon above the bar, bank round it","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[390,1620],"goal":[180,360],"obstacles":[{"type":"wall","points":[-60,960,960,960]},{"type":"poly","points":[540,660,460,790,320,790,240,660,320,530,460,530]}],"elements":[{"kind":"portal","id":"a","link":"b","pos":[390,1220],"scale":[170,170],"rotation":180},{"kind":"portal","id":"b","link":"a","pos":[660,750],"scale":[170,170],"rotation":180}]}

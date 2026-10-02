@@ -1,17 +1,1 @@
-{
-  "name": "First Portal",
-  "difficulty": 7,
-  "concept": "Portal routing: the only way into the room is through a portal",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [760, 1360],
-  "goal": [520, 650],
-  "hint": {"en": "Enter one portal and leave by the other", "ar": "ادخل من بوابة واخرج من الأخرى"},
-  "obstacles": [
-    {"type": "wall", "points": [410, 540, 790, 540, 790, 960, 410, 960], "closed": true}
-  ],
-  "elements": [
-    {"kind": "portal", "pos": [300, 1050], "scale": [170, 170], "id": "a", "link": "b", "rotation": 0},
-    {"kind": "portal", "pos": [530, 800], "scale": [170, 170], "id": "b", "link": "a", "rotation": 90}
-  ]
-}
+{"name":"First Portal","difficulty":7,"concept":"Portal routing: the only way into the room is through a portal","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[750,1620],"goal":[670,460],"obstacles":[{"type":"wall","points":[-60,1020,960,1020]}],"elements":[{"kind":"portal","id":"a","link":"b","pos":[360,1250],"scale":[170,170],"rotation":90},{"kind":"portal","id":"b","link":"a","pos":[660,750],"scale":[170,170],"rotation":90}],"hint":{"en":"Enter one portal and leave by the other","ar":"ادخل من بوابة واخرج من الأخرى"}}

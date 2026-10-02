@@ -1,13 +1,1 @@
-{
-  "name": "Side Step",
-  "difficulty": 1,
-  "concept": "Positioning: move the ball past the wall's end first",
-  "bounces": 1,
-  "goalRadius": 96,
-  "ball": [450, 1650],
-  "goal": [780, 450],
-  "hint": {"en": "Move the ball anywhere near it before you let go", "ar": "حرّك الكرة إلى أي مكان قربها قبل أن تتركها"},
-  "obstacles": [
-    {"type": "wall", "points": [0, 1000, 650, 1000]}
-  ]
-}
+{"name":"Side Step","difficulty":1,"concept":"Positioning: move the ball past the wall's end first","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[260,1620],"goal":[740,600],"obstacles":[{"type":"wall","points":[-60,1040,600,1040]}],"hint":{"en":"Move the ball anywhere in the frame before you let go","ar":"حرّك الكرة إلى أي مكان داخل الإطار قبل أن تتركها"}}

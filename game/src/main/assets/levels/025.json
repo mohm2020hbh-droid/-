@@ -1,17 +1,1 @@
-{
-  "name": "Pad and Mirror",
-  "difficulty": 5,
-  "concept": "Angles: the pad sets the angle, the mirror finishes the job",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [440, 1660],
-  "goal": [100, 550],
-  "obstacles": [
-    {"type": "wall", "points": [0, 1150, 550, 1150]},
-    {"type": "wall", "points": [900, 700, 350, 700]},
-    {"type": "wall", "points": [211.6, 368.1, 588.4, 631.9]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [750, 990], "scale": [280, 260], "rotation": -164.1, "force": 6}
-  ]
-}
+{"name":"Pad and Bank","difficulty":5,"concept":"Angles: the pad sets the angle, the ceiling finishes the job","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[150,1620],"goal":[220,700],"obstacles":[{"type":"wall","points":[-60,930,600,930]}],"elements":[{"kind":"booster","pos":[660,1020],"scale":[300,300],"rotation":180,"force":6}]}

@@ -1,17 +1,1 @@
-{
-  "name": "Two Pads",
-  "difficulty": 6,
-  "concept": "Combination: two pads, one after the other",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [740, 1500],
-  "goal": [250, 450],
-  "obstacles": [
-    {"type": "wall", "points": [0, 1200, 450, 1200]},
-    {"type": "wall", "points": [900, 750, 450, 750]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [630, 1060], "scale": [320, 260], "rotation": -117.1, "force": 6},
-    {"kind": "booster", "pos": [160, 915], "scale": [260, 300], "rotation": -101.6, "force": 6}
-  ]
-}
+{"name":"Boost Master","difficulty":6,"concept":"Combination: two pads turn the ball twice","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[570,1620],"goal":[640,730],"obstacles":[{"type":"wall","points":[960,1050,450,1050]}],"elements":[{"kind":"booster","pos":[600,960],"scale":[300,300],"rotation":0,"force":6},{"kind":"booster","pos":[240,1200],"scale":[300,300],"rotation":0,"force":6}]}

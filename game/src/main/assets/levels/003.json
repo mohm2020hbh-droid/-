@@ -1,12 +1,1 @@
-{
-  "name": "Angle",
-  "difficulty": 1,
-  "concept": "Angles: a diagonal shot past a block",
-  "bounces": 2,
-  "goalRadius": 96,
-  "ball": [200, 1700],
-  "goal": [700, 450],
-  "obstacles": [
-    {"type": "rect", "x": 505, "y": 1145, "w": 110, "h": 110}
-  ]
-}
+{"name":"Angle","difficulty":1,"concept":"Angles: a diagonal shot past a block","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[700,820],"obstacles":[{"type":"wall","points":[960,1200,440,1200]}]}

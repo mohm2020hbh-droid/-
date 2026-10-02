@@ -1,16 +1,1 @@
-{
-  "name": "Container",
-  "difficulty": 8,
-  "concept": "Multiple balls: reach the container behind the wall",
-  "bounces": 1,
-  "exitRequired": 2,
-  "controlZone": {"rect": [500, 1300, 400, 700]},
-  "ball": [700, 1600],
-  "goal": [400, 500],
-  "obstacles": [
-    {"type": "wall", "points": [500, 2000, 500, 800]}
-  ],
-  "elements": [
-    {"kind": "ballContainer", "pos": [600, 680], "scale": [150, 150], "value": 2, "vector": [-0.934, -0.357], "force": 50}
-  ]
-}
+{"name":"Container","difficulty":8,"concept":"Multiple balls: a shelf beside the cup, hit the container","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[630,1620],"goal":[570,960],"obstacles":[{"type":"wall","points":[390,810,750,810,750,1110,390,1110]},{"type":"wall","points":[960,1240,510,1240]}],"elements":[{"kind":"ballContainer","pos":[240,1080],"scale":[150,150],"value":2,"vector":[0.953,-0.303],"force":50}],"exitRequired":2}

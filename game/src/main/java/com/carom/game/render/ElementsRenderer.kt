@@ -2,11 +2,9 @@ package com.carom.game.render
 
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
-import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
-import android.graphics.Shader
 import com.carom.core.game.ElementRuntime
 import com.carom.core.game.GameSession
 import com.carom.core.level.ElementKind
@@ -25,7 +23,7 @@ import kotlin.math.sin
 
 /**
  * Draws a level's elements — barriers that move or break, force zones, portals, switches — in the world's two
- * colours and the same soft, minimal style as the walls. Each is drawn where the simulation has it now, so a
+ * colours and the same flat, minimal style as the walls. Each is drawn where the simulation has it now, so a
  * sliding or turning barrier is seen exactly where the ball would hit it. Zones are light and translucent, with
  * a little motion that shows what they do (chevrons run along a booster, rings fall into an attractor and
  * spread out of a repulsor). Nothing is allocated per frame.
@@ -42,23 +40,14 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
     private val path = Path()
     private var dashed: DashPathEffect? = null
     private var dotted: DashPathEffect? = null
-    private var bodies: Array<Shader?> = emptyArray()
 
-    private val light = Palette.blend(palette.primary, WHITE, 0.26f)
-    private val dark = Palette.blend(palette.primary, BLACK, 0.3f)
-    private val rim = Palette.blend(palette.primary, WHITE, 0.42f)
+    /** A breakable barrier is one step quieter than a wall: it can be broken, so it does not look as solid as one that cannot. */
+    private val soft = Palette.blend(palette.primary, palette.background, 0.42f)
 
     /** Rebuilds what depends on the screen scale; call after the board is laid out. */
     fun layout(unit: Float) {
         dashed = DashPathEffect(floatArrayOf(7f * unit, 7f * unit), 0f)
         dotted = DashPathEffect(floatArrayOf(1.5f * unit, 8f * unit), 0f)
-        bodies = Array(level.elements.size) { i ->
-            val e = level.elements[i]
-            if (!e.physical) null else {
-                val h = (if (e.shape == Shape.CIRCLE) e.scaleX else e.scaleY).toFloat() * board.scale / 2
-                LinearGradient(0f, -h, 0f, h, intArrayOf(light, palette.primary, dark), floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP)
-            }
-        }
     }
 
     /** Draws every element at time [clock] (seconds of screen time, for the looping motion). */
@@ -95,15 +84,9 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
             return
         }
 
-        // Body: a round-cornered panel shaded top to bottom inside a light edge, like the blocks.
-        fill.shader = null
-        fill.color = rim
+        // Body: a round-cornered panel in one flat tone, like the blocks (softer if it can be broken).
+        fill.color = if (e.data.kind == ElementKind.DESTRUCTIBLE) soft else palette.primary
         if (circle) canvas.drawCircle(0f, 0f, w / 2, fill) else canvas.drawRoundRect(box, corner, corner, fill)
-        val rimW = max(1f, 1.4f * s)
-        box.inset(rimW, rimW)
-        fill.shader = bodies.getOrNull(index)
-        if (circle) canvas.drawCircle(0f, 0f, w / 2 - rimW, fill) else canvas.drawRoundRect(box, max(0f, corner - rimW), max(0f, corner - rimW), fill)
-        fill.shader = null
 
         when (e.data.kind) {
             ElementKind.DESTRUCTIBLE -> drawCracks(canvas, w, h, e.hitsLeft, e.data.value.toInt().coerceAtLeast(1), unit)
@@ -124,7 +107,7 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
     private fun drawCracks(canvas: Canvas, w: Float, h: Float, left: Int, total: Int, unit: Float) {
         val damage = 1f - left.toFloat() / total
         val lines = 2 + (damage * 3f).toInt()
-        line.color = Palette.withAlpha(palette.background, 0.7f)
+        line.color = Palette.withAlpha(palette.background, 0.6f)
         line.strokeWidth = max(1f, 1.6f * unit)
         path.reset()
         for (k in 0 until lines) {
@@ -294,25 +277,22 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
         canvas.restore()
     }
 
-    /** A portal: a bright ring, two arcs turning against each other, and a soft glow. */
+    /** A portal: a ring and two arcs turning slowly against each other. */
     private fun drawPortal(canvas: Canvas, e: ElementRuntime, w: Float, clock: Float, unit: Float) {
         val r = w / 2
-        fill.color = Palette.withAlpha(palette.accent, 0.12f)
+        fill.color = Palette.withAlpha(palette.accent, 0.06f)
         canvas.drawCircle(0f, 0f, r, fill)
-        line.color = Palette.withAlpha(palette.accent, 0.85f)
-        line.strokeWidth = 3f * unit
+        line.color = Palette.withAlpha(palette.accent, 0.8f)
+        line.strokeWidth = 2.6f * unit
         canvas.drawCircle(0f, 0f, r - 1.5f * unit, line)
-        val speed = if (e.data.angularSpeed != 0.0) e.data.angularSpeed.toFloat() else 90f
-        box.set(-r * 0.66f, -r * 0.66f, r * 0.66f, r * 0.66f)
-        line.strokeWidth = 2.4f * unit
-        line.color = Palette.withAlpha(palette.accent, 0.6f)
+        val speed = (if (e.data.angularSpeed != 0.0) e.data.angularSpeed.toFloat() else 90f) * 0.6f
+        box.set(-r * 0.62f, -r * 0.62f, r * 0.62f, r * 0.62f)
+        line.strokeWidth = 2.2f * unit
+        line.color = Palette.withAlpha(palette.accent, 0.5f)
         canvas.drawArc(box, clock * speed, 100f, false, line)
         canvas.drawArc(box, clock * speed + 180f, 100f, false, line)
-        box.set(-r * 0.36f, -r * 0.36f, r * 0.36f, r * 0.36f)
-        line.color = Palette.withAlpha(palette.accent, 0.4f)
-        canvas.drawArc(box, -clock * speed * 1.4f, 120f, false, line)
-        fill.color = Palette.withAlpha(palette.accent, 0.6f)
-        canvas.drawCircle(0f, 0f, 3f * unit, fill)
+        fill.color = Palette.withAlpha(palette.accent, 0.5f)
+        canvas.drawCircle(0f, 0f, 2.6f * unit, fill)
     }
 
     /** Twelve tick marks round a slow-motion zone, a hand sweeping slowly among them. */
@@ -327,10 +307,5 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
         val hand = clock * 0.6f
         line.color = Palette.withAlpha(palette.accent, 0.55f)
         canvas.drawLine(0f, 0f, cos(hand) * r * 0.55f, sin(hand) * r * 0.55f, line)
-    }
-
-    private companion object {
-        const val WHITE = 0xFFFFFFFF.toInt()
-        const val BLACK = 0xFF000000.toInt()
     }
 }

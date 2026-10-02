@@ -1,14 +1,1 @@
-{
-  "name": "Shape Shifter",
-  "difficulty": 5,
-  "concept": "Combination: a disc and a triangle to bank round",
-  "bounces": 2,
-  "goalRadius": 90,
-  "controlZone": {"rect": [100, 1300, 500, 700]},
-  "ball": [350, 1700],
-  "goal": [550, 500],
-  "obstacles": [
-    {"type": "circle", "x": 250, "y": 1100, "r": 100},
-    {"type": "poly", "points": [650, 1040, 485, 755, 815, 755]}
-  ]
-}
+{"name":"Shape Shifter","difficulty":5,"concept":"Combination: a disc and a triangle to bank round","bounces":2,"controlZone":{"rect":[90,1440,720,360]},"ball":[450,1620],"goal":[740,480],"obstacles":[{"type":"poly","points":[570,630,750,810,570,990,390,810]},{"type":"wall","points":[-60,1140,340,1140]},{"type":"wall","points":[960,1140,620,1140]}]}

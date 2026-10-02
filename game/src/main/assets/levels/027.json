@@ -1,16 +1,1 @@
-{
-  "name": "Which Pad?",
-  "difficulty": 6,
-  "concept": "Positioning: one pad leads into the cup, the other does not",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [540, 1660],
-  "goal": [680, 890],
-  "obstacles": [
-    {"type": "wall", "points": [520, 650, 780, 650, 780, 1010, 520, 1010]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [200, 950], "scale": [320, 220], "rotation": 38, "force": 6},
-    {"kind": "booster", "pos": [440, 790], "scale": [240, 240], "rotation": 26.3, "force": 5}
-  ]
-}
+{"name":"Pad Relay","difficulty":6,"concept":"Combination: the first pad hands the ball to the second","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[570,1620],"goal":[420,700],"obstacles":[{"type":"wall","points":[960,1020,330,1020]}],"elements":[{"kind":"booster","pos":[300,720],"scale":[300,240],"rotation":90,"force":6},{"kind":"booster","pos":[300,1140],"scale":[300,240],"rotation":0,"force":6}]}

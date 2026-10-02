@@ -1,13 +1,1 @@
-{
-  "name": "Square Room",
-  "difficulty": 3,
-  "concept": "Angles: bank round a tilted square",
-  "bounces": 1,
-  "goalRadius": 90,
-  "controlZone": {"rect": [200, 1300, 500, 700]},
-  "ball": [450, 1700],
-  "goal": [450, 500],
-  "obstacles": [
-    {"type": "rect", "x": 210, "y": 910, "w": 280, "h": 280, "angle": 30}
-  ]
-}
+{"name":"Square Room","difficulty":3,"concept":"Angles: bank round a tilted square","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[150,1620],"goal":[340,370],"obstacles":[{"type":"poly","points":[450,720,690,960,450,1200,210,960]}]}

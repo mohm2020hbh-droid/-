@@ -1,17 +1,1 @@
-{
-  "name": "Balls and Forces",
-  "difficulty": 8,
-  "concept": "Combination: a well bends the new balls",
-  "bounces": 1,
-  "exitRequired": 2,
-  "controlZone": {"top": 1300},
-  "ball": [440, 1540],
-  "goal": [610, 1040],
-  "obstacles": [
-    {"type": "wall", "points": [500, 850, 840, 850, 840, 1250, 500, 1250]}
-  ],
-  "elements": [
-    {"kind": "ballContainer", "pos": [150, 1050], "scale": [150, 150], "value": 2, "vector": [1.0, 0.0], "force": 50},
-    {"kind": "attractive", "pos": [500, 970], "scale": [460, 460], "force": 200}
-  ]
-}
+{"name":"Balls and Forces","difficulty":8,"concept":"Combination: a well bends the new balls","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[660,840],"obstacles":[{"type":"wall","points":[450,660,870,660,870,1020,450,1020]}],"elements":[{"kind":"ballContainer","pos":[270,1020],"scale":[150,150],"value":2,"vector":[0.926,-0.377],"force":50},{"kind":"attractive","pos":[540,960],"scale":[560,560],"force":300}],"exitRequired":2}

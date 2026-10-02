@@ -1,19 +1,16 @@
 package com.carom.game.render
 
 import android.graphics.Bitmap
-import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
-import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.RadialGradient
 import android.graphics.Rect
 import android.graphics.RectF
-import android.graphics.Shader
 import android.graphics.Typeface
 import com.carom.core.level.Block
+import com.carom.core.level.ControlZone
 import com.carom.core.level.LevelData
 import com.carom.core.level.Obstacle
 import com.carom.core.level.Wall
@@ -27,10 +24,10 @@ import kotlin.math.max
  * Draws a level in the world's two colours: obstacles in the main colour; ball, goal and guides in
  * the contrast colour. The level's edges are never drawn: they are the edges of the screen.
  *
- * The look is soft and light, with a little depth: the ground is gently lit from the middle, the
- * obstacles are smooth rounded bars and panels, shaded as if lit from above with a crisp light edge
- * and a soft shadow, the ball is a small glossy sphere and the goal ring glows faintly. What is
- * drawn is exactly what the ball bounces off: round ends and round corners are physics too.
+ * The look is flat, quiet and geometric: one plain ground, obstacles in one flat tone with clean rounded
+ * corners, a plain ball and a goal that is a ring with a fainter ring round it. No gradient, no shadow, no
+ * glow, no gloss. What is drawn is exactly what the ball bounces off: round ends and round corners are
+ * physics too.
  *
  * The ground and the obstacles never move, so they are painted once per layout into a bitmap;
  * a frame draws that bitmap and then the few moving things.
@@ -76,10 +73,7 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     private val numberBounds = Rect()
     private val numbers = Array(100) { it.toString() }
 
-    // Shaders for the moving parts, built at the origin once per layout and moved into place.
     private val ballPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val ballShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val goalGlowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val zonePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     /**
@@ -98,25 +92,10 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         bladePx.set(blade)
         bladePx.transform(Matrix().apply { setScale(r, r) })
         outlines.clear()
-        ballPaint.shader = RadialGradient(
-            -0.35f * r, -0.4f * r, 1.45f * r,
-            intArrayOf(Palette.blend(palette.accent, WHITE, 0.75f), palette.accent, Palette.blend(palette.accent, BLACK, 0.22f)),
-            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP,
-        )
-        ballShadowPaint.shader = RadialGradient(
-            0f, 0f, 1.1f * r, intArrayOf(Palette.withAlpha(BLACK, 0.4f), Palette.withAlpha(BLACK, 0f)), null, Shader.TileMode.CLAMP,
-        )
-        val g = level.goalRadius.toFloat() * scale
-        goalGlowPaint.shader = RadialGradient(
-            0f, 0f, 1.8f * g,
-            intArrayOf(Palette.withAlpha(palette.accent, 0.07f), Palette.withAlpha(palette.accent, 0.05f), Palette.withAlpha(palette.accent, 0.2f), Palette.withAlpha(palette.accent, 0f)),
-            floatArrayOf(0f, 0.5f, 0.57f, 1f), Shader.TileMode.CLAMP,
-        )
-        zonePaint.shader = RadialGradient(
-            0f, 0f, DIAL_RADIUS * r,
-            intArrayOf(Palette.withAlpha(palette.accent, 0.075f), Palette.withAlpha(palette.accent, 0.04f), Palette.withAlpha(palette.accent, 0.015f)),
-            floatArrayOf(0f, 0.8f, 1f), Shader.TileMode.CLAMP,
-        )
+        ballPaint.shader = null
+        ballPaint.color = palette.accent
+        zonePaint.shader = null
+        zonePaint.color = Palette.withAlpha(palette.accent, 0.05f)
 
         backdrop?.recycle()
         backdrop = null
@@ -151,22 +130,15 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
     private fun paintBackdrop(canvas: Canvas) {
         val w = viewWidth.toFloat()
         val h = viewHeight.toFloat()
-        // The ground: gently lighter in the middle, deepening towards the edges.
-        val ground = Paint().apply {
-            shader = RadialGradient(
-                w / 2, h * 0.42f, hypot(w, h) * 0.62f,
-                intArrayOf(Palette.blend(palette.background, WHITE, 0.07f), palette.background, Palette.blend(palette.background, BLACK, 0.32f)),
-                floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP,
-            )
-        }
-        canvas.drawRect(0f, 0f, w, h, ground)
+        // The ground: one plain colour.
+        canvas.drawColor(palette.background)
 
         // On screens shaped differently from the level, the space outside it is a deeper shade.
         val left = originX
         val top = originY
         val right = originX + level.width.toFloat() * scale
         val bottom = originY + level.height.toFloat() * scale
-        val outside = Paint().apply { color = Palette.withAlpha(palette.void, 0.85f) }
+        val outside = Paint().apply { color = palette.void }
         if (top > 0.5f) {
             canvas.drawRect(0f, 0f, w, top, outside)
             canvas.drawRect(0f, bottom, w, h, outside)
@@ -176,183 +148,67 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
             canvas.drawRect(right, top, w, bottom, outside)
         }
 
-        paintShadows(canvas)
-        for (o in level.obstacles) {
-            when (o) {
-                is Wall -> paintWall(canvas, o)
-                is Block -> paintBlock(canvas, o)
-            }
-        }
-    }
-
-    /** One soft shadow under everything, falling a little below. */
-    private fun paintShadows(canvas: Canvas) {
-        val t = level.wallThickness.toFloat() * scale
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Palette.withAlpha(BLACK, 0.42f)
-            maskFilter = BlurMaskFilter(max(1f, t * 0.35f), BlurMaskFilter.Blur.NORMAL)
+        val tone = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = palette.primary
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
         }
-        canvas.save()
-        canvas.translate(0f, t * 0.28f)
         val path = Path()
         for (o in level.obstacles) {
             path.reset()
             when (o) {
                 is Wall -> {
+                    // A bar with round ends: one flat tone.
                     addPolyline(path, o.points, o.closed)
-                    paint.style = Paint.Style.STROKE
-                    paint.strokeWidth = o.thickness.toFloat() * scale
-                    canvas.drawPath(path, paint)
+                    tone.style = Paint.Style.STROKE
+                    tone.strokeWidth = o.thickness.toFloat() * scale
+                    canvas.drawPath(path, tone)
                 }
                 is Block -> {
+                    // A panel with clean rounded corners: its core grown by the rounding, in one flat tone.
                     addPolyline(path, o.core, closed = true)
-                    paint.style = Paint.Style.FILL_AND_STROKE
-                    paint.strokeWidth = (o.radius * 2).toFloat() * scale
-                    canvas.drawPath(path, paint)
+                    tone.style = if (o.radius > 0.0) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
+                    tone.strokeWidth = (o.radius * 2).toFloat() * scale
+                    canvas.drawPath(path, tone)
                 }
             }
         }
-        canvas.restore()
     }
 
-    /**
-     * A wall: a smooth rod with round ends, shaded across its width as if lit from above (light on
-     * top, deeper underneath), inside a crisp light edge, with a soft gloss along its top.
-     */
-    private fun paintWall(canvas: Canvas, wall: Wall) {
-        val t = wall.thickness.toFloat() * scale
-        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
-            strokeWidth = t
-            color = rimColor
-        }
-        val path = Path()
-        addPolyline(path, wall.points, wall.closed)
-        canvas.drawPath(path, edge)
-
-        val body = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-            strokeWidth = max(1f, t - 2f * rimWidth)
-        }
-        val gloss = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeCap = Paint.Cap.ROUND
-            strokeWidth = t * 0.12f
-            color = Palette.withAlpha(WHITE, 0.22f)
-        }
-        val count = if (wall.closed) wall.points.size else wall.points.size - 1
-        for (i in 0 until count) {
-            val a = wall.points[i]
-            val b = wall.points[(i + 1) % wall.points.size]
-            val ax = x(a.x)
-            val ay = y(a.y)
-            val bx = x(b.x)
-            val by = y(b.y)
-            val len = hypot(bx - ax, by - ay)
-            if (len < 1e-3f) continue
-            val ux = (bx - ax) / len
-            val uy = (by - ay) / len
-            // The side facing the light (from above, slightly left).
-            var nx = -uy
-            var ny = ux
-            if (nx * -0.3f + ny * -1f < 0f) {
-                nx = -nx
-                ny = -ny
-            }
-            val mx = (ax + bx) / 2
-            val my = (ay + by) / 2
-            body.shader = LinearGradient(
-                mx + nx * t / 2, my + ny * t / 2, mx - nx * t / 2, my - ny * t / 2,
-                intArrayOf(lightColor, palette.primary, darkColor), floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP,
-            )
-            canvas.drawLine(ax, ay, bx, by, body)
-            if (len > t) {
-                val inset = t * 0.4f
-                val gx = nx * t * 0.24f
-                val gy = ny * t * 0.24f
-                canvas.drawLine(ax + ux * inset + gx, ay + uy * inset + gy, bx - ux * inset + gx, by - uy * inset + gy, gloss)
-            }
-        }
-    }
-
-    /** A block: a round-cornered panel shaded from light at the top to deeper at the bottom, inside a crisp light edge. */
-    private fun paintBlock(canvas: Canvas, block: Block) {
-        val path = Path()
-        addPolyline(path, block.core, closed = true)
-        val r = block.radius.toFloat() * scale
-        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL_AND_STROKE
-            strokeJoin = Paint.Join.ROUND
-            strokeWidth = 2 * r
-            color = rimColor
-        }
-        canvas.drawPath(path, edge)
-        val top = y(block.core.minOf { it.y }) - r
-        val bottom = y(block.core.maxOf { it.y }) + r
-        val body = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = if (r > 0f) Paint.Style.FILL_AND_STROKE else Paint.Style.FILL
-            strokeJoin = Paint.Join.ROUND
-            strokeWidth = max(0f, 2 * r - 2 * rimWidth)
-            shader = LinearGradient(
-                0f, top, 0f, bottom, intArrayOf(lightColor, palette.primary, darkColor), floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP,
-            )
-        }
-        if (r > rimWidth) {
-            canvas.drawPath(path, body)
-        } else {
-            // Too small a rounding to inset the edge by; the shading covers the whole shape.
-            body.strokeWidth = 2 * r
-            canvas.drawPath(path, body)
-        }
-    }
-
-    /** The ground's colour at the screen's edge: what shows if the board is nudged by a shake. */
-    val edgeColor: Int = Palette.blend(palette.background, BLACK, 0.32f)
-
-    private val lightColor = Palette.blend(palette.primary, WHITE, 0.26f)
-    private val darkColor = Palette.blend(palette.primary, BLACK, 0.3f)
-    private val rimColor = Palette.blend(palette.primary, WHITE, 0.42f)
-    private val rimWidth: Float get() = max(1f, 1.4f * scale)
+    /** The colour at the screen's edge: what shows if the board is nudged by a shake. */
+    val edgeColor: Int get() = palette.void
 
     // ---------------------------------------------------------------- moving parts
 
     /**
-     * The goal: a ring with a faint glow and a centre point. [pulse] (0..1) animates the scoring ripple;
-     * [beat] (0..1) is the music's pulse, which lifts the glow a little on each beat (it only ever affects the picture).
+     * The goal: a ring with a fainter ring round it and a small centre point, no glow. [pulse] (0..1) animates the scoring
+     * ripple; [beat] (0..1) is the goal's brief "yes" when a ball of several enters (it never pulses with the music).
      * An exit that needs several balls shows small pips under it, [entered] of them filled.
      */
     fun drawGoal(canvas: Canvas, pulse: Float, beat: Float = 0f, entered: Int = 0, needed: Int = 1) {
         val cx = x(level.goal.x)
         val cy = y(level.goal.y)
         val r = level.goalRadius.toFloat() * scale
-        canvas.save()
-        canvas.translate(cx, cy)
-        canvas.scale(1f + 0.06f * beat, 1f + 0.06f * beat)
-        goalGlowPaint.alpha = (255 * (0.85f + 0.15f * beat)).toInt()
-        canvas.drawCircle(0f, 0f, 1.8f * r, goalGlowPaint)
-        goalGlowPaint.alpha = 255
-        canvas.restore()
         if (needed > 1) {
             val gap = r * 0.34f
             val startX = cx - gap * (needed - 1) / 2f
             for (i in 0 until needed) {
                 fillPaint.color = if (i < entered) palette.accent else Palette.withAlpha(palette.accent, 0.25f)
-                canvas.drawCircle(startX + i * gap, cy + r * 1.35f, r * 0.09f, fillPaint)
+                canvas.drawCircle(startX + i * gap, cy + r * 1.5f, r * 0.09f, fillPaint)
             }
         }
         val ring = r * 0.14f
         linePaint.pathEffect = null
         linePaint.shader = null
+        // The outer ring: fine and faint, so the goal reads as a target and not as a wall.
+        linePaint.color = Palette.withAlpha(palette.accent, 0.3f + 0.4f * beat)
+        linePaint.strokeWidth = max(1f, r * 0.035f)
+        canvas.drawCircle(cx, cy, r * OUTER_RING, linePaint)
         linePaint.color = palette.accent
         linePaint.strokeWidth = ring
         canvas.drawCircle(cx, cy, r - ring / 2, linePaint)
         fillPaint.color = palette.accent
-        canvas.drawCircle(cx, cy, r * 0.16f, fillPaint)
+        canvas.drawCircle(cx, cy, r * 0.14f, fillPaint)
         if (pulse > 0f) {
             linePaint.color = Palette.withAlpha(palette.accent, 1f - pulse)
             linePaint.strokeWidth = ring * (1f - pulse * 0.6f)
@@ -360,12 +216,45 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
         }
     }
 
+    /**
+     * The control zone's line: a quiet dashed outline of where the player has the ball. It is only a picture of where
+     * control stops, not a wall: nothing here touches the physics. [alpha] (0..1) is how much of it shows.
+     */
+    fun drawControlZone(canvas: Canvas, unit: Float, alpha: Float) {
+        if (alpha <= 0.01f) return
+        val zone = level.zone
+        linePaint.shader = null
+        linePaint.color = Palette.withAlpha(palette.accent, ZONE_LINE_ALPHA * alpha)
+        linePaint.strokeWidth = 1.7f * unit
+        if (zoneDashUnit != unit) {
+            zoneDashUnit = unit
+            zoneDash = DashPathEffect(floatArrayOf(5f * unit, 9f * unit), 0f)
+        }
+        linePaint.pathEffect = zoneDash
+        when (zone) {
+            is ControlZone.Box -> {
+                val inset = 0.85f * unit // keeps the line whole where the zone runs to the screen's edge
+                val left = max(x(zone.x), inset)
+                val top = max(y(zone.y), inset)
+                val right = kotlin.math.min(x(zone.right), viewWidth - inset)
+                val bottom = kotlin.math.min(y(zone.bottom), viewHeight - inset)
+                val corner = ballScreenRadius * ZONE_CORNER
+                canvas.drawRoundRect(left, top, right, bottom, corner, corner, linePaint)
+            }
+            is ControlZone.Circle -> canvas.drawCircle(x(zone.x), y(zone.y), zone.radius.toFloat() * scale, linePaint)
+        }
+        linePaint.pathEffect = null
+    }
+
+    private var zoneDash: DashPathEffect? = null
+    private var zoneDashUnit = 0f
+
     /** Radius of the ball on screen, in pixels. */
     val ballScreenRadius: Float get() = level.ballRadius.toFloat() * scale
 
     /**
-     * The ball at screen position (sx, sy): a small glossy sphere with the bounces it has left
-     * written in its centre. The number is part of the ball: same position, same scale.
+     * The ball at screen position (sx, sy): a plain disc with the bounces it has left written in its centre.
+     * The number is part of the ball: same position, same scale.
      */
     fun drawBall(
         canvas: Canvas, sx: Float, sy: Float, sizeFactor: Float, style: BallStyle, bouncesLeft: Int, alpha: Float = 1f,
@@ -393,15 +282,8 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
             canvas.drawCircle(sx, sy, r - ring / 2, linePaint)
             numberPaint.color = Palette.withAlpha(palette.accent, alpha)
         } else {
-            canvas.save()
-            canvas.translate(sx, sy)
-            canvas.scale(sizeFactor, sizeFactor)
-            val base = ballScreenRadius
-            ballShadowPaint.alpha = a
-            canvas.drawCircle(base * 0.06f, base * 0.24f, base * 1.1f, ballShadowPaint)
             ballPaint.alpha = a
-            canvas.drawCircle(0f, 0f, base, ballPaint)
-            canvas.restore()
+            canvas.drawCircle(sx, sy, r, ballPaint)
             numberPaint.color = Palette.withAlpha(palette.background, alpha)
             if (style == BallStyle.CRACKED) drawCracks(canvas, sx, sy, r)
         }
@@ -602,5 +484,12 @@ class BoardRenderer(private val level: LevelData, private val palette: WorldPale
 
         /** The swipe dial's radius, in ball radii. */
         const val DIAL_RADIUS = 1.7f
+
+        /** How strong the control zone's line is at full visibility, and how round its corners are (in ball radii). */
+        const val ZONE_LINE_ALPHA = 0.34f
+
+        /** The goal's fine outer ring, in goal radii. */
+        const val OUTER_RING = 1.22f
+        const val ZONE_CORNER = 1f
     }
 }

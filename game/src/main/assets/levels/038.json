@@ -1,16 +1,1 @@
-{
-  "name": "Pull or Push",
-  "difficulty": 7,
-  "concept": "Positioning: choose the well or the hill",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [60, 1440],
-  "goal": [400, 500],
-  "obstacles": [
-    {"type": "rect", "x": 300, "y": 760, "w": 300, "h": 180}
-  ],
-  "elements": [
-    {"kind": "attractive", "pos": [250, 910], "scale": [460, 460], "force": 150},
-    {"kind": "repulsive", "pos": [750, 910], "scale": [480, 480], "force": 200}
-  ]
-}
+{"name":"Pull or Push","difficulty":7,"concept":"Positioning: choose the well or the hill","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[360,810],"obstacles":[{"type":"wall","points":[-60,1080,610,1080]}],"elements":[{"kind":"attractive","pos":[660,960],"scale":[520,520],"force":300},{"kind":"repulsive","pos":[300,1020],"scale":[480,480],"force":100}]}

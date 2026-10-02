@@ -1,16 +1,1 @@
-{
-  "name": "Well and Pad",
-  "difficulty": 6,
-  "concept": "Combination: a pad launches, a well finishes",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [750, 1400],
-  "goal": [680, 940],
-  "obstacles": [
-    {"type": "wall", "points": [520, 700, 800, 700, 800, 1060, 520, 1060]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [210, 1000], "scale": [260, 280], "rotation": 14.7, "force": 5},
-    {"kind": "attractive", "pos": [630, 860], "scale": [540, 540], "force": 200}
-  ]
-}
+{"name":"Well and Pad","difficulty":6,"concept":"Combination: a pad launches, a well finishes","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[330,1620],"goal":[530,860],"obstacles":[{"type":"wall","points":[960,1140,540,1140]},{"type":"wall","points":[960,1080,300,1080]}],"elements":[{"kind":"attractive","pos":[360,1020],"scale":[480,480],"force":300},{"kind":"booster","pos":[600,720],"scale":[300,300],"rotation":270,"force":6}]}

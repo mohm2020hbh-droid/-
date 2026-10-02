@@ -22,14 +22,17 @@ object Palette {
     val TEXT_DIM: Int = withAlpha(TEXT, 0.55f)
     val LINE: Int = withAlpha(TEXT, 0.2f)
 
-    /** Calm, deep grounds with a soft main colour and a light contrast colour. */
+    /**
+     * One flat, quiet ground per world, a muted main tone for the obstacles, and a light contrast for what the player
+     * touches. Obstacles are always calmer than the ball and the goal, so the eye finds those first.
+     */
     private val WORLDS = arrayOf(
-        WorldPalette(0xFF0E1A2B.toInt(), 0xFF5E82B0.toInt(), 0xFFF2F5F9.toInt()), // blue + white
-        WorldPalette(0xFF19142B.toInt(), 0xFF8674B8.toInt(), 0xFFF4F1FA.toInt()), // violet + white
-        WorldPalette(0xFF0D211D.toInt(), 0xFF5E9A86.toInt(), 0xFFEFF6F2.toInt()), // green + white
-        WorldPalette(0xFF24150F.toInt(), 0xFFC5835A.toInt(), 0xFFFBF2EA.toInt()), // orange + white
-        WorldPalette(0xFF08121F.toInt(), 0xFF34597F.toInt(), 0xFF86D5E6.toInt()), // deep blue + cyan
-        WorldPalette(0xFF1E0F17.toInt(), 0xFFB0627E.toInt(), 0xFFFBEFF3.toInt()), // rose + white
+        WorldPalette(0xFF12303D.toInt(), 0xFF4F8296.toInt(), 0xFFF0EADB.toInt()), // teal + ivory
+        WorldPalette(0xFF1C2136.toInt(), 0xFF6672B0.toInt(), 0xFFEEF0FA.toInt()), // indigo + white
+        WorldPalette(0xFF2A211C.toInt(), 0xFFA47B5E.toInt(), 0xFFFAEEDF.toInt()), // umber + cream
+        WorldPalette(0xFF15302A.toInt(), 0xFF5A967E.toInt(), 0xFFE9F4EC.toInt()), // pine + mint
+        WorldPalette(0xFF241D33.toInt(), 0xFF8570B2.toInt(), 0xFFF2EEFA.toInt()), // plum + lilac
+        WorldPalette(0xFF1B1C1F.toInt(), 0xFF868C99.toInt(), 0xFFF5F2EA.toInt()), // graphite + bone
     )
 
     fun forWorld(world: Int): WorldPalette = WORLDS[Math.floorMod(world, WORLDS.size)]

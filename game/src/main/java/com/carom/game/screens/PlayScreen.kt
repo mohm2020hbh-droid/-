@@ -12,6 +12,8 @@ import com.carom.core.game.GameTuning
 import com.carom.core.game.HintRoute
 import com.carom.core.game.MomentumAim
 import com.carom.core.game.TouchControl
+import com.carom.core.game.TripleTap
+import com.carom.core.level.ControlZone
 import com.carom.core.level.ElementKind
 import com.carom.core.level.LevelData
 import com.carom.core.level.Worlds
@@ -26,6 +28,7 @@ import com.carom.game.ui.UiButton
 import com.carom.game.ui.WorldPalette
 import java.util.Locale
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.exp
@@ -79,6 +82,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** Hold, move, let go: the ball leaves with the velocity it had. */
     private val aim = MomentumAim(window = tuning.releaseWindow, gain = tuning.releaseGain)
     private var shotsFired = 0
+
+    /** Three quick taps anywhere start the attempt over; the taps themselves are never taken for anything else. */
+    private val taps = TripleTap()
+
+    /** How visible the control zone's line is now (0..1): full while the player has the ball, quieter while it flies, faint once it is beyond reach. */
+    private var zoneAlpha = 1f
     private val hint: String? = level.hintFor(kit.text.language)
     private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
 
@@ -261,6 +270,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         slowAmount += (slowTarget - slowAmount) * (1f - exp(-6f * dt))
         if (slowAmount < 0.002f && slowTarget == 0f) slowAmount = 0f
         exitFlash = max(0f, exitFlash - dt * 2.5f)
+        zoneAlpha += (zoneRest() - zoneAlpha) * (1f - exp(-5f * dt))
 
         when (session.state) {
             GameSession.State.WON -> {
@@ -278,11 +288,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override val isAnimating: Boolean
         get() = session.state == GameSession.State.MOVING || anyRipple() || anySpark() || anyShatter() ||
-            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || aim.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f ||
+            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || aim.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f || abs(zoneAlpha - zoneRest()) > 0.01f ||
             (session.state == GameSession.State.WON && (overlayProgress < 1f || !showsResult)) || (guideShown && session.state == GameSession.State.AIMING)
 
     /** A level with force zones, portals and the like keeps moving even while the player aims (at a gentle rate). */
     override val idleRedrawMillis: Long get() = if (level.elements.any { it.kind != ElementKind.SOLID && it.kind != ElementKind.TOUCH_ZONE }) 33L else 0L
+
+    /** The zone line's alpha [update] is heading for. */
+    private fun zoneRest(): Float = when (session.controlPhase) {
+        GameSession.ControlPhase.READY, GameSession.ControlPhase.REGRABBED -> 1f
+        GameSession.ControlPhase.LAUNCHED, GameSession.ControlPhase.RELEASED_AGAIN -> 0.7f
+        GameSession.ControlPhase.OUTSIDE_CONTROL_ZONE -> if (ended) 0f else 0.3f
+    }
 
     private fun anyRipple() = ripples.any { it.alive }
     private fun anySpark() = sparks.any { it.alive }
@@ -397,7 +414,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val s = impact.strength.toFloat().coerceIn(0f, 1f)
         host.sound(Sound.IMPACT, impact.strength)
         host.haptic(if (impact.fatal) Haptic.BREAK else Haptic.BOUNCE, impact.strength)
-        shake(kit.u((if (impact.fatal) 4f else 3f) + 6f * s), if (impact.fatal) BREAK_SHAKE_TIME else BOUNCE_SHAKE_TIME)
+        shake(kit.u((if (impact.fatal) 3f else 2f) + 3.5f * s), if (impact.fatal) BREAK_SHAKE_TIME else BOUNCE_SHAKE_TIME)
         // The ring is round the ball; the flash is where it touched the wall (the ball's centre, back along the wall's normal).
         addRipple(
             impact.x, impact.y, power = 0.4f + 0.6f * s,
@@ -446,7 +463,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             collide(hit)
         } else {
             host.haptic(Haptic.BREAK)
-            shake(kit.u(4f), BREAK_SHAKE_TIME)
+            shake(kit.u(3f), BREAK_SHAKE_TIME)
         }
         startShatter(board.x(x), board.y(y), awayX, awayY)
         host.sound(Sound.SHATTER, hit?.strength ?: 1.0)
@@ -488,7 +505,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                         kind = SparkKind.CHUNK, spin = (4f + 6f * random.nextFloat()) * if (random.nextBoolean()) 1f else -1f)
                 }
                 host.sound(Sound.SHATTER, 0.5)
-                shake(kit.u(3f), BREAK_SHAKE_TIME) // (the hit that broke it brings the vibration)
+                shake(kit.u(2f), BREAK_SHAKE_TIME) // (the hit that broke it brings the vibration)
             }
             GameSession.ElementEvent.SWITCHED -> {
                 host.sound(Sound.TAP)
@@ -524,6 +541,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun restart() {
         host.stopSound(Sound.SPIN)
         session.restart()
+        taps.cancel()
         swipe.cancel()
         swipeActive = false
         aim.cancel()
@@ -563,7 +581,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         if (!exploded && endTime >= MORPH_END) {
             // Sparks flung off the blade tips, more and faster as it speeds up.
             val p = spinUp(endTime)
-            var n = p * p * 90f * dt + random.nextFloat()
+            var n = p * p * 30f * dt + random.nextFloat()
             while (n >= 1f) {
                 n -= 1f
                 val a = fanAngle(endTime) / 180f * PI.toFloat() + random.nextInt(4) * PI.toFloat() / 2
@@ -587,24 +605,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun explode(gx: Float, gy: Float, r: Float) {
         host.sound(Sound.EXPLOSION)
         host.haptic(Haptic.EXPLOSION)
-        shake(kit.u(9f), EXPLOSION_SHAKE_TIME)
-        repeat(36) { i ->
-            val a = (i + random.nextFloat()) / 36f * 2f * PI.toFloat()
-            val speed = kit.u(200f + 220f * random.nextFloat())
-            spark(gx + cos(a) * r * 0.4f, gy + sin(a) * r * 0.4f, cos(a) * speed, sin(a) * speed, 0.4f + 0.4f * random.nextFloat(), kit.u(2.6f), sparkColor())
-        }
-        repeat(8) { i ->
-            val a = (i + 0.5f * random.nextFloat()) / 8f * 2f * PI.toFloat()
-            val speed = kit.u(120f + 120f * random.nextFloat())
-            spark(
-                gx, gy, cos(a) * speed, sin(a) * speed, 0.55f + 0.2f * random.nextFloat(), r * 0.32f, palette.accent,
-                kind = SparkKind.CHUNK, spin = (4f + 6f * random.nextFloat()) * if (random.nextBoolean()) 1f else -1f,
-            )
-        }
-        repeat(6) {
-            val a = random.nextFloat() * 2f * PI.toFloat()
-            val d = r * (1.4f + 1.2f * random.nextFloat())
-            spark(gx + cos(a) * d, gy + sin(a) * d, 0f, 0f, 0.5f + 0.3f * random.nextFloat(), kit.u(5f + 4f * random.nextFloat()), Palette.TEXT, kind = SparkKind.STAR)
+        shake(kit.u(3f), EXPLOSION_SHAKE_TIME)
+        // Calm: a small ring of fine sparks, no fragments or twinkles.
+        repeat(14) { i ->
+            val a = (i + random.nextFloat()) / 14f * 2f * PI.toFloat()
+            val speed = kit.u(140f + 120f * random.nextFloat())
+            spark(gx + cos(a) * r * 0.4f, gy + sin(a) * r * 0.4f, cos(a) * speed, sin(a) * speed, 0.35f + 0.25f * random.nextFloat(), kit.u(2.2f), sparkColor())
         }
     }
 
@@ -614,12 +620,32 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override fun onTouch(e: MotionEvent): Boolean {
         if (overlayProgress > 0f) return routeToButtons(e, overlayButtons())
-        if (!swipeActive && !aim.isActive && routeToButtons(e, hudButtons)) return true
-        // Before the throw the ball is held and pulled; once it flies, only a ball in a touch zone can be pushed
-        // again, and that is a swipe.
+        if (!swipeActive && !aim.isActive && routeToButtons(e, hudButtons)) {
+            taps.cancel()
+            return true
+        }
+        // Three quick taps anywhere start the attempt over: a new attempt, no button, no question.
+        if (watchTaps(e)) return true
+        // The ball is held and moved: before the throw, and again after it for as long as any part of it is still inside the
+        // control zone. Once it flies, a ball in a touch zone can also be pushed, and that is a swipe.
         val holding = tuning.controlMode == GameTuning.ControlMode.HOLD && !swipeActive &&
-            (session.state == GameSession.State.AIMING || aim.isActive)
+            (session.state == GameSession.State.AIMING || aim.isActive || (e.actionMasked == MotionEvent.ACTION_DOWN && canGrabFlying(e.x, e.y)))
         return if (holding) onHoldTouch(e) else onSwipeTouch(e)
+    }
+
+    /** Feeds the finger to the triple-tap detector. True when the third tap has just lifted and the attempt was started over. */
+    private fun watchTaps(e: MotionEvent): Boolean {
+        val unit = kit.unit.toDouble()
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> taps.down(e.x / unit, e.y / unit, seconds(e))
+            MotionEvent.ACTION_MOVE -> taps.move(e.x / unit, e.y / unit)
+            MotionEvent.ACTION_UP -> if (taps.up(seconds(e)) && (session.state == GameSession.State.AIMING || session.state == GameSession.State.MOVING)) {
+                restart()
+                return true
+            }
+            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_DOWN -> taps.cancel()
+        }
+        return false
     }
 
     /**
@@ -668,6 +694,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                     aim.begin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, seconds(e))
                     return true
                 }
+                // A ball still flying inside its control zone: take hold of it where it is; the game waits while it is held.
+                if (session.state == GameSession.State.MOVING && canGrabFlying(e.x, e.y) && session.regrab()) {
+                    aim.begin(board.worldX(e.x), board.worldY(e.y), session.ball.x, session.ball.y, seconds(e))
+                    return true
+                }
             }
             MotionEvent.ACTION_MOVE -> if (aim.isActive) {
                 // Every point the finger passed through, so the ball's speed is measured faithfully.
@@ -680,10 +711,14 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             MotionEvent.ACTION_UP -> if (aim.isActive) {
                 followFinger(board.worldX(e.x), board.worldY(e.y), seconds(e))
                 val leaving = aim.release(seconds(e))
-                if (leaving != null) session.launchAt(leaving.vx, leaving.vy)
+                // Every release leaves with the speed the ball had: the first throw and each one after taking it back. Not moving: it stays.
+                if (leaving == null || !session.launchAt(leaving.vx, leaving.vy)) session.letGo()
                 return true
             }
-            MotionEvent.ACTION_CANCEL -> aim.cancel()
+            MotionEvent.ACTION_CANCEL -> if (aim.isActive) {
+                aim.cancel()
+                session.letGo()
+            }
         }
         return false
     }
@@ -703,6 +738,13 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val inZone = level.zone.reaches(board.worldX(sx), board.worldY(sy), margin)
         val onBall = hypot(sx - board.x(session.ball.x), sy - board.y(session.ball.y)) <= max(board.ballScreenRadius * 1.6f, kit.u(34f))
         return inZone || onBall
+    }
+
+    /** A flying ball can be taken back while the player still has control of it, by a touch on it (or just beside it). */
+    private fun canGrabFlying(sx: Float, sy: Float): Boolean {
+        if (!session.canRegrab) return false
+        val reach = max(board.ballScreenRadius * 2f, kit.u(GRAB_REACH))
+        return hypot(sx - board.x(session.renderX), sy - board.y(session.renderY)) <= reach
     }
 
     override fun onBack(): Boolean {
@@ -734,6 +776,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             canvas.translate(shakeX, shakeY)
         }
         board.drawBackdrop(canvas)
+        board.drawControlZone(canvas, kit.unit, zoneAlpha)
         elementsView.draw(canvas, session, clock, kit.unit)
 
         val trail = Palette.withAlpha(palette.accent, 0.35f)
@@ -743,7 +786,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
         val ballX = board.x(session.renderX)
         val ballY = board.y(session.renderY)
-        if (session.state == GameSession.State.MOVING) {
+        if (session.state == GameSession.State.MOVING || (session.state == GameSession.State.AIMING && session.throwCount > 0)) {
             val first = session.balls[0]
             board.drawShotPath(canvas, session.path, if (first.alive) ballX else Float.NaN, ballY, trail, dashed = false)
         } else if (ended) {
@@ -819,22 +862,22 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         if (respawnTime >= 0f) {
             // Popping in with a little overshoot.
             val p = (respawnTime / RESPAWN_TIME).coerceIn(0f, 1f)
-            val c = 1.7f
+            val c = 0.9f
             val q = p - 1f
             val size = (1f + (c + 1f) * q * q * q + c * q * q).coerceAtLeast(0.01f)
             board.drawBall(canvas, x, y, size, style, left)
         } else {
-            board.drawBall(canvas, x, y, if (aim.isActive || swipeActive) 1.06f else 1f, style, left)
+            board.drawBall(canvas, x, y, if (aim.isActive || swipeActive) 1.04f else 1f, style, left)
         }
     }
 
     /** Slow motion, seen: the edges of the screen close in softly and a thin ring breathes at the border. */
     private fun drawSlowMotion(canvas: Canvas) {
         val a = slowAmount
-        kit.stroke.color = Palette.withAlpha(palette.accent, 0.10f * a)
-        kit.stroke.strokeWidth = kit.u(28f) * a
+        kit.stroke.color = Palette.withAlpha(palette.accent, 0.05f * a)
+        kit.stroke.strokeWidth = kit.u(24f) * a
         canvas.drawRect(kit.u(14f) * a, kit.u(14f) * a, width - kit.u(14f) * a, height - kit.u(14f) * a, kit.stroke)
-        kit.stroke.color = Palette.withAlpha(palette.accent, (0.16f + 0.08f * sin(clock * 2.5f)) * a)
+        kit.stroke.color = Palette.withAlpha(palette.accent, (0.12f + 0.04f * sin(clock * 2.5f)) * a)
         kit.stroke.strokeWidth = kit.u(1.5f)
         canvas.drawRect(kit.u(6f), kit.u(6f), width - kit.u(6f), height - kit.u(6f), kit.stroke)
     }
@@ -964,11 +1007,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             if (ripple.power > 0f && ripple.age < IMPACT_FLASH_TIME) {
                 // The flash of a hit: a soft disc where the ball touched the wall that swells and is gone in a blink.
                 val f = 1f - ripple.age / IMPACT_FLASH_TIME
-                kit.fill.color = Palette.withAlpha(palette.accent, 0.45f * ripple.power * f)
+                kit.fill.color = Palette.withAlpha(palette.accent, 0.26f * ripple.power * f)
                 canvas.drawCircle(board.x(ripple.flashX), board.y(ripple.flashY), r * (0.55f + 0.6f * (1f - f)), kit.fill)
             }
-            kit.stroke.color = Palette.withAlpha(palette.accent, 0.7f * (1f - t))
-            kit.stroke.strokeWidth = kit.u(2f)
+            kit.stroke.color = Palette.withAlpha(palette.accent, 0.42f * (1f - t))
+            kit.stroke.strokeWidth = kit.u(1.6f)
             canvas.drawCircle(board.x(ripple.x), board.y(ripple.y), r * (1f + t * 1.2f), kit.stroke)
         }
     }
@@ -1148,13 +1191,16 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         // How far outside the (invisible) control zone a touch still picks the ball up, in dp.
         const val PICKUP_MARGIN = 48f
 
+        /** How far from a flying ball, in UI units, a touch still takes hold of it. */
+        const val GRAB_REACH = 56f
+
         // A hit's flash at the contact point, and the ball's squash (how much of its width, at the least and at the most,
         // and for how long).
         const val IMPACT_FLASH_TIME = 0.09f
         const val MAX_SQUASH = 16
         const val SQUASH_TIME = 0.11f
-        const val SQUASH_MIN = 0.05f
-        const val SQUASH_MAX = 0.14f
+        const val SQUASH_MIN = 0.04f
+        const val SQUASH_MAX = 0.09f
 
         const val RIPPLE_LIFE = 0.45f
     }

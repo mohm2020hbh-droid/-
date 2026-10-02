@@ -1,17 +1,1 @@
-{
-  "name": "Patience",
-  "difficulty": 5,
-  "concept": "Momentum: the door opens by itself, throw gently",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [450, 1740],
-  "goal": [400, 350],
-  "hint": {"en": "Some doors take a moment to open: a gentle throw arrives later", "ar": "بعض الأبواب تحتاج لحظة لتنفتح: الرمية الهادئة تصل متأخرة"},
-  "obstacles": [
-    {"type": "wall", "points": [0, 1000, 300, 1000]},
-    {"type": "wall", "points": [600, 1000, 900, 1000]}
-  ],
-  "elements": [
-    {"kind": "solid", "pos": [450, 1000], "scale": [300, 44], "moving": {"to": [760, 1000], "period": 2.4, "wave": "ONCE"}}
-  ]
-}
+{"name":"Patience","difficulty":5,"concept":"Momentum: the door opens by itself, throw gently","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[450,1620],"goal":[450,620],"obstacles":[{"type":"wall","points":[-60,1000,300,1000]},{"type":"wall","points":[960,1000,600,1000]}],"elements":[{"kind":"solid","pos":[450,1000],"scale":[240,60],"moving":{"to":[810,1000],"period":2.4,"wave":"ONCE"}}],"hint":{"en":"Some doors take a moment to open: a gentle throw arrives later","ar":"بعض الأبواب تحتاج لحظة لتنفتح: الرمية الهادئة تصل متأخرة"}}

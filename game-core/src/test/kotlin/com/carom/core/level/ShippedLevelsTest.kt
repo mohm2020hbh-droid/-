@@ -151,7 +151,7 @@ class ShippedLevelsTest {
     /** The narrowest widest-window a level may have: wide for the first taste, narrowing world by world. */
     private fun windowFloor(level: LevelData): Double {
         val number = level.id.toInt()
-        if (number <= 3) return 12.0
+        if (number <= 3) return 9.0
         return WINDOW_FLOOR[(number - 1) / Worlds.SIZE]
     }
 
@@ -205,7 +205,7 @@ class ShippedLevelsTest {
 
     private companion object {
         /** Levels 4-10, then worlds 2 to 6 (degrees). */
-        val WINDOW_FLOOR = doubleArrayOf(5.0, 3.5, 2.5, 2.0, 1.5, 1.2)
+        val WINDOW_FLOOR = doubleArrayOf(5.0, 4.0, 3.5, 3.0, 2.5, 2.0)
 
         val GENTLE_SPEEDS = listOf(0.12, 0.2, 0.3, 0.45)
 

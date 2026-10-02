@@ -29,6 +29,15 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
 
     enum class State { AIMING, MOVING, WON, FAILED }
 
+    /**
+     * Who is in charge of the ball. The player is while the ball is [READY] to throw or [REGRABBED] in their fingers;
+     * physics is once it is flying ([LAUNCHED] the first time, [RELEASED_AGAIN] after taking it back and throwing it
+     * again). When the ball has left the control zone entirely the player's control is over for the attempt
+     * ([OUTSIDE_CONTROL_ZONE]): it is physics alone, and the ball can never be taken again, even if it comes back.
+     * (A triple tap puts everything back to READY at once: see [restart].)
+     */
+    enum class ControlPhase { READY, LAUNCHED, REGRABBED, RELEASED_AGAIN, OUTSIDE_CONTROL_ZONE }
+
     enum class FailReason {
         /** Hit a wall with no bounces left. */
         OUT_OF_BOUNCES,
@@ -136,6 +145,37 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
 
     var state = State.AIMING
         private set
+
+    /** Throws in this attempt: 0 before the first, 2 or more once the ball has been taken back and thrown again. */
+    var throwCount = 0
+        private set
+
+    /** The ball is in the player's fingers after a throw (the game is paused until it is let go). */
+    private var held = false
+
+    /** The ball has been entirely outside the control zone: the player's control is over for this attempt, for good. */
+    private var controlEnded = false
+
+    /** Times the attempt has been put back to its start (a triple tap, the restart button, a retry after a loss). */
+    var resetCount = 0
+        private set
+
+    val controlPhase: ControlPhase
+        get() = when {
+            state == State.WON || state == State.FAILED || controlEnded -> ControlPhase.OUTSIDE_CONTROL_ZONE
+            held -> ControlPhase.REGRABBED
+            state == State.AIMING -> ControlPhase.READY
+            throwCount >= 2 -> ControlPhase.RELEASED_AGAIN
+            else -> ControlPhase.LAUNCHED
+        }
+
+    /**
+     * Whether the flying ball can be taken in the fingers now: the player's control is not over (some part of the ball is
+     * still inside the control zone) and the ball is in play. (Before the first throw, and after taking it back and
+     * letting it go at rest, the ball simply waits: [state] is [State.AIMING].)
+     */
+    val canRegrab: Boolean
+        get() = state == State.MOVING && !controlEnded && balls[0].alive && !balls[0].absorbed
     val bouncesLeft: Int get() = balls[0].left
     val bouncesUsed: Int get() = balls[0].total - balls[0].left
     var failReason: FailReason? = null
@@ -253,6 +293,30 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         return true
     }
 
+    /**
+     * Takes hold of the flying ball, if the player still has control of it ([canRegrab]): the game pauses and the ball is
+     * where it was, with no speed, ready to be moved ([placeBall]) and thrown again ([launchAt]). Its bounces stay used.
+     */
+    fun regrab(): Boolean {
+        if (!canRegrab) return false
+        val b = balls[0]
+        state = State.AIMING
+        held = true
+        b.body.speed = 0.0
+        b.prevX = b.body.x
+        b.prevY = b.body.y
+        accumulator = 0.0
+        return true
+    }
+
+    /**
+     * The finger let go of a ball it held, without throwing it (it was not moving): the ball waits where it was put,
+     * inside the control zone, and can be picked up and thrown as before. Does nothing for a ball that was not held.
+     */
+    fun letGo() {
+        held = false
+    }
+
     /** A swipe of (dxDp, dyDp) dp: delta × sensibility is the impulse. False if nothing was in a state to take it. */
     fun swipe(dxDp: Double, dyDp: Double): Boolean {
         val len = hypot(dxDp, dyDp)
@@ -313,6 +377,13 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         val ty = zonePoint[1].coerceIn(r, level.height - r)
         val dist = hypot(tx - b.body.x, ty - b.body.y)
         if (dist < 1e-9) return false
+        // A ball taken back while it straddles the zone's line is brought inside gradually, never with a jump.
+        if (dist > CATCH_UP && !level.zone.holds(b.body.x, b.body.y, r)) {
+            val f = CATCH_UP / dist
+            val gx = b.body.x + (tx - b.body.x) * f
+            val gy = b.body.y + (ty - b.body.y) * f
+            return placeBall(gx, gy)
+        }
         // Slide a probe from the ball towards the target: it stops at the first wall in the way,
         // so the ball can be pushed against a wall but never through it.
         probe.x = b.body.x
@@ -371,10 +442,18 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         }
         updateSlowMotion()
         rearmSwitches()
+        checkControl()
         if (flightTime >= MAX_FLIGHT_SECONDS) {
             for (i in balls.indices) if (balls[i].alive) kill(balls[i], FailReason.STOPPED)
         }
         if (state == State.MOVING && aliveCount == 0) finish(State.FAILED, lastLoss)
+    }
+
+    /** The player keeps the ball for as long as any part of it is inside the control zone; the moment it is not, for good. */
+    private fun checkControl() {
+        if (controlEnded) return
+        val b = balls[0]
+        if (!b.alive || b.absorbed || !level.zone.overlaps(b.body.x, b.body.y, b.body.radius)) controlEnded = true
     }
 
     private fun stepBall(b: BallState, dt: Double) {
@@ -747,11 +826,19 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
 
     private fun startFlight() {
         state = State.MOVING
-        gameTime = 0.0
-        flightTime = 0.0
-        currentPath.clear()
-        currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
-        for (i in elements.indices) elements[i].animate(0.0, 0.0)
+        held = false
+        throwCount++
+        if (throwCount == 1) {
+            gameTime = 0.0
+            flightTime = 0.0
+            currentPath.clear()
+            currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
+            for (i in elements.indices) elements[i].animate(0.0, 0.0)
+        } else {
+            // Thrown again: the clock and the world carry on from where they paused; the path starts a new line here.
+            currentPath.add(PATH_BREAK)
+            currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
+        }
         listener?.onLaunch()
     }
 
@@ -762,9 +849,10 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
      */
     fun restart() {
         // A shot cut short mid-flight still leaves its path so far as the reference.
-        if (state == State.MOVING) currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
+        if (state == State.MOVING || (state == State.AIMING && throwCount > 0)) currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
         if (currentPath.size > 1) previousPath = ArrayList(currentPath)
         reset()
+        resetCount++
     }
 
     private fun reset() {
@@ -795,6 +883,9 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         arm(first, level.bounces)
         accumulator = 0.0
         state = State.AIMING
+        throwCount = 0
+        held = false
+        controlEnded = false
         failReason = null
         lastImpact = null
         exitCount = 0
@@ -852,6 +943,9 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         const val MAX_FLIGHT_SECONDS = 90.0
 
         private const val CHANNELS = 16
+
+        /** The most a ball that sits across the zone's line is moved in towards the zone by one call of [placeBall]. */
+        private const val CATCH_UP = 18.0
 
         /** In [GameSession.path]: the line stops here and starts again at the next point (a portal jump). */
         val PATH_BREAK = Vec2(Double.NaN, Double.NaN)

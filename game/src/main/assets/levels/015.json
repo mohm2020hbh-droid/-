@@ -1,13 +1,1 @@
-{
-  "name": "Half Moon",
-  "difficulty": 4,
-  "concept": "Bounce: a half disc hides the goal",
-  "bounces": 1,
-  "goalRadius": 90,
-  "controlZone": {"rect": [300, 1300, 500, 700]},
-  "ball": [550, 1700],
-  "goal": [450, 550],
-  "obstacles": [
-    {"type": "poly", "points": [400, 710, 474, 722, 541, 756, 594, 809, 628, 876, 640, 950, 628, 1024, 594, 1091, 541, 1144, 474, 1178, 400, 1190]}
-  ]
-}
+{"name":"Half Moon","difficulty":4,"concept":"Bounce: a half disc hides the goal","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[400,540],"obstacles":[{"type":"poly","points":[690,870,680,920,670,970,640,1020,600,1060,550,1090,500,1100,450,1110,400,1100,350,1090,300,1060,260,1020,230,970,220,920,210,870]}]}

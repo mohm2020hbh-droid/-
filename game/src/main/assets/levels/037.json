@@ -1,15 +1,1 @@
-{
-  "name": "Push and Hexagon",
-  "difficulty": 7,
-  "concept": "Combination: the push sends the ball round the hexagon",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [350, 1600],
-  "goal": [400, 650],
-  "obstacles": [
-    {"type": "poly", "points": [650, 1050, 550, 1223.2, 350, 1223.2, 250, 1050, 350, 876.8, 550, 876.8]}
-  ],
-  "elements": [
-    {"kind": "repulsive", "pos": [150, 1190], "scale": [520, 520], "force": 300}
-  ]
-}
+{"name":"Steep Hill","difficulty":7,"concept":"Momentum: a narrower gate, a firmer throw over the hill","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[570,1620],"goal":[410,660],"obstacles":[{"type":"wall","points":[-60,1020,390,1020]},{"type":"wall","points":[960,1020,690,1020]}],"elements":[{"kind":"repulsive","pos":[540,1020],"scale":[480,480],"force":100}]}

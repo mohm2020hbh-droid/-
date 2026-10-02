@@ -1,18 +1,1 @@
-{
-  "name": "Portal and Balls",
-  "difficulty": 9,
-  "concept": "Multiple balls: the portal takes the new balls to the goal",
-  "bounces": 1,
-  "exitRequired": 2,
-  "controlZone": {"top": 1300},
-  "ball": [460, 1500],
-  "goal": [300, 750],
-  "obstacles": [
-    {"type": "wall", "points": [190, 540, 610, 540, 610, 960, 190, 960], "closed": true}
-  ],
-  "elements": [
-    {"kind": "portal", "pos": [600, 1200], "scale": [170, 170], "id": "a", "link": "b", "rotation": 180},
-    {"kind": "portal", "pos": [370, 700], "scale": [170, 170], "id": "b", "link": "a", "rotation": 45},
-    {"kind": "ballContainer", "pos": [380, 1060], "scale": [150, 150], "value": 2, "vector": [0.064, -0.998], "force": 50}
-  ]
-}
+{"name":"Two Banks Up","difficulty":9,"concept":"Bounce: through the portal, then two banks","bounces":2,"controlZone":{"rect":[90,1440,720,360]},"ball":[390,1620],"goal":[510,330],"obstacles":[{"type":"wall","points":[-60,1020,960,1020]},{"type":"wall","points":[960,660,510,660]}],"elements":[{"kind":"portal","id":"a","link":"b","pos":[240,1250],"scale":[170,170],"rotation":180},{"kind":"portal","id":"b","link":"a","pos":[510,810],"scale":[170,170],"rotation":270}]}

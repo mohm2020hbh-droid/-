@@ -1,10 +1,1 @@
-{
-  "name": "First Flick",
-  "difficulty": 1,
-  "concept": "Positioning: pick the ball up, move it, let go",
-  "bounces": 3,
-  "goalRadius": 96,
-  "ball": [450, 1650],
-  "goal": [450, 450],
-  "hint": {"en": "Drag the ball up and let go: it keeps moving the way you moved it", "ar": "اسحب الكرة إلى الأعلى ثم اتركها: تكمل الحركة بالطريقة التي حرّكتها بها"}
-}
+{"name":"First Flick","difficulty":1,"concept":"Positioning: pick the ball up, move it, let go","bounces":3,"controlZone":{"rect":[90,1440,720,360]},"ball":[330,1620],"goal":[570,560],"obstacles":[],"hint":{"en":"Drag the ball up and let go: it keeps moving the way you moved it","ar":"اسحب الكرة للأعلى ثم اتركها: تكمل الحركة كما حرّكتها"}}

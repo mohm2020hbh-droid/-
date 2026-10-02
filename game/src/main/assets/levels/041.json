@@ -1,17 +1,1 @@
-{
-  "name": "Slow Motion",
-  "difficulty": 6,
-  "concept": "Timing: a slow-motion zone gives time to correct the aim",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [360, 1540],
-  "goal": [100, 700],
-  "hint": {"en": "Inside a slow-motion zone time slows down and you can touch to nudge the ball", "ar": "داخل منطقة الزمن البطيء يتباطأ الوقت ويمكنك لمس الشاشة لتعديل مسار الكرة"},
-  "obstacles": [
-    {"type": "wall", "points": [0, 1150, 500, 1150]},
-    {"type": "wall", "points": [900, 800, 350, 800]}
-  ],
-  "elements": [
-    {"kind": "slowMo", "pos": [690, 930], "scale": [500, 500]}
-  ]
-}
+{"name":"Slow Motion","difficulty":6,"concept":"Timing: a slow-motion zone gives time to correct the aim","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[570,1620],"goal":[420,350],"obstacles":[{"type":"wall","points":[-60,900,670,900]}],"elements":[{"kind":"slowMo","pos":[640,700],"scale":[460,460]}],"hint":{"en":"Inside a slow-motion zone time slows down and you can touch to nudge the ball","ar":"داخل منطقة الزمن البطيء يتباطأ الوقت ويمكنك لمس الشاشة لتعديل مسار الكرة"}}

@@ -1,17 +1,1 @@
-{
-  "name": "Boost Master",
-  "difficulty": 6,
-  "concept": "Combination: two pads, a mirror and a cup",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [150, 1440],
-  "goal": [640, 940],
-  "obstacles": [
-    {"type": "wall", "points": [480, 700, 800, 700, 800, 1100, 480, 1100]},
-    {"type": "wall", "points": [169.8, 523.8, 530.2, 776.2]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [150, 1180], "scale": [260, 260], "rotation": -55.3, "force": 6},
-    {"kind": "booster", "pos": [370, 900], "scale": [260, 300], "rotation": -37.5, "force": 3}
-  ]
-}
+{"name":"Pad Exam","difficulty":6,"concept":"Combination: two shelves, a pad and a tight window","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[390,730],"obstacles":[{"type":"wall","points":[960,1180,390,1180]},{"type":"wall","points":[960,960,220,960]}],"elements":[{"kind":"booster","pos":[150,820],"scale":[300,360],"rotation":45,"force":6}]}

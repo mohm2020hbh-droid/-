@@ -1,17 +1,1 @@
-{
-  "name": "Time to Think",
-  "difficulty": 6,
-  "concept": "Timing: a moving bar sweeps the way, slow time helps",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [840, 1440],
-  "goal": [100, 300],
-  "obstacles": [
-    {"type": "wall", "points": [0, 1050, 480, 1050]},
-    {"type": "wall", "points": [820, 1050, 900, 1050]}
-  ],
-  "elements": [
-    {"kind": "solid", "pos": [150, 700], "scale": [260, 44], "moving": {"to": [750, 700], "period": 4.0, "phase": 0.25}},
-    {"kind": "slowMo", "pos": [370, 760], "scale": [440, 440]}
-  ]
-}
+{"name":"Time to Think","difficulty":6,"concept":"Timing: a bar sweeps the gate, throw when it opens","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[370,810],"obstacles":[{"type":"wall","points":[-60,1020,260,1020]},{"type":"wall","points":[960,1020,700,1020]}],"elements":[{"kind":"solid","pos":[380,1020],"scale":[240,60],"moving":{"to":[580,1020],"period":4.1,"wave":"SINE","phase":0.48}}]}

@@ -1,17 +1,1 @@
-{
-  "name": "Portal and Shape",
-  "difficulty": 8,
-  "concept": "Portal routing: a hexagon stands in the way",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [350, 1500],
-  "goal": [600, 670],
-  "obstacles": [
-    {"type": "wall", "points": [290, 560, 710, 560, 710, 940, 290, 940], "closed": true},
-    {"type": "poly", "points": [629.9, 1075, 500, 1150, 370.1, 1075, 370.1, 925, 500, 850, 629.9, 925]}
-  ],
-  "elements": [
-    {"kind": "portal", "pos": [200, 1150], "scale": [170, 170], "id": "a", "link": "b", "rotation": 0},
-    {"kind": "portal", "pos": [470, 780], "scale": [170, 170], "id": "b", "link": "a", "rotation": 225}
-  ]
-}
+{"name":"Double Gate","difficulty":8,"concept":"Portal routing: through the portal, then one bank","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[150,1620],"goal":[690,440],"obstacles":[{"type":"wall","points":[-60,1020,960,1020]},{"type":"wall","points":[960,630,420,630]}],"elements":[{"kind":"portal","id":"a","link":"b","pos":[420,1220],"scale":[170,170],"rotation":90},{"kind":"portal","id":"b","link":"a","pos":[240,690],"scale":[170,170],"rotation":90}]}

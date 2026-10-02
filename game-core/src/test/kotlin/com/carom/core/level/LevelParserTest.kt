@@ -72,7 +72,7 @@ class LevelParserTest {
             "b",
             """{"bounces": 0, "ball": [100, 100], "goal": [500, 500], "obstacles": [
                  {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 100},
-                 {"type": "rect", "x": 700, "y": 700, "w": 20, "h": 20},
+                 {"type": "rect", "x": 700, "y": 700, "w": 30, "h": 30},
                  {"type": "poly", "points": [0, 0, 100, 0, 50, 20, 100, 100, 0, 100], "round": 10},
                  {"type": "rect", "x": 800, "y": 100, "w": 50, "h": 50, "round": 0}
                ]}""",

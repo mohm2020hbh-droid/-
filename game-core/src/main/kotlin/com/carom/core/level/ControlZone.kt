@@ -4,10 +4,13 @@ import kotlin.math.hypot
 import kotlin.math.max
 
 /**
- * The control zone: where the player may pick the ball up, move it and prepare a throw before letting go. It is a
- * real boundary, not a decoration. The ball can be moved anywhere inside it and nowhere outside (its whole body
- * stays within the zone's line), a touch outside it does not pick the ball up, and a drag that goes past its
- * edge is what prepares the throw.
+ * The control zone: where the player may pick the ball up, move it and prepare a throw before letting go, and where
+ * they may take hold of it again after a throw for as long as any part of it is still inside. The ball can be moved
+ * anywhere inside it and nowhere outside (its whole body stays within the zone's line), a touch outside it does not
+ * pick the ball up, and a drag that goes past its edge is what prepares the throw.
+ *
+ * The line is drawn (dashed, quietly) but it is not a wall: it is only where the player's control stops. The ball
+ * crosses it freely, with no bounce and no change of path; once the ball is entirely across it the player no longer has it.
  *
  * A zone is a region of the level in world units: a [Box] (a band across the level, a rectangle) or a [Circle].
  * The zone is the region the ball's *body* occupies, so its dashed line is where the ball's edge stops; the
@@ -27,6 +30,12 @@ sealed interface ControlZone {
 
     /** Whether a touch at (x, y) is in the zone, or within [margin] of its line. */
     fun reaches(x: Double, y: Double, margin: Double): Boolean
+
+    /**
+     * Whether a ball of [radius] centred at (x, y) has any part inside the zone (touching its line counts). The ball is
+     * outside the zone only when this is false: fully across the line, nothing of it left inside.
+     */
+    fun overlaps(x: Double, y: Double, radius: Double): Boolean
 
     /** A rectangle: its top-left corner and its size. A band across the whole level is a box as wide as the level. */
     data class Box(val x: Double, val y: Double, val width: Double, val height: Double) : ControlZone {
@@ -49,6 +58,12 @@ sealed interface ControlZone {
 
         override fun reaches(x: Double, y: Double, margin: Double) =
             x >= this.x - margin && x <= right + margin && y >= this.y - margin && y <= bottom + margin
+
+        override fun overlaps(x: Double, y: Double, radius: Double): Boolean {
+            val dx = max(0.0, max(this.x - x, x - right))
+            val dy = max(0.0, max(this.y - y, y - bottom))
+            return hypot(dx, dy) <= radius + EPS
+        }
 
         private fun axis(v: Double, start: Double, size: Double, radius: Double): Double =
             if (size <= 2 * radius) start + size / 2 else v.coerceIn(start + radius, start + size - radius)
@@ -74,6 +89,8 @@ sealed interface ControlZone {
             max(0.0, hypot(x - this.x, y - this.y) - max(0.0, this.radius - radius))
 
         override fun reaches(x: Double, y: Double, margin: Double) = hypot(x - this.x, y - this.y) <= radius + margin
+
+        override fun overlaps(x: Double, y: Double, radius: Double) = hypot(x - this.x, y - this.y) <= this.radius + radius + EPS
     }
 
     companion object {

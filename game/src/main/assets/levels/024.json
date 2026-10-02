@@ -1,15 +1,1 @@
-{
-  "name": "Cup Shot",
-  "difficulty": 5,
-  "concept": "Positioning: the pad throws the ball into the cup",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [60, 1440],
-  "goal": [620, 640],
-  "obstacles": [
-    {"type": "wall", "points": [460, 500, 740, 500, 740, 880, 460, 880]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [270, 810], "scale": [300, 280], "rotation": -15.6, "force": 5}
-  ]
-}
+{"name":"Which Pad?","difficulty":5,"concept":"Positioning: one pad leads into the cup, the other does not","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[510,1620],"goal":[350,760],"obstacles":[{"type":"wall","points":[510,540,90,540,90,900,510,900]}],"elements":[{"kind":"booster","pos":[480,1200],"scale":[300,240],"rotation":0,"force":6},{"kind":"booster","pos":[600,840],"scale":[360,300],"rotation":135,"force":6}]}

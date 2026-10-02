@@ -1,17 +1,1 @@
-{
-  "name": "Portal and Slow Time",
-  "difficulty": 9,
-  "concept": "Timing: slow time beside the portal",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [260, 1560],
-  "goal": [350, 600],
-  "obstacles": [
-    {"type": "wall", "points": [240, 440, 660, 440, 660, 860, 240, 860], "closed": true}
-  ],
-  "elements": [
-    {"kind": "portal", "pos": [700, 1050], "scale": [170, 170], "id": "a", "link": "b", "rotation": 90},
-    {"kind": "portal", "pos": [510, 710], "scale": [170, 170], "id": "b", "link": "a", "rotation": 225},
-    {"kind": "slowMo", "pos": [370, 980], "scale": [540, 540]}
-  ]
-}
+{"name":"Portal and Slow Time","difficulty":9,"concept":"Timing: slow time beside the portal","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[570,1620],"goal":[330,350],"obstacles":[{"type":"wall","points":[-60,960,960,960]},{"type":"poly","points":[720,690,630,850,450,850,360,690,450,530,630,530]}],"elements":[{"kind":"portal","id":"a","link":"b","pos":[630,1250],"scale":[170,170],"rotation":180},{"kind":"portal","id":"b","link":"a","pos":[240,720],"scale":[170,170],"rotation":0},{"kind":"slowMo","pos":[260,720],"scale":[460,460]}]}

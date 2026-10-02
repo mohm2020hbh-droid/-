@@ -124,9 +124,9 @@ object LevelDefaults {
     const val WIDTH = 900.0
     const val HEIGHT = 2000.0
     const val BALL_RADIUS = 60.0
-    const val GOAL_RADIUS = 84.0
-    const val WALL_THICKNESS = 44.0
-    const val BLOCK_ROUNDING = 18.0
+    const val GOAL_RADIUS = 96.0
+    const val WALL_THICKNESS = 60.0
+    const val BLOCK_ROUNDING = 24.0
     const val MAX_SPEED = 2400.0
 
     /** No constant friction: the ball slows down by drag alone, as in the reference. */

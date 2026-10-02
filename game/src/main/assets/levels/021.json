@@ -1,16 +1,1 @@
-{
-  "name": "Boost",
-  "difficulty": 4,
-  "concept": "Forces: a booster turns the ball where you cannot aim",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [840, 1440],
-  "goal": [300, 500],
-  "hint": {"en": "Boosters push the ball along their arrows", "ar": "المعزّزات تدفع الكرة في اتجاه أسهمها"},
-  "obstacles": [
-    {"type": "wall", "points": [0, 1050, 600, 1050]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [700, 760], "scale": [300, 260], "rotation": 180, "force": 6}
-  ]
-}
+{"name":"Boost","difficulty":4,"concept":"Forces: a booster turns the ball where you cannot aim","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[510,1620],"goal":[180,740],"obstacles":[{"type":"wall","points":[-60,1060,390,1060]}],"elements":[{"kind":"booster","pos":[600,820],"scale":[360,300],"rotation":135,"force":6}],"hint":{"en":"Boosters push the ball along their arrows","ar":"المعزّزات تدفع الكرة في اتجاه أسهمها"}}

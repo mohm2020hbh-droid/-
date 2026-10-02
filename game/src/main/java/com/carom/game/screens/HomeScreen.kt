@@ -1,11 +1,8 @@
 package com.carom.game.screens
 
 import android.graphics.Canvas
-import android.graphics.LinearGradient
 import android.graphics.Paint
-import android.graphics.RadialGradient
 import android.graphics.Rect
-import android.graphics.Shader
 import android.graphics.Typeface
 import android.view.MotionEvent
 import com.carom.game.ui.Icon
@@ -85,23 +82,12 @@ class HomeScreen(host: GameHost) : Screen(host) {
         val ballX = columnX - span * 0.8f
         val goalX = columnX + span * 0.8f
 
-        // The wall, in the same style as the game's obstacles: a smooth rod lit from above, inside
-        // a crisp light edge, with a soft gloss along its top.
+        // The wall, in the same style as the game's obstacles: a flat bar with round ends.
         val colors = palette
         val t = kit.u(12f)
-        kit.stroke.color = Palette.blend(colors.primary, WHITE, 0.42f)
+        kit.stroke.color = colors.primary
         kit.stroke.strokeWidth = t
         canvas.drawLine(columnX - span, wallY, columnX + span, wallY, kit.stroke)
-        rod.shader = LinearGradient(
-            0f, wallY - t / 2, 0f, wallY + t / 2,
-            intArrayOf(Palette.blend(colors.primary, WHITE, 0.26f), colors.primary, Palette.blend(colors.primary, BLACK, 0.3f)),
-            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP,
-        )
-        rod.strokeWidth = t - kit.u(1.6f)
-        canvas.drawLine(columnX - span, wallY, columnX + span, wallY, rod)
-        kit.stroke.color = Palette.withAlpha(WHITE, 0.22f)
-        kit.stroke.strokeWidth = t * 0.12f
-        canvas.drawLine(columnX - span + t * 0.4f, wallY - t * 0.24f, columnX + span - t * 0.4f, wallY - t * 0.24f, kit.stroke)
 
         // Dotted path: down to the wall, then up into the goal (a mirror-image V).
         kit.fill.color = Palette.withAlpha(colors.accent, 0.45f)
@@ -118,13 +104,9 @@ class HomeScreen(host: GameHost) : Screen(host) {
         kit.fill.color = colors.accent
         canvas.drawCircle(goalX, topY, kit.u(5f), kit.fill)
 
-        // The ball: a small glossy sphere.
-        sphere.shader = RadialGradient(
-            ballX - 0.35f * ballR, topY - 0.4f * ballR, 1.45f * ballR,
-            intArrayOf(Palette.blend(colors.accent, WHITE, 0.75f), colors.accent, Palette.blend(colors.accent, BLACK, 0.22f)),
-            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP,
-        )
-        canvas.drawCircle(ballX, topY, ballR, sphere)
+        // The ball: a plain disc.
+        kit.fill.color = colors.accent
+        canvas.drawCircle(ballX, topY, ballR, kit.fill)
         emblemDigit.color = colors.background
         emblemDigit.textSize = ballR * 1.1f
         emblemDigit.getTextBounds("1", 0, 1, digitBounds)
@@ -136,14 +118,4 @@ class HomeScreen(host: GameHost) : Screen(host) {
         textAlign = Paint.Align.CENTER
     }
     private val digitBounds = Rect()
-    private val rod = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
-    }
-    private val sphere = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    private companion object {
-        const val WHITE = 0xFFFFFFFF.toInt()
-        const val BLACK = 0xFF000000.toInt()
-    }
 }

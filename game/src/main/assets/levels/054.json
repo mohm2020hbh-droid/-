@@ -1,17 +1,1 @@
-{
-  "name": "Portal and Pad",
-  "difficulty": 8,
-  "concept": "Combination: the pad lines the ball up for the portal",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [740, 1360],
-  "goal": [300, 750],
-  "obstacles": [
-    {"type": "wall", "points": [190, 590, 510, 590, 510, 910, 190, 910], "closed": true}
-  ],
-  "elements": [
-    {"kind": "portal", "pos": [450, 1250], "scale": [170, 170], "id": "a", "link": "b", "rotation": 0},
-    {"kind": "portal", "pos": [380, 780], "scale": [170, 170], "id": "b", "link": "a", "rotation": 90},
-    {"kind": "booster", "pos": [290, 1130], "scale": [240, 260], "rotation": -46, "force": 6}
-  ]
-}
+{"name":"Bank Gate","difficulty":8,"concept":"Angles: the portal, a shelf and a bank off the ceiling","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[510,1620],"goal":[160,370],"obstacles":[{"type":"wall","points":[-60,1020,960,1020]},{"type":"wall","points":[-60,660,390,660]}],"elements":[{"kind":"portal","id":"a","link":"b","pos":[390,1220],"scale":[170,170],"rotation":90},{"kind":"portal","id":"b","link":"a","pos":[540,780],"scale":[170,170],"rotation":90}]}

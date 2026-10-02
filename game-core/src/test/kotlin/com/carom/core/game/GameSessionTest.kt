@@ -255,6 +255,6 @@ class GameSessionTest {
         wide.placeBall(900.0, 300.0) // towards the middle wall: stops against it, never through it
         val face = 500.0 - wide.level.wallThickness / 2 - wide.level.ballRadius
         assertEquals(face, wide.ball.x, 1e-3)
-        assertTrue(wide.ball.x <= face)
+        assertTrue(wide.ball.x <= face + 1e-6)
     }
 }

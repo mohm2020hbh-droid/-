@@ -1,16 +1,1 @@
-{
-  "name": "Slow and Pad",
-  "difficulty": 7,
-  "concept": "Combination: the pad throws, slow time corrects",
-  "bounces": 0,
-  "controlZone": {"top": 1300},
-  "ball": [260, 1660],
-  "goal": [470, 640],
-  "obstacles": [
-    {"type": "wall", "points": [360, 500, 700, 500, 700, 860, 360, 860]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [150, 620], "scale": [260, 220], "rotation": 59.2, "force": 6},
-    {"kind": "slowMo", "pos": [380, 780], "scale": [460, 460]}
-  ]
-}
+{"name":"Slow and Pad","difficulty":7,"concept":"Combination: the pad throws, slow time corrects","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[320,690],"obstacles":[{"type":"wall","points":[-60,1110,510,1110]}],"elements":[{"kind":"booster","pos":[540,900],"scale":[300,300],"rotation":180,"force":6},{"kind":"slowMo","pos":[620,1030],"scale":[460,460]}]}

@@ -1,15 +1,1 @@
-{
-  "name": "Bent Path",
-  "difficulty": 6,
-  "concept": "Forces: the well turns the ball round a corner",
-  "bounces": 0,
-  "controlZone": {"rect": [520, 1300, 380, 700]},
-  "ball": [600, 1840],
-  "goal": [400, 300],
-  "obstacles": [
-    {"type": "wall", "points": [520, 0, 520, 1100]}
-  ],
-  "elements": [
-    {"kind": "attractive", "pos": [660, 1230], "scale": [560, 560], "force": 150}
-  ]
-}
+{"name":"Bent Path","difficulty":6,"concept":"Forces: the well turns the ball round a corner","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[750,900],"obstacles":[{"type":"wall","points":[90,1290,90,720,900,720]},{"type":"wall","points":[450,1290,450,1080,900,1080]}],"elements":[{"kind":"attractive","pos":[450,1080],"scale":[480,480],"force":300}]}

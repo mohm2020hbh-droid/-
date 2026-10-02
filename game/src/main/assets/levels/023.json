@@ -1,16 +1,1 @@
-{
-  "name": "Elbow Pad",
-  "difficulty": 5,
-  "concept": "Precision: go straight up, let the pad turn the corner",
-  "bounces": 0,
-  "controlZone": {"rect": [100, 1300, 350, 700]},
-  "ball": [275, 1560],
-  "goal": [550, 400],
-  "obstacles": [
-    {"type": "wall", "points": [100, 2000, 100, 300, 900, 300]},
-    {"type": "wall", "points": [450, 2000, 450, 800, 900, 800]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [275, 560], "scale": [300, 300], "rotation": 0, "force": 5}
-  ]
-}
+{"name":"Side Pad","difficulty":5,"concept":"Precision: a pad on the far side bends the throw back to the goal","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[630,1620],"goal":[480,770],"obstacles":[{"type":"wall","points":[-60,1240,420,1240]},{"type":"wall","points":[-60,1020,670,1020]}],"elements":[{"kind":"booster","pos":[660,940],"scale":[300,360],"rotation":135,"force":6}]}

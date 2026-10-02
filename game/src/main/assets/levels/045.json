@@ -1,17 +1,1 @@
-{
-  "name": "Two Balls",
-  "difficulty": 7,
-  "concept": "Multiple balls: hit the container and its two balls fly to the goal",
-  "bounces": 1,
-  "exitRequired": 2,
-  "controlZone": {"top": 1300},
-  "ball": [640, 1560],
-  "goal": [520, 840],
-  "hint": {"en": "Hit a container to let out more balls: every ball needed must reach the goal", "ar": "اضرب الحاوية لتُخرج كرات أخرى: يجب أن تصل كل الكرات المطلوبة إلى الهدف"},
-  "obstacles": [
-    {"type": "wall", "points": [460, 750, 740, 750, 740, 1110, 460, 1110]}
-  ],
-  "elements": [
-    {"kind": "ballContainer", "pos": [190, 1030], "scale": [150, 150], "value": 2, "vector": [0.97, -0.243], "force": 50}
-  ]
-}
+{"name":"Two Balls","difficulty":7,"concept":"Multiple balls: hit the container and its two balls fly to the goal","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[690,1620],"goal":[570,840],"obstacles":[{"type":"wall","points":[390,690,750,690,750,990,390,990]}],"elements":[{"kind":"ballContainer","pos":[240,1020],"scale":[150,150],"value":2,"vector":[0.834,-0.553],"force":50}],"hint":{"en":"Hit a container to let out more balls: every ball needed must reach the goal","ar":"اضرب الحاوية لتُخرج كرات أخرى: يجب أن تصل كل الكرات المطلوبة إلى الهدف"},"exitRequired":2}

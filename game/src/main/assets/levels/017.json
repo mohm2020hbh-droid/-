@@ -1,15 +1,1 @@
-{
-  "name": "Corridor",
-  "difficulty": 4,
-  "concept": "Bounce: play inside a narrow corridor",
-  "bounces": 1,
-  "goalRadius": 90,
-  "controlZone": {"top": 1300},
-  "ball": [250, 1600],
-  "goal": [350, 700],
-  "obstacles": [
-    {"type": "wall", "points": [150, 2000, 150, 400]},
-    {"type": "wall", "points": [600, 2000, 600, 400]},
-    {"type": "rect", "x": 260, "y": 870, "w": 180, "h": 60, "angle": 45}
-  ]
-}
+{"name":"Corridor","difficulty":4,"concept":"Bounce: play inside a narrow corridor","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[750,1620],"goal":[400,420],"obstacles":[{"type":"wall","points":[330,1290,330,600]},{"type":"wall","points":[690,1290,690,600]}]}

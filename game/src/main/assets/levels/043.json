@@ -1,15 +1,1 @@
-{
-  "name": "Slow Hexagon",
-  "difficulty": 7,
-  "concept": "Precision: a slow-motion zone beside a hexagon",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [440, 1560],
-  "goal": [450, 350],
-  "obstacles": [
-    {"type": "poly", "points": [640.5, 910, 450, 1020, 259.5, 910, 259.5, 690, 450, 580, 640.5, 690]}
-  ],
-  "elements": [
-    {"kind": "slowMo", "pos": [150, 880], "scale": [540, 540]}
-  ]
-}
+{"name":"Slow Hexagon","difficulty":7,"concept":"Precision: a slow-motion zone beside a hexagon","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[360,370],"obstacles":[{"type":"poly","points":[570,780,450,990,210,990,90,780,210,570,450,570]}],"elements":[{"kind":"slowMo","pos":[640,700],"scale":[460,460]}]}

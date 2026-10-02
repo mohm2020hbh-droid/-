@@ -1,18 +1,1 @@
-{
-  "name": "Time Master",
-  "difficulty": 8,
-  "concept": "Combination: balls, slow time and a well",
-  "bounces": 1,
-  "exitRequired": 2,
-  "controlZone": {"top": 1300},
-  "ball": [440, 1600],
-  "goal": [500, 840],
-  "obstacles": [
-    {"type": "wall", "points": [440, 600, 720, 600, 720, 1000, 440, 1000]}
-  ],
-  "elements": [
-    {"kind": "ballContainer", "pos": [150, 780], "scale": [150, 150], "value": 2, "vector": [0.999, 0.048], "force": 50},
-    {"kind": "slowMo", "pos": [400, 680], "scale": [460, 460]},
-    {"kind": "attractive", "pos": [290, 900], "scale": [500, 500], "force": 300}
-  ]
-}
+{"name":"Time Master","difficulty":8,"concept":"Combination: a switch, a bank and slow time","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[510,1620],"goal":[350,430],"obstacles":[{"type":"wall","points":[-60,1020,210,1020]},{"type":"wall","points":[960,1020,510,1020]}],"elements":[{"kind":"switchable","pos":[360,1020],"scale":[260,60],"channel":1},{"kind":"switch","pos":[570,1260],"scale":[140,140],"channel":1},{"kind":"slowMo","pos":[260,850],"scale":[460,460]}]}

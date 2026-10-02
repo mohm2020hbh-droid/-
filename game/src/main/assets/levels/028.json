@@ -1,15 +1,1 @@
-{
-  "name": "Pad and Hexagon",
-  "difficulty": 6,
-  "concept": "Combination: bank round a hexagon after the pad",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [540, 1500],
-  "goal": [450, 550],
-  "obstacles": [
-    {"type": "poly", "points": [673.2, 1050, 500, 1150, 326.8, 1050, 326.8, 850, 500, 750, 673.2, 850]}
-  ],
-  "elements": [
-    {"kind": "booster", "pos": [150, 970], "scale": [240, 240], "rotation": -85, "force": 3}
-  ]
-}
+{"name":"Two Pads","difficulty":6,"concept":"Combination: one pad feeds the next","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[450,1620],"goal":[520,840],"obstacles":[{"type":"wall","points":[960,1200,360,1200]}],"elements":[{"kind":"booster","pos":[240,840],"scale":[360,300],"rotation":90,"force":6},{"kind":"booster","pos":[660,960],"scale":[300,240],"rotation":0,"force":6}]}

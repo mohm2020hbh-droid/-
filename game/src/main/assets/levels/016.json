@@ -1,14 +1,1 @@
-{
-  "name": "Hexagon",
-  "difficulty": 4,
-  "concept": "Precision: a hexagon in the middle of the room",
-  "bounces": 2,
-  "goalRadius": 90,
-  "controlZone": {"rect": [100, 1300, 700, 700]},
-  "ball": [450, 1700],
-  "goal": [150, 600],
-  "obstacles": [
-    {"type": "poly", "points": [623, 1150, 450, 1250, 277, 1150, 277, 950, 450, 850, 623, 950]},
-    {"type": "wall", "points": [0, 750, 200, 750]}
-  ]
-}
+{"name":"Hexagon","difficulty":4,"concept":"Precision: a hexagon in the middle of the room","bounces":2,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[290,340],"obstacles":[{"type":"poly","points":[650,960,390,1110,130,960,130,660,390,510,650,660]}]}

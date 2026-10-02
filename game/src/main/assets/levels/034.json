@@ -1,16 +1,1 @@
-{
-  "name": "Pull and Bank",
-  "difficulty": 6,
-  "concept": "Combination: a well, then one bank",
-  "bounces": 1,
-  "controlZone": {"top": 1300},
-  "ball": [540, 1500],
-  "goal": [100, 400],
-  "obstacles": [
-    {"type": "wall", "points": [0, 1150, 550, 1150]},
-    {"type": "wall", "points": [900, 700, 400, 700]}
-  ],
-  "elements": [
-    {"kind": "attractive", "pos": [630, 1050], "scale": [500, 500], "force": 300}
-  ]
-}
+{"name":"Deep Well","difficulty":6,"concept":"Forces: a well pulls the ball through a narrow gap","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[690,860],"obstacles":[{"type":"wall","points":[960,1230,540,1230]},{"type":"wall","points":[960,1080,400,1080]}],"elements":[{"kind":"attractive","pos":[480,960],"scale":[480,480],"force":300}]}

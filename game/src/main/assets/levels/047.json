@@ -1,16 +1,1 @@
-{
-  "name": "Two Paths",
-  "difficulty": 8,
-  "concept": "Multiple balls: one hit, two balls, one goal",
-  "bounces": 1,
-  "exitRequired": 2,
-  "controlZone": {"rect": [0, 1300, 440, 700]},
-  "ball": [200, 1600],
-  "goal": [570, 450],
-  "obstacles": [
-    {"type": "wall", "points": [440, 2000, 440, 750]}
-  ],
-  "elements": [
-    {"kind": "ballContainer", "pos": [320, 730], "scale": [150, 150], "value": 2, "vector": [0.856, -0.516], "force": 50}
-  ]
-}
+{"name":"Two Paths","difficulty":8,"concept":"Multiple balls: one hit, two balls, one goal","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[570,780],"obstacles":[{"type":"wall","points":[360,600,780,600,780,960,360,960]},{"type":"wall","points":[960,1090,510,1090]}],"elements":[{"kind":"ballContainer","pos":[210,900],"scale":[150,150],"value":2,"vector":[0.912,-0.41],"force":50}],"exitRequired":2}
