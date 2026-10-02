@@ -41,8 +41,11 @@ enum class ElementKind(val defaultShape: Shape, val physical: Boolean) {
     /** A zone where the player can swipe to push the ball again, and where a slow ball is not dead. */
     TOUCH_ZONE(Shape.CIRCLE, false),
 
-    /** A touch zone that also runs game time in slow motion while the ball is in it. */
-    SLOWMO_ZONE(Shape.CIRCLE, false),
+    /**
+     * The clock: a ball that enters it keeps its direction and loses speed, once per entry (half of it, or much more when it was
+     * slow already). It does not touch time, the other elements, or the ball's direction.
+     */
+    CLOCK(Shape.CIRCLE, false),
 
     /** A trigger that flips its [Element.channel] each time the ball enters it. */
     SWITCH(Shape.CIRCLE, false);
@@ -63,7 +66,7 @@ enum class ElementKind(val defaultShape: Shape, val physical: Boolean) {
                 "attractive", "attractor" -> ATTRACTIVE
                 "portal" -> PORTAL
                 "touchzone", "touch" -> TOUCH_ZONE
-                "slowmo", "slowmotouchzone", "slowmozone", "slowmotion" -> SLOWMO_ZONE
+                "clock", "slowmo", "slowmotouchzone", "slowmozone", "slowmotion" -> CLOCK
                 "switch" -> SWITCH
                 else -> null
             }

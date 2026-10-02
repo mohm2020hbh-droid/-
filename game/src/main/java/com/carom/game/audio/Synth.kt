@@ -85,17 +85,34 @@ object Synth {
         return finish(out, peak = 0.95)
     }
 
-    /** A new ball appearing at the start: a quick, light rising "pop". */
+    /**
+     * The ball being recharged at its start: half a second of a rising electric whine over a generator's ripple that speeds
+     * up (a mechanical charge, nothing like a hit or a click), then a short tick and a small high ping: "ready".
+     */
     fun respawn(): ShortArray {
-        val out = FloatArray(seconds(0.35))
+        val out = FloatArray(seconds(0.64))
+        val rnd = Random(53)
+        val crackle = Svf()
         var phase = 0.0
-        for (k in 0 until seconds(0.15)) {
+        var ripple = 0.0
+        val charge = 0.47
+        for (k in 0 until seconds(charge)) {
             val t = k.toDouble() / SAMPLE_RATE
-            phase += 2 * PI * (380.0 * (880.0 / 380.0).pow(min(1.0, t / 0.06))) / SAMPLE_RATE
-            out[k] += (min(1.0, t / 0.003) * exp(-t / 0.05) * sin(phase)).toFloat()
+            val q = t / charge
+            val f = 120.0 * (1050.0 / 120.0).pow(0.45 * q + 0.55 * q * q)
+            phase += 2 * PI * f / SAMPLE_RATE
+            ripple += 2 * PI * (22.0 + 48.0 * q) / SAMPLE_RATE
+            val flutter = 0.62 + 0.38 * sin(ripple)
+            val tone = sin(phase) + 0.5 * sin(2 * phase + 0.4) + 0.28 * sin(3 * phase + 1.1)
+            val env = min(1.0, t / 0.03) * (0.3 + 0.7 * q) * min(1.0, (charge - t) / 0.015)
+            val fizz = crackle.bandpass(rnd.nextDouble(-1.0, 1.0), 900.0 + 3200.0 * q, q = 2.0)
+            out[k] += (env * (0.5 * flutter * tone + 0.2 * q * fizz)).toFloat()
         }
-        reverb(out, mix = 0.12)
-        return finish(out, peak = 0.6)
+        partial(out, charge, 1318.5, 0.5, 0.075, attack = 0.002)
+        partial(out, charge, 2637.0, 0.14, 0.04, attack = 0.002)
+        partial(out, charge, 90.0, 0.5, 0.03, attack = 0.001)
+        reverb(out, mix = 0.1)
+        return finish(out, peak = 0.7)
     }
 
     /** The ball running out of speed: a soft falling "whoo", deflating. */
@@ -202,34 +219,21 @@ object Synth {
         return finish(out, peak = 0.7)
     }
 
-    /** Time slowing down: a long falling sweep, like a record winding down, over a low swell. */
-    fun slowIn(): ShortArray {
-        val out = FloatArray(seconds(0.6))
+    /** A ball losing speed in a clock: a dry tick and a short, soft falling "tock" (a weight settling). */
+    fun clock(): ShortArray {
+        val out = FloatArray(seconds(0.34))
         val rnd = Random(37)
-        val breath = Svf()
-        var phase = 0.0
-        for (k in 0 until seconds(0.5)) {
-            val t = k.toDouble() / SAMPLE_RATE
-            phase += 2 * PI * (900.0 * (160.0 / 900.0).pow(min(1.0, t / 0.4))) / SAMPLE_RATE
-            val env = min(1.0, t / 0.01) * exp(-t / 0.2)
-            out[k] += (env * (0.6 * sin(phase) + 0.2 * breath.lowpass(rnd.nextDouble(-1.0, 1.0), 700.0 - 400.0 * t, q = 0.7))).toFloat()
-        }
-        reverb(out, mix = 0.14)
-        return finish(out, peak = 0.7)
-    }
-
-    /** Time speeding back up: a quicker rising sweep that ends bright. */
-    fun slowOut(): ShortArray {
-        val out = FloatArray(seconds(0.4))
+        val air = Svf()
         var phase = 0.0
         for (k in 0 until seconds(0.3)) {
             val t = k.toDouble() / SAMPLE_RATE
-            phase += 2 * PI * (180.0 * (1000.0 / 180.0).pow(min(1.0, t / 0.22))) / SAMPLE_RATE
-            val env = min(1.0, t / 0.01) * exp(-t / 0.1)
-            out[k] += (env * (0.55 * sin(phase) + 0.15 * sin(2 * phase))).toFloat()
+            phase += 2 * PI * (520.0 * (110.0 / 520.0).pow(min(1.0, t / 0.22))) / SAMPLE_RATE
+            val env = min(1.0, t / 0.006) * exp(-t / 0.1)
+            out[k] += (env * (0.7 * sin(phase) + 0.25 * air.lowpass(rnd.nextDouble(-1.0, 1.0), 900.0 * exp(-t / 0.08) + 150.0, q = 0.7))).toFloat()
         }
-        reverb(out, mix = 0.12)
-        return finish(out, peak = 0.6)
+        partial(out, 0.0, 2300.0, 0.35, 0.012, attack = 0.0005)
+        reverb(out, mix = 0.1)
+        return finish(out, peak = 0.7)
     }
 
     /** A ball reaching an exit that still needs more: two short, falling, muted notes ("not yet"). */

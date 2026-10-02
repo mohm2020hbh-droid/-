@@ -193,8 +193,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         when (kind) {
             Sound.IMPACT -> soundFx.impact(strength)
             Sound.PORTAL -> soundFx.portal()
-            Sound.SLOW_IN -> soundFx.slowIn()
-            Sound.SLOW_OUT -> soundFx.slowOut()
+            Sound.CLOCK -> soundFx.clock(strength)
             Sound.EXIT_PARTIAL -> soundFx.exitPartial()
             Sound.SHATTER -> soundFx.shatter()
             Sound.WIN -> soundFx.win()

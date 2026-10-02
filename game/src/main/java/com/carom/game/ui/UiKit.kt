@@ -7,35 +7,44 @@ import com.carom.core.level.Worlds
 
 /**
  * A world's look, built from two colours only:
- * - [primary] is the environment: the background is its deepest shade and walls are its soft tint.
+ * - [primary] is the environment: the background is its quiet ground and walls are its muted tone.
  * - [accent] is contrast: the ball, the goal, and everything the player touches.
- * Text uses neutral white, so no other colour ever appears on screen.
+ * Text and lines use [ink]: a soft white on a dark world and the world's own deep tone on a light one, so no other colour appears.
  */
-class WorldPalette(val background: Int, val primary: Int, val accent: Int) {
+class WorldPalette(val background: Int, val primary: Int, val accent: Int, val ink: Int = Palette.TEXT) {
+    /** Whether the ground is light (cream, pale blue, sage...) rather than dark. */
+    val isLight: Boolean = Palette.luminance(background) > 0.5f
+
+    val inkDim: Int get() = Palette.withAlpha(ink, 0.55f)
+    val line: Int get() = Palette.withAlpha(ink, 0.2f)
+
     /** The space outside the level on screens whose shape differs from the level's. */
-    val void: Int get() = Palette.blend(background, 0xFF000000.toInt(), 0.35f)
+    val void: Int get() = if (isLight) Palette.blend(background, ink, 0.1f) else Palette.blend(background, 0xFF000000.toInt(), 0.35f)
 }
 
 object Palette {
-    /** Neutral text, shared by every world. */
+    /** The soft white of the deep worlds' text (the light worlds use their own [WorldPalette.ink]). */
     const val TEXT = 0xFFF1F3F6.toInt()
-    val TEXT_DIM: Int = withAlpha(TEXT, 0.55f)
-    val LINE: Int = withAlpha(TEXT, 0.2f)
 
     /**
-     * One flat, quiet ground per world, a muted main tone for the obstacles, and a light contrast for what the player
-     * touches. Obstacles are always calmer than the ball and the goal, so the eye finds those first.
+     * One flat, quiet ground per world, a muted main tone for the obstacles, and a contrasting tone for what the player touches.
+     * Most grounds are light and soft (cream, pale blue, sage, lavender, rose); two worlds are deep. Obstacles are always calmer than
+     * the ball and the goal, so the eye finds those first.
      */
     private val WORLDS = arrayOf(
-        WorldPalette(0xFF12303D.toInt(), 0xFF4F8296.toInt(), 0xFFF0EADB.toInt()), // teal + ivory
-        WorldPalette(0xFF1C2136.toInt(), 0xFF6672B0.toInt(), 0xFFEEF0FA.toInt()), // indigo + white
-        WorldPalette(0xFF2A211C.toInt(), 0xFFA47B5E.toInt(), 0xFFFAEEDF.toInt()), // umber + cream
-        WorldPalette(0xFF15302A.toInt(), 0xFF5A967E.toInt(), 0xFFE9F4EC.toInt()), // pine + mint
-        WorldPalette(0xFF241D33.toInt(), 0xFF8570B2.toInt(), 0xFFF2EEFA.toInt()), // plum + lilac
-        WorldPalette(0xFF1B1C1F.toInt(), 0xFF868C99.toInt(), 0xFFF5F2EA.toInt()), // graphite + bone
-        WorldPalette(0xFF2A1722.toInt(), 0xFFA8657F.toInt(), 0xFFF8EAEE.toInt()), // wine + blush
-        WorldPalette(0xFF0F1B2B.toInt(), 0xFFC49A4F.toInt(), 0xFFFFF3DC.toInt()), // midnight + amber
+        light(0xFFF4EFE6, 0xFFA79ECB, 0xFF2F2A45), // cream + lavender
+        light(0xFFE4EEF4, 0xFF8FB4A4, 0xFF223645), // pale blue + sage
+        light(0xFFE7EEE2, 0xFFC99A97, 0xFF2E3B2E), // light sage + dusty rose
+        light(0xFFF0E8DA, 0xFF7FAAA6, 0xFF2A3A3D), // warm beige + soft teal
+        light(0xFFECE7F5, 0xFF8F9CCB, 0xFF2C2A48), // soft lavender + periwinkle
+        WorldPalette(0xFF23252B.toInt(), 0xFF8A90A0.toInt(), 0xFFF5F2EA.toInt()), // graphite + bone
+        light(0xFFF7EEEB, 0xFFC08D99, 0xFF4A2E3A), // warm white + dusty rose
+        WorldPalette(0xFF18253A.toInt(), 0xFFC9A15B.toInt(), 0xFFFFF3DC.toInt()), // dusk blue + amber
     )
+
+    /** A light world: its deep accent is also its ink. */
+    private fun light(background: Long, primary: Long, accent: Long) =
+        WorldPalette(background.toInt(), primary.toInt(), accent.toInt(), ink = accent.toInt())
 
     fun forWorld(world: Int): WorldPalette = WORLDS[Math.floorMod(world, WORLDS.size)]
 
@@ -43,7 +52,15 @@ object Palette {
 
     /** Palette part-way between [a] and [b], for sliding between worlds. */
     fun lerp(a: WorldPalette, b: WorldPalette, t: Float): WorldPalette =
-        WorldPalette(blend(a.background, b.background, t), blend(a.primary, b.primary, t), blend(a.accent, b.accent, t))
+        WorldPalette(blend(a.background, b.background, t), blend(a.primary, b.primary, t), blend(a.accent, b.accent, t), blend(a.ink, b.ink, t))
+
+    /** Relative brightness of a colour, 0 (black) to 1 (white). */
+    fun luminance(color: Int): Float {
+        val r = ((color shr 16) and 0xFF) / 255f
+        val g = ((color shr 8) and 0xFF) / 255f
+        val b = (color and 0xFF) / 255f
+        return 0.2126f * r + 0.7152f * g + 0.0722f * b
+    }
 
     fun withAlpha(color: Int, alpha: Float): Int =
         (color and 0x00FFFFFF) or ((alpha.coerceIn(0f, 1f) * 255).toInt() shl 24)
@@ -89,7 +106,7 @@ class UiKit(val unit: Float, val text: UiText) {
         textSize = u(size)
         letterSpacing = spacing * text.letterSpacing
         textAlign = Paint.Align.CENTER
-        color = Palette.TEXT
+        color = Palette.TEXT // (every screen sets the ink of its world before drawing)
     }
 
     /** Draws [value] vertically centred on [cy]. */

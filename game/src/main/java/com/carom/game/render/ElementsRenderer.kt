@@ -244,15 +244,15 @@ class ElementsRenderer(private val level: LevelData, private val palette: WorldP
                 canvas.restore()
             }
             ElementKind.PORTAL -> drawPortal(canvas, e, w, clock, unit)
-            ElementKind.TOUCH_ZONE, ElementKind.SLOWMO_ZONE -> {
+            ElementKind.TOUCH_ZONE, ElementKind.CLOCK -> {
                 line.pathEffect = dashed
                 line.color = Palette.withAlpha(accent, 0.32f)
                 line.strokeWidth = 1.5f * unit
                 if (circle) canvas.drawCircle(0f, 0f, w / 2, line) else canvas.drawRoundRect(box, corner, corner, line)
                 line.pathEffect = null
-                fill.color = Palette.withAlpha(accent, if (e.data.kind == ElementKind.SLOWMO_ZONE) 0.06f else 0.035f)
+                fill.color = Palette.withAlpha(accent, if (e.data.kind == ElementKind.CLOCK) 0.06f else 0.035f)
                 if (circle) canvas.drawCircle(0f, 0f, w / 2, fill) else canvas.drawRoundRect(box, corner, corner, fill)
-                if (e.data.kind == ElementKind.SLOWMO_ZONE) drawClockTicks(canvas, w / 2, clock, unit)
+                if (e.data.kind == ElementKind.CLOCK) drawClockTicks(canvas, w / 2, clock, unit)
             }
             ElementKind.SWITCH -> {
                 val on = session.channelOn(e.data.channel)

@@ -6,6 +6,7 @@ import com.carom.core.math.Vec2
 import com.carom.core.physics.Ball
 import com.carom.core.physics.CircleTrigger
 import com.carom.core.physics.PhysicsWorld
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
@@ -81,7 +82,9 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         /** A ball entered the exit but the exit still needs more: [count] of [needed]. */
         fun onExitPartial(count: Int, needed: Int, x: Double, y: Double) {}
         fun onPortal(ball: Int, fromX: Double, fromY: Double, toX: Double, toY: Double) {}
-        fun onSlowMo(active: Boolean) {}
+
+        /** A ball entered a clock and lost speed: [speedBefore] to [speedAfter], in world units per second. */
+        fun onClock(ball: Int, element: Int, speedBefore: Double, speedAfter: Double) {}
         fun onBallSpawned(ball: Int, x: Double, y: Double) {}
         fun onElement(element: Int, event: ElementEvent) {}
 
@@ -110,6 +113,9 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
             internal set
         var inTouchZone = false
             internal set
+
+        /** Which clocks the ball is inside now (so each entry costs speed once, not every step). */
+        internal var inClock: BooleanArray = BooleanArray(0)
         internal var prevX = 0.0
         internal var prevY = 0.0
         internal var lockPortal = -1
@@ -204,19 +210,19 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
     private var aimAccumulator = 0.0
         private set
 
-    /** 1 normally; [GameTuning.slowMoScale] while a ball is in a slow-motion zone. */
-    var timeScale = 1.0
-        private set
-    val isSlowMotion: Boolean get() = timeScale < 1.0
-
     private val currentPath = ArrayList<Vec2>()
-    private var previousPath: List<Vec2> = emptyList()
 
     /** Corners of the first ball's current shot: launch point, then every bounce (and the end point once over). */
     val path: List<Vec2> get() = currentPath
 
-    /** The path of the previous attempt, kept after a restart as a reference for the next aim. */
-    val lastShotPath: List<Vec2> get() = previousPath
+    /**
+     * The first ball's shot as it really went: the corners of [path] and, where a force (a well, a hill, a booster) bends the flight,
+     * a point for every couple of degrees it turned, so the drawn line curves exactly as the ball did.
+     */
+    val trail: List<Vec2> get() = currentTrail
+    private val currentTrail = ArrayList<Vec2>()
+    private var trailHeading = 0.0
+    private var trailPending = false
 
     private var accumulator = 0.0
     private var stepCounter = 0
@@ -235,8 +241,13 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
     private val portals = elements.filter { it.data.kind == ElementKind.PORTAL }
     private val switches = elements.filter { it.data.kind == ElementKind.SWITCH }
     private val deadly = elements.filter { !it.data.physical && it.data.deathTrigger }
-    private val touchZones = elements.filter { it.data.kind == ElementKind.TOUCH_ZONE || it.data.kind == ElementKind.SLOWMO_ZONE }
-    private val slowZones = elements.filter { it.data.kind == ElementKind.SLOWMO_ZONE }
+    private val touchZones = elements.filter { it.data.kind == ElementKind.TOUCH_ZONE }
+    private val clocks = elements.filter { it.data.kind == ElementKind.CLOCK }
+
+    init {
+        for (b in balls) b.inClock = BooleanArray(clocks.size)
+    }
+
     private val switched = elements.filter { it.data.switched }
     private val portalTarget = IntArray(elements.size) { i ->
         val link = elements[i].data.link
@@ -449,12 +460,11 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
     }
 
     /**
-     * One fixed simulation step. It lasts [STEP] of real time and `STEP × timeScale` of game time, so slow motion
-     * makes the step smaller (a finer simulation) instead of making steps rarer.
+     * One fixed simulation step of [STEP] seconds of game time.
      */
     fun step() {
         if (state != State.MOVING) return
-        val dt = STEP * timeScale
+        val dt = STEP
         gameTime += dt
         flightTime += STEP
         stepCounter++
@@ -470,7 +480,6 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
             stepBall(b, dt)
             if (state != State.MOVING) return
         }
-        updateSlowMotion()
         rearmSwitches()
         checkControl()
         if (flightTime >= MAX_FLIGHT_SECONDS) {
@@ -558,11 +567,13 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         current = b
         val moved = world.move(body, distance, rules)
         if (!moved || !b.alive) return
+        sampleTrail(b)
 
         // Events along the path of this step.
         if (checkDeadly(b)) return
         checkPortals(b)
         checkSwitches(b)
+        checkClocks(b)
         b.inTouchZone = false
         for (zi in touchZones.indices) if (touchZones[zi].active && touchZones[zi].contains(body.x, body.y)) {
             b.inTouchZone = true
@@ -651,7 +662,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
             }
             b.left--
         }
-        if (b.index == 0) currentPath.add(Vec2(x, y))
+        if (b.index == 0) corner(x, y)
         if (el != null) touchElement(el, b, nx, ny)
         listener?.onBounce(impact, b.left)
         return true
@@ -730,7 +741,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         aliveCount--
         exitCount++
         winner = b
-        if (b.index == 0) currentPath.add(Vec2(x, y))
+        if (b.index == 0) corner(x, y)
         if (exitCount >= level.exitRequired) {
             finish(State.WON, null)
         } else {
@@ -745,7 +756,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         b.body.speed = 0.0
         aliveCount--
         lastLoss = reason
-        if (b.index == 0) currentPath.add(Vec2(b.body.x, b.body.y))
+        if (b.index == 0) corner(b.body.x, b.body.y)
         listener?.onBallLost(b.index, reason, b.body.x, b.body.y)
     }
 
@@ -805,9 +816,9 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         b.lockPortal = to.index
         b.lockUntil = gameTime + tuning.portalCooldown
         if (b.index == 0) {
-            currentPath.add(Vec2(fromX, fromY))
-            currentPath.add(PATH_BREAK) // the picture lifts its pen here: the ball did not travel between the portals
-            currentPath.add(Vec2(body.x, body.y))
+            corner(fromX, fromY)
+            penUp() // the picture lifts its pen here: the ball did not travel between the portals
+            corner(body.x, body.y)
         }
         listener?.onPortal(b.index, fromX, fromY, body.x, body.y)
     }
@@ -835,21 +846,72 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         }
     }
 
-    private fun updateSlowMotion() {
-        var slow = false
-        for (i in slowZones.indices) {
-            val z = slowZones[i]
-            if (!z.active) continue
-            for (k in balls.indices) if (balls[k].alive && z.contains(balls[k].body.x, balls[k].body.y)) slow = true
+    /**
+     * The clocks: a ball that comes into one loses speed once, and keeps its direction. Not every step it stays inside; it has to
+     * leave and come in again to lose speed again. A fast ball that crosses a thin clock within one step still counts as entering.
+     */
+    private fun checkClocks(b: BallState) {
+        if (clocks.isEmpty()) return
+        val body = b.body
+        for (i in clocks.indices) {
+            val z = clocks[i]
+            val inside = z.active && z.contains(body.x, body.y)
+            if (z.active && !b.inClock[i] && (inside || z.crosses(b.prevX, b.prevY, body.x, body.y))) {
+                val before = body.speed
+                val after = dampedByClock(before)
+                body.speed = after
+                listener?.onClock(b.index, z.index, before, after)
+            }
+            b.inClock[i] = inside
         }
-        setTimeScale(if (slow) tuning.slowMoScale else 1.0)
     }
 
-    private fun setTimeScale(scale: Double) {
-        if (scale == timeScale) return
-        val wasSlow = isSlowMotion
-        timeScale = scale
-        if (wasSlow != isSlowMotion) listener?.onSlowMo(isSlowMotion)
+    /** What speed a ball has after one clock: half of it, and much less when that half is small (see [GameTuning.clockStallRef]). */
+    fun dampedByClock(speed: Double): Double {
+        val half = speed * tuning.clockFactor
+        val stall = tuning.clockStallRef * refToWorld
+        return if (half >= stall) half else half * (half / stall) * (half / stall)
+    }
+
+    // ------------------------------------------------------------------ the shot's line
+
+    /** A corner of the first ball's shot (launch, bounce, end): in the corners and in the trail. */
+    private fun corner(x: Double, y: Double) {
+        currentPath.add(Vec2(x, y))
+        currentTrail.add(Vec2(x, y))
+        trailPending = true
+    }
+
+    /** The line lifts its pen (a portal jump, or a ball let go and thrown again). */
+    private fun penUp() {
+        currentPath.add(PATH_BREAK)
+        currentTrail.add(PATH_BREAK)
+    }
+
+    private fun clearLine() {
+        currentPath.clear()
+        currentTrail.clear()
+        trailPending = true
+    }
+
+    /** After a step of the first ball: if the force on it bent its flight by a couple of degrees, the trail gets a point here. */
+    private fun sampleTrail(b: BallState) {
+        if (b.index != 0 || currentTrail.isEmpty()) return
+        val body = b.body
+        if (body.speed <= 0.0) return
+        val heading = kotlin.math.atan2(body.dirY, body.dirX)
+        if (trailPending) {
+            trailHeading = heading
+            trailPending = false
+            return
+        }
+        var turn = heading - trailHeading
+        while (turn > PI) turn -= 2 * PI
+        while (turn < -PI) turn += 2 * PI
+        if (abs(turn) >= TRAIL_TURN && currentTrail.size < MAX_TRAIL) {
+            currentTrail.add(Vec2(body.x, body.y))
+            trailHeading = heading
+        }
     }
 
     // ------------------------------------------------------------------ start, end, retry
@@ -861,13 +923,13 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         if (throwCount == 1) {
             gameTime = 0.0
             flightTime = 0.0
-            currentPath.clear()
-            currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
+            clearLine()
+            corner(balls[0].body.x, balls[0].body.y)
             for (i in elements.indices) elements[i].animate(0.0, levelTime, 0.0)
         } else {
             // Thrown again: the clock and the world carry on from where they paused; the path starts a new line here.
-            currentPath.add(PATH_BREAK)
-            currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
+            penUp()
+            corner(balls[0].body.x, balls[0].body.y)
         }
         listener?.onLaunch()
     }
@@ -878,9 +940,6 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
      * remembering the last shot's path.
      */
     fun restart() {
-        // A shot cut short mid-flight still leaves its path so far as the reference.
-        if (state == State.MOVING || (state == State.AIMING && throwCount > 0)) currentPath.add(Vec2(balls[0].body.x, balls[0].body.y))
-        if (currentPath.size > 1) previousPath = ArrayList(currentPath)
         reset()
         resetCount++
     }
@@ -897,6 +956,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
             b.total = 0
             b.alpha = 1.0
             b.inTouchZone = false
+            b.inClock.fill(false)
             b.lockPortal = -1
             b.lastSeg = -1
             b.lastContactStep = -100
@@ -924,8 +984,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         levelTime = 0.0
         aimAccumulator = 0.0
         lastLoss = FailReason.STOPPED
-        currentPath.clear()
-        setTimeScale(1.0)
+        clearLine()
     }
 
     /** Makes [b] a live ball with [bounces] bounces. */
@@ -936,6 +995,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         b.total = bounces
         b.alpha = 1.0
         b.inTouchZone = false
+        b.inClock.fill(false)
         b.lockPortal = -1
         b.lastSeg = -1
         b.lastContactStep = -100
@@ -953,7 +1013,6 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
             b.prevY = b.body.y
         }
         accumulator = 0.0
-        setTimeScale(1.0) // the win or the loss ends slow motion
         if (result == State.WON) {
             listener?.onWin(winner.body.x, winner.body.y)
         } else {
@@ -985,6 +1044,10 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
         /** A wall touched again within this many steps of the last touch is still the same contact. */
         private const val CONTINUOUS_STEPS = 2
         private const val SPREAD = 0.6
+
+        /** The trail gets a point each time the flight has turned this much (radians, 2 degrees), and never more than [MAX_TRAIL] points. */
+        private const val TRAIL_TURN = 0.035
+        private const val MAX_TRAIL = 6000
         private val FORCE_KINDS = setOf(ElementKind.BOOSTER, ElementKind.ATTRACTIVE, ElementKind.REPULSIVE, ElementKind.SLOWER)
     }
 }

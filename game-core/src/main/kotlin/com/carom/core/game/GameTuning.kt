@@ -69,11 +69,14 @@ data class GameTuning(
     /** After a jump, portals ignore the ball for at least this long (seconds of game time), and until it has left the exit portal. */
     val portalCooldown: Double = 0.25,
 
-    // ---- slow motion ----
-    /** Game time runs at this fraction of real time inside a slow-motion zone (1/8). */
-    val slowMoScale: Double = 0.125,
-    /** All sound plays at this pitch (playback speed) during slow motion. */
-    val slowMoPitch: Double = 0.33,
+    // ---- the clock ----
+    /** A ball entering a clock keeps this fraction of its speed (and its direction). */
+    val clockFactor: Double = 0.5,
+    /**
+     * Under this speed (ref units) after the halving, the clock takes much more: the speed is multiplied again by (speed / this)²,
+     * so a weak throw all but stops in it (30 → 3.75, 20 → 1.1) while a strong one only loses half (100 → 50).
+     */
+    val clockStallRef: Double = 30.0,
 
     // ---- flow ----
     /** From the last ball lost to the automatic retry. */

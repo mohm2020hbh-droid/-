@@ -10,11 +10,11 @@ import com.carom.core.physics.Segment
 import com.carom.core.physics.Sweep
 
 /**
- * The route a level's [Guide] throw takes: the ball's path (start, each bounce, and where it
- * enters the goal) and the obstacles it bounces off or passes close to, which are the ones worth
+ * The route a level's [Guide] throw takes: the ball's corners (start, each bounce, and where it
+ * enters the goal), and its trail, which also curves where a well or a booster bent the flight and the obstacles it bounces off or passes close to, which are the ones worth
  * pointing out. Played through the real rules, so it is exactly what that throw does.
  */
-class HintRoute(val points: List<Vec2>, val nearObstacles: Set<Int>, val scores: Boolean) {
+class HintRoute(val points: List<Vec2>, val nearObstacles: Set<Int>, val scores: Boolean, val trail: List<Vec2> = points) {
 
     companion object {
         /** Extra distance (world units) within which a passing obstacle counts as close. */
@@ -28,9 +28,11 @@ class HintRoute(val points: List<Vec2>, val nearObstacles: Set<Int>, val scores:
             var guard = 0
             while (session.state == GameSession.State.MOVING && guard++ < 200_000) session.step()
             val points = session.path.toList()
+            val trail = session.trail.toList() // the same flight with the bends a force made in it, for drawing the line
 
             val samples = ArrayList<Vec2>()
-            for ((a, b) in points.zipWithNext()) {
+            for ((a, b) in trail.zipWithNext()) {
+                if (a.x.isNaN() || b.x.isNaN()) continue
                 val n = (a.distanceTo(b) / 8.0).toInt().coerceAtLeast(1)
                 for (i in 0..n) samples += Vec2(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n)
             }
@@ -46,7 +48,7 @@ class HintRoute(val points: List<Vec2>, val nearObstacles: Set<Int>, val scores:
                 }
                 if (close) near += i
             }
-            return HintRoute(points, near, session.state == GameSession.State.WON)
+            return HintRoute(points, near, session.state == GameSession.State.WON, trail)
         }
 
         private fun chain(points: List<Vec2>, closed: Boolean, radius: Double): List<Segment> {

@@ -161,7 +161,7 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
             val gap = kit.u(14f)
             val startX = width / 2 - gap * (worldCount - 1) / 2
             for (p in 0 until worldCount) {
-                kit.fill.color = if (p == page) Palette.TEXT else Palette.LINE
+                kit.fill.color = if (p == page) kit.palette.ink else kit.palette.line
                 canvas.drawCircle(startX + p * gap, dotsY, kit.u(3f), kit.fill)
             }
         }
@@ -173,11 +173,11 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
         val done = (firstLevel until min(firstLevel + Worlds.SIZE, levelCount)).count(progress::isCompleted)
 
         val cx = width / 2 + offset
-        kit.heading.color = Palette.TEXT
+        kit.heading.color = colors.ink
         kit.drawText(canvas, "${kit.text.world} ${world + 1}", cx, headerY, kit.heading)
-        kit.small.color = Palette.TEXT_DIM
+        kit.small.color = colors.inkDim
         kit.drawText(canvas, String.format(Locale.ROOT, "%d / %d", done, Worlds.SIZE), cx, headerY + kit.u(30f), kit.small)
-        kit.small.color = Palette.TEXT
+        kit.small.color = colors.ink
 
         val current = progress.currentIndex
         for (slot in 0 until Worlds.SIZE) {
@@ -211,13 +211,13 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
                 kit.drawText(canvas, label, cx, cy, kit.number)
             }
             progress.isUnlocked(i) -> {
-                kit.stroke.color = Palette.TEXT_DIM
+                kit.stroke.color = colors.inkDim
                 canvas.drawCircle(cx, cy, r, kit.stroke)
-                kit.number.color = Palette.TEXT
+                kit.number.color = colors.ink
                 kit.drawText(canvas, label, cx, cy, kit.number)
             }
             else -> {
-                val dim = Palette.withAlpha(colors.primary, 0.55f)
+                val dim = if (colors.isLight) Palette.withAlpha(colors.ink, 0.32f) else Palette.withAlpha(colors.primary, 0.55f)
                 kit.stroke.color = dim
                 canvas.drawCircle(cx, cy, r, kit.stroke)
                 kit.number.color = dim
@@ -225,7 +225,7 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
                 Icons.draw(canvas, kit, Icon.LOCK, cx, cy + r * 0.45f, r * 0.34f, dim)
             }
         }
-        kit.number.color = Palette.TEXT
+        kit.number.color = colors.ink
     }
 
     private companion object {

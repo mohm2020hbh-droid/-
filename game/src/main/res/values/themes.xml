@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark window background so there is no white flash before the first frame. -->
+    <!-- The first world's cream as the window background, so there is no flash of another colour before the first frame. -->
     <style name="Base.Theme.Carom" parent="android:Theme.Material.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@color/background</item>

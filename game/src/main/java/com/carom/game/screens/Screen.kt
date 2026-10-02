@@ -18,8 +18,8 @@ enum class Sound {
     /** A ball entering a portal. */
     PORTAL,
 
-    /** Time slowing down, and speeding back up. */
-    SLOW_IN, SLOW_OUT,
+    /** A ball losing speed in a clock. */
+    CLOCK,
 
     /** A ball reached an exit that still needs more. */
     EXIT_PARTIAL,

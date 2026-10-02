@@ -70,7 +70,7 @@ class VoicePool(val capacity: Int) {
         const val BOUNCE = 1
         const val UI = 2
         const val PORTAL = 4
-        const val SLOWMO = 5
+        const val CLOCK = 5
         const val EXIT_PARTIAL = 6
         const val EXPLOSION = 8
         const val EXIT_COMPLETE = 9

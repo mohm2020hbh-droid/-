@@ -37,6 +37,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
@@ -147,7 +148,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private var respawnTime = -1f
 
     // Slow motion: how far the slow-motion look has come in (0..1), and the exit's ring flashing when a ball enters.
-    private var slowAmount = 0f
     private var exitFlash = 0f
 
     // Scoring: where the ball entered the ring, and which steps of the fan's show have happened.
@@ -241,8 +241,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         session.advance(dt.toDouble())
         if (ended) endTime += dt
 
-        // Effects run on game time: in slow motion the sparks, rings, breaks and the shake slow down with the ball.
-        val fx = dt * session.timeScale.toFloat()
+        val fx = dt
         if (shakeTime < shakeLength) {
             shakeTime += fx
             jolt()
@@ -266,9 +265,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             s.vy *= drag
             if (s.age > s.life) s.alive = false
         }
-        val slowTarget = if (session.isSlowMotion) 1f else 0f
-        slowAmount += (slowTarget - slowAmount) * (1f - exp(-6f * dt))
-        if (slowAmount < 0.002f && slowTarget == 0f) slowAmount = 0f
         exitFlash = max(0f, exitFlash - dt * 2.5f)
         zoneAlpha += (zoneRest() - zoneAlpha) * (1f - exp(-5f * dt))
 
@@ -288,7 +284,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     override val isAnimating: Boolean
         get() = session.state == GameSession.State.MOVING || anyRipple() || anySpark() || anyShatter() ||
-            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || aim.isActive || session.state == GameSession.State.FAILED || slowAmount > 0f || exitFlash > 0f || (session.animatesWhileAiming && session.state == GameSession.State.AIMING && session.throwCount == 0) || abs(zoneAlpha - zoneRest()) > 0.01f ||
+            shakeTime < shakeLength || anySquash() || respawnTime >= 0f || aim.isActive || session.state == GameSession.State.FAILED || exitFlash > 0f || (session.animatesWhileAiming && session.state == GameSession.State.AIMING && session.throwCount == 0) || abs(zoneAlpha - zoneRest()) > 0.01f ||
             (session.state == GameSession.State.WON && (overlayProgress < 1f || !showsResult)) || (guideShown && session.state == GameSession.State.AIMING)
 
     /** A level with force zones, portals and the like keeps moving even while the player aims (at a gentle rate). */
@@ -481,9 +477,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         addRipple(toX, toY)
     }
 
-    override fun onSlowMo(active: Boolean) {
-        host.sound(if (active) Sound.SLOW_IN else Sound.SLOW_OUT)
-        host.soundPitch(if (active) tuning.slowMoPitch.toFloat() else 1f)
+    /** A ball came into a clock and lost speed: a soft ring where it went in, and the clock's low "tock". */
+    override fun onClock(ball: Int, element: Int, speedBefore: Double, speedAfter: Double) {
+        host.sound(Sound.CLOCK, (speedBefore / level.maxSpeed).coerceIn(0.2, 1.0))
+        val b = session.balls[ball]
+        addRipple(b.x, b.y)
     }
 
     override fun onBallSpawned(ball: Int, x: Double, y: Double) {
@@ -526,8 +524,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         endTime = 0f
         for (r in ripples) r.alive = false
         respawnTime = 0f
-        slowAmount = 0f
-        host.soundPitch(1f)
         host.sound(Sound.RESPAWN)
         guideShown = guideDue(fails)
     }
@@ -547,15 +543,15 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         aim.cancel()
         endTime = 0f
         for (s in shatters) s.advance(BallShatter.DURATION)
-        respawnTime = -1f
         shakeTime = shakeLength
         shakeX = 0f
         shakeY = 0f
         squashAge.fill(SQUASH_TIME)
         for (r in ripples) r.alive = false
         for (s in sparks) s.alive = false
-        slowAmount = 0f
         host.soundPitch(1f)
+        host.sound(Sound.RESPAWN)
+        respawnTime = 0f
         guideShown = guideDue()
     }
 
@@ -614,7 +610,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         }
     }
 
-    private fun sparkColor(): Int = if (random.nextFloat() < 0.55f) palette.accent else Palette.TEXT
+    private fun sparkColor(): Int = if (random.nextFloat() < 0.55f) palette.accent else palette.ink
 
     // ---------------------------------------------------------------- input
 
@@ -780,17 +776,15 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         elementsView.draw(canvas, session, clock, kit.unit)
 
         val trail = Palette.withAlpha(palette.accent, 0.35f)
-        val ghost = session.lastShotPath
-        if (ghost.size > 1) board.drawShotPath(canvas, ghost, Float.NaN, Float.NaN, Palette.withAlpha(palette.accent, 0.2f), dashed = true)
         if (guideShown && session.state == GameSession.State.AIMING) drawGuide(canvas)
 
         val ballX = board.x(session.renderX)
         val ballY = board.y(session.renderY)
         if (session.state == GameSession.State.MOVING || (session.state == GameSession.State.AIMING && session.throwCount > 0)) {
             val first = session.balls[0]
-            board.drawShotPath(canvas, session.path, if (first.alive) ballX else Float.NaN, ballY, trail, dashed = false)
+            board.drawShotPath(canvas, session.trail, if (first.alive) ballX else Float.NaN, ballY, trail, dashed = false)
         } else if (ended) {
-            board.drawShotPath(canvas, session.path, Float.NaN, Float.NaN, trail, dashed = false)
+            board.drawShotPath(canvas, session.trail, Float.NaN, Float.NaN, trail, dashed = false)
         }
 
         val won = session.state == GameSession.State.WON
@@ -811,7 +805,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         drawBalls(canvas)
         if (won && exploded) drawExplosion(canvas, endTime - EXPLODE)
         drawSparks(canvas)
-        if (slowAmount > 0f) drawSlowMotion(canvas)
         if (shaking) canvas.restore()
 
         drawHud(canvas)
@@ -860,26 +853,21 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val left = session.bouncesLeft
         val style = if (left == 0) BallStyle.CRACKED else BallStyle.SOLID
         if (respawnTime >= 0f) {
-            // Popping in with a little overshoot.
+            // Charging: a ring of energy closes in on the ball, which fills up and settles with a little overshoot at the end.
             val p = (respawnTime / RESPAWN_TIME).coerceIn(0f, 1f)
-            val c = 0.9f
-            val q = p - 1f
-            val size = (1f + (c + 1f) * q * q * q + c * q * q).coerceAtLeast(0.01f)
+            val r = board.ballScreenRadius
+            val close = (1f - p) * (1f - p)
+            kit.stroke.color = Palette.withAlpha(palette.accent, 0.5f * sqrt(1f - p) * p.coerceAtLeast(0.25f))
+            kit.stroke.strokeWidth = kit.u(2f)
+            canvas.drawCircle(x, y, r * (1f + 2.6f * close), kit.stroke)
+            kit.stroke.color = Palette.withAlpha(palette.accent, 0.25f * (1f - p))
+            canvas.drawCircle(x, y, r * (1f + 1.3f * close), kit.stroke)
+            val q = ((p - 0.55f) / 0.45f).coerceIn(0f, 1f)
+            val size = 0.62f + 0.38f * (1f - (1f - p) * (1f - p)) + 0.06f * sin(q * PI.toFloat())
             board.drawBall(canvas, x, y, size, style, left)
         } else {
             board.drawBall(canvas, x, y, if (aim.isActive || swipeActive) 1.04f else 1f, style, left)
         }
-    }
-
-    /** Slow motion, seen: the edges of the screen close in softly and a thin ring breathes at the border. */
-    private fun drawSlowMotion(canvas: Canvas) {
-        val a = slowAmount
-        kit.stroke.color = Palette.withAlpha(palette.accent, 0.05f * a)
-        kit.stroke.strokeWidth = kit.u(24f) * a
-        canvas.drawRect(kit.u(14f) * a, kit.u(14f) * a, width - kit.u(14f) * a, height - kit.u(14f) * a, kit.stroke)
-        kit.stroke.color = Palette.withAlpha(palette.accent, (0.12f + 0.04f * sin(clock * 2.5f)) * a)
-        kit.stroke.strokeWidth = kit.u(1.5f)
-        canvas.drawRect(kit.u(6f), kit.u(6f), width - kit.u(6f), height - kit.u(6f), kit.stroke)
     }
 
     /** Entering, stopping, turning into a fan and spinning up, until it explodes. */
@@ -914,7 +902,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val r = board.ballScreenRadius
         if (t < FLASH_TIME) {
             val k = t / FLASH_TIME
-            kit.fill.color = Palette.withAlpha(Palette.TEXT, 0.85f * (1f - k))
+            kit.fill.color = Palette.withAlpha(palette.ink, 0.85f * (1f - k))
             canvas.drawCircle(gx, gy, r * (0.4f + 1.8f * k), kit.fill)
         }
         if (t < RING_TIME) {
@@ -934,14 +922,23 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
      */
     private fun drawGuide(canvas: Canvas) {
         val path = route ?: return
-        val pts = path.points.map { board.x(it.x) to board.y(it.y) }
-        if (pts.size < 2) return
+        val corners = path.points.filter { !it.x.isNaN() }.map { board.x(it.x) to board.y(it.y) }
+        if (corners.size < 2) return
         val pulse = 0.5f + 0.5f * sin(clock * 4f)
         for (i in path.nearObstacles) board.drawObstacleOutline(canvas, i, kit.unit, 0.6f + 0.4f * pulse)
 
+        // The line is the ball's real trail: it bends where a well, a hill or a booster bent the flight.
+        val line = path.trail
         shape.reset()
-        shape.moveTo(pts[0].first, pts[0].second)
-        for (i in 1 until pts.size) shape.lineTo(pts[i].first, pts[i].second)
+        var pen = false
+        for (p in line) {
+            if (p.x.isNaN()) {
+                pen = false
+                continue
+            }
+            if (pen) shape.lineTo(board.x(p.x), board.y(p.y)) else shape.moveTo(board.x(p.x), board.y(p.y))
+            pen = true
+        }
         kit.stroke.color = Palette.withAlpha(palette.accent, 0.08f)
         kit.stroke.strokeWidth = board.ballScreenRadius * 0.9f
         canvas.drawPath(shape, kit.stroke)
@@ -951,15 +948,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         canvas.drawPath(shape, kit.stroke)
         kit.stroke.pathEffect = null
 
-        // Chevrons pointing along the path.
+        // Chevrons pointing along the trail.
         val step = kit.u(70f)
         val c = kit.u(6f)
         kit.stroke.color = Palette.withAlpha(palette.accent, 0.85f)
         kit.stroke.strokeWidth = kit.u(2.2f)
         var carry = kit.u(45f)
-        for (i in 0 until pts.size - 1) {
-            val (ax, ay) = pts[i]
-            val (bx, by) = pts[i + 1]
+        for (i in 0 until line.size - 1) {
+            if (line[i].x.isNaN() || line[i + 1].x.isNaN()) continue
+            val ax = board.x(line[i].x)
+            val ay = board.y(line[i].y)
+            val bx = board.x(line[i + 1].x)
+            val by = board.y(line[i + 1].y)
             val len = hypot(bx - ax, by - ay)
             if (len < 1f) continue
             val ux = (bx - ax) / len
@@ -975,24 +975,30 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             carry = max(kit.u(20f), d - len)
         }
 
-        // Where it bounces, numbered.
-        for (i in 1 until pts.size - 1) {
-            val (px, py) = pts[i]
+        // Where it bounces, numbered (a portal's two ends are not bounces).
+        val all = path.points
+        var number = 0
+        for (i in 1 until all.size - 1) {
+            val c = all[i]
+            if (c.x.isNaN() || all[i - 1].x.isNaN() || all[i + 1].x.isNaN()) continue
+            number++
+            val px = board.x(c.x)
+            val py = board.y(c.y)
             kit.fill.color = Palette.withAlpha(palette.background, 0.85f)
             canvas.drawCircle(px, py, kit.u(10f), kit.fill)
             kit.stroke.color = palette.accent
             kit.stroke.strokeWidth = kit.u(2f)
             canvas.drawCircle(px, py, kit.u(10f), kit.stroke)
             kit.small.color = palette.accent
-            kit.drawText(canvas, i.toString(), px, py, kit.small)
-            kit.small.color = Palette.TEXT
+            kit.drawText(canvas, number.toString(), px, py, kit.small)
+            kit.small.color = palette.ink
         }
         // Start and finish.
-        val (sx, sy) = pts.first()
+        val (sx, sy) = corners.first()
         kit.stroke.color = Palette.withAlpha(palette.accent, 0.45f + 0.35f * pulse)
         kit.stroke.strokeWidth = kit.u(2f)
         canvas.drawCircle(sx, sy, board.ballScreenRadius + kit.u(6f + 4f * pulse), kit.stroke)
-        val (ex, ey) = pts.last()
+        val (ex, ey) = corners.last()
         kit.fill.color = palette.accent
         canvas.drawCircle(ex, ey, kit.u(4.5f), kit.fill)
         kit.stroke.color = Palette.withAlpha(palette.accent, 0.9f)
@@ -1072,10 +1078,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val arabic = kit.text.language == "ar"
         val wordX = if (arabic) left + digits + gap + word / 2 else left + word / 2
         val numberX = if (arabic) left + digits / 2 else left + word + gap + digits / 2
-        kit.small.color = Palette.TEXT_DIM
+        kit.small.color = palette.inkDim
         kit.drawText(canvas, kit.text.level, wordX, topBarY, kit.small)
-        kit.small.color = Palette.TEXT
-        kit.number.color = Palette.TEXT
+        kit.small.color = palette.ink
+        kit.number.color = palette.ink
         kit.drawText(canvas, levelNumber, numberX, topBarY, kit.number)
 
         for (b in hudButtons) b.draw(canvas, kit)
@@ -1097,12 +1103,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             hintBox.set(width / 2 - w / 2, y - kit.u(15f) - extra / 2, width / 2 + w / 2, y + kit.u(15f) + extra / 2)
             kit.fill.color = Palette.withAlpha(palette.background, 0.85f)
             canvas.drawRoundRect(hintBox, kit.u(15f), kit.u(15f), kit.fill)
-            kit.stroke.color = if (guideShown) Palette.withAlpha(palette.accent, 0.5f) else Palette.LINE
+            kit.stroke.color = if (guideShown) Palette.withAlpha(palette.accent, 0.5f) else palette.line
             kit.stroke.strokeWidth = kit.u(1f)
             canvas.drawRoundRect(hintBox, kit.u(15f), kit.u(15f), kit.stroke)
-            kit.small.color = if (guideShown) Palette.TEXT else Palette.TEXT_DIM
+            kit.small.color = if (guideShown) palette.ink else palette.inkDim
             for (i in captionLines.indices) kit.drawText(canvas, captionLines[i], width / 2, y - extra / 2 + i * lineHeight, kit.small)
-            kit.small.color = Palette.TEXT
+            kit.small.color = palette.ink
         }
     }
 
@@ -1139,7 +1145,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         canvas.drawCircle(cx, cy - kit.u(96f), kit.u(30f), kit.stroke)
         Icons.draw(canvas, kit, Icon.CHECK, cx, cy - kit.u(96f), kit.u(32f), color)
 
-        kit.heading.color = Palette.TEXT
+        kit.heading.color = palette.ink
         kit.drawText(canvas, kit.text.levelComplete, cx, cy - kit.u(38f), kit.heading)
         val detail = when {
             isLastLevel -> kit.text.allComplete
@@ -1147,9 +1153,9 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             else -> null
         }
         if (detail != null) {
-            kit.small.color = Palette.TEXT_DIM
+            kit.small.color = palette.inkDim
             kit.drawText(canvas, detail, cx, cy - kit.u(12f), kit.small)
-            kit.small.color = Palette.TEXT
+            kit.small.color = palette.ink
         }
 
         for (b in overlayButtons()) {
@@ -1179,7 +1185,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         const val GOAL_PULSE = 0.6f
 
         // Losing: the new ball's arrival. (How long a loss shows first is GameTuning.retryDelay.)
-        const val RESPAWN_TIME = 0.25f
+        const val RESPAWN_TIME = 0.5f
 
         // Shakes: a quick flick on a wall hit, a little more for a break, a real jolt for the explosion. No shake is
         // larger than SHAKE_CAP dp, whatever the hit.

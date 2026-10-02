@@ -48,7 +48,8 @@ class ElementsParserTest {
         assertTrue(e.deathTrigger)
         assertTrue(e.switched)
         assertEquals(ElementKind.BALL_CONTAINER, ElementKind.parse("BallContainer"))
-        assertEquals(ElementKind.SLOWMO_ZONE, ElementKind.parse("SlowMo TouchZone"))
+        assertEquals(ElementKind.CLOCK, ElementKind.parse("SlowMo TouchZone"))
+        assertEquals(ElementKind.CLOCK, ElementKind.parse("clock"))
         assertEquals(ElementKind.TOUCH_ZONE, ElementKind.parse("touch_zone"))
     }
 

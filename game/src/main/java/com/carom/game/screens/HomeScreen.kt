@@ -64,11 +64,11 @@ class HomeScreen(host: GameHost) : Screen(host) {
 
     override fun draw(canvas: Canvas) {
         drawEmblem(canvas)
-        kit.title.color = Palette.TEXT
+        kit.title.color = kit.palette.ink
         kit.drawText(canvas, "CAROM", columnX, titleY, kit.title)
-        kit.small.color = Palette.TEXT_DIM
+        kit.small.color = kit.palette.inkDim
         kit.drawText(canvas, kit.text.tagline, columnX, titleY + kit.u(38f), kit.small)
-        kit.small.color = Palette.TEXT
+        kit.small.color = kit.palette.ink
         for (b in buttons) b.draw(canvas, kit)
     }
 

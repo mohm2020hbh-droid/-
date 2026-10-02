@@ -46,20 +46,20 @@ class UiButton(
             }
             Style.OUTLINE -> {
                 if (pressed) {
-                    kit.fill.color = Palette.withAlpha(Palette.TEXT, 0.1f)
+                    kit.fill.color = Palette.withAlpha(kit.palette.ink, 0.1f)
                     canvas.drawRoundRect(bounds, radius, radius, kit.fill)
                 }
-                kit.stroke.color = Palette.LINE
+                kit.stroke.color = kit.palette.line
                 kit.stroke.strokeWidth = kit.u(1f)
                 canvas.drawRoundRect(bounds, radius, radius, kit.stroke)
-                content = Palette.TEXT
+                content = kit.palette.ink
             }
             Style.ICON -> {
                 if (pressed) {
-                    kit.fill.color = Palette.withAlpha(Palette.TEXT, 0.12f)
+                    kit.fill.color = Palette.withAlpha(kit.palette.ink, 0.12f)
                     canvas.drawCircle(bounds.centerX(), cy, bounds.height() / 2, kit.fill)
                 }
-                icon?.let { Icons.draw(canvas, kit, it, bounds.centerX(), cy, bounds.height() * 0.45f, Palette.TEXT) }
+                icon?.let { Icons.draw(canvas, kit, it, bounds.centerX(), cy, bounds.height() * 0.45f, kit.palette.ink) }
                 return
             }
         }
@@ -71,6 +71,6 @@ class UiButton(
         }
         kit.label.color = content
         kit.drawText(canvas, label, bounds.centerX(), cy, kit.label)
-        kit.label.color = Palette.TEXT
+        kit.label.color = kit.palette.ink
     }
 }

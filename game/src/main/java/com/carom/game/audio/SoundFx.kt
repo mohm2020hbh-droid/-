@@ -98,7 +98,7 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
     @Volatile private var bounce: Bounce? = null
     @Volatile private var released = false
 
-    /** The playback speed everything plays at: 1 normally, lower in slow motion. */
+    /** The playback speed everything plays at (1 normally). */
     private var pitch = 1f
 
     private val pool = VoicePool(POOL_SIZE)
@@ -115,8 +115,7 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
                 "respawn" to (Synth.respawn() to 2),
                 "fizzle" to (Synth.fizzle() to 1),
                 "portal" to (Synth.portal() to 2),
-                "slowIn" to (Synth.slowIn() to 1),
-                "slowOut" to (Synth.slowOut() to 1),
+                "clock" to (Synth.clock() to 2),
                 "exitPartial" to (Synth.exitPartial() to 1),
             ).mapValues { (_, v) ->
                 Bank(List(v.second) { Voice.create(v.first) }.filterNotNull(), v.first.size.toFloat() / Synth.SAMPLE_RATE)
@@ -171,21 +170,20 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
 
     fun explosion() = play("explosion", 0.95f, priority = VoicePool.Priority.EXIT_COMPLETE)
 
-    fun respawn() = play("respawn", 0.5f, priority = VoicePool.Priority.UI)
+    /** The ball being recharged at its start, whether a try was lost or the player started again. */
+    fun respawn() = play("respawn", 0.62f, priority = VoicePool.Priority.UI)
 
     fun fizzle() = play("fizzle", 0.6f, priority = VoicePool.Priority.UI)
 
     fun portal() = play("portal", 0.7f, priority = VoicePool.Priority.PORTAL)
 
-    fun slowIn() = play("slowIn", 0.7f, priority = VoicePool.Priority.SLOWMO)
-
-    fun slowOut() = play("slowOut", 0.6f, priority = VoicePool.Priority.SLOWMO)
+    /** A ball losing speed in a clock; louder the faster it was going. */
+    fun clock(strength: Double) = play("clock", (0.35 + 0.4 * strength).toFloat(), priority = VoicePool.Priority.CLOCK)
 
     fun exitPartial() = play("exitPartial", 0.6f, priority = VoicePool.Priority.EXIT_PARTIAL)
 
     /**
-     * Sets the playback speed of every sound, the ones already playing included (slow motion drops it to
-     * about a third, and it comes back to 1 when time does).
+     * Sets the playback speed of every sound, the ones already playing included (1 is normal).
      */
     fun setPitch(scale: Float) {
         if (scale == pitch) return

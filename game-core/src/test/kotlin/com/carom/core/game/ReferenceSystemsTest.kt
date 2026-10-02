@@ -11,7 +11,7 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.hypot
 
-/** The behaviours taken from the reference game, one test each: physics, control, forces, portals, slow motion, state. */
+/** The behaviours taken from the reference game, one test each: physics, control, forces, portals, the clock, state. */
 class ReferenceSystemsTest {
 
     /** A big empty box (nothing to hit but the edges); ball on the left, goal far off the path. */
@@ -40,8 +40,7 @@ class ReferenceSystemsTest {
         var bounces = 0
         val progress = ArrayList<Double>()
         var portals = 0
-        var slowIn = 0
-        var slowOut = 0
+        var clocks = 0
         var lost = 0
         var spawned = 0
         var exitPartial = 0
@@ -51,7 +50,7 @@ class ReferenceSystemsTest {
             progress.add(impact.progress)
         }
         override fun onPortal(ball: Int, fromX: Double, fromY: Double, toX: Double, toY: Double) { portals++ }
-        override fun onSlowMo(active: Boolean) { if (active) slowIn++ else slowOut++ }
+        override fun onClock(ball: Int, element: Int, speedBefore: Double, speedAfter: Double) { clocks++ }
         override fun onBallLost(ball: Int, reason: GameSession.FailReason, x: Double, y: Double) { lost++ }
         override fun onBallSpawned(ball: Int, x: Double, y: Double) { spawned++ }
         override fun onExitPartial(count: Int, needed: Int, x: Double, y: Double) { exitPartial++ }
@@ -285,30 +284,7 @@ class ReferenceSystemsTest {
         assertTrue(s.ball.x > 1500.0)
     }
 
-    // ------------------------------------------------------------------ slow motion and the fixed step
-
-    @Test
-    fun slowMotionRunsGameTimeAtAnEighthWhileTheBallIsInItsZone() {
-        val log = Log()
-        val s = session(level("""{"kind": "slowMo", "pos": [1000, 1000], "scale": [600, 600]}""", extra = ""","drag":0"""), log)
-        s.applyImpulse(1000.0, 0.0)
-        var slowSteps = 0
-        var before = s.gameTime
-        var gameDelta = 0.0
-        repeat(1000) {
-            before = s.gameTime
-            s.step()
-            if (s.isSlowMotion) {
-                slowSteps++
-                gameDelta = s.gameTime - before
-            }
-        }
-        assertEquals(1, log.slowIn)
-        assertEquals(1, log.slowOut)
-        assertTrue(slowSteps > 10)
-        assertEquals("a step of game time is an eighth of a normal one", GameSession.STEP / 8, gameDelta, 1e-12)
-        assertEquals(1.0, s.timeScale, 0.0)
-    }
+    // ------------------------------------------------------------------ the fixed step
 
     @Test
     fun theSimulationIsTheSameAtEveryFrameRate() {
@@ -513,7 +489,6 @@ class ReferenceSystemsTest {
         assertEquals(1000.0, s.ball.y, 0.0)
         assertEquals(0.0, s.ball.speed, 0.0)
         assertEquals(6, s.bouncesLeft)
-        assertEquals(1.0, s.timeScale, 0.0)
         assertEquals(0, s.exitCount)
         assertEquals(0.0, s.gameTime, 0.0)
         assertTrue("barrier is back", s.elements[0].active)

@@ -105,7 +105,7 @@ object LevelPreview {
             ElementKind.SLOWER -> Color(0x94A3B8)
             ElementKind.DEATH -> Color(0xEF4444)
             ElementKind.PORTAL -> Color(0x22D3EE)
-            ElementKind.SLOWMO_ZONE, ElementKind.TOUCH_ZONE -> Color(0x34D399)
+            ElementKind.CLOCK, ElementKind.TOUCH_ZONE -> Color(0x34D399)
             ElementKind.SWITCH -> Color(0xFACC15)
             ElementKind.BALL_CONTAINER -> Color(0xFB923C)
             else -> Color(0xE8DCC4)

@@ -179,7 +179,7 @@ class GameSessionTest {
     }
 
     @Test
-    fun restartRestoresEverythingAndKeepsTheLastPath() {
+    fun restartRestoresEverythingAndLeavesNoOldLine() {
         val s = GameSession(level(bounces = 1))
         s.bankShotOffTop()
         s.runToEnd()
@@ -193,18 +193,20 @@ class GameSessionTest {
         assertEquals(s.level.ball.y, s.ball.y, 0.0)
         assertEquals(0.0, s.ball.speed, 0.0)
         assertTrue(s.path.isEmpty())
-        assertEquals(path, s.lastShotPath)
+        assertTrue("no old trajectory is left", s.trail.isEmpty())
     }
 
     @Test
-    fun restartingMidFlightKeepsThePathSoFar() {
+    fun restartingMidFlightLeavesACleanBallAndNoLine() {
         val s = GameSession(level(bounces = 1))
         s.launch(1.0, 0.0, 1.0)
         repeat(10) { s.step() }
-        val x = s.ball.x
         s.restart()
-        assertEquals(2, s.lastShotPath.size)
-        assertEquals(x, s.lastShotPath[1].x, 0.0)
+        assertTrue(s.path.isEmpty())
+        assertTrue(s.trail.isEmpty())
+        assertEquals(0.0, s.ball.speed, 0.0)
+        assertEquals(s.level.ball.x, s.ball.x, 0.0)
+        assertEquals(s.level.ball.y, s.ball.y, 0.0)
     }
 
     @Test
