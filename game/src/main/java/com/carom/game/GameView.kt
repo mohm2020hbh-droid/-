@@ -41,7 +41,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         private set
 
     private var screen: Screen = HomeScreen(this)
-    private val soundFx = SoundFx { context.assets.openFd("sounds/ball_bounce_exact.ogg") }
+    private val soundFx = SoundFx({ context.assets.openFd("sounds/ball_bounce_exact.ogg") }, { context.assets.openFd("sounds/low_ball_pulse.wav") })
     private val music = MusicPlayer()
     private val vibrator: Vibrator? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -200,7 +200,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
             Sound.TAP -> soundFx.tap()
             Sound.SPIN -> soundFx.spin()
             Sound.EXPLOSION -> soundFx.explosion()
-            Sound.GENERATOR -> soundFx.generator()
+            Sound.LOW_BALL_PULSE -> soundFx.lowBallPulse()
             Sound.FIZZLE -> soundFx.fizzle()
         }
     }

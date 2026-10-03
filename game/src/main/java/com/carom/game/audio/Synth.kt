@@ -85,34 +85,6 @@ object Synth {
         return finish(out, peak = 0.95)
     }
 
-    /**
-     * The generator of a full manual restart: a third of a second of a small energy generator, deliberately minimal. A low
-     * mechanical hum that rises a little, a soft charging pulse that speeds up inside it, and a faint, dull settle at the end.
-     * Nothing above a few hundred hertz but a breath of air, no ping, no tick: it must read as "wound up again by me" and
-     * never as an event; it is played far below the bounce.
-     */
-    fun generator(): ShortArray {
-        val length = 0.36
-        val out = FloatArray(seconds(length))
-        val rnd = Random(53)
-        val air = Svf()
-        var hum = 0.0
-        var pulse = 0.0
-        for (k in out.indices) {
-            val t = k.toDouble() / SAMPLE_RATE
-            val q = t / length
-            hum += 2 * PI * (88.0 + 36.0 * q * q) / SAMPLE_RATE
-            pulse += 2 * PI * (14.0 + 20.0 * q) / SAMPLE_RATE
-            val soft = 0.55 + 0.45 * sin(pulse - 0.6)
-            val tone = sin(hum) + 0.45 * sin(2 * hum + 0.5) + 0.16 * sin(3 * hum + 1.3)
-            val env = min(1.0, t / 0.06) * (0.55 + 0.45 * q) * min(1.0, (length - t) / 0.11)
-            val breath = air.lowpass(rnd.nextDouble(-1.0, 1.0), 700.0, q = 0.7)
-            out[k] += (env * (0.55 * soft * tone + 0.05 * q * breath)).toFloat()
-        }
-        reverb(out, mix = 0.06)
-        return finish(out, peak = 0.5)
-    }
-
     /** The ball running out of speed: a soft falling "whoo", deflating. */
     fun fizzle(): ShortArray {
         val out = FloatArray(seconds(0.5))

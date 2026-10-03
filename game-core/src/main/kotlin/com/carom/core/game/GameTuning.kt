@@ -57,6 +57,9 @@ data class GameTuning(
     /** Between [stopSpeedRef] and this speed the ball fades out before it dies. */
     val fadeSpeedRef: Double = 1.1,
 
+    /** A thrown ball at or under this speed (ref units, a twentieth of the top speed) is "very slow": it crawls, and has not yet stopped. */
+    val lowBallSpeedRef: Double = 6.0,
+
     // ---- force zones ----
     /** Booster: acceleration = direction × force × this (ref units per second²). */
     val boosterGain: Double = 100.0,

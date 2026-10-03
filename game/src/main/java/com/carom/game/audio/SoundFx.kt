@@ -24,7 +24,7 @@ import com.carom.core.audio.VoicePool
  * Sound is decoration: until the sounds are ready, or if the device refuses audio tracks, the game
  * simply stays silent.
  */
-class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
+class SoundFx(private val bounceFile: () -> AssetFileDescriptor, private val pulseFile: () -> AssetFileDescriptor) {
 
     private class Bank(val voices: List<Voice>, val seconds: Float) {
         private var next = 0
@@ -88,7 +88,7 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
                     .build()
                 Bounce(pool).also { file().use { f -> pool.load(f, 1) } }
             } catch (e: Exception) {
-                Log.w(TAG, "Could not load the bounce sound", e)
+                Log.w(TAG, "Could not load a recorded sound", e)
                 null
             }
         }
@@ -96,6 +96,7 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
 
     @Volatile private var banks: Map<String, Bank> = emptyMap()
     @Volatile private var bounce: Bounce? = null
+    @Volatile private var pulse: Bounce? = null
     @Volatile private var released = false
 
     /** The playback speed everything plays at (1 normally). */
@@ -112,7 +113,6 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
                 "tap" to (Synth.tap() to 2),
                 "spin" to (Synth.spin() to 1),
                 "explosion" to (Synth.explosion() to 1),
-                "generator" to (Synth.generator() to 1),
                 "fizzle" to (Synth.fizzle() to 1),
                 "portal" to (Synth.portal() to 2),
                 "clock" to (Synth.clock() to 2),
@@ -121,13 +121,16 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
                 Bank(List(v.second) { Voice.create(v.first) }.filterNotNull(), v.first.size.toFloat() / Synth.SAMPLE_RATE)
             }
             val recorded = Bounce.create(bounceFile)
+            val pulseSample = Bounce.create(pulseFile)
             synchronized(this) {
                 if (released) {
                     made.values.forEach { it.release() }
                     recorded?.release()
+                    pulseSample?.release()
                 } else {
                     banks = made
                     bounce = recorded
+                    pulse = pulseSample
                 }
             }
         }, "carom-sounds").start()
@@ -171,10 +174,12 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
     fun explosion() = play("explosion", 0.95f, priority = VoicePool.Priority.EXIT_COMPLETE)
 
     /**
-     * The small generator of a full manual restart (three presses of restart): a hum far below the bounce in loudness, in the
-     * background. Never for a lost try, a collision or a ball released from a container.
+     * `low_ball_pulse.wav`, played exactly as recorded (its own level, pitch and length), once: for a full manual restart begun while the ball
+     * was very slow, and for nothing else.
      */
-    fun generator() = play("generator", GENERATOR_VOLUME, priority = VoicePool.Priority.UI)
+    fun lowBallPulse() {
+        pulse?.play(volume = 1f, rate = 1f)
+    }
 
     fun fizzle() = play("fizzle", 0.6f, priority = VoicePool.Priority.UI)
 
@@ -200,6 +205,7 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
             released = true
             banks.values.forEach { it.release() }
             bounce?.release()
+            pulse?.release()
         }
     }
 
@@ -272,8 +278,6 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor) {
         /** Sounds that can play at once. */
         const val POOL_SIZE = 10
 
-        /** The generator's playback volume: about a tenth of the bounce's (which is 0.7..1), so it stays in the background. */
-        const val GENERATOR_VOLUME = 0.14f
 
         /** AudioTrack refuses very low rates. */
         const val MIN_RATE = 4000

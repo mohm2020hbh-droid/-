@@ -1,5 +1,6 @@
 package com.carom.core.game
 
+import com.carom.core.level.LevelParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,10 +9,11 @@ import org.junit.Test
 class RestartKindTest {
 
     @Test
-    fun onlyTheTripleRestartChargesTheGenerator() {
-        assertEquals(listOf(RestartKind.TRIPLE), RestartKind.entries.filter { it.chargesGenerator })
-        assertFalse(RestartKind.AUTOMATIC.chargesGenerator)
-        assertFalse(RestartKind.MANUAL.chargesGenerator)
+    fun theLowBallPulseNeedsAVerySlowBallAndAFullThreePressRestart() {
+        for (kind in RestartKind.entries) for (slow in listOf(false, true)) {
+            val expected = kind == RestartKind.TRIPLE && slow
+            assertEquals("$kind, slow=$slow", expected, RestartSound.playsLowBallPulse(kind, slow))
+        }
     }
 
     @Test
@@ -57,5 +59,73 @@ class RestartKindTest {
         assertFalse(c.press(0.4))
         assertFalse(c.press(0.6))
         assertTrue(c.press(0.8))
+    }
+
+    @Test
+    fun aSetStartsWithTheFirstPressAndWithNoOtherUntilItEnds() {
+        val c = PressCounter()
+        assertTrue(c.startsSet(5.0))
+        c.press(5.0)
+        assertFalse(c.startsSet(5.3))
+        c.press(5.3)
+        assertFalse(c.startsSet(5.6))
+        assertTrue(c.press(5.6))
+        assertTrue("after the third, the next press begins a set", c.startsSet(5.8))
+        c.press(5.8)
+        assertTrue("a long pause ends a set", c.startsSet(9.0))
+    }
+
+    @Test
+    fun aSetOfTapsStartsWithTheFirstTapOnly() {
+        val t = TripleTap()
+        assertTrue(t.startsSet(1.0))
+        t.down(10.0, 10.0, 1.0); t.up(1.05)
+        assertFalse(t.startsSet(1.25))
+        t.down(10.0, 10.0, 1.25); t.up(1.3)
+        assertFalse(t.startsSet(1.5))
+        t.down(10.0, 10.0, 1.5)
+        assertTrue(t.up(1.55))
+        assertTrue(t.startsSet(1.7))
+    }
+
+    private fun level() = LevelParser.parse("t", """{"size": [900, 2000], "bounces": 3, "ball": [450, 1600], "goal": [450, 200], "controlZone": {"rect": [90, 1440, 720, 360]}}""")
+
+    /** Ref units to world units for the level above (the top speed is 120 ref units). */
+    private fun GameSession.ref(v: Double) = v * level.maxSpeed / 120.0
+
+    @Test
+    fun aBallIsVerySlowOnlyWhileItIsAliveInFlightAndCrawling() {
+        val s = GameSession(level())
+        assertFalse("a ball waiting to be thrown is not slow, it is at rest", s.isBallVerySlow())
+        s.applyImpulse(0.0, -s.ref(5.0))
+        assertTrue("5 ref units is a crawl", s.isBallVerySlow())
+        s.restart()
+        s.applyImpulse(0.0, -s.ref(60.0))
+        assertFalse("half of the top speed is not", s.isBallVerySlow())
+        s.restart()
+        s.applyImpulse(0.0, -s.ref(8.0))
+        assertFalse("8 ref units is already past 'very slow'", s.isBallVerySlow())
+    }
+
+    @Test
+    fun aBallThatKeepsSlowingBecomesVerySlowOnItsOwn() {
+        // a long room, so the ball runs out of speed before it runs out of floor
+        val s = GameSession(LevelParser.parse("t", """{"size": [8000, 2000], "bounces": 3, "ball": [200, 1000], "goal": [7800, 200], "launchZone": 0}"""))
+        s.applyImpulse(s.ref(30.0), 0.0)
+        assertFalse(s.isBallVerySlow())
+        var steps = 0
+        while (!s.isBallVerySlow() && s.state == GameSession.State.MOVING && steps++ < 20000) s.step()
+        assertTrue("the drag brings it down to a crawl before it stops (after $steps steps)", s.isBallVerySlow())
+        assertEquals(GameSession.State.MOVING, s.state)
+    }
+
+    @Test
+    fun aLostOrRestartedTryIsNotVerySlow() {
+        val s = GameSession(level())
+        s.applyImpulse(0.0, -s.ref(4.0))
+        assertTrue(s.isBallVerySlow())
+        s.restart()
+        assertFalse("put back at its start it is at rest, not crawling", s.isBallVerySlow())
+        assertEquals(GameSession.State.AIMING, s.state)
     }
 }

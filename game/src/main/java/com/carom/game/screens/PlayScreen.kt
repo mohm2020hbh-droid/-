@@ -13,6 +13,7 @@ import com.carom.core.game.HintRoute
 import com.carom.core.game.MomentumAim
 import com.carom.core.game.PressCounter
 import com.carom.core.game.RestartKind
+import com.carom.core.game.RestartSound
 import com.carom.core.game.TouchControl
 import com.carom.core.game.TripleTap
 import com.carom.core.level.ControlZone
@@ -91,6 +92,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     /** Quick presses of the restart button: the third in a row is a full manual restart, like three taps on the screen. */
     private val restartPresses = PressCounter()
+
+    /**
+     * Whether the ball was very slow when the player began a set of restart presses or taps. Read at the first of them, before it puts the ball
+     * back at its start (after which the ball is at rest and would always look slow).
+     */
+    private var slowWhenAsked = false
 
     /** When the touch being handled happened (seconds on the event clock): the time of a button press, which has none of its own. */
     private var touchTime = 0.0
@@ -492,7 +499,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         addRipple(b.x, b.y)
     }
 
-    /** A ball released from a container: a ripple where it appears, and no sound (the generator is for a manual restart only). */
+    /** A ball released from a container: a ripple where it appears, and no sound (the low ball pulse is for a slow-ball manual restart only). */
     override fun onBallSpawned(ball: Int, x: Double, y: Double) {
         addRipple(x, y)
     }
@@ -543,12 +550,14 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     /** A press of the restart button: quiet, unless it is the third in a row. */
     private fun pressRestart() {
+        if (restartPresses.startsSet(touchTime)) slowWhenAsked = session.isBallVerySlow()
         restart(if (restartPresses.press(touchTime)) RestartKind.TRIPLE else RestartKind.MANUAL)
     }
 
     /**
-     * The player starts the attempt over. Only a [RestartKind.TRIPLE] one, once everything is back at the start, charges the
-     * generator (a very soft hum); the other kinds are silent, and a lost try never comes through here at all.
+     * The player starts the attempt over. The low ball pulse plays only when the restart is a [RestartKind.TRIPLE] one that began while the
+     * ball was very slow ([RestartSound]), once everything is back at the start; the other kinds are silent, and a lost try never comes
+     * through here at all.
      */
     private fun restart(kind: RestartKind) {
         host.stopSound(Sound.SPIN)
@@ -568,10 +577,12 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         host.soundPitch(1f)
         respawnTime = 0f
         guideShown = guideDue()
-        if (kind.chargesGenerator) {
+        val pulse = RestartSound.playsLowBallPulse(kind, slowWhenAsked)
+        if (kind == RestartKind.TRIPLE) {
             restartPresses.cancel()
-            host.sound(Sound.GENERATOR)
+            slowWhenAsked = false
         }
+        if (pulse) host.sound(Sound.LOW_BALL_PULSE)
     }
 
     // ---------------------------------------------------------------- scoring: the fan
@@ -653,7 +664,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun watchTaps(e: MotionEvent): Boolean {
         val unit = kit.unit.toDouble()
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN -> taps.down(e.x / unit, e.y / unit, seconds(e))
+            MotionEvent.ACTION_DOWN -> {
+                if (taps.startsSet(seconds(e))) slowWhenAsked = session.isBallVerySlow()
+                taps.down(e.x / unit, e.y / unit, seconds(e))
+            }
             MotionEvent.ACTION_MOVE -> taps.move(e.x / unit, e.y / unit)
             MotionEvent.ACTION_UP -> if (taps.up(seconds(e)) && (session.state == GameSession.State.AIMING || session.state == GameSession.State.MOVING)) {
                 restart(RestartKind.TRIPLE)

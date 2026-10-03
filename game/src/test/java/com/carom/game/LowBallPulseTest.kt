@@ -16,12 +16,13 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The generator's soft hum means one thing: "I asked to start this level over, completely, by hand" (three quick presses of
- * restart, or three quick taps). Never a loss, a collision, a first start or a ball released from a container.
+ * `low_ball_pulse.wav` has one condition and no other: the ball was very slow when the player began, and the player then pressed restart three
+ * times in a row (or tapped the screen three times), so the attempt was put back at its start. Never a loss, an automatic retry, a start, a win,
+ * a collision, one or two presses, or three presses while the ball was moving at a normal speed.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
-class GeneratorSoundTest {
+class LowBallPulseTest {
 
     private class Recorder(private val real: GameView) : GameHost by real {
         val sounds = ArrayList<Sound>()
@@ -29,7 +30,7 @@ class GeneratorSoundTest {
             sounds += kind
         }
 
-        val generators get() = sounds.count { it == Sound.GENERATOR }
+        val pulses get() = sounds.count { it == Sound.LOW_BALL_PULSE }
     }
 
     private fun play(index: Int = 1): Pair<Recorder, PlayScreen> {
@@ -56,11 +57,18 @@ class GeneratorSoundTest {
         tap(screen, b.centerX(), b.centerY(), time)
     }
 
+    /** A ball crawling on after a feeble throw. */
+    private fun crawl(screen: PlayScreen) {
+        screen.session.launch(0.0, -1.0, 0.001) // (launch takes a power: the speed is its square root, so this is 3.8 of the 120 reference units)
+        repeat(5) { screen.update(1 / 60f) }
+        assertTrue("the ball is very slow", screen.session.isBallVerySlow())
+    }
+
     @Test
     fun theStartOfALevelIsSilent() {
         val (host, screen) = play()
         repeat(60) { screen.update(1 / 60f) }
-        assertEquals(0, host.generators)
+        assertEquals(0, host.pulses)
     }
 
     @Test
@@ -73,49 +81,97 @@ class GeneratorSoundTest {
         guard = 0
         while (screen.session.state == GameSession.State.FAILED && guard++ < 600) screen.update(1 / 60f)
         assertTrue("the next try began by itself", screen.session.state == GameSession.State.AIMING)
-        assertTrue("the ball was put back and the charge was shown", screen.isRespawning)
-        assertEquals("...without the generator", 0, host.generators)
+        assertEquals("...without the pulse", 0, host.pulses)
         assertTrue("the collisions themselves sounded as usual", host.sounds.contains(Sound.IMPACT))
     }
 
     @Test
-    fun onePressAndTwoPressesOfRestartAreSilentAndTheThirdSoundsOnce() {
+    fun threePressesWhileTheBallMovesAtANormalSpeedAreSilent() {
+        val (host, screen) = play()
+        screen.session.launch(0.0, -1.0, 0.5)
+        repeat(5) { screen.update(1 / 60f) }
+        assertTrue(!screen.session.isBallVerySlow())
+        pressRestart(screen, 1_000)
+        pressRestart(screen, 1_250)
+        pressRestart(screen, 1_500)
+        assertEquals(0, host.pulses)
+        assertEquals("...though the attempt did start over each time", 3, screen.session.resetCount)
+    }
+
+    @Test
+    fun threePressesOnABallAtRestBeforeAnyThrowAreSilent() {
         val (host, screen) = play()
         pressRestart(screen, 1_000)
-        assertEquals(0, host.generators)
         pressRestart(screen, 1_250)
-        assertEquals("not at the first press and not at the second", 0, host.generators)
-        screen.session.launch(0.0, -1.0, 0.2)
-        repeat(20) { screen.update(1 / 60f) }
         pressRestart(screen, 1_500)
-        assertEquals("after the third, and only then", 1, host.generators)
+        assertEquals(0, host.pulses)
+    }
+
+    @Test
+    fun aSlowBallAndThreePressesPlayThePulseOnceOnTheThird() {
+        val (host, screen) = play()
+        crawl(screen)
+        pressRestart(screen, 1_000)
+        assertEquals("not at the first press", 0, host.pulses)
+        pressRestart(screen, 1_250)
+        assertEquals("not at the second", 0, host.pulses)
+        pressRestart(screen, 1_500)
+        assertEquals("at the third, once", 1, host.pulses)
         assertEquals(GameSession.State.AIMING, screen.session.state)
         assertEquals(0.0, screen.session.ball.speed, 0.0)
-        assertTrue(screen.isRespawning)
+        pressRestart(screen, 1_750)
+        assertEquals("a fourth press starts a new set and plays nothing", 1, host.pulses)
     }
 
     @Test
-    fun slowPressesOfRestartNeverSound() {
+    fun aSlowBallAndOnlyOneOrTwoPressesAreSilent() {
         val (host, screen) = play()
-        for (k in 0 until 9) pressRestart(screen, 1_000L + 2_000L * k)
-        assertEquals(0, host.generators)
-        assertEquals("every press still started the attempt over", 9, screen.session.resetCount)
+        crawl(screen)
+        pressRestart(screen, 1_000)
+        assertEquals(0, host.pulses)
+        crawl(screen)
+        pressRestart(screen, 1_250)
+        assertEquals(0, host.pulses)
+        // ...and a long pause lets the next press begin a new set
+        pressRestart(screen, 6_000)
+        pressRestart(screen, 6_250)
+        assertEquals(0, host.pulses)
     }
 
     @Test
-    fun threeQuickTapsAnywhereSoundOnTheThirdAndNotBefore() {
+    fun aBallThatWasNormalWhenAskingAndSlowByTheThirdPressStaysSilent() {
         val (host, screen) = play()
-        screen.session.launch(0.0, -1.0, 0.3)
-        repeat(15) { screen.update(1 / 60f) }
+        screen.session.launch(0.0, -1.0, 0.5)
+        repeat(5) { screen.update(1 / 60f) }
+        pressRestart(screen, 1_000) // the ball is put back; what counts is how it was moving when the player began
+        crawl(screen)
+        pressRestart(screen, 1_250)
+        pressRestart(screen, 1_500)
+        assertEquals(0, host.pulses)
+    }
+
+    @Test
+    fun aSlowBallAndThreeQuickTapsPlayThePulseOnTheThirdTap() {
+        val (host, screen) = play()
+        crawl(screen)
         tap(screen, 900f, 500f, 10_000)
         tap(screen, 900f, 500f, 10_220)
-        assertEquals(0, host.generators)
+        assertEquals(0, host.pulses)
         tap(screen, 900f, 500f, 10_440)
-        assertEquals(1, host.generators)
+        assertEquals(1, host.pulses)
         assertEquals(GameSession.State.AIMING, screen.session.state)
-        // and a fourth tap begins a new set: nothing
-        tap(screen, 900f, 500f, 10_660)
-        assertEquals(1, host.generators)
+    }
+
+    @Test
+    fun threeQuickTapsOnAFastBallAreSilent() {
+        val (host, screen) = play()
+        screen.session.launch(0.0, -1.0, 0.4)
+        repeat(5) { screen.update(1 / 60f) }
+        tap(screen, 900f, 500f, 10_000)
+        tap(screen, 900f, 500f, 10_220)
+        tap(screen, 900f, 500f, 10_440)
+        assertEquals(0, host.pulses)
+        assertEquals("the attempt did start over", GameSession.State.AIMING, screen.session.state)
     }
 
     @Test
@@ -142,6 +198,6 @@ class GeneratorSoundTest {
             most = maxOf(most, screen.session.balls.count { it.alive })
         }
         assertTrue("the container really released balls ($most at most)", most >= 2)
-        assertEquals(0, host.generators)
+        assertEquals(0, host.pulses)
     }
 }

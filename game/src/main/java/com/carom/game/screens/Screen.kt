@@ -15,8 +15,8 @@ enum class Haptic { CLICK, BOUNCE, BREAK, EXPLOSION, SUCCESS }
 enum class Sound {
     IMPACT, SHATTER, WIN, TAP, SPIN, EXPLOSION,
 
-    /** The generator of a full manual restart (three presses of restart): very soft, short, and never a sign of a loss. */
-    GENERATOR,
+    /** `low_ball_pulse.wav`: the ball was very slow and the player restarted it by hand, three presses in a row. Never a sign of a loss. */
+    LOW_BALL_PULSE,
     FIZZLE,
 
     /** A ball entering a portal. */

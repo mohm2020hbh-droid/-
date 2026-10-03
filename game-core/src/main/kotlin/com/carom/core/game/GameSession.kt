@@ -234,6 +234,7 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
 
     private val refToWorld = tuning.refToWorld(level.maxSpeed)
     private val stopSpeed = tuning.stopSpeedRef * refToWorld
+    private val lowBallSpeed = tuning.lowBallSpeedRef * refToWorld
     private val fadeSpeed = tuning.fadeSpeedRef * refToWorld
 
     // Elements sorted by what they do, once, so a step only visits what matters.
@@ -729,6 +730,22 @@ class GameSession(val level: LevelData, val tuning: GameTuning = GameTuning.DEFA
             slot.prevY = slot.body.y
             listener?.onBallSpawned(slot.index, slot.body.x, slot.body.y)
         }
+    }
+
+    /**
+     * Whether the thrown ball is very slow right now: in flight (not waiting to be thrown, not in the player's fingers), still alive, and every
+     * live ball at or under [GameTuning.lowBallSpeedRef]. A lost try, a win and a ball at rest are not "very slow": it is a ball crawling on.
+     */
+    fun isBallVerySlow(): Boolean {
+        if (state != State.MOVING) return false
+        if (controlPhase == ControlPhase.READY || controlPhase == ControlPhase.REGRABBED) return false
+        var any = false
+        for (b in balls) {
+            if (!b.alive) continue
+            any = true
+            if (b.body.speed > lowBallSpeed) return false
+        }
+        return any
     }
 
     private fun exitReached(x: Double, y: Double): Boolean {
