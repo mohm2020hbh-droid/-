@@ -45,5 +45,8 @@ include(":core")
 // (org.robolectric:android-all) on a plain JVM. It needs no Android SDK.
 include(":android-check")
 
+// :devtools holds JVM-only developer tools (level validator CLI, software debug renderer, scenario runner).
+include(":devtools")
+
 // :android is the real APK module. It needs the Android SDK (and Google's Maven for AGP).
 if (hasAndroidSdk) include(":android")

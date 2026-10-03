@@ -72,6 +72,20 @@ class PhysicsWorld(
     return false
   }
 
+  /** Y of the highest solid surface at or below (x, y) within [maxDrop]; NaN when there is none (used for blob shadows). */
+  fun groundBelow(x: Double, y: Double, maxDrop: Double): Double {
+    var best = Double.NaN
+    val cs = colliders
+    for (i in cs.indices) {
+      val c = cs[i]
+      if (c.isSensorLike || x < c.minX || x > c.maxX) continue
+      val t = c.topAt(x, y)
+      if (t.isNaN() || y - t > maxDrop) continue
+      if (best.isNaN() || t > best) best = t
+    }
+    return best
+  }
+
   fun sensorAt(cx: Double, cy: Double, r: Double, kind: SensorKind): Sensor? {
     val ss = sensors
     for (i in ss.indices) {

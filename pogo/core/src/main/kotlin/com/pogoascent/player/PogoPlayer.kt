@@ -108,7 +108,11 @@ class PogoPlayer(var config: PhysicsConfig, var world: PhysicsWorld, private val
   // ==================================================================================================
 
   /** Resets all state and stands the stick with its tip on the surface point ([surfaceX], [surfaceY]). */
-  fun spawn(surfaceX: Double, surfaceY: Double, startAngle: Double = 0.0) {
+  fun spawn(surfaceX: Double, surfaceY: Double, startAngle: Double = 0.0) =
+    spawnPinned(surfaceX, surfaceY + config.tipRadius, startAngle)
+
+  /** Like [spawn] but the tip *circle centre* is given (used to resume exactly where a previous landing happened). */
+  fun spawnPinned(tipCenterX: Double, tipCenterY: Double, startAngle: Double = 0.0) {
     simTime = world.time
     angle = startAngle; omega = 0.0; vx = 0.0; vy = 0.0
     charge = 0.0; charging = false; chargeFullSent = false
@@ -117,7 +121,7 @@ class PogoPlayer(var config: PhysicsConfig, var world: PhysicsWorld, private val
     falling = false; goalReached = false; killed = false
     jumpHeld = false
     lastCollisionTime = -10.0
-    tipX = surfaceX; tipY = surfaceY + config.tipRadius
+    tipX = tipCenterX; tipY = tipCenterY
     x = tipX + sin(angle) * config.tipOffset
     y = tipY + cos(angle) * config.tipOffset
     if (probeGround()) {
@@ -710,6 +714,9 @@ class PogoPlayer(var config: PhysicsConfig, var world: PhysicsWorld, private val
   val tipDistance: Double get() = if (grounded) config.tipOffset - charge * config.chargeCompression else config.tipOffset
   val tipWorldX: Double get() = x - sin(angle) * tipDistance
   val tipWorldY: Double get() = y - cos(angle) * tipDistance
+  val tipCenterX: Double get() = tipX
+  val tipCenterY: Double get() = tipY
+  val groundColliderRef: Collider? get() = groundCollider
   val groundNormalX: Double get() = gnx
   val groundNormalY: Double get() = gny
   val groundSurfaceId: String? get() = groundCollider?.surface?.id

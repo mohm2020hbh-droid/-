@@ -13,7 +13,7 @@ data class CameraConfig(
   val deadZoneX: Double = 0.6,
   val deadZoneY: Double = 0.9,
   /** The camera looks this far above the player so more of the climb ahead is visible. */
-  val verticalBias: Double = 2.2,
+  val verticalBias: Double = 2.0,
   // look ahead
   val lookAheadXFactor: Double = 0.22,
   val lookAheadXMax: Double = 3.0,
@@ -23,7 +23,7 @@ data class CameraConfig(
   val lookAheadDownMax: Double = 6.0,
   val lookAheadSmoothTime: Double = 0.35,
   // lens
-  val distance: Double = 17.0,
+  val distance: Double = 14.5,
   val fovDeg: Double = 52.0,
   val pitchDeg: Double = 5.0,
   val zoomMin: Double = 0.65,

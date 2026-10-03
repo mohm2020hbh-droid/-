@@ -1,0 +1,19 @@
+{
+  "worlds": [
+    {
+      "id": "world_1", "name": "Green Hills", "order": 1, "theme": "meadow",
+      "palette": {
+        "skyTop": "#5AA9F5", "skyBottom": "#D8F0FF", "fog": "#CDE9FF",
+        "ground": "#6FA342", "platform": "#B08450", "wall": "#8A8F98", "bounce": "#FF7AB6",
+        "hazard": "#E2453C", "special": "#59C9E6", "goal": "#FFD43B", "moving": "#8E7CC3",
+        "accent": "#FFFFFF", "player": "#3A86FF", "light": "#FFF6DD"
+      },
+      "environment": "Open meadows, wooden ledges, drifting clouds",
+      "obstacleLanguage": "Wide stone and wood platforms, soft walls, gentle ramps",
+      "musicStyle": "pastoral_major", "ambience": "wind_birds",
+      "difficultyFocus": "Basic movement then precision",
+      "difficultyMin": 1, "difficultyMax": 3, "unlockLevelsRequired": 0,
+      "levels": ["level_01"]
+    }
+  ]
+}

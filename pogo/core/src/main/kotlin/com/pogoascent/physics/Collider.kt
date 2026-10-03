@@ -115,6 +115,28 @@ class Collider(
     update(0.0)
   }
 
+  /**
+   * Highest y at which the vertical line through [x] touches this polygon, provided it is at or below [maxY];
+   * NaN when the line misses the polygon or the polygon is entirely above [maxY].
+   */
+  fun topAt(x: Double, maxY: Double): Double {
+    val lx = x - ox
+    if (lx < lMinX || lx > lMaxX) return Double.NaN
+    var hi = -Double.MAX_VALUE
+    var lo = Double.MAX_VALUE
+    for (i in 0 until n) {
+      val j = (i + 1) % n
+      val x0 = xs[i]; val x1 = xs[j]
+      if ((lx < minOf(x0, x1)) || (lx > maxOf(x0, x1)) || x0 == x1) continue
+      val t = (lx - x0) / (x1 - x0)
+      val y = ys[i] + t * (ys[j] - ys[i]) + oy
+      if (y > hi) hi = y
+      if (y < lo) lo = y
+    }
+    if (hi == -Double.MAX_VALUE) return Double.NaN
+    return if (lo > maxY) Double.NaN else minOf(hi, maxY).let { if (hi <= maxY) hi else maxY }
+  }
+
   fun containsPoint(px: Double, py: Double): Boolean {
     val lx = px - ox
     val ly = py - oy
