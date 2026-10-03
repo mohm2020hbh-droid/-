@@ -1,6 +1,8 @@
 import { App } from './App';
 import { createPlantedState } from './sim/PogoState';
 import { Native } from './platform/Native';
+import { ScriptInput } from './input/InputSource';
+import { DT } from './sim/math';
 
 /**
  * Entry point. Query flags (QA / development only, never shown to players):
@@ -26,6 +28,17 @@ if (q.get('debug') === '1') {
     light(o: { sun?: number; hemi?: number; exposure?: number; rim?: number; tone?: string }) { game.renderer.setLighting(o); },
     zoom(d: number) { game.renderer.rig.baseDistance = d; },
     hide(prefix: string, on = false) { game.renderer.scene.traverse(o => { if (o.name.startsWith(prefix)) o.visible = on; }); },
+    /** QA: fast-forward a recorded input script ([tilt, held, pull] per tick) through the REAL game loop (no rendering). */
+    playScript(rows: [number, number, number][]) {
+      const frames = rows.map(([tilt, held, pull]) => ({ tilt, jumpHeld: !!held, pull, boostPressed: false, cancel: false }));
+      const inp = new ScriptInput(frames);
+      game.reset(); // tick 0: moving platforms are a function of the absolute tick, the recorded plan assumes a fresh start
+      const prev = game.input; game.input = inp; game.renderEvery = 100000;
+      let guard = 0;
+      while (!inp.done && guard++ < 200000) game.tick(DT);
+      game.renderEvery = 1; game.input = prev;
+      return app.snapshot();
+    },
     stepFrames(n: number, dt = 1 / 60) { for (let i = 0; i < n; i++) game.tick(dt); },
   };
 }

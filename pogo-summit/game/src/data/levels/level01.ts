@@ -19,7 +19,7 @@ export const LEVEL_01: LevelData = {
   goalPosition: { x: 52, y: 41 },
   goal: { x: 52, y: 41, w: 2.2, h: 5 },
   difficulty: 2,
-  parTimeSec: 110,
+  parTimeSec: 80,
   killY: -26,
   bounds: { minX: -9, maxX: 80, minY: -12, maxY: 50 },
   progress: {

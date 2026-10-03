@@ -27,3 +27,18 @@ export class ScriptedInput implements InputSource {
   get tilt(): number { return this.cur.tilt; }
   dispose(): void { /* nothing */ }
 }
+
+/** Plays back a recorded per-tick input script (QA / E2E replays). */
+export class ScriptInput implements InputSource {
+  private i = 0;
+  tilt = 0;
+  constructor(private readonly frames: readonly PogoInput[]) {}
+  get done(): boolean { return this.i >= this.frames.length; }
+  sample(): PogoInput {
+    const f = this.frames[Math.min(this.i, this.frames.length - 1)];
+    if (this.i < this.frames.length) this.i++;
+    this.tilt = f.tilt;
+    return this.i >= this.frames.length ? { ...NEUTRAL_INPUT } : f;
+  }
+  dispose(): void { /* nothing */ }
+}
