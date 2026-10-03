@@ -1,37 +1,37 @@
 # GAME_IMPLEMENTATION_PLAN.md
 
 > الوثيقة الحيّة: الخطة + **حالة التحقق الفعلية** (القسم الأخير). لا يُكتب «تم» هنا إلا لما بُني وشُغِّل واختُبر.
-> الرموز: ✔ مُنجز ومُتحقَّق · ◐ مُنجز جزئيًا/بدون تحقق على جهاز · ○ مخطَّط · ✘ محجوب
+> الرموز: ✔ بُني وشُغِّل واختُبر هنا ولا نقص معروف · ◐ يعمل هنا لكن له نقص موثَّق أو يحتاج جهازًا حقيقيًا للتحقق · ○ مخطَّط · ✘ محجوب
 
 ## الترتيب المتّبع (حسب START NOW في الطلب)
-1. قراءة XLSX (7 أوراق) ✔ 2. قراءة PDF (27 ص) ✔ 3. فحص الصورة ✔ 4. الوثائق ✔ 5. مشروع Android جديد ◐ 6. Player + Physics + Touch + Collision + Camera ○ 7. LEVEL_01 ○ 8. Build + تشغيل ○
+1. قراءة XLSX (7 أوراق) ✔ 2. قراءة PDF (27 ص) ✔ 3. فحص الصورة ✔ 4. الوثائق ✔ 5. مشروع Android جديد ✔ (APK يُبنى ويُوقَّع؛ Gradle محجوب) 6. Player + Physics + Touch + Collision + Camera ✔ 7. LEVEL_01 ✔ 8. Build + تشغيل ◐ (تشغيل في Chromium بدون واجهة؛ لا جهاز Android)
 
 ## الخريطة: المراحل ↔ الوحدات
 | المرحلة | الوحدة / الملف | الحالة |
 |---|---|---|
 | 0 Init + الوثائق الست | `*.md` | ✔ |
-| 1 Core (Player/Pogo/Ground/Platforms/Gravity/Jump/Landing/Collision/Fall/Reset/Camera/Goal) | `sim/*`, `render/CameraRig` | ○ |
-| 2 Physics (PogoPhysicsController, PhysicsConfig, SurfacePhysics, CollisionResponse, JumpSystem, BoostSystem) | `sim/*` | ○ |
-| 3 Mobile Pogo Control | `input/*` | ○ |
-| 4 Movement (زخم، فصل Ground/Air) | `sim/PogoPhysicsController` | ○ |
-| 5 Boost | `sim/BoostSystem` | ○ |
-| 6 Surfaces | `sim/SurfacePhysics` | ○ |
-| 7 Level System | `data/LevelData`, `levels/level01` | ○ |
-| 8 Worlds | `data/worlds` (4 ثيمات؛ العالم 1 كامل) | ○ |
-| 9 Visual / Art Direction | `render/*` | ○ |
-| 10 UI/UX | `ui/*` | ○ |
-| 11 Audio | `audio/*` | ○ |
-| 12 Haptics | `haptics/*` | ○ |
-| 13 VFX | `render/Vfx` | ○ |
-| 14 Progression | `progression/*` | ○ |
-| 15 Customization | `data/items`, `ui/screens/Wardrobe` | ○ |
-| 16 Save | `progression/SaveSystem` | ○ |
-| 17 Android Optimization | pooling, LOD, quality tiers | ○ |
-| 18 Physics Debug Lab | `lab/PhysicsLab` | ○ |
-| 19 First Playable (LEVEL_01) | `data/levels/level01` | ○ |
-| 20 Visual QA | `qa/*` | ○ |
-| 21 Testing | `tests/*` + سيناريوهات Playwright | ○ |
-| 22 Final Android Build | `android/`, `tools/build-apk.sh` | ○ |
+| 1 Core (Player/Pogo/Ground/Platforms/Gravity/Jump/Landing/Collision/Fall/Reset/Camera/Goal) | `sim/*`, `render/CameraRig` | ✔ |
+| 2 Physics (PogoPhysicsController, PhysicsConfig, SurfacePhysics, CollisionResponse, JumpSystem, BoostSystem) | `sim/*` | ✔ |
+| 3 Mobile Pogo Control | `input/*` | ◐ |
+| 4 Movement (زخم، فصل Ground/Air) | `sim/PogoPhysicsController` | ✔ |
+| 5 Boost | `sim/BoostSystem` | ◐ |
+| 6 Surfaces | `sim/SurfacePhysics` | ◐ |
+| 7 Level System | `data/LevelData`, `levels/level01` | ✔ |
+| 8 Worlds | `data/worlds` (4 ثيمات؛ العالم 1 كامل) | ◐ |
+| 9 Visual / Art Direction | `render/*` | ◐ |
+| 10 UI/UX | `ui/*` | ◐ |
+| 11 Audio | `audio/*` | ◐ |
+| 12 Haptics | `haptics/*` | ◐ |
+| 13 VFX | `render/Vfx` | ✔ |
+| 14 Progression | `progression/*` | ✔ |
+| 15 Customization | `data/items`, `ui/screens/Wardrobe` | ✔ |
+| 16 Save | `progression/SaveSystem` | ✔ |
+| 17 Android Optimization | pooling, LOD, quality tiers | ◐ |
+| 18 Physics Debug Lab | `lab/PhysicsLab` | ✔ |
+| 19 First Playable (LEVEL_01) | `data/levels/level01` | ✔ |
+| 20 Visual QA | `qa/*` | ◐ |
+| 21 Testing | `tests/*` + سيناريوهات Playwright | ✔ |
+| 22 Final Android Build | `android/`, `tools/build-apk.sh` | ◐ |
 
 ## نطاق الإصدار 0.1 (قرار صريح)
 الطلب يقول: «لا تبنِ اللعبة كلها دفعة واحدة… ثم اختبرها». لذلك:
@@ -39,5 +39,48 @@
 - **جاهز بيانيًا فقط:** العوالم 2–4 (ثيمات/لوحات/إعدادات صعوبة) — قابلة للمعاينة، لكن مراحلها الفعلية **لم تُصمَّم** بعد.
 - **خارج النطاق الحالي (مكتوب هنا كي لا يُدَّعى):** متصدرون عالميون، تعاوني/Rubber band، وضع Skate/Loot، إعلانات/مشتريات، Emote داخل اللعب.
 
-## حالة التحقق (تُحدَّث في النهاية)
-_(تُملأ بعد الاختبارات الفعلية)_
+## حالة التحقق (آخر تحديث: نهاية الجلسة — كل سطر هنا نُفّذ فعلًا)
+
+### ما نُفِّذ وتحقَّقنا منه فعلًا
+| الفحص | الأداة | النتيجة |
+|---|---|---|
+| الفيزياء: ثوابت A، إطلاق/جاذبية، اصطدام بلا اختراق، جدار، نطاط، جليد، خطر، منصة متحركة، هدف، Boost، تطابق مسار الدليل مع المحاكاة | vitest (`tests/physics.test.ts`) | ✔ |
+| الحتمية: نفس المدخلات ⇒ حالة متطابقة بتًّا (3 تشغيلات × 60 000 tick) | vitest (`determinism.test.ts`) | ✔ |
+| نقاء `src/sim` (لا DOM/Three/Math.random/Date.now) | vitest (`architecture.test.ts`) | ✔ |
+| قابلية إكمال LEVEL_01: تحليل شبكة (زاوية×قوة) لكل حافة + بوت مسار كامل + إعادة تشغيل مسجَّلة | vitest (`solvability`, `route`) + `tools/analyze-level.ts` | ✔ كل الحواف ≥ 10 خلايا ناجحة من 297 |
+| إكمال LEVEL_01 داخل التطبيق الحقيقي (حلقة اللعبة + نفس السكربت) بعد آخر تغيير بصري | Playwright/Chromium، `playScript` | ✔ `FINISHED`, 18 قفزة، 0 سقوط، تقدّم 100% |
+| التحكم باللمس: Down/Drag/Release/Cancel، multi-touch، deadzone، smoothing، pull، PAD | vitest + jsdom (12 اختبارًا) **وأحداث لمس حقيقية عبر CDP** | ✔ |
+| الحفظ/التقدّم/النجوم/المتصدرون المحلي/الفتح/الإعدادات/الاهتزاز (cooldown)/i18n RTL | vitest (`systems.test.ts`, 16) | ✔ |
+| مزامنة PHYSICS_MASTER.md مع `PhysicsConfig` (42 معاملًا، لا قيمة مجهولة بدرجة غير D) | vitest (`docs.test.ts`) | ✔ |
+| غلاف Android: منطق المضيف (أصل HTTPS الافتراضي، حجب المضيفات، الإدراجات) | JUnit عبر Gradle محلي (`android/shell-tests`) | ✔ 10/10 |
+| بناء APK وتوقيعه والتحقق | `tools/build-apk.sh` (aapt/dx/zipalign/apksigner) | ✔ 366 KB؛ v2+v3 verifies؛ package `app.pogosummit.game` · versionName 0.1.0 · minSdk 24 · targetSdk 34 · الصلاحية الوحيدة `VIBRATE` · landscape · أيقونات mdpi→xxxhdpi |
+| `tsc --noEmit` | TypeScript 5.7 | ✔ نظيف |
+| مجموع vitest | 8 ملفات | ✔ **78/78** |
+| عرض WebGL2 الفعلي + لقطات (قائمة، اختيار، HUD، Pause، Options، Wardrobe، Lab، النتائج، 4 عوالم) | Chromium + SwiftShader، `qa/*.png` | ✔ |
+| عدّادات الرسم | `renderer.info` | draw calls ≈ 125–160 (< 250) · مثلثات ≈ 31–67k (< 150k) · 3 خامات |
+
+### Visual QA مقابل الصورة المرجعية (Phase 20) — قياس فعلي (`tools/qa-compare.py` ⇒ `qa/qa-compare-report.txt`)
+| المقياس | المرجع (منطقة اللعب) | لقطاتنا (5 مواضع) | الحكم |
+|---|---|---|---|
+| متوسط السطوع | 0.485 | 0.41 – 0.52 | ✔ ضمن المدى |
+| تشبّع | 0.470 | 0.39 – 0.53 | ✔ |
+| سماء زرقاء في النصف العلوي | 0.33 | 0.14 – 0.50 | ✔ (البداية أدنى لأن جدار الجرف يغطي اليسار) |
+| سحاب في النصف العلوي | 0.12 | 0.10 – 0.21 | ✔ |
+| دافئ (برتقالي/أحمر الخريف) | 0.24 | 0.08 – 0.28 | ✔ ما عدا لقطة الجليد (متعمَّد) |
+| كثافة الحواف/التفاصيل (Sobel) | 0.095 | 0.040 – 0.045 | ✘ **فجوة معروفة**: ≈ نصف تفاصيل الصورة |
+| اللاعب ≥ 20% من ارتفاع الشاشة | — | ≈ 26% | ✔ |
+| ≥ 5 طبقات عمق | — | سماء، 3 سلاسل جبال، سحاب، جزر/أعمدة، معالم (قلعة/جسر/شلال)، مستوى اللعب، إطار نباتي أمامي | ✔ |
+| 4 عوالم متمايزة بصريًا | — | Green Hills · Snow Peaks · Ancient Ruins · Volcanic Depths (معاينة LEVEL_01 بثيم كل عالم) | ✔ معاينة فقط |
+
+**ما أصلحه المرور البصري:** غطّت الجزر العائمة والمعالم القريبة السماء بالكامل (سماء 7–14% فقط) ⇒ قاعدة «ممر السماء» (لا جزيرة تدخل نطاق [camY+0.2H, camY+1.0H] عند أي موضع كاميرا) + سقف للحجم الزاوي؛ تدرّج السماء كان لا يصل لونه العلوي لأن FOV ضيق (±15°) ⇒ تمديد ×3.4؛ الجبال أبهتها الضباب ⇒ منظور جوي مخبوز؛ إضافة غيوم cumulus واضحة الحدود؛ جروف بطبقات؛ سلاسل المنصات المتحركة كانت سوداء (metalness بلا خريطة بيئة).
+
+**الفجوة المتبقية بصراحة:** الصورة المرجعية مرسومة/مُصيَّرة بتفاصيل دقيقة (خامات، كروم، نباتات صغيرة). لوحتنا إجرائية low-poly بألوان رؤوس (لا خامات) فتبدو أنظف وأقل تفصيلًا. مقياس الحواف ≈ 0.04 مقابل 0.095. هذا الفارق **لم يُغلق**؛ الإغلاق يتطلب أصولًا مرسومة/خامات (نقاط عمل للإصدار التالي).
+
+### ما لم يُتحقَّق منه (لا يُدَّعى)
+- ✘ **تشغيل على جهاز/محاكي Android**: لا KVM ولا جهاز هنا. لم يُجرَّب: Immersive، Cutout/Safe-area الفعلي، الاهتزاز الفعلي، لمس بإصبع حقيقي، الأداء الحقيقي (كل `fps` المقاسة هنا من SwiftShader/CPU ولا تمثل هاتفًا).
+- ✘ **Gradle/AGP وإنتاج AAB وتوقيع الإطلاق**: `dl.google.com` محجوب في هذه البيئة (403). مشروع Gradle مكتوب (compileSdk/targetSdk 35) لكنه غير مبني. الـAPK الحالي debug موقّع بمفتاح debug ويُبنى بسلسلة apt القديمة (android-23.jar، targetSdk 34 في الـmanifest).
+- ◐ الصوت: يُبنى ويُشغَّل بلا أخطاء لكن لم يُستمع إليه (لا جهاز صوت)؛ ضبط المزج يحتاج أذنًا.
+- ◐ **Boost** عبر الواجهة الحقيقية من البداية للنهاية لم يُختبر آليًا (المنطق مغطّى بوحدات + نبضة زر PAD في jsdom)؛ LEVEL_01 لا يتطلبه.
+- ◐ أسطح `Sticky` و`Boost` و`Slope` موجودة في `SurfacePhysics` لكن لا يستخدمها LEVEL_01 ولا تغطيها اختبارات مخصّصة.
+- ◐ العوالم 2–4: ثيمات/لوحات/إضاءة/موسيقى/صعوبة فقط؛ **لا مراحل فعلية** لها.
+- ◐ كل معاملات الحركة `TUNE_ME`: قيمنا الابتدائية للعب وليست قيم Pogostuck؛ تُضبط بالقياس من الفيديو (خطة القياس في PHYSICS_MASTER.md).

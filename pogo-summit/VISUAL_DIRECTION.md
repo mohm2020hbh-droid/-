@@ -75,3 +75,7 @@
 
 ## 6) معيار القبول البصري (Phase 20)
 أسئلة الطلب مترجمة لفحوص: اللاعب ≥ 20% ارتفاع الشاشة · ≥ 5 طبقات عمق ظاهرة · لا Cubes/مواد افتراضية · هيستوغرام اللون قريب من الصورة · HUD مطابق للتخطيط · يعمل من 16:9 إلى 21:9. النتائج مع لقطات في `qa/` وتقرير في GAME_IMPLEMENTATION_PLAN.md.
+
+
+### نتائج Phase 20 (مُنفَّذة)
+الأرقام والحكم والفجوة المتبقية: قسم «Visual QA مقابل الصورة المرجعية» في GAME_IMPLEMENTATION_PLAN.md، والمخرجات الخام: `qa/qa-compare-report.txt` ولقطات `qa/final_*.png` و`qa/w09_world_*.png`. الأمر: `python3 tools/qa-compare.py reference/gameplay_reference.webp qa/final_*.png`.
