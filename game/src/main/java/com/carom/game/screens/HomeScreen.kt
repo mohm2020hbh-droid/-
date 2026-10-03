@@ -5,48 +5,30 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
 import android.view.MotionEvent
+import com.carom.core.audio.AudioCue
 import com.carom.game.ui.Icon
 import com.carom.game.ui.Palette
 import com.carom.game.ui.UiButton
 import com.carom.game.ui.WorldPalette
 import kotlin.math.min
 
-/** Title screen: continue playing, open the level list, toggle vibration. */
+/** Title screen: continue playing, open the level list, open the settings. */
 class HomeScreen(host: GameHost) : Screen(host) {
-
-    private val settings = host.app.settings
 
     /** The title screen wears the colours of the world the player has reached. */
     override val palette: WorldPalette get() = Palette.forLevel(host.app.progress.currentIndex)
 
-    private val playButton = UiButton(UiButton.Style.PRIMARY, kit.text.play, Icon.PLAY) {
+    private val playButton = UiButton(UiButton.Style.PRIMARY, kit.text.play, Icon.PLAY, cue = AudioCue.UI_CONFIRM) {
         host.play(host.app.progress.currentIndex)
     }
     private val levelsButton = UiButton(UiButton.Style.OUTLINE, kit.text.levels, Icon.GRID) {
         host.showLevels(host.app.progress.currentIndex)
     }
-    private val soundButton = UiButton(UiButton.Style.OUTLINE, icon = Icon.SOUND) {
-        settings.soundEnabled = !settings.soundEnabled
-        updateToggleLabels()
-    }
-    private val vibrationButton = UiButton(UiButton.Style.OUTLINE, icon = Icon.VIBRATION) {
-        settings.hapticsEnabled = !settings.hapticsEnabled
-        updateToggleLabels()
-        host.haptic(Haptic.CLICK)
-    }
-    private val buttons = listOf(playButton, levelsButton, soundButton, vibrationButton)
+    internal val settingsButton = UiButton(UiButton.Style.OUTLINE, kit.text.settings, Icon.SETTINGS) { host.showSettings() }
+    private val buttons = listOf(playButton, levelsButton, settingsButton)
 
     private var columnX = 0f
     private var titleY = 0f
-
-    init {
-        updateToggleLabels()
-    }
-
-    private fun updateToggleLabels() {
-        soundButton.label = if (settings.soundEnabled) kit.text.soundOn else kit.text.soundOff
-        vibrationButton.label = if (settings.hapticsEnabled) kit.text.vibrationOn else kit.text.vibrationOff
-    }
 
     override fun onLayout() {
         columnX = width / 2
@@ -56,8 +38,7 @@ class HomeScreen(host: GameHost) : Screen(host) {
         val top = safe.top + safe.height() * 0.63f
         playButton.setCenter(columnX, top, w, kit.u(54f))
         levelsButton.setCenter(columnX, top + kit.u(66f), w, kit.u(50f))
-        soundButton.setCenter(columnX, top + kit.u(124f), w, kit.u(44f))
-        vibrationButton.setCenter(columnX, top + kit.u(176f), w, kit.u(44f))
+        settingsButton.setCenter(columnX, top + kit.u(124f), w, kit.u(44f))
     }
 
     override fun onTouch(e: MotionEvent): Boolean = routeToButtons(e, buttons)

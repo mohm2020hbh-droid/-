@@ -1,5 +1,7 @@
 package com.carom.core.progress
 
+import com.carom.core.audio.AudioSettings
+
 /** Persistent key/value storage (SharedPreferences on Android, a map in tests). */
 interface KeyValueStore {
     fun getString(key: String): String?
@@ -65,18 +67,18 @@ class Progress(private val store: KeyValueStore, private val levelIds: List<Stri
     }
 }
 
-/** Player preferences. */
-class Settings(private val store: KeyValueStore) {
-    var hapticsEnabled: Boolean
-        get() = store.getString(KEY_HAPTICS) != "off"
-        set(value) = store.putString(KEY_HAPTICS, if (value) "on" else "off")
+/** Player preferences: the audio choices ([audio]) and whether the phone vibrates. */
+class Settings(store: KeyValueStore) {
+    val audio = AudioSettings(store)
 
-    var soundEnabled: Boolean
-        get() = store.getString(KEY_SOUND) != "off"
-        set(value) = store.putString(KEY_SOUND, if (value) "on" else "off")
+    private val prefs = store
+
+    /** Vibration on or off: the one feedback that is not sound. */
+    var hapticsEnabled: Boolean
+        get() = prefs.getString(KEY_HAPTICS) != "off"
+        set(value) = prefs.putString(KEY_HAPTICS, if (value) "on" else "off")
 
     private companion object {
         const val KEY_HAPTICS = "settings.haptics"
-        const val KEY_SOUND = "settings.sound"
     }
 }

@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Rect
 import android.graphics.RectF
 import android.view.MotionEvent
+import com.carom.core.audio.AudioCue
 import com.carom.game.GameApp
 import com.carom.game.ui.Palette
 import com.carom.game.ui.UiButton
@@ -12,47 +13,32 @@ import com.carom.game.ui.WorldPalette
 
 enum class Haptic { CLICK, BOUNCE, BREAK, EXPLOSION, SUCCESS }
 
-enum class Sound {
-    IMPACT, SHATTER, WIN, TAP, SPIN, EXPLOSION,
-
-    /** `low_ball_pulse.wav`: the ball was very slow and the player restarted it by hand, three presses in a row. Never a sign of a loss. */
-    LOW_BALL_PULSE,
-    FIZZLE,
-
-    /** A ball entering a portal. */
-    PORTAL,
-
-    /** A ball losing speed in a clock. */
-    CLOCK,
-
-    /** A ball reached an exit that still needs more. */
-    EXIT_PARTIAL,
-}
-
 /** What screens can ask of the game shell: navigation, feedback, shared state. */
 interface GameHost {
     val app: GameApp
     val kit: UiKit
     fun showHome()
     fun showLevels(focusIndex: Int)
+    fun showSettings()
     fun play(index: Int)
     /** A vibration; [strength] (0..1) scales a bounce's. */
     fun haptic(kind: Haptic, strength: Double = 1.0)
 
     /**
-     * Plays [kind]. [strength] (0..1) is how hard the ball hit (impacts). (The ball makes no sound of its own: not when
-     * it is thrown and not while it flies; only a collision does.)
+     * Plays [cue] through the audio manager: its gain comes from the player's settings and it is dropped if it piles up. [strength] (0..1)
+     * is how hard the ball hit (collisions) or how much speed a clock took. (The ball makes no sound of its own: not when it is thrown and
+     * not while it flies; only a collision does.)
      */
-    fun sound(kind: Sound, strength: Double = 1.0)
+    fun sound(cue: AudioCue, strength: Double = 1.0)
 
-    /** The playback speed of all sound and music: 1 normally, about a third in slow motion. */
+    /** The playback speed of all sound and music: 1 normally. */
     fun soundPitch(scale: Float)
 
     /** 0..1, 1 on a beat of the music and fading after it: a pulse for pictures (never for the rules). */
     val beatPulse: Float
 
-    /** Cuts [kind] short if it is playing (a spin-up interrupted by a restart). */
-    fun stopSound(kind: Sound)
+    /** Cuts [cue] short if it is playing (a spin-up interrupted by a restart). */
+    fun stopSound(cue: AudioCue)
 }
 
 /**
@@ -111,7 +97,10 @@ abstract class Screen(protected val host: GameHost) {
         val slop = kit.u(4f)
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                pressedButton = buttons.firstOrNull { it.hit(e.x, e.y, slop) }?.also { it.pressed = true }
+                pressedButton = buttons.firstOrNull { it.hit(e.x, e.y, slop) }?.also {
+                    it.pressed = true
+                    host.sound(it.cue) // the button's own light sound, the moment it goes down
+                }
                 return pressedButton != null
             }
             MotionEvent.ACTION_MOVE -> pressedButton?.let {
@@ -125,7 +114,6 @@ abstract class Screen(protected val host: GameHost) {
                 if (clicked) {
                     host.haptic(Haptic.CLICK)
                     it.onClick()
-                    host.sound(Sound.TAP)
                 }
                 return true
             }

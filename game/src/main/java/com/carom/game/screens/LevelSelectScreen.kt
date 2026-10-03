@@ -2,6 +2,7 @@ package com.carom.game.screens
 
 import android.graphics.Canvas
 import android.view.MotionEvent
+import com.carom.core.audio.AudioCue
 import com.carom.core.level.Worlds
 import com.carom.game.ui.Icon
 import com.carom.game.ui.Icons
@@ -34,9 +35,9 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
     private var dragging = false
     private var dragged = false
 
-    private val backButton = UiButton(UiButton.Style.ICON, icon = Icon.BACK) { host.showHome() }
-    private val prevButton = UiButton(UiButton.Style.ICON, icon = Icon.BACK) { goTo(page - 1) }
-    private val nextButton = UiButton(UiButton.Style.ICON, icon = Icon.FORWARD) { goTo(page + 1) }
+    private val backButton = UiButton(UiButton.Style.ICON, icon = Icon.BACK, cue = AudioCue.UI_BACK) { host.showHome() }
+    private val prevButton = UiButton(UiButton.Style.ICON, icon = Icon.BACK, cue = AudioCue.UI_WORLD_SELECT) { goTo(page - 1) }
+    private val nextButton = UiButton(UiButton.Style.ICON, icon = Icon.FORWARD, cue = AudioCue.UI_WORLD_SELECT) { goTo(page + 1) }
     private val buttons = listOf(backButton, prevButton, nextButton)
 
     private var headerY = 0f
@@ -78,8 +79,10 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
         return (gridLeft + (slot % COLUMNS + 0.5f) * cellW) to (gridTop + (slot / COLUMNS + 0.5f) * cellH)
     }
 
-    private fun goTo(target: Int) {
+    private fun goTo(target: Int, sound: Boolean = false) {
+        val before = page
         page = target.coerceIn(0, worldCount - 1)
+        if (sound && page != before) host.sound(AudioCue.UI_WORLD_SELECT) // (the arrow buttons make their own sound as they go down)
         updateArrows()
     }
 
@@ -114,12 +117,13 @@ class LevelSelectScreen(host: GameHost, focusIndex: Int) : Screen(host) {
                 val dx = e.x - downX
                 if (dragged) {
                     when {
-                        dx < -width * 0.15f -> goTo(page + 1)
-                        dx > width * 0.15f -> goTo(page - 1)
+                        dx < -width * 0.15f -> goTo(page + 1, sound = true)
+                        dx > width * 0.15f -> goTo(page - 1, sound = true)
                     }
                 } else {
                     levelAt(e.x, e.y)?.let { i ->
                         if (progress.isUnlocked(i)) {
+                            host.sound(AudioCue.UI_LEVEL_SELECT)
                             host.haptic(Haptic.CLICK)
                             host.play(i)
                         }

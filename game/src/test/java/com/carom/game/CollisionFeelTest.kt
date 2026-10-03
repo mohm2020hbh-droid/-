@@ -1,12 +1,12 @@
 package com.carom.game
 
 import android.graphics.Rect
+import com.carom.core.audio.AudioCue
 import com.carom.core.game.GameSession
 import com.carom.core.level.LevelRepository
 import com.carom.game.screens.GameHost
 import com.carom.game.screens.Haptic
 import com.carom.game.screens.PlayScreen
-import com.carom.game.screens.Sound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -25,10 +25,10 @@ class CollisionFeelTest {
     /** The real shell, except that every sound and vibration is written down (with the frame it happened on). */
     private class Recorder(private val real: GameView) : GameHost by real {
         var frame = 0
-        val sounds = ArrayList<Pair<Int, Sound>>()
+        val sounds = ArrayList<Pair<Int, AudioCue>>()
         val haptics = ArrayList<Pair<Int, Haptic>>()
-        override fun sound(kind: Sound, strength: Double) {
-            sounds += frame to kind
+        override fun sound(cue: AudioCue, strength: Double) {
+            sounds += frame to cue
         }
 
         override fun haptic(kind: Haptic, strength: Double) {
@@ -37,7 +37,7 @@ class CollisionFeelTest {
     }
 
     private class Rig(val host: Recorder, val play: PlayScreen) {
-        val impacts get() = host.sounds.filter { it.second == Sound.IMPACT }.map { it.first }
+        val impacts get() = host.sounds.filter { it.second == AudioCue.BOUNCE }.map { it.first }
 
         /** One frame at 60 Hz. */
         fun tick() {
@@ -138,7 +138,7 @@ class CollisionFeelTest {
         assertEquals(GameSession.State.FAILED, rig.play.session.state)
         assertEquals("two counted bounces and the fatal one each sound", 3, rig.impacts.size)
         assertEquals(listOf(Haptic.BOUNCE, Haptic.BOUNCE, Haptic.BREAK), rig.host.haptics.map { it.second })
-        assertTrue("the break follows the last knock", rig.host.sounds.last().second == Sound.SHATTER)
+        assertTrue("the break follows the last knock", rig.host.sounds.last().second == AudioCue.FAIL_BREAK)
         assertFalse("nothing sounded before the first hit", rig.host.sounds.first().first == 0)
     }
 

@@ -119,11 +119,13 @@ class ProgressTest {
     fun settingsPersistAndAreSeparate() {
         val store = MapStore()
         assertTrue(Settings(store).hapticsEnabled)
-        assertTrue(Settings(store).soundEnabled)
+        assertTrue(Settings(store).audio.musicEnabled)
         Settings(store).hapticsEnabled = false
         assertFalse(Settings(store).hapticsEnabled)
-        assertTrue(Settings(store).soundEnabled)
-        Settings(store).soundEnabled = false
-        assertFalse(Settings(store).soundEnabled)
+        assertTrue("vibration and sound are separate switches", Settings(store).audio.musicEnabled && Settings(store).audio.sfxEnabled)
+        Settings(store).audio.musicEnabled = false
+        assertFalse(Settings(store).audio.musicEnabled)
+        assertTrue(Settings(store).audio.sfxEnabled)
+        assertFalse(Settings(store).hapticsEnabled)
     }
 }

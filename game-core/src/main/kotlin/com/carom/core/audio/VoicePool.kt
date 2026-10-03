@@ -65,10 +65,10 @@ class VoicePool(val capacity: Int) {
         until.fill(0.0)
     }
 
-    /** How important each kind of sound is; when the pool is full, the more important one plays. */
+    /** How important each kind of sound is; when the pool is full, the more important one plays: a collision over a button, a button over nothing. */
     object Priority {
-        const val BOUNCE = 1
-        const val UI = 2
+        const val UI = 1
+        const val BOUNCE = 2
         const val PORTAL = 4
         const val CLOCK = 5
         const val EXIT_PARTIAL = 6

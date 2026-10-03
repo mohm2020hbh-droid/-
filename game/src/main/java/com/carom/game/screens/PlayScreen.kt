@@ -7,6 +7,7 @@ import android.graphics.RectF
 import android.view.MotionEvent
 import com.carom.core.audio.MusicLibrary
 import com.carom.core.audio.TrackSpec
+import com.carom.core.audio.AudioCue
 import com.carom.core.game.GameSession
 import com.carom.core.game.GameTuning
 import com.carom.core.game.HintRoute
@@ -119,7 +120,8 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** A level that ends a world, or the last one, shows the result card; any other goes straight to the next. */
     private val showsResult = isLastLevel || opensNewWorld
     private var leftForNext = false
-    private val nextButton = UiButton(UiButton.Style.PRIMARY, kit.text.next, Icon.PLAY) { host.play(index + 1) }
+    private var unlockPlayed = false
+    private val nextButton = UiButton(UiButton.Style.PRIMARY, kit.text.next, Icon.PLAY, cue = AudioCue.UI_CONFIRM) { host.play(index + 1) }
     private val replayButton = UiButton(UiButton.Style.OUTLINE, kit.text.restart, Icon.RESTART) { pressRestart() }
     private val menuButton = UiButton(UiButton.Style.OUTLINE, kit.text.levels, Icon.GRID) { host.showLevels(index) }
 
@@ -289,7 +291,13 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                 // No card to press: the next level comes by itself after a moment.
                 if (!showsResult && !leftForNext && endTime >= tuning.nextLevelDelay) {
                     leftForNext = true
+                    host.sound(AudioCue.LEVEL_TRANSITION) // a soft swell into the next level
                     host.play(index + 1)
+                }
+                // A world opens: a gentle chime as the result card comes up.
+                if (opensNewWorld && !unlockPlayed && overlayProgress > 0f) {
+                    unlockPlayed = true
+                    host.sound(AudioCue.UI_UNLOCK)
                 }
             }
             GameSession.State.FAILED -> if (endTime >= tuning.retryDelay) retry()
@@ -423,7 +431,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
      */
     private fun collide(impact: GameSession.Impact) {
         val s = impact.strength.toFloat().coerceIn(0f, 1f)
-        host.sound(Sound.IMPACT, impact.strength)
+        host.sound(AudioCue.BOUNCE, impact.strength)
         host.haptic(if (impact.fatal) Haptic.BREAK else Haptic.BOUNCE, impact.strength)
         shake(kit.u((if (impact.fatal) 3f else 2f) + 3.5f * s), if (impact.fatal) BREAK_SHAKE_TIME else BOUNCE_SHAKE_TIME)
         // The ring is round the ball; the flash is where it touched the wall (the ball's centre, back along the wall's normal).
@@ -453,7 +461,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     /** A ball went into an exit that needs more than one. */
     override fun onExitPartial(count: Int, needed: Int, x: Double, y: Double) {
-        host.sound(Sound.EXIT_PARTIAL)
+        host.sound(AudioCue.EXIT_PARTIAL)
         host.haptic(Haptic.CLICK)
         exitFlash = 1f
         addRipple(level.goal.x, level.goal.y)
@@ -462,7 +470,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** One ball is gone: it breaks (out of bounces, or into a deadly zone), or simply fades if it stopped. */
     override fun onBallLost(ball: Int, reason: GameSession.FailReason, x: Double, y: Double) {
         if (reason == GameSession.FailReason.STOPPED) {
-            host.sound(Sound.FIZZLE)
+            host.sound(AudioCue.FAIL_STOP)
             return
         }
         // The hit that broke the ball is a collision like any other (a ball lost in a deadly zone it flew into had none).
@@ -477,7 +485,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             shake(kit.u(3f), BREAK_SHAKE_TIME)
         }
         startShatter(board.x(x), board.y(y), awayX, awayY)
-        host.sound(Sound.SHATTER, hit?.strength ?: 1.0)
+        host.sound(AudioCue.FAIL_BREAK, hit?.strength ?: 1.0)
     }
 
     /** Every ball is gone: after a moment the level starts again by itself. */
@@ -486,7 +494,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     override fun onPortal(ball: Int, fromX: Double, fromY: Double, toX: Double, toY: Double) {
-        host.sound(Sound.PORTAL)
+        host.sound(AudioCue.PORTAL)
         host.haptic(Haptic.CLICK)
         addRipple(fromX, fromY)
         addRipple(toX, toY)
@@ -494,7 +502,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
 
     /** A ball came into a clock and lost speed: a soft ring where it went in, and the clock's low "tock". */
     override fun onClock(ball: Int, element: Int, speedBefore: Double, speedAfter: Double) {
-        host.sound(Sound.CLOCK, (speedBefore / level.maxSpeed).coerceIn(0.2, 1.0))
+        host.sound(AudioCue.CLOCK, (speedBefore / level.maxSpeed).coerceIn(0.2, 1.0))
         val b = session.balls[ball]
         addRipple(b.x, b.y)
     }
@@ -517,11 +525,11 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
                     spark(cx, cy, cos(a) * speed, sin(a) * speed, 0.5f + 0.2f * random.nextFloat(), board.ballScreenRadius * 0.28f, palette.primary,
                         kind = SparkKind.CHUNK, spin = (4f + 6f * random.nextFloat()) * if (random.nextBoolean()) 1f else -1f)
                 }
-                host.sound(Sound.SHATTER, 0.5)
+                host.sound(AudioCue.FAIL_BREAK, 0.5)
                 shake(kit.u(2f), BREAK_SHAKE_TIME) // (the hit that broke it brings the vibration)
             }
             GameSession.ElementEvent.SWITCHED -> {
-                host.sound(Sound.TAP)
+                host.sound(AudioCue.SWITCH)
                 host.haptic(Haptic.CLICK)
                 addRipple(e.x, e.y)
             }
@@ -560,7 +568,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
      * through here at all.
      */
     private fun restart(kind: RestartKind) {
-        host.stopSound(Sound.SPIN)
+        host.stopSound(AudioCue.SUCCESS_SPIN)
         session.restart()
         taps.cancel()
         swipe.cancel()
@@ -577,12 +585,15 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         host.soundPitch(1f)
         respawnTime = 0f
         guideShown = guideDue()
-        val pulse = RestartSound.playsLowBallPulse(kind, slowWhenAsked)
+        val pulse = RestartSound.playsClearPulse(kind, slowWhenAsked)
         if (kind == RestartKind.TRIPLE) {
             restartPresses.cancel()
             slowWhenAsked = false
         }
-        if (pulse) host.sound(Sound.LOW_BALL_PULSE)
+        if (pulse) {
+            host.sound(AudioCue.CLEAR_PULSE)
+            host.haptic(Haptic.CLICK) // a light touch of feedback, no shake
+        }
     }
 
     // ---------------------------------------------------------------- scoring: the fan
@@ -602,7 +613,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         val r = board.ballScreenRadius
         if (!whirStarted && endTime >= MORPH_START) {
             whirStarted = true
-            host.sound(Sound.SPIN)
+            host.sound(AudioCue.SUCCESS_SPIN)
         }
         if (!exploded && endTime >= MORPH_END) {
             // Sparks flung off the blade tips, more and faster as it speeds up.
@@ -623,13 +634,13 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         }
         if (!chimed && endTime >= EXPLODE + PULSE_DELAY) {
             chimed = true
-            host.sound(Sound.WIN)
+            host.sound(AudioCue.SUCCESS)
         }
     }
 
     /** The fan bursts: a flash, a shock ring (drawn by time), sparks and tumbling fragments. */
     private fun explode(gx: Float, gy: Float, r: Float) {
-        host.sound(Sound.EXPLOSION)
+        host.sound(AudioCue.SUCCESS_BURST)
         host.haptic(Haptic.EXPLOSION)
         shake(kit.u(3f), EXPLOSION_SHAKE_TIME)
         // Calm: a small ring of fine sparks, no fragments or twinkles.

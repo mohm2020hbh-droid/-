@@ -170,6 +170,78 @@ object Synth {
         return finish(out, peak = 0.6)
     }
 
+    // ---------------------------------------------------------------- interface (light: none of them is ever as loud as a collision)
+
+    /** Back: two small falling ticks, a step down. */
+    fun uiBack(): ShortArray {
+        val out = FloatArray(seconds(0.16))
+        partial(out, 0.0, 1175.0, 0.55, 0.012, attack = 0.001)
+        partial(out, 0.05, 784.0, 0.5, 0.018, attack = 0.001)
+        return finish(out, peak = 0.6)
+    }
+
+    /** Confirm: two soft notes rising a fifth, "yes". */
+    fun uiConfirm(): ShortArray {
+        val out = FloatArray(seconds(0.3))
+        partial(out, 0.0, 880.0, 0.5, 0.02, attack = 0.002)
+        partial(out, 0.075, 1318.5, 0.55, 0.035, attack = 0.002)
+        reverb(out, mix = 0.05)
+        return finish(out, peak = 0.6)
+    }
+
+    /** A level is chosen: a rounded tick a little brighter than a plain button's. */
+    fun uiLevel(): ShortArray {
+        val out = FloatArray(seconds(0.16))
+        partial(out, 0.0, 1568.0, 0.55, 0.014, attack = 0.001)
+        partial(out, 0.0, 784.0, 0.35, 0.026, attack = 0.001)
+        return finish(out, peak = 0.6)
+    }
+
+    /** The list moves to another world: a short, airy upward brush and a soft note. */
+    fun uiWorld(): ShortArray {
+        val out = FloatArray(seconds(0.34))
+        val rnd = Random(77)
+        val air = Svf()
+        for (k in 0 until seconds(0.24)) {
+            val t = k.toDouble() / SAMPLE_RATE
+            val q = t / 0.24
+            val env = min(1.0, t / 0.03) * (1.0 - q) * (1.0 - q)
+            out[k] += (0.3 * env * air.lowpass(rnd.nextDouble(-1.0, 1.0), 300.0 + 900.0 * q, q = 0.8)).toFloat()
+        }
+        partial(out, 0.06, 659.3, 0.45, 0.04, attack = 0.003)
+        partial(out, 0.0, 330.0, 0.25, 0.03, attack = 0.003)
+        return finish(out, peak = 0.55)
+    }
+
+    /** A world opens: three gentle notes climbing, in a little room. */
+    fun unlock(): ShortArray {
+        val out = FloatArray(seconds(1.0))
+        partial(out, 0.0, 784.0, 0.5, 0.12, attack = 0.004)
+        partial(out, 0.13, 987.8, 0.5, 0.12, attack = 0.004)
+        partial(out, 0.26, 1174.7, 0.55, 0.2, attack = 0.004)
+        partial(out, 0.26, 2349.3, 0.12, 0.08, attack = 0.004)
+        reverb(out, mix = 0.2)
+        return finish(out, peak = 0.6)
+    }
+
+    /** Between a finished level and the next: a low, soft swell that rises and is gone. */
+    fun transition(): ShortArray {
+        val length = 0.6
+        val out = FloatArray(seconds(length))
+        val rnd = Random(91)
+        val breath = Svf()
+        var phase = 0.0
+        for (k in out.indices) {
+            val t = k.toDouble() / SAMPLE_RATE
+            val q = t / length
+            phase += 2 * PI * (196.0 + 66.0 * q) / SAMPLE_RATE
+            val env = sin(PI * q).pow(2)
+            out[k] += (env * (0.5 * sin(phase) + 0.2 * sin(2 * phase) + 0.12 * breath.lowpass(rnd.nextDouble(-1.0, 1.0), 500.0 + 500.0 * q, q = 0.8))).toFloat()
+        }
+        reverb(out, mix = 0.1)
+        return finish(out, peak = 0.5)
+    }
+
     // ---------------------------------------------------------------- level elements
 
     /** A ball entering a portal: a quick rising blip inside an airy whoosh that opens up and fades. */

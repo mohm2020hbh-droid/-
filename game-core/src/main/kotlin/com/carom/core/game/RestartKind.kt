@@ -17,12 +17,12 @@ enum class RestartKind {
 }
 
 /**
- * The one condition that plays the low ball pulse (`low_ball_pulse.wav`): the ball was very slow when the player began asking, and the player
+ * The one condition that plays the clear pulse (`clear_pulse.wav`): the ball was very slow when the player began asking, and the player
  * completed three presses or taps, so the attempt was put back at its start. Nothing else plays it: not a loss, not an automatic retry, not a
  * start, not a win, not a collision, not one or two presses, and not three presses while the ball is moving at a normal speed.
  */
 object RestartSound {
-    fun playsLowBallPulse(kind: RestartKind, ballWasVerySlow: Boolean): Boolean = kind == RestartKind.TRIPLE && ballWasVerySlow
+    fun playsClearPulse(kind: RestartKind, ballWasVerySlow: Boolean): Boolean = kind == RestartKind.TRIPLE && ballWasVerySlow
 }
 
 /**

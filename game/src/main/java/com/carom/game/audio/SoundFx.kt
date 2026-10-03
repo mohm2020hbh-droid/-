@@ -7,6 +7,7 @@ import android.media.AudioTrack
 import android.media.SoundPool
 import android.os.SystemClock
 import android.util.Log
+import com.carom.core.audio.AudioCue
 import com.carom.core.audio.VoicePool
 
 /**
@@ -24,7 +25,7 @@ import com.carom.core.audio.VoicePool
  * Sound is decoration: until the sounds are ready, or if the device refuses audio tracks, the game
  * simply stays silent.
  */
-class SoundFx(private val bounceFile: () -> AssetFileDescriptor, private val pulseFile: () -> AssetFileDescriptor) {
+class SoundFx(private val bounceFile: () -> AssetFileDescriptor, private val pulseFile: () -> AssetFileDescriptor) : SoundOutput {
 
     private class Bank(val voices: List<Voice>, val seconds: Float) {
         private var next = 0
@@ -111,9 +112,16 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor, private val pul
                 "shatter" to (Synth.shatter() to 2),
                 "win" to (Synth.win() to 1),
                 "tap" to (Synth.tap() to 2),
+                "switch" to (Synth.tap() to 1),
                 "spin" to (Synth.spin() to 1),
                 "explosion" to (Synth.explosion() to 1),
                 "fizzle" to (Synth.fizzle() to 1),
+                "uiBack" to (Synth.uiBack() to 1),
+                "uiConfirm" to (Synth.uiConfirm() to 1),
+                "uiLevel" to (Synth.uiLevel() to 1),
+                "uiWorld" to (Synth.uiWorld() to 1),
+                "unlock" to (Synth.unlock() to 1),
+                "transition" to (Synth.transition() to 1),
                 "portal" to (Synth.portal() to 2),
                 "clock" to (Synth.clock() to 2),
                 "exitPartial" to (Synth.exitPartial() to 1),
@@ -138,11 +146,47 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor, private val pul
 
     private fun now(): Double = SystemClock.elapsedRealtime() / 1000.0
 
+    /** Plays [cue] at [volume] (already mixed by the audio manager: master x bus x the cue's level). */
+    override fun play(cue: AudioCue, volume: Float) {
+        when (cue) {
+            // The recorded bounce, exactly as it is (its own pitch and length), started afresh for every collision.
+            AudioCue.BOUNCE -> bounce?.play(volume = volume, rate = pitch)
+            // The supplied clear_pulse.wav, exactly as recorded.
+            AudioCue.CLEAR_PULSE -> pulse?.play(volume = volume, rate = 1f)
+            else -> bankOf(cue)?.let { playBank(it, volume, priority = cue.priority) }
+        }
+    }
+
+    override fun stop(cue: AudioCue) {
+        if (cue == AudioCue.SUCCESS_SPIN) banks["spin"]?.stop()
+    }
+
+    /** The synthesised bank a cue plays, or null for the two recordings. */
+    private fun bankOf(cue: AudioCue): String? = when (cue) {
+        AudioCue.SUCCESS -> "win"
+        AudioCue.SUCCESS_SPIN -> "spin"
+        AudioCue.SUCCESS_BURST -> "explosion"
+        AudioCue.FAIL_BREAK -> "shatter"
+        AudioCue.FAIL_STOP -> "fizzle"
+        AudioCue.CLOCK -> "clock"
+        AudioCue.PORTAL -> "portal"
+        AudioCue.SWITCH -> "switch"
+        AudioCue.EXIT_PARTIAL -> "exitPartial"
+        AudioCue.UI_PRESS -> "tap"
+        AudioCue.UI_LEVEL_SELECT -> "uiLevel"
+        AudioCue.UI_WORLD_SELECT -> "uiWorld"
+        AudioCue.UI_UNLOCK -> "unlock"
+        AudioCue.UI_BACK -> "uiBack"
+        AudioCue.UI_CONFIRM -> "uiConfirm"
+        AudioCue.LEVEL_TRANSITION -> "transition"
+        AudioCue.BOUNCE, AudioCue.CLEAR_PULSE -> null
+    }
+
     /**
      * Plays a sound from its bank if the shared pool has room for it (or something less important to give up).
-     * [priority] is a [VoicePool.Priority].
+     * [priority] is a [com.carom.core.audio.VoicePool.Priority].
      */
-    private fun play(name: String, volume: Float, rate: Float = 1f, priority: Int = VoicePool.Priority.UI) {
+    private fun playBank(name: String, volume: Float, rate: Float = 1f, priority: Int) {
         val bank = banks[name] ?: return
         val voice = bank.peek() ?: return
         val slot = pool.acquire(now(), (bank.seconds / (rate * pitch)).toDouble(), priority)
@@ -153,54 +197,16 @@ class SoundFx(private val bounceFile: () -> AssetFileDescriptor, private val pul
     }
 
     /**
-     * A collision of the ball with anything: the recorded bounce, exactly as it is, a little louder for a harder hit
-     * ([strength] 0..1). Every collision starts its own.
-     */
-    fun impact(strength: Double) {
-        bounce?.play(volume = 0.7f + 0.3f * strength.coerceIn(0.0, 1.0).toFloat(), rate = pitch)
-    }
-
-    fun shatter() = play("shatter", 0.85f, priority = VoicePool.Priority.EXPLOSION)
-
-    fun win() = play("win", 0.9f, priority = VoicePool.Priority.EXIT_COMPLETE)
-
-    fun tap() = play("tap", 0.35f, priority = VoicePool.Priority.UI)
-
-    fun spin() = play("spin", 0.8f, priority = VoicePool.Priority.EXIT_COMPLETE)
-
-    /** Stops a spin-up that was cut short (the level was restarted or left). */
-    fun stopSpin() = banks["spin"]?.stop()
-
-    fun explosion() = play("explosion", 0.95f, priority = VoicePool.Priority.EXIT_COMPLETE)
-
-    /**
-     * `low_ball_pulse.wav`, played exactly as recorded (its own level, pitch and length), once: for a full manual restart begun while the ball
-     * was very slow, and for nothing else.
-     */
-    fun lowBallPulse() {
-        pulse?.play(volume = 1f, rate = 1f)
-    }
-
-    fun fizzle() = play("fizzle", 0.6f, priority = VoicePool.Priority.UI)
-
-    fun portal() = play("portal", 0.7f, priority = VoicePool.Priority.PORTAL)
-
-    /** A ball losing speed in a clock; louder the faster it was going. */
-    fun clock(strength: Double) = play("clock", (0.35 + 0.4 * strength).toFloat(), priority = VoicePool.Priority.CLOCK)
-
-    fun exitPartial() = play("exitPartial", 0.6f, priority = VoicePool.Priority.EXIT_PARTIAL)
-
-    /**
      * Sets the playback speed of every sound, the ones already playing included (1 is normal).
      */
-    fun setPitch(scale: Float) {
+    override fun setPitch(scale: Float) {
         if (scale == pitch) return
         pitch = scale
         for (v in slots) v?.applyPitch(scale)
         bounce?.setRate(scale)
     }
 
-    fun release() {
+    override fun release() {
         synchronized(this) {
             released = true
             banks.values.forEach { it.release() }

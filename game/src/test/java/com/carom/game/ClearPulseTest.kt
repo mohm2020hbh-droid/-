@@ -2,11 +2,11 @@ package com.carom.game
 
 import android.graphics.Rect
 import android.view.MotionEvent
+import com.carom.core.audio.AudioCue
 import com.carom.core.game.GameSession
 import com.carom.core.level.LevelRepository
 import com.carom.game.screens.GameHost
 import com.carom.game.screens.PlayScreen
-import com.carom.game.screens.Sound
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,21 +16,21 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * `low_ball_pulse.wav` has one condition and no other: the ball was very slow when the player began, and the player then pressed restart three
+ * `clear_pulse.wav` has one condition and no other: the ball was very slow when the player began, and the player then pressed restart three
  * times in a row (or tapped the screen three times), so the attempt was put back at its start. Never a loss, an automatic retry, a start, a win,
  * a collision, one or two presses, or three presses while the ball was moving at a normal speed.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
-class LowBallPulseTest {
+class ClearPulseTest {
 
     private class Recorder(private val real: GameView) : GameHost by real {
-        val sounds = ArrayList<Sound>()
-        override fun sound(kind: Sound, strength: Double) {
-            sounds += kind
+        val sounds = ArrayList<AudioCue>()
+        override fun sound(cue: AudioCue, strength: Double) {
+            sounds += cue
         }
 
-        val pulses get() = sounds.count { it == Sound.LOW_BALL_PULSE }
+        val pulses get() = sounds.count { it == AudioCue.CLEAR_PULSE }
     }
 
     private fun play(index: Int = 1): Pair<Recorder, PlayScreen> {
@@ -82,7 +82,7 @@ class LowBallPulseTest {
         while (screen.session.state == GameSession.State.FAILED && guard++ < 600) screen.update(1 / 60f)
         assertTrue("the next try began by itself", screen.session.state == GameSession.State.AIMING)
         assertEquals("...without the pulse", 0, host.pulses)
-        assertTrue("the collisions themselves sounded as usual", host.sounds.contains(Sound.IMPACT))
+        assertTrue("the collisions themselves sounded as usual", host.sounds.contains(AudioCue.BOUNCE))
     }
 
     @Test

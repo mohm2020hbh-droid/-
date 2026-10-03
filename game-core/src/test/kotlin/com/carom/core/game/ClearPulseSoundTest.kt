@@ -1,6 +1,7 @@
 package com.carom.core.game
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -8,10 +9,11 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.MessageDigest
 
-/** `low_ball_pulse.wav` is used exactly as the player supplied it: same bytes, short, and soft. */
-class LowBallPulseSoundTest {
+/** `clear_pulse.wav` is used exactly as the player supplied it: same bytes, short, clear but not harsh; and the file it replaced is gone. */
+class ClearPulseSoundTest {
 
-    private val file = File(File(System.getProperty("levels.dir") ?: "../game/src/main/assets/levels").parentFile, "sounds/low_ball_pulse.wav")
+    private val sounds = File(File(System.getProperty("levels.dir") ?: "../game/src/main/assets/levels").parentFile, "sounds")
+    private val file = File(sounds, "clear_pulse.wav")
 
     @Test
     fun theFileIsTheOneThatWasSupplied() {
@@ -21,7 +23,12 @@ class LowBallPulseSoundTest {
     }
 
     @Test
-    fun itIsAShortSoftMonoSample() {
+    fun theEarlierPulseFileIsNotShippedAnymore() {
+        assertFalse(File(sounds, "low_ball_pulse.wav").exists())
+    }
+
+    @Test
+    fun itIsAShortClearMonoSample() {
         val b = ByteBuffer.wrap(file.readBytes()).order(ByteOrder.LITTLE_ENDIAN)
         assertEquals("RIFF", String(ByteArray(4).also { b.get(0, it) }))
         assertEquals("WAVE", String(ByteArray(4).also { b.get(8, it) }))
@@ -31,13 +38,14 @@ class LowBallPulseSoundTest {
         assertEquals("16 bit", 16, b.getShort(34).toInt())
         val bytes = b.getInt(40)
         val seconds = bytes / 2 / 44100.0
-        assertTrue("short: $seconds s", seconds in 0.1..0.5)
+        assertTrue("short: $seconds s", seconds in 0.1..0.6)
         var peak = 0
         for (i in 0 until bytes / 2) peak = maxOf(peak, kotlin.math.abs(b.getShort(44 + 2 * i).toInt()))
-        assertTrue("soft: peak ${peak / 32768.0}", peak / 32768.0 < 0.25)
+        assertTrue("audible: peak ${peak / 32768.0}", peak / 32768.0 > 0.1)
+        assertTrue("not harsh: peak ${peak / 32768.0}", peak / 32768.0 < 0.6)
     }
 
     private companion object {
-        const val SUPPLIED_SHA256 = "ed136d68f75909a1cc6a6be78a6943f04972538ec8dd3ef81740ef9b6758a5de"
+        const val SUPPLIED_SHA256 = "d7575abd48810a1e9cffddea4f2787b7f60854cbaa49854cb738f17f6135cbcc"
     }
 }

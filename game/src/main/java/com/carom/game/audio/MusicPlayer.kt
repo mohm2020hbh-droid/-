@@ -23,7 +23,7 @@ import java.util.concurrent.Executors
  *
  * Like the effects, music is decoration: if the device refuses audio tracks the game stays quiet.
  */
-class MusicPlayer {
+class MusicPlayer : MusicController {
 
     private class Loaded(val spec: TrackSpec, val pcm: ShortArray, val beats: BeatDetector.Beats)
 
@@ -46,6 +46,7 @@ class MusicPlayer {
     private var wanted: TrackSpec? = null
     private var pitch = 1f
     private var enabled = true
+    private var gain = 1f
     private var paused = false
     private var released = false
     private var ticking = false
@@ -58,7 +59,7 @@ class MusicPlayer {
                 if (d.volume == d.target) continue
                 val step = STEP_MS / 1000f / fadeSeconds
                 d.volume = if (d.target > d.volume) minOf(d.target, d.volume + step) else maxOf(d.target, d.volume - step)
-                d.track?.setVolume(d.volume * MUSIC_VOLUME)
+                d.track?.setVolume(d.volume * MUSIC_VOLUME * gain)
                 if (d.volume != d.target) moving = true else if (d.target == 0f) empty(d)
             }
             if (moving) schedule()
@@ -67,7 +68,8 @@ class MusicPlayer {
     private var fadeSeconds = 1.5f
 
     /** Plays [spec], fading over [fade] seconds. Does nothing if it is already the one playing (or on its way). */
-    fun play(spec: TrackSpec, fade: Float = 1.5f) {
+    override fun play(track: TrackSpec, fade: Float) {
+        val spec = track
         if (released) return
         when (val change = MusicLibrary.change(wanted, spec, fade.toDouble())) {
             MusicLibrary.Change.Continue -> return
@@ -87,7 +89,7 @@ class MusicPlayer {
     }
 
     /** Music on or off (it follows the sound setting). Turning it off fades what plays; turning it on brings the wanted track back. */
-    fun setEnabled(on: Boolean) {
+    override fun setEnabled(on: Boolean) {
         if (enabled == on) return
         enabled = on
         if (!on) {
@@ -99,6 +101,25 @@ class MusicPlayer {
             wanted = null
             if (spec != null) play(spec, 0.6f)
         }
+    }
+
+    override fun pause() = setPaused(true)
+
+    override fun resume() = setPaused(false)
+
+    /** The music's loudness against its own level (master x music volume): the playing tracks follow at once. */
+    override fun setGain(gain: Float) {
+        this.gain = gain.coerceIn(0f, 1f)
+        for (d in decks) d.track?.setVolume(d.volume * MUSIC_VOLUME * this.gain)
+    }
+
+    /** Fades the music out over [fade] seconds and forgets the track, so the next [play] starts it afresh (fading in). */
+    override fun stop(fade: Float) {
+        if (released) return
+        wanted = null
+        fadeSeconds = fade
+        for (d in decks) d.target = 0f
+        schedule()
     }
 
     /** The window went to the background or came back. */
@@ -115,7 +136,7 @@ class MusicPlayer {
     }
 
     /** All sound slows with time in a slow-motion zone: the music too. */
-    fun setPitch(scale: Float) {
+    override fun setPitch(scale: Float) {
         pitch = scale
         for (d in decks) {
             try {
@@ -127,7 +148,7 @@ class MusicPlayer {
     }
 
     /** 0..1, 1 on a beat of the playing track and fading away after it; 0 when nothing plays. */
-    fun beatPulse(): Float {
+    override fun beatPulse(): Float {
         val d = decks.getOrNull(live) ?: return 0f
         val loaded = d.loaded ?: return 0f
         if (d.track == null || paused || !enabled) return 0f
@@ -135,7 +156,7 @@ class MusicPlayer {
         return BeatDetector.pulse(loaded.beats, elapsed, loaded.spec.loopSeconds).toFloat()
     }
 
-    fun release() {
+    override fun release() {
         released = true
         handler.removeCallbacks(tick)
         worker.shutdownNow()

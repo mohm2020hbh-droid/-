@@ -13,9 +13,11 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
+import com.carom.core.audio.AudioCue
 import com.carom.core.audio.MusicLibrary
 import com.carom.core.level.LevelFormatException
 import com.carom.core.level.Worlds
+import com.carom.game.audio.AudioManager
 import com.carom.game.audio.MusicPlayer
 import com.carom.game.audio.SoundFx
 import com.carom.game.screens.GameHost
@@ -24,7 +26,7 @@ import com.carom.game.screens.HomeScreen
 import com.carom.game.screens.LevelSelectScreen
 import com.carom.game.screens.PlayScreen
 import com.carom.game.screens.Screen
-import com.carom.game.screens.Sound
+import com.carom.game.screens.SettingsScreen
 import com.carom.game.ui.Palette
 import com.carom.game.ui.UiKit
 import com.carom.game.ui.UiText
@@ -41,8 +43,12 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         private set
 
     private var screen: Screen = HomeScreen(this)
-    private val soundFx = SoundFx({ context.assets.openFd("sounds/ball_bounce_exact.ogg") }, { context.assets.openFd("sounds/low_ball_pulse.wav") })
-    private val music = MusicPlayer()
+    /** Every sound of the game goes through this one manager: the settings decide how loud, the gate stops pile-ups. */
+    private val audio = AudioManager(
+        app.settings.audio,
+        SoundFx({ context.assets.openFd("sounds/ball_bounce_exact.ogg") }, { context.assets.openFd("sounds/clear_pulse.wav") }),
+        MusicPlayer(),
+    )
     private val vibrator: Vibrator? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             context.getSystemService(VibratorManager::class.java)?.defaultVibrator
@@ -111,7 +117,6 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         screen.onTouch(event)
-        music.setEnabled(app.settings.soundEnabled) // the sound button on the home screen also switches the music
         invalidate()
         return true
     }
@@ -120,7 +125,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         super.onWindowVisibilityChanged(visibility)
         // Don't let time spent in the background arrive as one giant frame.
         lastFrameNanos = 0L
-        music.setPaused(visibility != VISIBLE)
+        if (visibility != VISIBLE) audio.pauseMusic() else audio.resumeMusic()
     }
 
     /** Returns false when the back action should leave the game. */
@@ -129,6 +134,8 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     override fun showHome() = switchTo(HomeScreen(this))
 
     override fun showLevels(focusIndex: Int) = switchTo(LevelSelectScreen(this, focusIndex))
+
+    override fun showSettings() = switchTo(SettingsScreen(this))
 
     override fun play(index: Int) {
         if (index !in 0 until app.levels.size) return showLevels(app.levels.size - 1)
@@ -142,15 +149,13 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     }
 
     private fun switchTo(next: Screen) {
-        soundFx.stopSpin()
-        soundFx.setPitch(1f)
-        music.setPitch(1f)
+        audio.stop(AudioCue.SUCCESS_SPIN)
+        audio.setPitch(1f)
         screen.onExit()
         screen = next
         // The music follows the world (and the kind of level) and carries on across levels that share a track.
         val here = app.progress.currentIndex
-        music.setEnabled(app.settings.soundEnabled)
-        music.play((next as? PlayScreen)?.track ?: MusicLibrary.trackFor(here, Worlds.worldOf(here)))
+        audio.playMusic((next as? PlayScreen)?.track ?: MusicLibrary.trackFor(here, Worlds.worldOf(here)))
         keepScreenOn = next is PlayScreen
         if (width > 0) next.layout(width, height, insets)
         next.onEnter()
@@ -188,38 +193,17 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
         }
     }
 
-    override fun sound(kind: Sound, strength: Double) {
-        if (!app.settings.soundEnabled) return
-        when (kind) {
-            Sound.IMPACT -> soundFx.impact(strength)
-            Sound.PORTAL -> soundFx.portal()
-            Sound.CLOCK -> soundFx.clock(strength)
-            Sound.EXIT_PARTIAL -> soundFx.exitPartial()
-            Sound.SHATTER -> soundFx.shatter()
-            Sound.WIN -> soundFx.win()
-            Sound.TAP -> soundFx.tap()
-            Sound.SPIN -> soundFx.spin()
-            Sound.EXPLOSION -> soundFx.explosion()
-            Sound.LOW_BALL_PULSE -> soundFx.lowBallPulse()
-            Sound.FIZZLE -> soundFx.fizzle()
-        }
-    }
+    override fun sound(cue: AudioCue, strength: Double) = audio.play(cue, strength)
 
-    override fun soundPitch(scale: Float) {
-        soundFx.setPitch(scale)
-        music.setPitch(scale)
-    }
+    override fun soundPitch(scale: Float) = audio.setPitch(scale)
 
-    override val beatPulse: Float get() = if (app.settings.soundEnabled) music.beatPulse() else 0f
+    override val beatPulse: Float get() = audio.beatPulse
 
-    override fun stopSound(kind: Sound) {
-        if (kind == Sound.SPIN) soundFx.stopSpin()
-    }
+    override fun stopSound(cue: AudioCue) = audio.stop(cue)
 
     /** Frees the audio tracks; the view is not used afterwards. */
     fun release() {
-        soundFx.release()
-        music.release()
+        audio.release()
     }
 
     private companion object {

@@ -9,10 +9,10 @@ import org.junit.Test
 class RestartKindTest {
 
     @Test
-    fun theLowBallPulseNeedsAVerySlowBallAndAFullThreePressRestart() {
+    fun theClearPulseNeedsAVerySlowBallAndAFullThreePressRestart() {
         for (kind in RestartKind.entries) for (slow in listOf(false, true)) {
             val expected = kind == RestartKind.TRIPLE && slow
-            assertEquals("$kind, slow=$slow", expected, RestartSound.playsLowBallPulse(kind, slow))
+            assertEquals("$kind, slow=$slow", expected, RestartSound.playsClearPulse(kind, slow))
         }
     }
 

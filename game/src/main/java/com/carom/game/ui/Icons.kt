@@ -6,7 +6,7 @@ import android.graphics.RectF
 import kotlin.math.cos
 import kotlin.math.sin
 
-enum class Icon { PLAY, RESTART, GRID, BACK, FORWARD, CHECK, CROSS, LOCK, VIBRATION, SOUND, RING }
+enum class Icon { PLAY, RESTART, GRID, BACK, FORWARD, CHECK, CROSS, LOCK, VIBRATION, SOUND, RING, SETTINGS }
 
 /** Simple geometric icons drawn with paths, so the game ships no image assets. */
 object Icons {
@@ -113,6 +113,16 @@ object Icons {
                 for (r in floatArrayOf(0.2f, 0.36f)) {
                     box.set(cx - 0.06f * s - r * s, cy - r * s, cx - 0.06f * s + r * s, cy + r * s)
                     canvas.drawArc(box, -45f, 90f, false, stroke)
+                }
+            }
+            Icon.SETTINGS -> {
+                // Three sliders, each a line with a round knob.
+                stroke.strokeWidth = s * 0.08f
+                val knobs = floatArrayOf(0.12f, -0.14f, 0.2f)
+                for (i in 0..2) {
+                    val y = cy + (i - 1) * 0.3f * s
+                    canvas.drawLine(cx - 0.4f * s, y, cx + 0.4f * s, y, stroke)
+                    canvas.drawCircle(cx + knobs[i] * s, y, 0.1f * s, fill)
                 }
             }
             Icon.RING -> {

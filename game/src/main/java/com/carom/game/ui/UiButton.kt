@@ -2,12 +2,15 @@ package com.carom.game.ui
 
 import android.graphics.Canvas
 import android.graphics.RectF
+import com.carom.core.audio.AudioCue
 
 /** A canvas-drawn button. The owning screen positions it with [bounds] and routes touches to it. */
 class UiButton(
     private val style: Style,
     var label: String = "",
     var icon: Icon? = null,
+    /** The light sound it makes when it goes down: a plain press, back, or confirm. */
+    val cue: AudioCue = AudioCue.UI_PRESS,
     val onClick: () -> Unit,
 ) {
     enum class Style {
