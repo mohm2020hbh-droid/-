@@ -151,6 +151,8 @@ class ShippedLevelsTest {
             assertTrue("level ${r.level.id} has no solution within ${r.level.bounces} bounces (needs ${r.minBounces})", r.solvable)
             val floor = windowFloor(r.level)
             assertTrue("level ${r.level.id} has a widest window of ${r.widestWindow}°, under the ${floor}° a finger can hit", r.widestWindow >= floor)
+            val ceiling = windowCeiling(r.level)
+            assertTrue("level ${r.level.id} has a widest window of ${r.widestWindow}°, over the ${ceiling}° that still asks for an aim", r.widestWindow <= ceiling)
             val slack = if (r.level.difficulty <= 2) 3 else 0
             assertTrue(
                 "level ${r.level.id} allows ${r.level.bounces} bounces but needs ${r.realMinBounces}: a level's budget is what it needs (a little more only at the start)",
@@ -164,6 +166,48 @@ class ShippedLevelsTest {
         val number = level.id.toInt()
         if (number <= 3) return 9.0
         return WINDOW_FLOOR[(number - 1) / Worlds.SIZE]
+    }
+
+    /**
+     * The widest widest-window a level may have: the first levels forgive a lot, and after that no level may be won by a loose aim. Container levels
+     * are held tighter still: a container is a precise target, and what comes out of it is meant to need a bank, not a straight line.
+     */
+    private fun windowCeiling(level: LevelData): Double {
+        val number = level.id.toInt()
+        if (level.exitRequired > 1) return 11.0
+        return when {
+            number <= 3 -> 30.0
+            number <= 40 -> 14.0
+            else -> 12.0
+        }
+    }
+
+    /**
+     * Levels built around the clock are a test of launch power: the clock takes half of the speed, so a gentle throw never gets far enough after it.
+     * A strong throw wins them, a gentle one (30% of the top speed) does not. (The pad level lends the ball speed back, so it is not one of them.)
+     */
+    @Test
+    fun theClockLevelsNeedAStrongThrow() {
+        val clocked = levels.filter { level -> level.elements.any { it.kind == ElementKind.CLOCK } && level.elements.none { it.kind == ElementKind.BOOSTER } }
+        assertTrue("the campaign has levels built around the clock (${clocked.map { it.id }})", clocked.size >= 4)
+        for (level in clocked) {
+            val gentle = LevelLab.analyze(level, spacing = 160.0, angleStep = 1.0, speeds = listOf(0.3))
+            val strong = LevelLab.analyze(level, spacing = 160.0, angleStep = 1.0, speeds = listOf(1.0, 0.8, 0.65))
+            assertFalse("level ${level.id} is won by a gentle throw (${gentle.widestWindow}°): the clock would be no test", gentle.solvable)
+            assertTrue("level ${level.id} has no strong throw that wins (${strong.widestWindow}°)", strong.solvable && strong.widestWindow >= 2.0)
+        }
+    }
+
+    /** A container is a precise target: no container level is won with a throw that only has to be roughly right, or without a bank when it is built around one. */
+    @Test
+    fun theContainerLevelsAskForAPreciseBankedHit() {
+        val containers = levels.filter { level -> level.elements.any { it.kind == ElementKind.BALL_CONTAINER } && level.exitRequired > 1 }
+        assertEquals("four levels are built around a container", 4, containers.size)
+        for (level in containers) {
+            val r = LevelLab.analyze(level, spacing = 160.0, angleStep = 0.5)
+            assertTrue("level ${level.id}: a window of ${r.widestWindow}° is too easy for a container", r.widestWindow <= 11.0)
+            assertTrue("level ${level.id}: the container is hit with ${r.realMinBounces} bounces; it must take at least its own and a bank for the later ones", r.realMinBounces!! >= (if (level.id.toInt() == 45) 1 else 2))
+        }
     }
 
     /**

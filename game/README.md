@@ -352,6 +352,8 @@ game/        تطبيق Android (واجهة ورسم وإدخال وصوت فق�
 **الصعوبة تصعد "حبة حبة"** ويفرض ذلك الاختبار `ShippedLevelsTest`:
 - كل مرحلة تحمل `difficulty` من 1 إلى 10 وضعه المصمم، والمنحنى: الأولى 1 والأخيرة 10 وهي الأصعب، **ولا قفزة أكبر من درجة واحدة** بين مرحلتين متتاليتين (ولا هبوط أكبر من درجة: بداية العالم الجديد تعلّم من جديد فتنزل درجة)، ومتوسط كل عالم أعلى من الذي قبله.
 - **نافذة الحل** (بالدرجات، أوسع مدى من الزوايا يفوز من نقطة واحدة): لا تقل عن 9° في المراحل 1–3، ثم 5° / 4° / 3.5° / 3° / 2.5° / 2° للعوالم 1 (من 4) إلى 6. والهدف بحجم واحد (`goalRadius` 96) في كل المراحل: الصعوبة تأتي من اللغز لا من تصغير الهدف.
+- **سقف لنافذة الحل أيضًا (لا مرحلة تُربح بتصويب فضفاض)**: لا تزيد أوسع نافذة عن 30° في المراحل 1–3، ثم 14° حتى المرحلة 40، ثم 12° بعدها، و**11° لمراحل الحاويات** (`windowCeiling`). كشف تدقيق المراحل بعد الخمسين أن الحاويات (45–48) كانت تُربح بنافذة 25–40° لأن الحاوية مكشوفة تُصاب برمية مباشرة ويحمل اتجاهها الثابت الكرتين إلى الكأس. أُعيد تصميمها: الحاوية في ممر ضيق (45)، أو في جيب لا يُصاب إلا بارتداد (46)، أو **قرص بلا اتجاه ثابت تخرج كراته من الجهة المضروبة** فلا بد من ضرب الجهة التي تواجه الهدف (47)، أو معها بئر تحنيها (48). وتجري `theContainerLevelsAskForAPreciseBankedHit` على المراحل الأربع.
+- **اختبار القوة في مراحل الساعة** (`theClockLevelsNeedAStrongThrow`): الساعة تأخذ نصف السرعة، فتفوز بالمراحل 41 و43 و50 و56 رمية قوية (100% و80% و65% من السرعة القصوى) ولا تفوز بها رمية هادئة (30%). مرحلة 44 تعطي الكرة سرعتها من لوح تسريع فهي خارج هذا الشرط.
 - **الارتدادات المسموحة = ما تحتاجه المرحلة بالضبط** (تزيد 3 كحد أقصى في المراحل السهلة الأولى فقط)، وتحريك الكرة داخل منطقتها لا يختصر اللغز: `movingTheBallAroundItsControlZoneNeverSkipsABounce` (ولا يُعدّ اختصارًا ما يحتاج تصويبًا أدق من 2°).
 - **عشرة أنواع تحدٍّ** (Positioning, Angles, Bounce, Precision, Momentum, Timing, Forces, Portal routing, Multiple balls, Combination) تُذكر في بداية `concept`؛ كلها مستخدمة، ولا يتكرر نوع أكثر من 4 مراحل متتالية، ولا يتكرر `concept` داخل العالم.
 - **عدالة**: فيزياء متوقعة (انعكاس مثالي، بلا عشوائية)، هندسة مقروءة، ميكانيكا ثابتة؛ لا حظ ولا فخاخ مخفية ولا توقيت ظالم. الهدف والكرة يجلسان دائمًا في مكان يتسع لكرة (`LevelValidator`). ومراحل السرعة (باب يفتح بنفسه، تلّ لا يعبره إلا رمي قوي) تقبل سرعات كثيرة لا سرعة واحدة، والمراحل الباقية تعمل بأي سرعة.
@@ -434,10 +436,10 @@ game/        تطبيق Android (واجهة ورسم وإدخال وصوت فق�
 | 42 | Time to Think | Timing | 6 | 0 | a bar sweeps the gate, throw when it opens |
 | 43 | Slow Hexagon | Precision | 7 | 1 | a slow-motion zone beside a hexagon |
 | 44 | Slow and Pad | Combination | 7 | 0 | the pad throws, slow time corrects |
-| 45 | Two Balls | Multiple balls | 7 | 1 | hit the container and its two balls fly to the goal |
-| 46 | Container | Multiple balls | 8 | 1 | a shelf beside the cup, hit the container |
-| 47 | Two Paths | Multiple balls | 8 | 1 | one hit, two balls, one goal |
-| 48 | Balls and Forces | Combination | 8 | 1 | a well bends the new balls |
+| 45 | Two Balls | Multiple balls | 7 | 1 | thread the gap and hit the container, its balls fly to the goal |
+| 46 | Container | Multiple balls | 8 | 2 | bank the ball round to a container that cannot be hit head-on |
+| 47 | Which Side? | Multiple balls | 8 | 2 | the balls leave the side that was hit, so hit the side that faces the goal |
+| 48 | Balls and Forces | Combination | 8 | 2 | a well bends the new balls into the goal |
 | 49 | Switch | Timing | 8 | 1 | touch the switch on the way, the door opens |
 | 50 | Time Master | Combination | 8 | 1 | a switch, a bank and slow time |
 
@@ -447,14 +449,14 @@ game/        تطبيق Android (واجهة ورسم وإدخال وصوت فق�
 
 | # | الاسم | التحدي | الصعوبة | الارتدادات | الفكرة |
 |---|---|---|---|---|---|
-| 51 | First Portal | Portal routing | 7 | 0 | the only way into the room is through a portal |
+| 51 | First Portal | Portal routing | 7 | 0 | the only way up is through the portal (a tilted wall) |
 | 52 | Portal and Bank | Angles | 8 | 1 | the portal throws the ball away, bank it back |
-| 53 | Double Gate | Portal routing | 8 | 1 | through the portal, then one bank |
-| 54 | Bank Gate | Angles | 8 | 1 | the portal, a shelf and a bank off the ceiling |
-| 55 | Portal and Corner | Portal routing | 9 | 1 | a hexagon above the bar, bank round it |
+| 53 | Double Gate | Portal routing | 8 | 1 | two gates, one after the other |
+| 54 | Bank Gate | Angles | 8 | 1 | the exit turns the ball, bank it into the goal |
+| 55 | Portal and Corner | Portal routing | 9 | 2 | the exit turns the ball into a double bank |
 | 56 | Portal and Slow Time | Timing | 9 | 1 | slow time beside the portal |
 | 57 | Two Banks Up | Bounce | 9 | 2 | through the portal, then two banks |
-| 58 | Systems | Combination | 9 | 0 | portal, pad and well |
+| 58 | Systems | Combination | 9 | 1 | portal and well, the pull bends the ball into the goal |
 | 59 | Last Gate | Combination | 9 | 1 | a well, a hill and a portal |
 | 60 | CAROM | Combination | 10 | 1 | every system at once |
 
