@@ -1,5 +1,6 @@
 package com.pogoascent.tools
 
+import com.pogoascent.camera.CameraConfig
 import com.pogoascent.physics.PhysicsConfig
 import com.pogoascent.physics.PhysicsParams
 import java.io.File
@@ -70,7 +71,8 @@ object PhysicsDocs {
       parentFile.mkdirs()
       writeText(PhysicsConfig.toJson(config) + "\n")
     }
+    File(root, "core/src/main/resources/data/camera_config.json").writeText(CameraConfig.toJson(CameraConfig()) + "\n")
     File(root, "PHYSICS_MASTER.md").writeText(renderMarkdown(config))
-    println("Wrote PHYSICS_MASTER.md and physics_config.json")
+    println("Wrote PHYSICS_MASTER.md, physics_config.json and camera_config.json")
   }
 }

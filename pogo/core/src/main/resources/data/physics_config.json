@@ -27,7 +27,7 @@
   "airControl": 1.0,
   "rotationSpeed": 7.0,
   "airTurnAccel": 40.0,
-  "airAngularDrag": 0.6,
+  "airAngularDrag": 2.0,
   "maxAngularVelocity": 12.0,
   "airHorizontalAccel": 0.0,
   "airLinearDrag": 0.02,

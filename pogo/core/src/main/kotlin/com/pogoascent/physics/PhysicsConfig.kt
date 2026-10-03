@@ -52,7 +52,7 @@ data class PhysicsConfig(
   val airControl: Double = 1.0,
   val rotationSpeed: Double = 7.0,
   val airTurnAccel: Double = 40.0,
-  val airAngularDrag: Double = 0.6,
+  val airAngularDrag: Double = 2.0,
   val maxAngularVelocity: Double = 12.0,
   val airHorizontalAccel: Double = 0.0,
   val airLinearDrag: Double = 0.02,

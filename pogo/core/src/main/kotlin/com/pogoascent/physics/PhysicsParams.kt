@@ -55,10 +55,10 @@ object PhysicsParams {
     p("chargeCompression", "Jump Charge", "m", "How far the body sinks toward the pinned tip at 100 % charge (visual + head clearance).") { it.chargeCompression },
     p("jumpPowerMin", "Jump Power", "m/s", "Launch speed of a tap (0 % charge). Mass = 1, so launch 'force' is expressed as speed.") { it.jumpPowerMin },
     p("jumpPower", "Jump Force", "m/s", "Launch speed at 100 % charge (= the full-charge jump power). Apex height ≈ v²/2g.") { it.jumpPower },
-    p("jumpBufferTime", "Jump Release", "s", "Input forgiveness: a press this long before touchdown still counts as 'held at landing'.") { it.jumpBufferTime },
+    p("jumpBufferTime", "Jump Release", "s", "Touch forgiveness: a press up to this long AFTER touchdown still receives the landing-spring pre-charge (and can still arm a boost).") { it.jumpBufferTime },
     p("maxLaunchAngleFromNormalDeg", "Jump Release", "deg", "A launch is rotated back inside this cone around the ground normal (stops launching into the ground).") { it.maxLaunchAngleFromNormalDeg },
     p("launchNormalBlend", "Jump Release", "0..1", "0 = launch exactly along the stick; 1 = along the surface normal.") { it.launchNormalBlend },
-    p("momentumInherit", "Momentum", "0..1+", "Fraction of the pre-launch velocity (tip slide + moving-platform velocity) added to the launch – launch depends on the state before release.") { it.momentumInherit },
+    p("momentumInherit", "Momentum", "0..1+", "Fraction of the tip's sideways slide speed added to the launch (a moving platform's velocity is always inherited in full) – so the launch depends on the state before release.") { it.momentumInherit },
 
     // ---- Ground control ---------------------------------------------------------------------
     p("maxLeanAngleDeg", "Ground Control", "deg", "Largest tilt from vertical while standing on the tip (lean input 1.0 = this angle).") { it.maxLeanAngleDeg },
@@ -75,12 +75,12 @@ object PhysicsParams {
     p("airLinearDrag", "Momentum", "1/s", "Linear air drag (velocity *= 1 - drag·dt).") { it.airLinearDrag },
     p("rotationSpeed", "Rotation", "rad/s", "Target angular speed in the air at full input.") { it.rotationSpeed },
     p("airTurnAccel", "Rotation", "rad/s²", "How fast the air spin reaches the target (before the airControl multiplier).") { it.airTurnAccel },
-    p("airAngularDrag", "Angular Velocity", "1/s", "Spin decay in the air when there is no rotate input.") { it.airAngularDrag },
+    p("airAngularDrag", "Angular Velocity", "1/s", "Spin decay in the air when there is no rotate input (2.0 → a spin dies out within ~0.5 s, so a boost needs a deliberate, sustained spin).") { it.airAngularDrag },
     p("maxAngularVelocity", "Angular Velocity", "rad/s", "Hard clamp of angular speed (collisions can kick spin above rotationSpeed).") { it.maxAngularVelocity },
 
     // ---- Landing / bounce -------------------------------------------------------------------
     p("bounce", "Bounce", "0..1+", "Spring rebound: share of the landing speed stored as pre-charge when the jump is HELD at touchdown (bounce chain).") { it.bounce },
-    p("passiveBounce", "Bounce", "0..1+", "Same, when the jump is NOT held (0 = the tip just sticks).") { it.passiveBounce },
+    p("passiveBounce", "Bounce", "0..1+", "Free rebound without holding: the stick re-launches at landing speed × this when ≥ bounceMinSpeed (0 = the tip just sticks).") { it.passiveBounce },
     p("bounceMinSpeed", "Bounce", "m/s", "Landing speeds below this store no charge (lets the stick settle).") { it.bounceMinSpeed },
     p("landingTangentialRetention", "Landing Response", "0..1", "Share of sideways speed kept as tip slide after a good landing.") { it.landingTangentialRetention },
     p("maxLandingTiltDeg", "Landing Response", "deg", "Angle between stick axis and surface normal beyond which the tip slips (bad landing → tumble).") { it.maxLandingTiltDeg },
