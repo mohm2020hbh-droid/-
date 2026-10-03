@@ -1,0 +1,25 @@
+/** Inline SVG icons (stroke = currentColor). Authored for this project. */
+const S = (p: string, vb = 24) => `<svg viewBox="0 0 ${vb} ${vb}" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+export const ICON = {
+  clock: S('<circle cx="12" cy="13" r="8"/><path d="M12 8.5V13l3 2M9 3h6"/>'),
+  mountain: S('<path d="M2.5 19.5 9.5 7l4 6.2 2.2-3.2 5.8 9.5z" fill="currentColor"/>'),
+  boot: S('<path d="M7 3h6v8c0 1.5 1 2 2.6 2.4l3.4 1c1.2.4 2 1.4 2 2.6V20H7z" fill="currentColor"/><path d="M7 16h14"/>'),
+  bolt: S('<path d="M13 2 4.5 13.5H11L10 22l9-12h-6.5z" fill="currentColor"/>'),
+  pause: S('<rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor"/>'),
+  play: S('<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>'),
+  chevrons: S('<path d="m6 12 6-6 6 6M6 19l6-6 6 6"/>'),
+  charge: S('<path d="M4 12a8 8 0 1 1 3 6.2"/><path d="M4 18v-5h5"/>'),
+  gear: S('<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>'),
+  trophy: S('<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4.5c0 3 1.5 4.5 4 5M16 6h3.5c0 3-1.5 4.5-4 5M12 13v4M8 20h8M10 17h4"/>'),
+  hanger: S('<path d="M12 8a2.2 2.2 0 1 0-2.2-2.2M12 8v2.5L3.5 17a1.5 1.5 0 0 0 1 2.7h15a1.5 1.5 0 0 0 1-2.7z"/>'),
+  help: S('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>'),
+  home: S('<path d="m3 11 9-7.5 9 7.5M5.5 9.5V20h13V9.5"/>'),
+  retry: S('<path d="M4 12a8 8 0 1 0 2.8-6.1M4 4v5h5"/>'),
+  back: S('<path d="m14 5-7 7 7 7"/>'),
+  next: S('<path d="m10 5 7 7-7 7"/>'),
+  star: S('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor"/>'),
+  lock: S('<rect x="5" y="11" width="14" height="9" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+  sound: S('<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>'),
+  hand: S('<path d="M9 12V5.5a1.5 1.5 0 0 1 3 0V11M12 10.5V4.5a1.5 1.5 0 0 1 3 0V11M15 11V6.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a5 5 0 0 1-4-2L4 14.5a1.5 1.5 0 0 1 2.4-1.7L9 15"/>'),
+  close: S('<path d="m6 6 12 12M18 6 6 18"/>'),
+};

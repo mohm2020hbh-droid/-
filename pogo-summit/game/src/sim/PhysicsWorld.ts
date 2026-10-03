@@ -81,3 +81,26 @@ export class PhysicsWorld {
     return best;
   }
 }
+
+/** Highest solid surface at or below (x,y) — used for contact shadows (render only; reads the world, never mutates it). */
+export function surfaceBelow(world: PhysicsWorld, x: number, y: number, tick: number, out: { y: number; nx: number; ny: number; found: boolean }): boolean {
+  const off: Offset = { x: 0, y: 0, vx: 0, vy: 0 };
+  let best = -Infinity, bnx = 0, bny = 1;
+  for (const c of world.solids) {
+    if (x < c.minX || x > c.maxX) continue;
+    world.offsetAt(c, tick, off);
+    const px = x - off.x;
+    const { pts, enx, eny } = c.poly;
+    for (let i = 0; i < pts.length; i++) {
+      if (eny[i] < 0.2) continue; // upward-facing edges only
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const lo = Math.min(a.x, b.x), hi = Math.max(a.x, b.x);
+      if (px < lo || px > hi || hi - lo < 1e-6) continue;
+      const yy = a.y + ((b.y - a.y) * (px - a.x)) / (b.x - a.x) + off.y;
+      if (yy <= y + 0.35 && yy > best) { best = yy; bnx = enx[i]; bny = eny[i]; }
+    }
+  }
+  out.found = best > -Infinity;
+  out.y = best; out.nx = bnx; out.ny = bny;
+  return out.found;
+}

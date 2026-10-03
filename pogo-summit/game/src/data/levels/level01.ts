@@ -56,8 +56,8 @@ export const LEVEL_01: LevelData = {
     { id: 'pad1', kind: 'bounce', x: 66.5, y: 11.5, w: 5, h: 1.6, taper: 0.8, seed: 41 },
   ],
   obstacles: [
-    { id: 'wallL', kind: 'cliff', pts: rectPoints(-11.5, 15, 5, 90), seed: 1, depth: 12 },
-    { id: 'wallR', kind: 'cliff', pts: rectPoints(82.5, 15, 5, 90), seed: 2, depth: 12 },
+    { id: 'wallL', kind: 'cliff', pts: rectPoints(-11.5, 15, 5, 90), seed: 1, depth: 7 },
+    { id: 'wallR', kind: 'cliff', pts: rectPoints(82.5, 15, 5, 90), seed: 2, depth: 7 },
     // low overhang above r3: forces a flatter, lower arc (air-control / angle lesson)
     { id: 'ceil1', kind: 'ceiling', pts: rectPoints(30.5, 39.3, 6.5, 2.2), seed: 3, depth: 6 },
   ],
@@ -67,11 +67,12 @@ export const LEVEL_01: LevelData = {
   landmarks: [
     { id: 'castle', type: 'castle', x: 34, y: 30, z: -95, scale: 1.4, seed: 5 },
     { id: 'arch', type: 'arch_bridge', x: 6, y: 26, z: -60, scale: 1.3, seed: 6 },
-    { id: 'wf1', type: 'waterfall', x: -7.5, y: 18, z: -3, scale: 1.2, seed: 7 },
-    { id: 'wf2', type: 'waterfall', x: 78, y: 30, z: -4, scale: 1, seed: 8 },
+    { id: 'wf1', type: 'waterfall', x: -34, y: 26, z: -42, scale: 1.2, seed: 7 },
+    { id: 'wf2', type: 'waterfall', x: 70, y: 40, z: -30, scale: 1.2, seed: 8 },
     { id: 'bridge', type: 'wood_bridge', x: 12, y: 8, z: -9, scale: 1, seed: 9 },
     { id: 'island1', type: 'floating_island', x: 20, y: 14, z: -14, scale: 0.9, seed: 10 },
-    { id: 'tree1', type: 'big_tree', x: -6, y: 4, z: 6, scale: 1.6, seed: 11 },
+    { id: 'tree1', type: 'big_tree', x: -26, y: -10, z: 2, scale: 1.0, seed: 11 },
+    { id: 'tree2', type: 'big_tree', x: 96, y: 4, z: 2, scale: 1.0, seed: 12 },
   ],
   hints: [
     { id: 'h_charge', x: -3, y: 2, textKey: 'hint_charge', radius: 6 },
