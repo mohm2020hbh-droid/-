@@ -15,10 +15,11 @@ import { Vfx } from './Vfx';
 import { type StyleMaterials, createStyleMaterials } from './materials';
 import { buildClouds, buildMountains, createSky, type CloudSea, type SkyView } from './atmosphere';
 import { buildRockPlatform, buildCliff } from './builders/rock';
-import { buildBouncePad, buildGoal, buildHazard, buildIcePlatform, buildWoodPlatform, glowTexture, type BouncePadView, type GoalView } from './builders/special';
-import { buildArchBridge, buildCastle, buildIsland, buildPillar, buildWaterfall, buildWoodBridge, type WaterfallView } from './builders/structures';
+import { buildBouncePad, buildGoal, buildHazard, buildIcePlatform, buildWoodPlatform, chainGeometry, glowTexture, type BouncePadView, type GoalView } from './builders/special';
+import { buildArchBridge, buildCastle, buildIsland, buildPillar, buildSupport, buildWaterfall, buildWoodBridge, type WaterfallView } from './builders/structures';
 import { bigTree } from './builders/trees';
-import { blobGeometry, col, merge, mesh, paint, xf } from './geom';
+import { SURF, col, lerpColor, merge, mesh, paint, xf } from './geom';
+import { smoothBlob, sstep } from './shapes';
 import { mulberry32, noise3, range } from './noise';
 
 export type Quality = 'high' | 'default' | 'simplified';
@@ -133,7 +134,7 @@ export class GameRenderer {
     this.level = level; this.theme = theme; this.world = world; this.cfg = cfg;
     const q = QUALITY[this.quality];
     this.mats?.dispose();
-    this.mats = createStyleMaterials(theme);
+    this.mats = createStyleMaterials(theme, this.quality !== 'simplified');
     this.scene.add(this.levelGroup);
     this.scene.fog = new THREE.FogExp2(theme.fog.color, theme.fog.density);
     this.scene.background = new THREE.Color(theme.fog.color);
@@ -213,8 +214,8 @@ export class GameRenderer {
     for (const p of allPlatforms(this.level)) {
       const col_ = world.colliders.find(c => c.id === p.id)!;
       let obj: THREE.Object3D;
-      if (p.kind === 'wood') obj = mesh(buildWoodPlatform({ ...p, depth: this.depthFor(p) }, theme), mats.smooth, true, true);
-      else if (p.kind === 'ice') obj = mesh(buildIcePlatform({ ...p, depth: this.depthFor(p) }, theme), mats.smooth, true, true);
+      if (p.kind === 'wood') obj = mesh(buildWoodPlatform({ ...p, depth: this.depthFor(p) }, theme, !!p.move), mats.smooth, true, true);
+      else if (p.kind === 'ice') obj = mesh(buildIcePlatform({ ...p, depth: this.depthFor(p) }, theme), mats.ice, true, true);
       else if (p.kind === 'bounce') {
         const view = buildBouncePad(p, theme, mats);
         this.bouncePads.set(col_.index, { view, comp: 0 });
@@ -223,6 +224,13 @@ export class GameRenderer {
         obj = mesh(buildRockPlatform({ w: p.w, h: p.h, depth: this.depthFor(p), taper: p.taper ?? 0.72, seed: p.seed ?? 1, theme, decor: p.decor ?? 'none' }), mats.smooth, true, true);
       }
       obj.name = `platform:${p.id}`;
+      // supports: rock column/root behind the play plane under natural platforms (no "blocks hanging in the void")
+      if (!p.move && (p.kind === 'rock' || p.kind === 'goal' || p.kind === 'ice')) {
+        const below = allPlatforms(this.level).filter(q => q !== p && q.y < p.y && Math.abs(q.x - p.x) < p.w / 2 + q.w / 2 + 3);
+        const reach = below.length ? Math.min(...below.map(q => p.y - q.y)) : 99;
+        const sup = buildSupport(mulberry32((p.seed ?? 1) * 131), theme, p.w, this.depthFor(p), p.h, reach, (p.seed ?? 1) + 400);
+        if (sup) { const sm = mesh(sup.geometry, mats.smooth, false, true); sm.name = `support:${p.id}`; sm.position.set(p.x, p.y, sup.z); this.levelGroup.add(sm); }
+      }
       obj.position.set(p.x, p.y, 0);
       if (p.angleDeg) obj.rotation.z = p.angleDeg * DEG;
       this.levelGroup.add(obj);
@@ -231,8 +239,9 @@ export class GameRenderer {
         if (p.kind === 'wood') {
           // hanging chains to a fixed anchor high above (the platform swings under them)
           const chains: THREE.Mesh[] = [], anchors: THREE.Vector3[] = [];
+          const chainGeo = chainGeometry(15);
           for (const sx of [-1, 1]) {
-            const m = mesh(new THREE.CylinderGeometry(0.11, 0.11, 1, 6), new THREE.MeshStandardMaterial({ color: '#b4b6c6', roughness: 0.55, metalness: 0.1 }), false, false);
+            const m = mesh(chainGeo, mats.smooth, true, false);
             this.levelGroup.add(m); chains.push(m); anchors.push(new THREE.Vector3(p.x + sx * (p.w / 2 - 0.35), p.y + 15, 0));
           }
           mv.chains = chains; mv.anchors = anchors;
@@ -336,16 +345,28 @@ export class GameRenderer {
   private buildFrameFoliage(): void {
     const { theme } = this;
     const rng = mulberry32(31);
-    const palette = theme.worldId === 'world_1' ? theme.foliage : theme.worldId === 'world_2' ? ['#26584a', '#2f6a58', '#f4f8ff'] : theme.worldId === 'world_3' ? ['#7a4a3a', '#a8663e', '#5a3a30'] : ['#241820', '#3a2430', '#5a2a2a'];
-    const mat = this.mats.leaf;
-    const add = (cx: number, cy: number, r: number, c: string, k: number) => {
-      const g = blobGeometry(r, 2, 0.3, (a, b, d) => noise3(a + k, b, d, 3));
-      const cc = col(c);
-      paint(g, (_x, y) => cc.clone().multiplyScalar(0.55 + 0.45 * Math.min(1, Math.max(0, (y / r + 1) / 2))), true);
-      const m = new THREE.Mesh(g, mat); m.position.set(cx, cy, 0); m.userData.base = [cx, cy]; m.userData.k = k; m.frustumCulled = false;
+    const palette = theme.worldId === 'world_1' ? theme.foliage : theme.worldId === 'world_2' ? ['#26584a', '#2f6a58', '#3a7a64'] : theme.worldId === 'world_3' ? ['#5f7f3a', '#7a8f45', '#4f6a30'] : ['#3a2a30', '#4a2c30', '#5a3028'];
+    const mat = this.mats.frame;
+    // each slot = a leaf cluster of several smooth clumps (dark core, lit crown) — reads as foliage, not a ball
+    const add = (r: number, c: string, k: number) => {
+      const parts: THREE.BufferGeometry[] = [];
+      const base = col(c);
+      const nC = 6;
+      for (let i = 0; i < nC; i++) {
+        const rr = r * range(rng, 0.42, 0.7);
+        const g = smoothBlob(rr, 1, 0.26, (a, b, d) => noise3(a + k * 7 + i, b, d, 3));
+        const a = (i / nC) * 6.283 + rng(), off = i === 0 ? 0 : r * range(rng, 0.35, 0.6);
+        const cx = Math.cos(a) * off, cy = Math.sin(a) * off * 0.8, cz = range(rng, -0.2, 0.2) * r;
+        xf(g, cx, cy, cz);
+        const cc = base.clone().offsetHSL(range(rng, -0.02, 0.02), 0, range(rng, -0.05, 0.05));
+        const dark = cc.clone().multiplyScalar(0.38);
+        paint(g, (x, y, z, _nx, ny) => lerpColor(dark, cc, sstep(0.2, 1.0, Math.hypot(x, y, z) / r) * 0.7 + Math.max(0, ny) * 0.35), true, SURF.FOLIAGE);
+        parts.push(g);
+      }
+      const m = new THREE.Mesh(merge(parts), mat); m.userData.k = k; m.frustumCulled = false;
       this.frameFoliage.add(m);
     };
-    for (let i = 0; i < 9; i++) add(0, 0, range(rng, 0.55, 1.1), palette[i % palette.length], i);
+    for (let i = 0; i < 9; i++) add(range(rng, 0.7, 1.15), palette[i % palette.length], i);
   }
 
   private layoutFrameFoliage(): void {

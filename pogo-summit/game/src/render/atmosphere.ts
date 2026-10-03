@@ -48,7 +48,7 @@ export function buildMountains(rng: Rng, theme: WorldTheme, minX: number, maxX: 
   const fog = col(theme.fog.color);
   theme.mountains.forEach((m, li) => {
     const span = maxX - minX + m.width * 3.6;
-    const nx = Math.round(span / 3.4), nz = 8;
+    const nx = Math.round(span / 3.0), nz = 14;
     const geo = new THREE.PlaneGeometry(span, m.width * 0.9, nx, nz);
     geo.rotateX(-Math.PI / 2);
     const p = geo.getAttribute('position') as THREE.BufferAttribute;
@@ -59,6 +59,7 @@ export function buildMountains(rng: Rng, theme: WorldTheme, minX: number, maxX: 
       const edge = 1 - Math.pow(Math.abs(z) / (m.width * 0.45), 2.0);
       p.setXYZ(i, x, m.y + peak * m.height * Math.max(0.12, edge), z);
     }
+    geo.computeVertexNormals();
     const base = col(m.color), snow = col('#f3f7ff'), shadow = base.clone().multiplyScalar(0.6).lerp(col('#5a5fb0'), 0.3);
     const haze = col(theme.fog.color), hazeAmt = 0.1 + 0.2 * li;   // baked aerial perspective: far ranges are hazier, near ranges keep their blue
     paint(geo, (x, y, z, nx_, ny, nz_) => {
@@ -69,7 +70,7 @@ export function buildMountains(rng: Rng, theme: WorldTheme, minX: number, maxX: 
       c.lerp(haze, hazeAmt * (1 - t * 0.6));                       // foot of each range dissolves into the haze
       if (m.snow && t > 0.74 && ny > 0.3) c.lerp(snow, Math.min(1, (t - 0.74) * 4.2) * (0.8 + 0.2 * lit));
       return c.multiplyScalar(0.94 + 0.12 * noise3(x * 0.1, y * 0.1, z * 0.1, li));
-    });
+    }, true);
     const skirt = new THREE.BoxGeometry(span, 420, m.width * 0.9);
     skirt.translate(0, m.y - 210 + 1.5, 0);
     solid(skirt, base.clone().multiplyScalar(0.66).lerp(haze, hazeAmt + 0.1));
@@ -118,8 +119,9 @@ export function buildClouds(rng: Rng, theme: WorldTheme, minX: number, maxX: num
   // cumulus banks along the whole climb: crisp storybook clouds below/beside every camera stop (never an empty haze, never a veil)
   const cum = cumulusTexture();
   const tanHalf = Math.tan(15 * Math.PI / 180);
-  for (const st of stops) {
-    const n = Math.max(1, Math.round(1.1 * density * theme.cloud.amount));
+  for (let si = 0; si < stops.length; si += 2) {           // every other stop: banks must frame the climb, not fill it
+    const st = stops[si];
+    const n = Math.max(1, Math.round(1.0 * density * theme.cloud.amount));
     for (let i = 0; i < n; i++) {
       // sized by angular extent (never a veil over the platform): 35-70 % of the half-frame, centred below the camera stop
       const z = -range(rng, 38, 130), H = (19 - z) * tanHalf;
@@ -127,7 +129,7 @@ export function buildClouds(rng: Rng, theme: WorldTheme, minX: number, maxX: num
       const sp = new THREE.Sprite(mat);
       const size = H * range(rng, 0.9, 1.6);
       sp.scale.set(size, size * 0.5, 1);
-      sp.position.set(st.x + range(rng, -2.1, 2.1) * H, st.y + 1.6 - H * range(rng, 0.45, 0.95), z);
+      sp.position.set(st.x + range(rng, -2.1, 2.1) * H, st.y + 1.6 - H * range(rng, 0.7, 1.15), z);
       group.add(sp);
       sprites.push({ s: sp, speed: range(rng, 0.1, 0.35), x0: sp.position.x });
     }

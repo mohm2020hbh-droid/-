@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { WorldTheme } from '../../data/worlds';
 import { type Rng, fbm3, mulberry32, noise3, pick, range } from '../noise';
-import { blobGeometry, col, lerpColor, merge, paint, solid, xf } from '../geom';
+import { SURF, blobGeometry, col, lerpColor, merge, paint, solid, withSurface, xf } from '../geom';
+import { deform, roundedBlock, smoothBlob, sstep } from '../shapes';
 
 /**
  * Rock / platform builders.  Local frame: origin = centre of the TOP surface (the collision top), +x right, −y down,
@@ -18,180 +19,241 @@ const C = (hex: string): THREE.Color => col(hex);
 
 const isTopV = (v: number): boolean => v > 0.499;
 
-/** Rock body — noisy trapezoidal prism, banded strata, darker toward the bottom. */
+/**
+ * Rock body — rounded, bevelled, tapered block with smooth normals (render/shapes.ts). Gameplay-facing x sides only ever
+ * bulge INWARD so the visual never pokes outside the collision trapezoid; camera-facing z faces and the underside are free.
+ */
 export function rockBody(o: SlabOpts): THREE.BufferGeometry {
   const { w, h, depth, taper, seed, theme } = o;
-  const sx = Math.max(2, Math.round(w / 1.3)), sy = Math.max(2, Math.round(h / 0.95)), sz = Math.max(2, Math.round(depth / 1.5));
-  const g = new THREE.BoxGeometry(1, 1, 1, sx, sy, sz);
-  const p = g.getAttribute('position') as THREE.BufferAttribute;
-  for (let i = 0; i < p.count; i++) {
-    const u = p.getX(i), v = p.getY(i), s = p.getZ(i);
-    const t = v + 0.5; // 0 bottom … 1 top
-    let x = u * w * (taper + (1 - taper) * t);
-    let y = (v - 0.5) * h;
-    if (isTopV(v)) y = -0.32; // hidden just under the cap: never coplanar with the cap top (z-fighting)
-    let z = s * depth * (0.8 + 0.2 * t);
-    const n1 = noise3(x * 0.5, y * 0.5, z * 0.5, seed), n2 = noise3(x * 0.5 + 9, y * 0.5, z * 0.5, seed + 3), n3 = noise3(x * 0.5, y * 0.5 + 9, z * 0.5, seed + 7);
-    const isTop = v > 0.499, isSideX = Math.abs(u) > 0.499, isFaceZ = Math.abs(s) > 0.499;
-    if (!isTop) y += (n2 - 0.5) * 0.55;
-    if (isSideX) x -= Math.sign(u) * n1 * 0.32; // only ever INWARD: visuals stay inside the collision silhouette
-    if (isFaceZ) z += Math.sign(s) * (n3 - 0.5) * 0.7;
-    if (!isTop && !isSideX && !isFaceZ) { x += (n1 - 0.5) * 0.3; z += (n3 - 0.5) * 0.3; }
-    if (v < -0.499) y -= n1 * 0.9; // ragged underside
-    p.setXYZ(i, x, y, z);
-  }
+  const H = h + 0.05, top = -0.22;                       // hidden just under the cap: never coplanar (z-fighting)
+  const blk = roundedBlock(w, H, depth * 0.9, Math.min(0.6, h * 0.3, w * 0.22), 0.62, 2);
+  deform(blk, (x, y, z, dx, dy, dz, out) => {
+    const t = (y + H / 2) / H;                            // 0 bottom … 1 top
+    const sc = taper + (1 - taper) * t;
+    let X = x * sc, Y = top - H / 2 + y, Z = z * (0.82 + 0.18 * t);
+    const n1 = fbm3(X * 0.42, Y * 0.42, Z * 0.42, seed, 3), n2 = noise3(X * 0.9 + 9, Y * 0.9, Z * 0.9, seed + 3);
+    // big soft bulges + TERRACED chisel (stepped plateaus ⇒ crisp horizontal ledges that catch the light)
+    const terr = Math.round((n1 - 0.5) * 5) / 5;
+    const chunk = (n1 - 0.5) * 0.35 + terr * 0.45 + (n2 - 0.5) * 0.16;
+    if (Math.abs(dx) > 0.35 && dy > -0.6) X -= Math.sign(dx) * Math.abs(chunk) * 0.55;          // inward only
+    else X += dx * chunk * 0.6;
+    Z += dz * chunk * 1.1;
+    if (dy < -0.4) Y -= (0.35 + n1 * 0.9) * Math.min(1.2, h / 3) * (-dy);                        // ragged underside
+    else Y += dy * chunk * 0.3;
+    out.set(X, Y, Z);
+  });
   const rl = C(theme.terrain.rockLight), rm = C(theme.terrain.rockMid), rd = C(theme.terrain.rockDark);
   const tmp = new THREE.Color();
-  return paint(g, (x, y, z, nx, ny, nz) => {
+  return paint(blk.geometry, (x, y, z, nx, ny, nz) => {
     const t = Math.max(0, Math.min(1, (y + h) / h)); // 0 bottom → 1 top
-    const band = Math.sin(y * 2.4 + fbm3(x * 0.3, y * 0.4, z * 0.3, seed + 5) * 5);
-    lerpColor(rd, rm, Math.pow(t, 0.75), tmp);
-    if (band > 0.55) tmp.lerp(rl, 0.35);
-    if (ny < -0.5) tmp.lerp(rd, 0.7);
-    else if (nz > 0.6) tmp.lerp(rl, 0.12 + 0.2 * t);
-    // sun-baked top edge vs shaded interior
-    tmp.multiplyScalar(0.92 + 0.16 * noise3(x * 1.1, y * 1.1, z * 1.1, seed + 11));
+    const band = Math.sin(y * 2.1 + fbm3(x * 0.3, y * 0.4, z * 0.3, seed + 5) * 5);
+    lerpColor(rd, rm, Math.pow(t, 0.7), tmp);
+    if (band > 0.45) tmp.lerp(rl, 0.32 * t + 0.1);
+    if (nz > 0.5 && t > 0.35) tmp.lerp(rl, 0.18);                       // sun-facing front
+    if (ny < -0.3) tmp.lerp(rd, 0.55);                                   // underside
+    if (y > -0.75) tmp.multiplyScalar(0.72 + 0.28 * sstep(-0.2, -0.75, y)); // contact shadow under the grass lip
+    tmp.multiplyScalar(0.9 + 0.2 * noise3(x * 1.1, y * 1.1, z * 1.1, seed + 11));
     return tmp.clone();
-  });
+  }, true);
 }
 
-/** Moss / snow / sand cap with a hanging lip. Top face is flat at y=0. */
+/** Moss / snow / sand cap: rounded slab, top EXACTLY flat at y = 0 over the collider, irregular draped lower edge. */
 export function capGeometry(o: SlabOpts): THREE.BufferGeometry {
   const { w, depth, seed, theme } = o;
-  const capT = o.capThickness ?? 0.55;
-  const ov = theme.capStyle === 'grass' ? 0.12 : 0.08;
-  const sx = Math.max(3, Math.round(w / 0.8)), sz = Math.max(2, Math.round(depth / 1.1));
-  const g = new THREE.BoxGeometry(1, 1, 1, sx, 2, sz);
-  const p = g.getAttribute('position') as THREE.BufferAttribute;
-  const W = w + ov * 2, D = depth + 0.35;
-  for (let i = 0; i < p.count; i++) {
-    const u = p.getX(i), v = p.getY(i), s = p.getZ(i);
-    let x = u * W, z = s * D;
-    let y = v > 0.001 ? 0 : v < -0.001 ? -capT : -capT * 0.5;
-    const n = noise3(x * 0.8, 0, z * 0.8, seed + 21);
-    const corner = Math.abs(u) > 0.499 && Math.abs(s) > 0.499;
-    if (corner) { x -= Math.sign(u) * 0.28; z -= Math.sign(s) * 0.28; }
-    if (v < -0.001) { y = -capT - n * 0.6 - (Math.abs(u) > 0.499 || Math.abs(s) > 0.499 ? 0.25 : 0); x *= 0.985; }
-    else if (v > -0.001 && v < 0.001) { x += Math.sign(u) * 0.07 * n; z += Math.sign(s) * 0.07 * n; } // lip bulge
-    p.setXYZ(i, x, y, z);
-  }
+  const capT = o.capThickness ?? 0.5;
+  const ov = 0.16;
+  const W = w + ov * 2, D = depth + 0.3;
+  const blk = roundedBlock(W, capT, D, Math.min(0.2, capT * 0.42), 0.6, 2);
+  deform(blk, (x, y, z, dx, dy, dz, out) => {
+    let Y = y - capT / 2, X = x, Z = z;
+    const n = fbm3(x * 0.7, 0, z * 0.7, seed + 21, 2);
+    if (dy < -0.2) Y -= (n * 0.55 + 0.05) * (0.6 + 0.4 * Math.max(Math.abs(dx), Math.abs(dz)));     // draped edge
+    else if (dy < 0.6) { X += dx * (n - 0.4) * 0.12; Z += dz * (n - 0.4) * 0.12; }                 // soft lip bulge
+    out.set(X, Y, Z);
+  });
   const A = C(theme.terrain.capA), B = C(theme.terrain.capB), D2 = C(theme.terrain.capDark), S = C(theme.terrain.soil);
   const tmp = new THREE.Color();
-  return paint(g, (x, y, z, nx, ny) => {
-    if (ny > 0.5) {
-      const n = fbm3(x * 0.55, 0, z * 0.55, seed + 31, 2);
-      lerpColor(B, A, n * 1.3 - 0.1, tmp);
-      if (noise3(x * 1.7, 3, z * 1.7, seed + 41) > 0.76) tmp.lerp(D2, 0.35); // darker moss clumps
+  return paint(blk.geometry, (x, y, z, nx, ny, nz) => {
+    if (ny > 0.55) {
+      const n = fbm3(x * 0.5, 0, z * 0.5, seed + 31, 2);
+      lerpColor(B, A, n * 1.35 - 0.12, tmp);
+      if (noise3(x * 1.5, 3, z * 1.5, seed + 41) > 0.72) tmp.lerp(D2, 0.3);       // darker clumps
+      const edge = Math.max(Math.abs(x) / (W / 2), Math.abs(z) / (D / 2));
+      tmp.lerp(A, sstep(0.82, 1, edge) * 0.35);                                     // sun-kissed rim (readable edge)
       return tmp.clone();
     }
     const t = Math.max(0, Math.min(1, (y + capT + 0.6) / (capT + 0.6)));
-    lerpColor(S, D2, 0.4 + 0.6 * t, tmp);
-    if (y > -capT * 0.45) tmp.lerp(B, 0.5);
+    lerpColor(S, D2, 0.35 + 0.65 * t, tmp);
+    if (y > -capT * 0.5) tmp.lerp(B, 0.55);
+    if (nz > 0.4 && y > -capT * 0.6) tmp.lerp(A, 0.15);
     return tmp.clone();
-  });
+  }, true);
 }
 
-/** Stalactite-like rock spikes under the platform (gives chunky floating-island silhouettes). */
-export function underSpikes(o: SlabOpts, rng: Rng): THREE.BufferGeometry[] {
-  const { w, h, depth, taper, theme } = o;
-  const n = Math.max(2, Math.round(w / 2.3));
+/** Moss / icicle drips hanging from the cap lip (front and sides) — breaks the straight edge like the reference. */
+export function capDrips(o: SlabOpts, rng: Rng): THREE.BufferGeometry[] {
+  const { w, depth, theme } = o;
   const out: THREE.BufferGeometry[] = [];
-  const rd = C(theme.terrain.rockDark), rm = C(theme.terrain.rockMid);
+  const capT = o.capThickness ?? 0.5;
+  const icy = theme.capStyle === 'snow', sandy = theme.capStyle === 'sand';
+  const a = C(theme.terrain.capB), d = C(theme.terrain.capDark);
+  const n = Math.round(w * (sandy ? 0.35 : 0.8));
   for (let i = 0; i < n; i++) {
-    const r = range(rng, 0.35, 0.8) * Math.min(1.2, 0.6 + h / 5);
-    const len = range(rng, 0.9, 2.3) * Math.min(1.5, 0.7 + h / 4);
-    const g = new THREE.ConeGeometry(r, len, 5, 1);
-    xf(g, 0, 0, 0, Math.PI, rng() * 6.28, 0);
-    const x = (i / (n - 1 || 1) - 0.5) * w * taper * 0.8 + range(rng, -0.3, 0.3);
-    const z = range(rng, -depth * 0.28, depth * 0.28);
-    xf(g, x, -h - len * 0.42, z);
-    paint(g, (_x, y, _z, ny) => lerpColor(rd, rm, Math.max(0, Math.min(1, (y + h + len) / len)) * 0.6 + (ny > 0 ? 0.1 : 0)));
+    const front = rng() < 0.8;
+    const len = range(rng, 0.35, 1.1) * (icy ? 1.2 : 1);
+    const r = range(rng, 0.1, 0.24);
+    // tapered tongue: wide where it hangs off the lip, thin at the tip (cone + noise), flush with the cap edge
+    const g = new THREE.ConeGeometry(r, len, 6, 3);
+    g.rotateX(Math.PI);
+    const pp = g.getAttribute('position') as THREE.BufferAttribute;
+    for (let k = 0; k < pp.count; k++) {
+      const yy = pp.getY(k), nn = noise3(pp.getX(k) * 4 + i, yy * 3, pp.getZ(k) * 4, 5);
+      pp.setXYZ(k, pp.getX(k) * (0.8 + nn * 0.5) + Math.sin(yy * 3 + i) * 0.04, yy, pp.getZ(k) * 0.55);
+    }
+    const x = front ? range(rng, -w / 2, w / 2) : (rng() < 0.5 ? -1 : 1) * (w / 2 + 0.12);
+    const z = front ? depth / 2 + 0.1 : range(rng, -depth / 2 + 0.5, depth / 2 - 0.2);
+    if (!front) g.rotateY(Math.PI / 2);
+    xf(g, x, -capT * 0.75 - len / 2, z);
+    paint(g, (_x, y) => lerpColor(d, a, sstep(-capT - len, -capT * 0.4, y) * 0.85), true, icy ? SURF.PLAIN : SURF.FOLIAGE);
     out.push(g);
   }
   return out;
 }
 
-/** Short grass tufts / snow lumps along the top surface. */
+/** Stalactite-like roots under the platform (chunky floating-rock silhouette). */
+export function underSpikes(o: SlabOpts, rng: Rng): THREE.BufferGeometry[] {
+  const { w, h, depth, taper, theme } = o;
+  const n = Math.max(1, Math.round(w / 3));
+  const out: THREE.BufferGeometry[] = [];
+  const rd = C(theme.terrain.rockDark), rm = C(theme.terrain.rockMid);
+  for (let i = 0; i < n; i++) {
+    const r = range(rng, 0.4, 0.85) * Math.min(1.2, 0.6 + h / 5);
+    const len = range(rng, 1.0, 2.4) * Math.min(1.5, 0.7 + h / 4);
+    const g = smoothBlob(r, 1, 0.22, (x, y, z) => noise3(x + i * 3, y, z, 13));
+    xf(g, 0, 0, 0, 0, rng() * 6.28, 0, 1, len / r * 0.55, 1);
+    const x = (n === 1 ? 0 : (i / (n - 1) - 0.5)) * w * taper * 0.7 + range(rng, -0.3, 0.3);
+    const z = range(rng, -depth * 0.2, depth * 0.15);
+    xf(g, x, -h - len * 0.25, z);
+    paint(g, (_x, y) => lerpColor(rd, rm, Math.max(0, Math.min(1, (y + h + len) / (len * 1.2))) * 0.6), true);
+    out.push(g);
+  }
+  return out;
+}
+
+/** Grass blade clusters (fans of thin blades, dark roots → bright tips), denser along the front lip. */
 export function topTufts(o: SlabOpts, rng: Rng): THREE.BufferGeometry[] {
   const { w, depth, theme } = o;
   const out: THREE.BufferGeometry[] = [];
-  const n = Math.round(w * 1.6);
+  if (theme.capStyle !== 'grass') return out;
+  const n = Math.round(w * 2.4);
   const a = C(theme.terrain.capA), b = C(theme.terrain.capB), d = C(theme.terrain.capDark);
   for (let i = 0; i < n; i++) {
-    const g = new THREE.ConeGeometry(range(rng, 0.05, 0.1), range(rng, 0.14, 0.3), 3, 1);
-    xf(g, 0, 0.1, 0, range(rng, -0.25, 0.25), rng() * 6.28, range(rng, -0.25, 0.25));
-    xf(g, range(rng, -w / 2 + 0.3, w / 2 - 0.3), 0, range(rng, 0.3, depth / 2 - 0.2));
-    const c = lerpColor(d, rng() < 0.5 ? a : b, rng());
-    solid(g, c);
-    out.push(g);
+    const cx = range(rng, -w / 2 + 0.2, w / 2 - 0.2);
+    const cz = rng() < 0.55 ? range(rng, depth / 2 - 0.5, depth / 2 + 0.05) : range(rng, -depth / 2 + 0.3, depth / 2 - 0.3);
+    const blades = 4 + Math.floor(rng() * 3);
+    const tipC = lerpColor(b, a, rng() * 0.8 + 0.2);
+    for (let k = 0; k < blades; k++) {
+      const hgt = range(rng, 0.16, 0.36);
+      const g = new THREE.ConeGeometry(range(rng, 0.025, 0.04), hgt, 3, 1);
+      xf(g, 0, hgt / 2, 0, range(rng, -0.45, 0.45), rng() * 6.28, range(rng, -0.45, 0.45), 1, 1, 0.4);
+      xf(g, cx + range(rng, -0.06, 0.06), 0, cz + range(rng, -0.06, 0.06));
+      paint(g, (_x, y) => lerpColor(d, tipC, sstep(0, hgt, y)), false, SURF.PLAIN);
+      out.push(g);
+    }
   }
   return out;
 }
 
 export function flower(rng: Rng, x: number, z: number, colors: string[], scale = 1): THREE.BufferGeometry[] {
-  const c = col(pick(rng, colors));
-  const stemH = range(rng, 0.22, 0.4) * scale;
-  const stem = xf(new THREE.CylinderGeometry(0.018, 0.022, stemH, 4), x, stemH / 2, z);
-  solid(stem, '#4d7a33');
-  const head = xf(new THREE.IcosahedronGeometry(0.09 * scale, 0), x, stemH + 0.03, z);
-  solid(head, c);
-  const center = xf(new THREE.IcosahedronGeometry(0.04 * scale, 0), x, stemH + 0.1 * scale, z);
-  solid(center, '#f6c43a');
-  return [stem, head, center];
+  return withSurface(SURF.PLAIN, () => {
+    const c = col(pick(rng, colors));
+    const stemH = range(rng, 0.22, 0.4) * scale;
+    const stem = xf(new THREE.CylinderGeometry(0.018, 0.022, stemH, 4), x, stemH / 2, z);
+    solid(stem, '#4d7a33');
+    const out = [stem];
+    // flat 5-petal disc (10 triangles): reads as a flower from the gameplay camera at a fraction of the cost
+    const head = new THREE.CircleGeometry(0.1 * scale, 10);
+    const hp = head.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 1; i < hp.count; i++) { const k = (i - 1) % 2 ? 0.45 : 1; hp.setXY(i, hp.getX(i) * k, hp.getY(i) * k); }
+    xf(head, x, stemH + 0.03, z, -Math.PI / 2 + 0.5, rng() * 6, 0);
+    out.push(solid(head, c, true));
+    out.push(solid(xf(new THREE.IcosahedronGeometry(0.035 * scale, 0), x, stemH + 0.05, z), '#f6c43a'));
+    return out;
+  });
 }
 
 export function bush(rng: Rng, theme: WorldTheme, x: number, z: number, r: number, seed: number): THREE.BufferGeometry[] {
-  const out: THREE.BufferGeometry[] = [];
-  const base = pick(rng, theme.foliage.length > 1 ? theme.foliage : ['#6c9a3a', '#4f7f34']);
-  const n = 3;
-  for (let i = 0; i < n; i++) {
-    const g = blobGeometry(r * range(rng, 0.55, 0.85), 1, 0.22, (a, b, c) => noise3(a + i * 5, b, c, seed));
-    xf(g, x + range(rng, -r * 0.6, r * 0.6), r * 0.45, z + range(rng, -r * 0.4, r * 0.4), 0, rng() * 6, 0, 1, 0.8, 1);
-    const cc = col(base);
-    const hsl = { h: 0, s: 0, l: 0 }; cc.getHSL(hsl); cc.setHSL(hsl.h + range(rng, -0.015, 0.015), hsl.s, hsl.l * range(rng, 0.88, 1.12));
-    paint(g, (_x, y) => cc.clone().multiplyScalar(0.8 + Math.min(0.35, Math.max(0, y) / r * 0.3)), true);
-    out.push(g);
-  }
-  return out;
+  return withSurface(SURF.FOLIAGE, () => {
+    const out: THREE.BufferGeometry[] = [];
+    const base = pick(rng, theme.foliage.length > 1 ? theme.foliage : ['#6c9a3a', '#4f7f34']);
+    const n = 3 + Math.floor(rng() * 2);
+    for (let i = 0; i < n; i++) {
+      const rr = r * range(rng, 0.5, 0.85);
+      const g = smoothBlob(rr, 1, 0.2, (a, b, c) => noise3(a + i * 5, b, c, seed));
+      const px = x + range(rng, -r * 0.6, r * 0.6), py = rr * 0.7, pz = z + range(rng, -r * 0.4, r * 0.4);
+      xf(g, px, py, pz, 0, rng() * 6, 0, 1, 0.82, 1);
+      const cc = col(base);
+      const hsl = { h: 0, s: 0, l: 0 }; cc.getHSL(hsl); cc.setHSL(hsl.h + range(rng, -0.015, 0.015), hsl.s, hsl.l * range(rng, 0.88, 1.12));
+      const dark = cc.clone().multiplyScalar(0.45);
+      // ambient occlusion: dark at the base / inside, sun-lit crown
+      paint(g, (_x, y, _z, _nx, ny) => lerpColor(dark, cc, sstep(0, rr * 1.4, y) * 0.75 + Math.max(0, ny) * 0.25), true);
+      out.push(g);
+    }
+    return out;
+  });
 }
 
 export function mushroom(rng: Rng, x: number, z: number, s = 1): THREE.BufferGeometry[] {
-  const stemH = 0.35 * s;
-  const stem = xf(new THREE.CylinderGeometry(0.07 * s, 0.1 * s, stemH, 6), x, stemH / 2, z); solid(stem, '#f1e2c4');
-  const cap = xf(new THREE.SphereGeometry(0.28 * s, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), x, stemH, z, 0, 0, 0, 1, 0.7, 1);
-  solid(cap, rng() < 0.5 ? '#d9402a' : '#f08a2c', true);
-  const dots: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 3; i++) {
-    const a = rng() * 6.28, r = 0.14 * s;
-    dots.push(solid(xf(new THREE.IcosahedronGeometry(0.04 * s, 0), x + Math.cos(a) * r, stemH + 0.12 * s, z + Math.sin(a) * r), '#fff3e0'));
-  }
-  return [stem, cap, ...dots];
+  return withSurface(SURF.PLAIN, () => {
+    const stemH = 0.35 * s;
+    const stem = xf(new THREE.CylinderGeometry(0.07 * s, 0.1 * s, stemH, 8), x, stemH / 2, z);
+    paint(stem, (_x, y) => lerpColor(col('#b9a07a'), col('#f4e6c8'), sstep(0, stemH, y)), true);
+    const capC = col(rng() < 0.5 ? '#d9402a' : '#f08a2c');
+    const cap = xf(new THREE.SphereGeometry(0.28 * s, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), x, stemH, z, 0, 0, 0, 1, 0.7, 1);
+    paint(cap, (_x, y) => lerpColor(capC.clone().multiplyScalar(0.7), capC, sstep(stemH, stemH + 0.18 * s, y)), true);
+    const gill = xf(new THREE.CylinderGeometry(0.27 * s, 0.1 * s, 0.03 * s, 12), x, stemH - 0.01, z); solid(gill, '#e9d3b0', true);
+    const dots: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 4; i++) {
+      const a = rng() * 6.28, rr = 0.15 * s;
+      dots.push(solid(xf(new THREE.SphereGeometry(0.035 * s, 5, 4), x + Math.cos(a) * rr, stemH + 0.13 * s, z + Math.sin(a) * rr, 0, 0, 0, 1, 0.5, 1), '#fff3e0', true));
+    }
+    return [stem, cap, gill, ...dots];
+  });
 }
 
 export function fence(theme: WorldTheme, x0: number, x1: number, z: number): THREE.BufferGeometry[] {
-  const out: THREE.BufferGeometry[] = [];
-  const wood = col(theme.terrain.wood), dark = col(theme.terrain.woodDark);
-  const n = Math.max(2, Math.round((x1 - x0) / 1.4));
-  for (let i = 0; i <= n; i++) {
-    const x = x0 + ((x1 - x0) * i) / n;
-    out.push(solid(xf(new THREE.BoxGeometry(0.16, 1.0, 0.16), x, 0.5, z), dark));
-  }
-  for (const y of [0.35, 0.72]) out.push(solid(xf(new THREE.BoxGeometry(x1 - x0, 0.12, 0.1), (x0 + x1) / 2, y, z + 0.02), wood));
-  return out;
+  return withSurface(SURF.WOOD, () => {
+    const out: THREE.BufferGeometry[] = [];
+    const wood = col(theme.terrain.wood), dark = col(theme.terrain.woodDark);
+    const n = Math.max(2, Math.round((x1 - x0) / 1.4));
+    for (let i = 0; i <= n; i++) {
+      const x = x0 + ((x1 - x0) * i) / n;
+      const b = roundedBlock(0.16, 1.0, 0.16, 0.04, 0.5, 1);
+      out.push(solid(xf(b.geometry, x, 0.5, z, 0, 0, (i % 2 ? 1 : -1) * 0.03), dark, true));
+      out.push(solid(xf(new THREE.ConeGeometry(0.11, 0.14, 4), x, 1.06, z, 0, Math.PI / 4, 0), dark));
+    }
+    for (const y of [0.35, 0.72]) { const b = roundedBlock(x1 - x0, 0.12, 0.1, 0.03, 0.8, 1); out.push(solid(xf(b.geometry, (x0 + x1) / 2, y, z + 0.06, 0, 0, (y - 0.5) * 0.02), wood, true)); }
+    return out;
+  });
 }
 
 export function signPost(theme: WorldTheme, x: number, z: number): THREE.BufferGeometry[] {
-  const wood = col(theme.terrain.wood), dark = col(theme.terrain.woodDark);
-  return [
-    solid(xf(new THREE.BoxGeometry(0.14, 1.3, 0.14), x, 0.65, z), dark),
-    solid(xf(new THREE.BoxGeometry(1.0, 0.55, 0.1), x, 1.15, z + 0.08, 0, 0, 0.06), wood),
-    solid(xf(new THREE.BoxGeometry(0.7, 0.07, 0.05), x, 1.2, z + 0.14, 0, 0, 0.06), dark),
-    solid(xf(new THREE.BoxGeometry(0.5, 0.07, 0.05), x - 0.05, 1.05, z + 0.14, 0, 0, 0.06), dark),
-  ];
+  return withSurface(SURF.WOOD, () => {
+    const wood = col(theme.terrain.wood), dark = col(theme.terrain.woodDark);
+    return [
+      solid(xf(roundedBlock(0.14, 1.3, 0.14, 0.03, 0.5, 1).geometry, x, 0.65, z), dark, true),
+      solid(xf(roundedBlock(1.0, 0.55, 0.1, 0.04, 0.5, 1).geometry, x, 1.15, z + 0.08, 0, 0, 0.06), wood, true),
+      solid(xf(new THREE.BoxGeometry(0.7, 0.07, 0.05), x, 1.2, z + 0.14, 0, 0, 0.06), dark),
+      solid(xf(new THREE.BoxGeometry(0.5, 0.07, 0.05), x - 0.05, 1.05, z + 0.14, 0, 0, 0.06), dark),
+    ];
+  });
 }
 
 /** Hanging vines with leaves from the front lip. */
 export function vines(rng: Rng, theme: WorldTheme, w: number, depth: number, n: number): THREE.BufferGeometry[] {
+  return withSurface(SURF.FOLIAGE, () => vinesImpl(rng, theme, w, depth, n));
+}
+function vinesImpl(rng: Rng, theme: WorldTheme, w: number, depth: number, n: number): THREE.BufferGeometry[] {
   const out: THREE.BufferGeometry[] = [];
   const stemC = col(theme.terrain.capDark), leafC = [col(theme.terrain.capB), col(theme.terrain.capA)];
   for (let i = 0; i < n; i++) {
@@ -211,7 +273,7 @@ export type Decor = 'none' | 'flowers' | 'bushes' | 'vines' | 'mushrooms' | 'fen
 /** Complete rock platform with optional decoration, merged into ONE geometry. */
 export function buildRockPlatform(o: SlabOpts & { decor?: Decor }): THREE.BufferGeometry {
   const rng = mulberry32(o.seed * 7919 + 13);
-  const parts: THREE.BufferGeometry[] = [rockBody(o), capGeometry(o), ...underSpikes(o, rng), ...topTufts(o, rng)];
+  const parts: THREE.BufferGeometry[] = [rockBody(o), capGeometry(o), ...capDrips(o, rng), ...underSpikes(o, rng), ...topTufts(o, rng)];
   const back = -o.depth / 2 + 0.55;
   // a few flowers on every grassy platform
   if (o.theme.capStyle === 'grass') {
@@ -239,35 +301,43 @@ export function buildRockPlatform(o: SlabOpts & { decor?: Decor }): THREE.Buffer
   return merge(parts);
 }
 
-/** Big cliff mass used for walls / ceilings. Face toward gameplay stays inside the collision silhouette. */
+/**
+ * Big cliff mass used for walls / ceilings: rounded block with eroded strata ledges on the camera-facing face, moss on
+ * ledge tops, hanging vines and the odd tree/bush clinging to the face. The gameplay-facing x faces stay FLAT (collision).
+ */
 export function buildCliff(cx: number, cy: number, w: number, h: number, depth: number, seed: number, theme: WorldTheme, mossTop: boolean): THREE.BufferGeometry {
-  // finer tessellation than the platforms: the cliff walls are the biggest surfaces on screen and must read as carved rock
-  const sx = Math.max(3, Math.round(w / 1.1)), sy = Math.max(4, Math.round(h / 1.35)), sz = Math.max(2, Math.round(depth / 1.6));
-  const g = new THREE.BoxGeometry(w, h, depth, sx, sy, sz);
-  const p = g.getAttribute('position') as THREE.BufferAttribute;
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-    const n1 = noise3(x * 0.35, y * 0.25, z * 0.35, seed), n2 = noise3(x * 0.35 + 5, y * 0.25, z * 0.35, seed + 1);
-    const ex = Math.abs(x) > w / 2 - 0.01, ez = Math.abs(z) > depth / 2 - 0.01;
-    // strata: stepped ledges every ~3.4 m with a noisy lip so the faces catch light along horizontal edges
-    const layer = Math.floor((y + 500) / 3.4), within = ((y + 500) / 3.4) - layer;
-    const ledge = (noise3(layer * 0.9, 0.5, 0.5, seed + 21) - 0.5) * 1.5 + (within > 0.82 ? 0.55 : 0) * (noise3(x * 0.5, layer, z * 0.5, seed + 22) + 0.3);
-    // the playfield-facing x faces stay flat (they are the collision surface); the camera-facing z faces carry the ledges
-    p.setXYZ(i, x + (ex ? 0 : (n1 - 0.5) * 0.9), y + (n2 - 0.5) * 0.6, z + (ez ? (n1 - 0.5) * 1.6 + ledge * (z > 0 ? 1 : -1) : (n2 - 0.5) * 0.8));
-  }
+  const blk = roundedBlock(w, h, depth, Math.min(0.9, w * 0.18, h * 0.3), 1.35, 2);
+  deform(blk, (x, y, z, dx, dy, dz, out) => {
+    const layer = Math.floor((y + 500) / 3.1), within = ((y + 500) / 3.1) - layer;
+    const ledge = (noise3(layer * 0.9, 0.5, 0.5, seed + 21) - 0.5) * 1.4 + (within > 0.82 ? 0.5 : 0) * (noise3(x * 0.5, layer, z * 0.5, seed + 22) + 0.3);
+    const n = fbm3(x * 0.3, y * 0.22, z * 0.3, seed, 3) - 0.5;
+    const sideX = Math.abs(dx) > 0.5;
+    out.set(x + (sideX ? -Math.sign(dx) * Math.abs(n) * 0.25 : dx * n * 0.8), y + dy * n * 0.5, z + dz * (n * 1.5 + ledge));
+  });
   const rl = C(theme.terrain.rockLight), rm = C(theme.terrain.rockMid), rd = C(theme.terrain.rockDark), moss = C(theme.terrain.capB), mossD = C(theme.terrain.capDark);
   const tmp = new THREE.Color();
-  paint(g, (x, y, z, nx, ny, nz) => {
-    const band = Math.sin(y * 0.9 + fbm3(x * 0.2, y * 0.25, z * 0.2, seed + 9) * 6);
-    lerpColor(rd, rm, 0.4 + 0.4 * (0.5 + 0.5 * band), tmp);
-    if (nz > 0.5 || Math.abs(nx) > 0.5) tmp.lerp(rl, 0.3 + 0.2 * noise3(x * 0.6, y * 0.6, z * 0.6, seed + 15));
-    // faces looking up (ledge tops) catch sky light: warm light tan, with a moss fringe
-    if (ny > 0.35 && !(ny > 0.5 && mossTop)) tmp.lerp(rl, 0.35);
-    if (ny > 0.5 && mossTop) tmp.copy(lerpColor(mossD, moss, fbm3(x * 0.4, 0, z * 0.4, seed + 3)));
-    else if (noise3(x * 0.7, y * 0.7, z * 0.7, seed + 12) > 0.74) tmp.lerp(moss, 0.6); // moss / vine stains
-    tmp.multiplyScalar(0.88 + 0.4 * noise3(x * 1.6, y * 1.6, z * 1.6, seed + 13));
+  paint(blk.geometry, (x, y, z, nx, ny, nz) => {
+    const band = Math.sin(y * 2.0 + fbm3(x * 0.2, y * 0.25, z * 0.2, seed + 9) * 4);
+    lerpColor(rd, rm, 0.45 + 0.3 * (0.5 + 0.5 * band), tmp);
+    if (nz > 0.5 || Math.abs(nx) > 0.5) tmp.lerp(rl, 0.25 + 0.2 * noise3(x * 0.6, y * 0.6, z * 0.6, seed + 15));
+    if (ny > 0.3) tmp.lerp(mossTop ? moss : rl, 0.55);                                    // ledge tops catch light / moss
+    if (ny > 0.6 && mossTop) tmp.copy(lerpColor(mossD, moss, fbm3(x * 0.4, 0, z * 0.4, seed + 3)));
+    else if (noise3(x * 0.7, y * 0.5, z * 0.7, seed + 12) > 0.72) tmp.lerp(moss, 0.5);      // moss / vine stains
+    if (ny < -0.4) tmp.multiplyScalar(0.7);                                                   // overhang undersides
+    tmp.multiplyScalar(0.88 + 0.3 * noise3(x * 1.6, y * 1.6, z * 1.6, seed + 13));
     return tmp.clone();
-  });
-  xf(g, cx, cy, 0);
-  return g;
+  }, true);
+  const parts: THREE.BufferGeometry[] = [blk.geometry];
+  // clinging vegetation on the camera face: bushes on ledges + hanging vines
+  const rng = mulberry32(seed * 977 + 3);
+  const nV = Math.round(h / 7);
+  for (let i = 0; i < nV; i++) {
+    const y = -h / 2 + range(rng, 1, h - 1), x = range(rng, -w / 2 + 0.4, w / 2 - 0.4);
+    const v = vines(rng, theme, 0.8, 0, 2);
+    v.forEach(g => { xf(g, x, y, depth / 2 + 0.1); parts.push(g); });
+    if (rng() < 0.6) bush(rng, theme, 0, 0, range(rng, 0.5, 0.9), seed + i).forEach(g => { xf(g, x, y - 0.2, depth / 2 - 0.3); parts.push(g); });
+  }
+  const out = merge(parts);
+  xf(out, cx, cy, 0);
+  return out;
 }

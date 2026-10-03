@@ -3,57 +3,137 @@ import type { WorldTheme } from '../../data/worlds';
 import type { HazardDef, PlatformDef } from '../../data/LevelData';
 import type { StyleMaterials } from '../materials';
 import { mulberry32, noise3, pick, range } from '../noise';
-import { blobGeometry, col, lerpColor, merge, mesh, paint, solid, xf } from '../geom';
+import { SURF, col, lerpColor, merge, mesh, paint, solid, withSurface, xf } from '../geom';
+import { deform, roundedBlock, smoothBlob, sstep } from '../shapes';
 import { type Decor, buildRockPlatform, flower } from './rock';
 
-/** Wooden plank platform (static or hanging). Top at y = 0. */
-export function buildWoodPlatform(p: PlatformDef, theme: WorldTheme): THREE.BufferGeometry {
+/**
+ * Platform types with a unique, readable identity each (visual upgrade):
+ *   wood    bevelled planks, nails, cross beams, rope trim (+ posts when static; chain hooks when hanging)
+ *   ice     faceted glossy crystal slab with frosted top (own glossy material, flat shading)
+ *   bounce  cushion with polka dots + rim, twin helix springs on a stone/wood pedestal
+ *   hazard  faceted glowing crystal shards on a rock base
+ *   goal    banner pole on a plinth with a light pillar
+ * Local frame: origin = top-centre of the collider; the walkable top is EXACTLY y = 0.
+ */
+
+/** Bevelled plank deck (static or hanging). Top at y = 0. */
+export function buildWoodPlatform(p: PlatformDef & { depth: number }, theme: WorldTheme, hanging = false): THREE.BufferGeometry {
   const rng = mulberry32((p.seed ?? 1) * 31 + 7);
-  const depth = p.depth ?? 2.8;
-  const { w, h } = p;
+  const { w, h, depth } = p;
   const wood = col(theme.terrain.wood), dark = col(theme.terrain.woodDark);
   const parts: THREE.BufferGeometry[] = [];
-  const nPl = Math.max(4, Math.round(w / 0.55));
-  const plankW = w / nPl;
-  for (let i = 0; i < nPl; i++) {
-    const g = new THREE.BoxGeometry(plankW * 0.94, h * 0.55, depth, 1, 1, 1);
-    xf(g, -w / 2 + plankW * (i + 0.5), -h * 0.275, 0);
-    const c = lerpColor(wood, dark, range(rng, 0.0, 0.35));
-    paint(g, (_x, _y, _z, _nx, ny) => (ny > 0.5 ? c.clone().multiplyScalar(1.1) : c.clone().multiplyScalar(0.92)));
-    out(parts, g);
-  }
-  // under-beams
-  for (const x of [-w / 2 + 0.5, w / 2 - 0.5]) {
-    const g = new THREE.BoxGeometry(0.34, h * 0.55, depth * 1.06);
-    xf(g, x, -h * 0.78, 0); solid(g, dark); parts.push(g);
-  }
-  const rail = new THREE.BoxGeometry(w * 0.94, h * 0.18, 0.28); xf(rail, 0, -h * 0.78, depth / 2 + 0.04); solid(rail, dark); parts.push(rail);
-  // iron corner rings
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const r = new THREE.TorusGeometry(0.13, 0.04, 5, 8); xf(r, sx * (w / 2 - 0.35), 0.06, sz * (depth / 2 - 0.3), Math.PI / 2, 0, 0); solid(r, '#4a4a55'); parts.push(r);
-  }
+  const plankT = Math.min(0.3, h * 0.35);
+  withSurface(SURF.WOOD, () => {
+    const nPl = Math.max(4, Math.round(w / 0.5));
+    const plankW = w / nPl;
+    for (let i = 0; i < nPl; i++) {
+      const b = roundedBlock(plankW * 0.93, plankT, depth * range(rng, 0.96, 1.02), 0.05, 0.6, 1);
+      const g = b.geometry;
+      xf(g, -w / 2 + plankW * (i + 0.5), -plankT / 2, range(rng, -0.05, 0.05), 0, range(rng, -0.012, 0.012), 0);
+      const c = lerpColor(wood, dark, range(rng, 0.0, 0.3)).offsetHSL(range(rng, -0.01, 0.01), 0, range(rng, -0.03, 0.03));
+      paint(g, (_x, y, _z, _nx, ny) => (ny > 0.6 ? c.clone().multiplyScalar(1.08) : c.clone().multiplyScalar(0.8 + 0.2 * sstep(-plankT, 0, y))), true);
+      parts.push(g);
+    }
+    // cross beams (front + back) and two stringers underneath
+    for (const z of [depth / 2 - 0.25, -depth / 2 + 0.25]) {
+      const b = roundedBlock(w * 0.98, 0.22, 0.24, 0.06, 0.8, 1).geometry;
+      xf(b, 0, -plankT - 0.11, z); paint(b, () => dark.clone().multiplyScalar(0.95), true); parts.push(b);
+    }
+    for (const x of [-w / 2 + 0.55, w / 2 - 0.55]) {
+      const b = roundedBlock(0.26, 0.3, depth * 1.04, 0.06, 0.8, 1).geometry;
+      xf(b, x, -plankT - 0.3, 0); paint(b, () => dark.clone().multiplyScalar(0.8), true); parts.push(b);
+    }
+    // static decks stand on two log posts that go down behind the play plane
+    if (!hanging) {
+      for (const x of [-w / 2 + 0.6, w / 2 - 0.6]) {
+        const post = new THREE.CylinderGeometry(0.17, 0.22, 9, 7, 1);
+        xf(post, x, -plankT - 4.6, -depth / 2 + 0.25, range(rng, -0.04, 0.04), 0, range(rng, -0.05, 0.05));
+        paint(post, (_x, y) => lerpColor(dark.clone().multiplyScalar(0.5), dark, sstep(-9, -0.5, y)), true);
+        parts.push(post);
+      }
+      const brace = new THREE.CylinderGeometry(0.09, 0.09, Math.hypot(w - 1.2, 3), 5);
+      xf(brace, 0, -plankT - 2.2, -depth / 2 + 0.2, 0, 0, Math.atan2(w - 1.2, 3) * (rng() < 0.5 ? 1 : -1));
+      paint(brace, () => dark.clone().multiplyScalar(0.75), true); parts.push(brace);
+    }
+  });
+  withSurface(SURF.PLAIN, () => {
+    // rope trim along the front edge + nails
+    const rope = new THREE.CylinderGeometry(0.045, 0.045, w * 0.98, 6); xf(rope, 0, -plankT * 0.55, depth / 2 + 0.04, 0, 0, Math.PI / 2);
+    solid(rope, '#cdb58a', true); parts.push(rope);
+    const nPl = Math.max(4, Math.round(w / 0.5));
+    for (let i = 0; i < nPl; i++) for (const z of [depth / 2 - 0.25, -depth / 2 + 0.25]) {
+      const nail = new THREE.CylinderGeometry(0.035, 0.035, 0.02, 5); xf(nail, -w / 2 + (w / nPl) * (i + 0.5), 0.005, z);
+      solid(nail, '#4a4650', true); parts.push(nail);
+    }
+    if (hanging) for (const sx of [-1, 1]) {   // iron hooks where the chains attach
+      const hook = new THREE.TorusGeometry(0.16, 0.05, 6, 10); xf(hook, sx * (w / 2 - 0.35), 0.12, 0, 0, 0, 0);
+      solid(hook, '#6c6a78', true); parts.push(hook);
+      const plate = roundedBlock(0.5, 0.06, 0.5, 0.02, 0.5, 1).geometry; xf(plate, sx * (w / 2 - 0.35), 0.01, 0);
+      solid(plate, '#55535f', true); parts.push(plate);
+    }
+  });
   return merge(parts);
 }
-const out = (arr: THREE.BufferGeometry[], g: THREE.BufferGeometry): void => { arr.push(g); };
 
-/** Ice slab with crystals. */
-export function buildIcePlatform(p: PlatformDef, theme: WorldTheme): THREE.BufferGeometry {
-  const t = theme.terrain;
-  const iceTheme: WorldTheme = {
-    ...theme, capStyle: 'snow',
-    terrain: { ...t, rockLight: '#eaf8ff', rockMid: '#a6dcf5', rockDark: '#4f8fd0', capA: '#f7fcff', capB: '#d8f0fc', capDark: '#9fd2f0', soil: '#7fb9e2' },
-  };
+/** Chain of interlocking links spanning y ∈ [−0.5, 0.5] at rest length `len` (scaled along y by the length at runtime). */
+export function chainGeometry(len: number): THREE.BufferGeometry {
+  const linkL = 0.34, n = Math.max(4, Math.round(len / linkL));
+  const parts: THREE.BufferGeometry[] = [];
+  withSurface(SURF.PLAIN, () => {
+    for (let i = 0; i < n; i++) {
+      const g = new THREE.TorusGeometry(0.11, 0.035, 5, 8);
+      xf(g, 0, 0, 0, 0, i % 2 ? Math.PI / 2 : 0, 0, 1, 1.7, 1);
+      xf(g, 0, (i + 0.5) / n - 0.5, 0, 0, 0, 0, 1, 1 / len, 1);
+      solid(g, i % 2 ? '#7b7a88' : '#8c8b99', true);
+      parts.push(g);
+    }
+  });
+  return merge(parts);
+}
+
+/** Faceted glossy ice slab with a frosted top and a few crystal shards. Uses the flat-shaded glossy ice material. */
+export function buildIcePlatform(p: PlatformDef & { depth: number }, theme: WorldTheme): THREE.BufferGeometry {
   const rng = mulberry32((p.seed ?? 3) * 17 + 5);
-  const base = buildRockPlatform({ w: p.w, h: p.h, depth: p.depth ?? 4.2, taper: p.taper ?? 0.8, seed: p.seed ?? 3, theme: iceTheme, decor: 'none' });
-  const parts: THREE.BufferGeometry[] = [base];
-  const n = Math.round(p.w / 1.6);
-  for (let i = 0; i < n; i++) {
-    const hh = range(rng, 0.5, 1.5), rr = range(rng, 0.14, 0.3);
-    const g = new THREE.ConeGeometry(rr, hh, 5, 1);
-    xf(g, range(rng, -p.w / 2 + 0.6, p.w / 2 - 0.6), hh / 2, range(rng, -1.4, -0.4), range(rng, -0.2, 0.2), rng() * 6, range(rng, -0.2, 0.2));
-    paint(g, (_x, y) => lerpColor(col('#8fd2f6'), col('#f4fcff'), Math.min(1, y / hh)));
+  const { w, h, depth } = p;
+  const taper = p.taper ?? 0.8;
+  const t = theme.terrain;
+  const style = theme.worldId === 'world_3' ? 'tile' : theme.worldId === 'world_4' ? 'obsidian' : 'ice';
+  const deep = col(style === 'obsidian' ? '#1d1426' : style === 'tile' ? '#1f6f78' : '#245aa8');
+  const mid = col(style === 'obsidian' ? '#3a2a4a' : style === 'tile' ? '#3fb6b0' : '#56b2ea');
+  void t;
+  const frost = col(style === 'obsidian' ? '#6a4a7a' : style === 'tile' ? '#e8f4ee' : '#d6f0ff');
+  const parts: THREE.BufferGeometry[] = [];
+  withSurface(SURF.PLAIN, () => {
+    const blk = roundedBlock(w, h + 0.1, depth, 0.25, 0.9, 1);
+    deform(blk, (x, y, z, dx, dy, dz, out) => {
+      const tt = (y + (h + 0.1) / 2) / (h + 0.1);
+      let X = x * (taper + (1 - taper) * tt), Y = y - (h + 0.1) / 2 + 0.0, Z = z * (0.85 + 0.15 * tt);
+      const n = noise3(x * 0.8, y * 0.8, z * 0.8, p.seed ?? 3) - 0.5;
+      if (dy > 0.9) Y = 0;                                                      // walkable top exactly flat
+      else if (Math.abs(dx) > 0.4) X -= Math.sign(dx) * Math.abs(n) * 0.35;    // inward only
+      else { Z += dz * n * 0.6; if (dy < -0.4) Y -= (0.3 + (n + 0.5) * 1.2) * Math.min(1, h / 2.5); }
+      out.set(X, Y, Z);
+    });
+    const g = blk.geometry.toNonIndexed(); g.computeVertexNormals();          // facets: crystal look
+    paint(g, (x, y, z, nx, ny) => {
+      if (ny > 0.85) return lerpColor(mid, frost, 0.35 + 0.35 * noise3(x * 1.6, 0, z * 1.6, 9));
+      const k = sstep(-h - 0.8, 0, y);
+      const c = lerpColor(deep, mid, k);
+      if (noise3(x * 1.4, y * 1.4, z * 1.4, 21) > 0.68) c.lerp(frost, 0.45);   // internal veins
+      if (y > -0.25) c.lerp(frost, 0.35);
+      return c;
+    });
     parts.push(g);
-  }
+    const n = Math.round(w / 1.6);
+    for (let i = 0; i < n; i++) {
+      const hh = range(rng, 0.5, 1.4), rr = range(rng, 0.12, 0.26);
+      const s = new THREE.CylinderGeometry(0, rr, hh, 6, 1);
+      xf(s, range(rng, -w / 2 + 0.6, w / 2 - 0.6), hh / 2 - 0.05, range(rng, -depth / 2 + 0.3, -depth / 2 + 1.0), range(rng, -0.25, 0.25), rng() * 6, range(rng, -0.25, 0.25));
+      paint(s, (_x, y) => lerpColor(mid, frost, sstep(0, hh, y)));
+      parts.push(s);
+    }
+  });
   return merge(parts);
 }
 
@@ -63,67 +143,104 @@ export interface BouncePadView {
   setCompression(c: number): void;
 }
 
+/** Helix spring (TubeGeometry along a helix), height 1 at rest, scaled on y for compression. */
+function springGeometry(r: number, turns: number, wire: number, color: string): THREE.BufferGeometry {
+  const pts: THREE.Vector3[] = [];
+  const N = turns * 16;
+  for (let i = 0; i <= N; i++) { const t = i / N, a = t * turns * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * r, t, Math.sin(a) * r)); }
+  const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N, wire, 5, false);
+  return withSurface(SURF.PLAIN, () => paint(g, (_x, y) => lerpColor(col(color).multiplyScalar(0.7), col(color), 0.5 + 0.5 * Math.sin(y * 30)), true));
+}
+
 export function buildBouncePad(p: PlatformDef, theme: WorldTheme, mats: StyleMaterials): BouncePadView {
   const g = new THREE.Group();
   const T = theme.terrain;
   const top = new THREE.Group();
   const r = p.w / 2;
-  const topDisc = xf(new THREE.CylinderGeometry(r, r * 0.96, 0.28, 14), 0, -0.14, 0);
-  paint(topDisc, (_x, _y, _z, _nx, ny) => (ny > 0.5 ? col(T.bounceTop).multiplyScalar(1.05) : col(T.bounceTop).multiplyScalar(0.62)));
-  const ring = xf(new THREE.TorusGeometry(r * 0.82, 0.045, 5, 18), 0, 0.01, 0, Math.PI / 2, 0, 0); solid(ring, '#ffe08a');
-  const dots = [0, 1, 2, 3, 4, 5].map(i => solid(xf(new THREE.IcosahedronGeometry(0.07, 0), Math.cos(i * 1.047) * r * 0.55, 0.02, Math.sin(i * 1.047) * r * 0.55), '#fff2c0'));
-  top.add(mesh(merge([topDisc, ring, ...dots]), mats.flat, true));
-  g.add(top);
-  const baseH = 0.32;
-  const base = xf(new THREE.CylinderGeometry(r * 0.96, r * 1.04, baseH, 14), 0, -p.h + baseH / 2, 0);
-  paint(base, () => col(T.bounceTop).multiplyScalar(0.5));
-  g.add(mesh(merge([base]), mats.flat, true));
-  const coilGeo = merge([solid(new THREE.TorusGeometry(0.46, 0.07, 5, 12), T.bounceCoil)]);
-  const rings: THREE.Mesh[] = [];
-  const coilTop = -0.28, coilBot = -p.h + baseH;
-  const N = 6;
-  for (const sx of [-0.46, 0.46]) {
-    for (let i = 0; i < N; i++) {
-      const m = mesh(coilGeo, mats.flat, true, true);
-      m.rotation.x = Math.PI / 2; m.scale.setScalar(p.w / 5.2 * 0.95);
-      m.position.x = sx * p.w / 5.2 * 1.9;
-      g.add(m); rings.push(m);
+  const topC = col(T.bounceTop);
+  const pad = withSurface(SURF.PLAIN, () => {
+    // cushion: flat walkable top, puffy rounded rim, polka dots
+    const cushion = new THREE.CylinderGeometry(r, r * 0.94, 0.5, 28, 2);
+    const cp = cushion.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < cp.count; i++) {
+      const x = cp.getX(i), y = cp.getY(i), z = cp.getZ(i), rr = Math.hypot(x, z) / r;
+      const bulge = y > -0.01 && y < 0.01 ? 1.04 : 1;
+      cp.setXYZ(i, x * bulge, y - 0.25 - (y > 0.24 ? 0 : 0) - (rr > 0.97 && y > 0.24 ? 0.04 : 0), z * bulge);
     }
+    cushion.computeVertexNormals();
+    paint(cushion, (_x, y, _z, _nx, ny) => (ny > 0.6 ? topC.clone().multiplyScalar(1.05) : topC.clone().multiplyScalar(0.62 + 0.3 * sstep(-0.5, 0, y))), true);
+    const rim = xf(new THREE.TorusGeometry(r * 0.97, 0.11, 8, 32), 0, -0.08, 0, Math.PI / 2, 0, 0);
+    solid(rim, '#ffd84a', true);
+    const ring = xf(new THREE.TorusGeometry(r * 0.55, 0.05, 5, 24), 0, 0.005, 0, Math.PI / 2, 0, 0, 1, 1, 0.3);
+    solid(ring, '#fff2c0', true);
+    const dots: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 8; i++) {
+      const a = i * (Math.PI / 4) + 0.3, rr = r * (i % 2 ? 0.75 : 0.3);
+      dots.push(solid(xf(new THREE.CylinderGeometry(0.16, 0.16, 0.02, 10), Math.cos(a) * rr, 0.004, Math.sin(a) * rr), '#ffe9a8', true));
+    }
+    return merge([cushion, rim, ring, ...dots]);
+  });
+  const pm = mesh(pad, mats.smooth, true, true);
+  top.add(pm);
+  g.add(top);
+  // pedestal: stone ring + wooden board under the springs
+  const baseH = 0.4;
+  const base = withSurface(SURF.NATURAL, () => {
+    const b = roundedBlock(p.w * 0.9, baseH, p.w * 0.55, 0.12, 0.6, 2).geometry;
+    xf(b, 0, -p.h + baseH / 2, 0);
+    paint(b, (_x, y) => lerpColor(col(T.rockDark), col(T.rockMid), sstep(-p.h, -p.h + baseH, y)), true);
+    const stump = new THREE.CylinderGeometry(p.w * 0.36, p.w * 0.18, 3.2, 10, 3);
+    xf(stump, 0, -p.h - 1.6, -0.4);
+    paint(stump, (_x, y) => lerpColor(col(T.rockDark).multiplyScalar(0.7), col(T.rockMid), sstep(-p.h - 3.2, -p.h, y) * 0.8), true);
+    return merge([b, stump]);
+  });
+  g.add(mesh(base, mats.smooth, true, true));
+  const coilTop = -0.42, coilBot = -p.h + baseH;
+  const springs: THREE.Mesh[] = [];
+  const sg = springGeometry(0.42, 6, 0.055, T.bounceCoil);
+  for (const sx of [-1, 1]) {
+    const m = mesh(sg, mats.smooth, true, false);
+    m.position.set(sx * r * 0.45, coilBot, 0);
+    g.add(m); springs.push(m);
   }
   const setCompression = (c: number): void => {
     const span = coilTop - coilBot;
-    const k = 1 - c * 0.62;
+    const k = 1 - c * 0.6;
     top.position.y = -(1 - k) * span;
-    let idx = 0;
-    for (const _sx of [0, 1]) for (let i = 0; i < N; i++) { rings[idx++].position.y = coilBot + (span * k) * (i + 0.5) / N; }
+    for (const s of springs) s.scale.y = span * k;
   };
   setCompression(0);
   return { group: g, setCompression };
 }
 
-/** Red crystal cluster on pink rock — the "Hazard" surface from the reference. */
+/** Hazard: faceted glowing shards on a rock base (shape varies per world: crystals, ice spikes, bronze spears, obsidian). */
 export function buildHazard(h: HazardDef, theme: WorldTheme): THREE.BufferGeometry {
   const rng = mulberry32(h.id.length * 977 + Math.round(h.x * 13));
   const parts: THREE.BufferGeometry[] = [];
   const T = theme.terrain;
-  const n = Math.max(5, Math.round(h.w * 2.6));
-  for (let i = 0; i < n; i++) {
-    const f = i / (n - 1) - 0.5;
-    const hh = h.h * range(rng, 0.55, 1.05) * (1 - Math.abs(f) * 0.5);
-    const rr = range(rng, 0.13, 0.24);
-    const g = new THREE.ConeGeometry(rr, hh, 5, 1);
-    xf(g, f * h.w * 0.9, hh / 2, range(rng, -0.7, 0.7), range(rng, -0.15, 0.15), rng() * 6, range(rng, -0.2, 0.2));
-    const c = col(T.hazardCrystal), tip = col('#ff9a8a');
-    paint(g, (_x, y) => lerpColor(c.clone().multiplyScalar(0.7), tip, Math.min(1, Math.max(0, y / h.h)) * 0.7 + 0.1));
-    parts.push(g);
-  }
-  // pink rock base lumps
-  for (let i = 0; i < 4; i++) {
-    const b = blobGeometry(range(rng, 0.3, 0.55), 0, 0.3, (a, bb, c) => noise3(a + i, bb, c, 3));
-    xf(b, range(rng, -h.w / 2, h.w / 2), 0.1, range(rng, -0.8, 0.8), 0, rng() * 6, 0, 1, 0.55, 1);
-    paint(b, () => col(T.hazardRock).multiplyScalar(range(rng, 0.8, 1.05)), true);
-    parts.push(b);
-  }
+  const metal = theme.worldId === 'world_3';
+  withSurface(SURF.PLAIN, () => {
+    const n = Math.max(5, Math.round(h.w * 2.6));
+    for (let i = 0; i < n; i++) {
+      const f = i / (n - 1) - 0.5;
+      const hh = h.h * range(rng, 0.6, 1.1) * (1 - Math.abs(f) * 0.45);
+      const rr = metal ? range(rng, 0.05, 0.08) : range(rng, 0.13, 0.26);
+      const g = new THREE.CylinderGeometry(0, rr, hh, metal ? 4 : 6, 1);
+      xf(g, f * h.w * 0.9, hh / 2, range(rng, -0.7, 0.7), range(rng, -0.18, 0.18), rng() * 6, range(rng, -0.25, 0.25));
+      const c = col(T.hazardCrystal), tip = c.clone().lerp(new THREE.Color('#ffffff'), 0.55);
+      const gg = g.toNonIndexed(); gg.computeVertexNormals();
+      paint(gg, (_x, y) => lerpColor(c.clone().multiplyScalar(0.55), tip, sstep(0, h.h, y) * 0.9));
+      parts.push(gg);
+    }
+  });
+  withSurface(SURF.NATURAL, () => {
+    for (let i = 0; i < 5; i++) {
+      const b = smoothBlob(range(rng, 0.3, 0.55), 1, 0.3, (a, bb, c) => noise3(a + i, bb, c, 3));
+      xf(b, range(rng, -h.w / 2, h.w / 2), 0.08, range(rng, -0.8, 0.8), 0, rng() * 6, 0, 1, 0.5, 1);
+      paint(b, (_x, y) => col(T.hazardRock).multiplyScalar(0.7 + 0.35 * sstep(-0.1, 0.25, y)), true);
+      parts.push(b);
+    }
+  });
   return merge(parts);
 }
 
@@ -132,18 +249,28 @@ export interface GoalView { group: THREE.Group; update(t: number): void }
 export function buildGoal(x: number, y: number, theme: WorldTheme, mats: StyleMaterials): GoalView {
   const g = new THREE.Group();
   g.position.set(x, y, 0);
-  const pole = solid(xf(new THREE.CylinderGeometry(0.07, 0.09, 4.4, 6), 0, 2.2, 0), '#e8e0d0');
-  const knob = solid(xf(new THREE.IcosahedronGeometry(0.16, 1), 0, 4.5, 0), '#f6c43a', true);
-  g.add(mesh(merge([pole, knob]), mats.flat, true));
+  const body = withSurface(SURF.PLAIN, () => {
+    const pole = xf(new THREE.CylinderGeometry(0.075, 0.095, 4.4, 10), 0, 2.2, 0);
+    paint(pole, (_x, yy) => lerpColor(col('#b9b0a0'), col('#f2ece0'), sstep(0, 4.4, yy)), true);
+    const knob = xf(new THREE.SphereGeometry(0.17, 12, 8), 0, 4.52, 0); solid(knob, '#f6c43a', true);
+    const collar = xf(new THREE.CylinderGeometry(0.13, 0.13, 0.12, 10), 0, 0.5, 0); solid(collar, '#f6c43a', true);
+    return merge([pole, knob, collar]);
+  });
+  const plinth = withSurface(SURF.NATURAL, () => {
+    const b = roundedBlock(1.1, 0.45, 1.1, 0.12, 0.5, 2).geometry; xf(b, 0, 0.2, 0);
+    paint(b, (_x, yy, _z, _nx, ny) => col(theme.terrain.stone).multiplyScalar(ny > 0.5 ? 1.05 : 0.8 + 0.2 * sstep(0, 0.45, yy)), true);
+    return b;
+  });
+  g.add(mesh(merge([body, plinth]), mats.smooth, true));
   // cloth with per-frame wave
-  const cloth = new THREE.PlaneGeometry(1.9, 1.15, 10, 4);
+  const cloth = new THREE.PlaneGeometry(1.9, 1.15, 12, 5);
   const cp = cloth.getAttribute('position') as THREE.BufferAttribute;
   const base = cp.array.slice() as Float32Array;
   const colors = new Float32Array(cp.count * 3);
-  const a = col('#ff8a2c'), b = col('#ffd14a');
-  for (let i = 0; i < cp.count; i++) { const c = lerpColor(a, b, (base[i * 3] + 0.95) / 1.9 * 0.6); colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; }
+  const a = col('#ff7a1c'), b = col('#ffd14a');
+  for (let i = 0; i < cp.count; i++) { const c = lerpColor(a, b, (base[i * 3] + 0.95) / 1.9 * 0.6); if (Math.abs(base[i * 3 + 1]) > 0.48) c.multiplyScalar(0.8); colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; }
   cloth.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const clothMesh = new THREE.Mesh(cloth, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.8 }));
+  const clothMesh = new THREE.Mesh(cloth, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.75 }));
   clothMesh.position.set(1.0, 3.75, 0);
   clothMesh.castShadow = true;
   g.add(clothMesh);
@@ -151,19 +278,23 @@ export function buildGoal(x: number, y: number, theme: WorldTheme, mats: StyleMa
   const starShape = new THREE.Shape();
   for (let i = 0; i < 10; i++) { const r = i % 2 === 0 ? 0.36 : 0.15, an = Math.PI / 2 + (i * Math.PI) / 5; (i === 0 ? starShape.moveTo : starShape.lineTo).call(starShape, Math.cos(an) * r, Math.sin(an) * r); }
   starShape.closePath();
-  const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 1 });
+  const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2 });
   starGeo.translate(0, 0, -0.06);
-  const star = new THREE.Mesh(starGeo, new THREE.MeshStandardMaterial({ color: '#ffd24a', emissive: '#ff9a1a', emissiveIntensity: 0.6, roughness: 0.4, metalness: 0.2 }));
+  const starMat = new THREE.MeshStandardMaterial({ color: '#ffd24a', emissive: '#ff9a1a', emissiveIntensity: 0.65, roughness: 0.35, metalness: 0.25 });
+  const star = new THREE.Mesh(starGeo, starMat);
   star.position.set(1.0, 3.75, 0.08);
-  star.scale.setScalar(1.0);
   g.add(star);
-  const floating = new THREE.Mesh(starGeo, star.material);
+  const floating = new THREE.Mesh(starGeo, starMat);
   floating.position.set(-1.8, 2.3, 0.4);
   floating.scale.setScalar(1.3);
   g.add(floating);
   const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('#ffd36a'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.8 }));
   halo.scale.set(3.2, 3.2, 1); halo.position.copy(floating.position);
   g.add(halo);
+  // soft light pillar marking the finish (additive, camera-facing quad)
+  const beam = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 9), new THREE.MeshBasicMaterial({ map: beamTexture(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.45, color: '#ffe7a0' }));
+  beam.position.set(0, 4.5, -0.6);
+  g.add(beam);
   const update = (t: number): void => {
     for (let i = 0; i < cp.count; i++) {
       const bx = base[i * 3], by = base[i * 3 + 1];
@@ -175,6 +306,7 @@ export function buildGoal(x: number, y: number, theme: WorldTheme, mats: StyleMa
     floating.rotation.y = t * 1.6; star.rotation.y = Math.sin(t * 1.3) * 0.3;
     floating.position.y = 2.3 + Math.sin(t * 2.1) * 0.15; halo.position.y = floating.position.y;
     halo.material.opacity = 0.65 + Math.sin(t * 3) * 0.15;
+    (beam.material as THREE.MeshBasicMaterial).opacity = 0.35 + Math.sin(t * 1.7) * 0.08;
   };
   return { group: g, update };
 }
@@ -194,5 +326,21 @@ export function glowTexture(color: string): THREE.Texture {
   return t;
 }
 
-export { pick, flower };
+let _beam: THREE.Texture | null = null;
+function beamTexture(): THREE.Texture {
+  if (_beam) return _beam;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+  const x = c.getContext('2d')!;
+  const gh = x.createLinearGradient(0, 0, 64, 0);
+  gh.addColorStop(0, 'rgba(255,255,255,0)'); gh.addColorStop(0.5, 'rgba(255,255,255,1)'); gh.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = gh; x.fillRect(0, 0, 64, 128);
+  x.globalCompositeOperation = 'destination-in';
+  const gv = x.createLinearGradient(0, 0, 0, 128);
+  gv.addColorStop(0, 'rgba(0,0,0,0)'); gv.addColorStop(0.7, 'rgba(0,0,0,0.8)'); gv.addColorStop(1, 'rgba(0,0,0,1)');
+  x.fillStyle = gv; x.fillRect(0, 0, 64, 128);
+  _beam = new THREE.CanvasTexture(c); _beam.colorSpace = THREE.SRGBColorSpace;
+  return _beam;
+}
+
+export { pick, flower, buildRockPlatform };
 export type { Decor };

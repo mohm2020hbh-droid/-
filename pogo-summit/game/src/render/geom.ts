@@ -23,8 +23,17 @@ export function xf(g: THREE.BufferGeometry, px = 0, py = 0, pz = 0, rx = 0, ry =
 
 export type ColorFn = (x: number, y: number, z: number, nx: number, ny: number, nz: number, face: number) => THREE.Color;
 
-/** Convert to non-indexed, recompute (flat) normals and paint a colour per face. */
-export function paint(g: THREE.BufferGeometry, fn: ColorFn, smoothNormals = false): THREE.BufferGeometry {
+/**
+ * Surface type stored in the vertex-colour ALPHA (read by render/surface.ts):
+ *   NATURAL rock on sides / grass on tops · FOLIAGE clumpy leaves · WOOD stretched grain · PLAIN no detail (flowers, paint, metal).
+ */
+export const SURF = { NATURAL: 1, FOLIAGE: 0.9, WOOD: 0.6, PLAIN: 0.2 } as const;
+let _surf: number = SURF.NATURAL;
+/** Run `fn` with every paint()/solid() inside it tagged with surface type `t`. */
+export function withSurface<T>(t: number, fn: () => T): T { const prev = _surf; _surf = t; try { return fn(); } finally { _surf = prev; } }
+
+/** Convert to non-indexed, recompute (flat) normals and paint a colour per face. Colours are RGBA (A = surface type). */
+export function paint(g: THREE.BufferGeometry, fn: ColorFn, smoothNormals = false, surface: number = _surf): THREE.BufferGeometry {
   const geo = g;
   if (!smoothNormals) {
     if (g.index) { // flat shading needs unshared vertices — convert IN PLACE so callers that ignore the return value still work
@@ -40,11 +49,11 @@ export function paint(g: THREE.BufferGeometry, fn: ColorFn, smoothNormals = fals
   }
   const pos = geo.getAttribute('position') as THREE.BufferAttribute;
   const nor = geo.getAttribute('normal') as THREE.BufferAttribute;
-  const colors = new Float32Array(pos.count * 3);
+  const colors = new Float32Array(pos.count * 4);
   if (smoothNormals) {
     for (let i = 0; i < pos.count; i++) {
       const c = fn(pos.getX(i), pos.getY(i), pos.getZ(i), nor.getX(i), nor.getY(i), nor.getZ(i), i);
-      colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
+      colors[i * 4] = c.r; colors[i * 4 + 1] = c.g; colors[i * 4 + 2] = c.b; colors[i * 4 + 3] = surface;
     }
   } else {
     for (let i = 0; i < pos.count; i += 3) {
@@ -52,16 +61,16 @@ export function paint(g: THREE.BufferGeometry, fn: ColorFn, smoothNormals = fals
       const cy = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3;
       const cz = (pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)) / 3;
       const c = fn(cx, cy, cz, nor.getX(i), nor.getY(i), nor.getZ(i), i / 3);
-      for (let k = 0; k < 3; k++) { colors[(i + k) * 3] = c.r; colors[(i + k) * 3 + 1] = c.g; colors[(i + k) * 3 + 2] = c.b; }
+      for (let k = 0; k < 3; k++) { const o = (i + k) * 4; colors[o] = c.r; colors[o + 1] = c.g; colors[o + 2] = c.b; colors[o + 3] = surface; }
     }
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 4));
   return geo;
 }
 
-export function solid(g: THREE.BufferGeometry, color: THREE.Color | string | number, smoothNormals = false): THREE.BufferGeometry {
+export function solid(g: THREE.BufferGeometry, color: THREE.Color | string | number, smoothNormals = false, surface: number = _surf): THREE.BufferGeometry {
   const c = color instanceof THREE.Color ? color : new THREE.Color(color);
-  return paint(g, () => c, smoothNormals);
+  return paint(g, () => c, smoothNormals, surface);
 }
 
 export function merge(list: THREE.BufferGeometry[]): THREE.BufferGeometry {

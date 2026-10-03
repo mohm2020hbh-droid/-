@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { StyleMaterials } from './materials';
-import { col, merge, mesh, solid, xf } from './geom';
+import { SURF, col, merge, mesh, paint, solid, xf } from './geom';
+import { roundedBlock } from './shapes';
 import type { PogoMode } from '../sim/PogoState';
 
 /**
@@ -19,7 +20,7 @@ export interface CharacterAppearance { hat: string; stick: string; outfit: strin
 export const DEFAULT_APPEARANCE: CharacterAppearance = { hat: 'beanie', stick: 'copper', outfit: 'teal', skin: 'peach' };
 
 const OUTFITS: Record<string, { parka: string; trim: string; scarf: string; pants: string }> = {
-  teal: { parka: '#1fb0a8', trim: '#f4ead2', scarf: '#f7efe0', pants: '#35405a' },
+  teal: { parka: '#1fb0a8', trim: '#f4ead2', scarf: '#e8463a', pants: '#35405a' },
   crimson: { parka: '#d9433a', trim: '#f4ead2', scarf: '#ffd24a', pants: '#3a2d4a' },
   forest: { parka: '#3f9a52', trim: '#f4ead2', scarf: '#ffb13a', pants: '#3d3a2f' },
   sunrise: { parka: '#f59a2c', trim: '#fff3d0', scarf: '#d9433a', pants: '#3a3350' },
@@ -62,9 +63,8 @@ export class Character {
   private readonly armR = new THREE.Group();
   private readonly legL = new THREE.Group();
   private readonly legR = new THREE.Group();
-  private readonly eyes: THREE.Mesh[] = [];
+  private readonly eyes: THREE.Object3D[] = [];
   private readonly mouth = new THREE.Mesh();
-  private readonly springRings: THREE.Mesh[] = [];
   private readonly springGroup = new THREE.Group();
   private readonly stickGroup = new THREE.Group();
   private ribbon!: THREE.Mesh;
@@ -106,17 +106,28 @@ export class Character {
   }
 
   // ───────────────────────────────────────────────────────── build ──────
-  private part(g: THREE.BufferGeometry, color: string | THREE.Color, parent: THREE.Object3D, outline = true): THREE.Mesh {
-    solid(g, color, true);
-    const m = mesh(g, this.mats.smooth, true, false);
-    parent.add(m);
-    if (outline) {
-      const o = new THREE.Mesh(g, this.mats.outline);
-      parent.add(o);
-      this.outlines.push(o);
-      o.userData.owner = m;
+  /** Parts are collected per animated group and merged at the end: ~20 draw calls for the whole character. */
+  private pending = new Map<THREE.Object3D, { fill: THREE.BufferGeometry[]; line: THREE.BufferGeometry[] }>();
+
+  /** Shaded part: vertical gradient (soft AO at the bottom of each part) + optional inverted-hull outline. */
+  private part(g: THREE.BufferGeometry, color: string | THREE.Color, parent: THREE.Object3D, outline = true, shade = 0.18): void {
+    const c = color instanceof THREE.Color ? color : new THREE.Color(color);
+    g.computeBoundingBox();
+    const bb = g.boundingBox!;
+    const lo = c.clone().multiplyScalar(1 - shade), hi = c.clone().multiplyScalar(1 + shade * 0.35);
+    paint(g, (_x, y) => lo.clone().lerp(hi, (y - bb.min.y) / Math.max(1e-3, bb.max.y - bb.min.y)), true, SURF.PLAIN);
+    let e = this.pending.get(parent);
+    if (!e) { e = { fill: [], line: [] }; this.pending.set(parent, e); }
+    e.fill.push(g);
+    if (outline) e.line.push(g);
+  }
+
+  private flush(): void {
+    for (const [parent, e] of this.pending) {
+      if (e.fill.length) parent.add(mesh(merge(e.fill), this.mats.char, true, false));
+      if (e.line.length) { const o = new THREE.Mesh(merge(e.line), this.mats.outline); parent.add(o); this.outlines.push(o); }
     }
-    return m;
+    this.pending.clear();
   }
 
   private clearGroup(gr: THREE.Group): void {
@@ -132,100 +143,109 @@ export class Character {
   }
 
   private build(): void {
-    this.clearGroup(this.stickGroup); this.clearGroup(this.rider); this.clearGroup(this.hatSlot);
-    this.springRings.length = 0; this.eyes.length = 0; this.outlines.length = 0;
-    this.head.clear(); this.armL.clear(); this.armR.clear(); this.legL.clear(); this.legR.clear(); this.springGroup.clear(); this.pom.clear();
+    for (const gr of [this.stickGroup, this.rider, this.hatSlot, this.head, this.armL, this.armR, this.legL, this.legR, this.springGroup, this.pom]) this.clearGroup(gr);
+    this.eyes.length = 0; this.outlines.length = 0; this.pending.clear();
     const o = OUTFITS[this.appearance.outfit] ?? OUTFITS.teal;
     const skin = SKINS[this.appearance.skin] ?? SKINS.peach;
     const st = STICKS[this.appearance.stick] ?? STICKS.copper;
     const H = this.comHeight;
 
-    // ── stick ──
+    // ── pogo stick: rubber foot · lower metal tube · helix spring · foot pegs · coloured upper tube · T-bar with grips ──
     const sg = this.stickGroup;
-    const shaftTop = 0.36, shaftBot = -H + 0.14;
-    const shaft = xf(new THREE.CylinderGeometry(0.05, 0.05, shaftTop - (shaftBot + 0.5), 8), 0, (shaftTop + shaftBot + 0.5) / 2, 0);
-    this.part(shaft, st.shaft, sg);
-    if (st.stripe) for (let i = 0; i < 5; i++) this.part(xf(new THREE.CylinderGeometry(0.056, 0.056, 0.09, 8), 0, shaftBot + 0.62 + i * 0.17, 0), st.stripe, sg, false);
-    this.part(xf(new THREE.SphereGeometry(0.14, 10, 8), 0, shaftBot, 0), '#2b2530', sg);              // rubber tip
-    this.part(xf(new THREE.CylinderGeometry(0.075, 0.1, 0.16, 8), 0, shaftBot + 0.2, 0), st.accent, sg);  // foot piece
-    this.part(xf(new THREE.BoxGeometry(0.62, 0.05, 0.1), 0, -0.62, 0), st.accent, sg);                   // pegs
-    sg.add(this.springGroup);
-    const ringGeo = new THREE.TorusGeometry(0.115, 0.032, 5, 12);
-    solid(ringGeo, '#d5dae4', true);
-    for (let i = 0; i < 8; i++) {
-      const m = mesh(ringGeo, this.mats.smooth, true, false);
-      m.rotation.x = Math.PI / 2;
-      this.springGroup.add(m); this.springRings.push(m);
+    const footY = -H + 0.1, pegY = -0.62, shaftTop = 0.36;
+    this.part(xf(new THREE.SphereGeometry(0.105, 12, 8), 0, footY + 0.0, 0, 0, 0, 0, 1, 0.8, 1), '#262230', sg, true, 0.1);           // rubber foot
+    this.part(xf(new THREE.CylinderGeometry(0.085, 0.1, 0.1, 12), 0, footY + 0.1, 0), '#3a3542', sg, false);                            // foot collar
+    this.part(xf(new THREE.CylinderGeometry(0.042, 0.042, pegY - footY - 0.1, 10), 0, (pegY + footY + 0.1) / 2, 0), '#c9ced8', sg, false, 0.25); // lower tube
+    this.part(xf(new THREE.CylinderGeometry(0.075, 0.075, 0.12, 12), 0, pegY + 0.02, 0), st.accent, sg, true);                       // peg block
+    for (const sx of [-1, 1]) {                                                                                                      // foot pegs with treads
+      this.part(xf(roundedBlock(0.26, 0.06, 0.15, 0.025, 0.3, 1).geometry, sx * 0.2, pegY, 0.03), '#3a3542', sg, true, 0.1);
     }
-    const bar = xf(new THREE.CylinderGeometry(0.04, 0.04, 0.78, 6), 0, shaftTop, 0, 0, 0, Math.PI / 2); // handlebar (rider frame)
-    const grips: THREE.BufferGeometry[] = [-1, 1].map(s => solid(xf(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 6), s * 0.36, shaftTop, 0, 0, 0, Math.PI / 2), '#3a2f3a', true));
-    solid(bar, st.accent, true);
-    this.rider.add(mesh(merge([bar, ...grips]), this.mats.smooth, true, false));
+    this.part(xf(new THREE.CylinderGeometry(0.06, 0.066, shaftTop - pegY, 12), 0, (shaftTop + pegY) / 2, 0), st.shaft, sg, true, 0.22); // upper tube
+    if (st.stripe) for (let i = 0; i < 5; i++) this.part(xf(new THREE.CylinderGeometry(0.068, 0.068, 0.07, 12), 0, pegY + 0.15 + i * 0.17, 0), st.stripe, sg, false);
+    sg.add(this.springGroup);
+    this.springGroup.position.y = footY + 0.15;
+    {
+      const turns = 8, r = 0.1, pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= turns * 14; i++) { const t = i / (turns * 14), a = t * turns * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * r, t, Math.sin(a) * r)); }
+      const sp = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), turns * 14, 0.026, 6, false);
+      solid(sp, '#e4e8f0', true, SURF.PLAIN);
+      this.springGroup.add(mesh(sp, this.mats.char, true, false));
+    }
+    // handlebar (rider frame so it follows the crouch)
+    this.part(xf(new THREE.CylinderGeometry(0.038, 0.038, 0.8, 8), 0, shaftTop, 0, 0, 0, Math.PI / 2), st.accent, this.rider, true, 0.15);
+    for (const s of [-1, 1]) {
+      this.part(xf(new THREE.CylinderGeometry(0.058, 0.058, 0.17, 10), s * 0.36, shaftTop, 0, 0, 0, Math.PI / 2), '#2f2836', this.rider, true, 0.1);
+      this.part(xf(new THREE.SphereGeometry(0.06, 8, 6), s * 0.455, shaftTop, 0), st.accent, this.rider, false);
+    }
 
     // ── legs ──
-    const pants = o.pants, boot = '#4b2f27';
+    const pants = o.pants, boot = '#5a3527';
     for (const [grp, sx] of [[this.legL, -1], [this.legR, 1]] as [THREE.Group, number][]) {
-      grp.position.set(sx * 0.14, -0.3, 0.02);
-      const thigh = xf(new THREE.CapsuleGeometry(0.1, 0.2, 4, 8), sx * 0.02, -0.14, 0);
-      this.part(thigh, pants, grp);
-      const shin = xf(new THREE.CapsuleGeometry(0.085, 0.14, 4, 8), sx * 0.05, -0.34, 0.02);
-      this.part(shin, pants, grp, false);
-      const bootM = xf(new THREE.SphereGeometry(0.13, 8, 6), sx * 0.07, -0.48, 0.06, 0, 0, 0, 1, 0.7, 1.35);
-      this.part(bootM, boot, grp);
+      grp.position.set(sx * 0.15, -0.22, 0.02);
+      this.part(xf(new THREE.CapsuleGeometry(0.105, 0.1, 4, 10), sx * 0.02, -0.09, 0), pants, grp);
+      this.part(xf(new THREE.CapsuleGeometry(0.09, 0.08, 4, 10), sx * 0.06, -0.22, 0.02), pants, grp, false);
+      this.part(xf(new THREE.SphereGeometry(0.13, 10, 8), sx * 0.08, -0.33, 0.07, 0, 0, 0, 1, 0.7, 1.38), boot, grp, true, 0.12);
+      this.part(xf(new THREE.TorusGeometry(0.095, 0.03, 5, 12), sx * 0.07, -0.27, 0.04, Math.PI / 2, 0, 0), '#f4ead2', grp, false); // sock cuff
       this.rider.add(grp);
     }
 
-    // ── torso ──
-    const torso = xf(new THREE.CapsuleGeometry(0.3, 0.32, 6, 12), 0, 0.02, 0, 0, 0, 0, 1, 1, 0.92);
-    this.part(torso, o.parka, this.rider);
-    this.part(xf(new THREE.BoxGeometry(0.06, 0.62, 0.05), 0, 0.02, 0.28), o.trim, this.rider, false);       // zip
-    this.part(xf(new THREE.BoxGeometry(0.3, 0.2, 0.06), -0.1, -0.1, 0.27, 0, 0, 0.08), o.trim, this.rider, false); // pocket
-    this.part(xf(new THREE.BoxGeometry(0.46, 0.5, 0.2), 0, 0.08, -0.32), '#8b5a38', this.rider);             // backpack
-    this.part(xf(new THREE.CylinderGeometry(0.1, 0.1, 0.44, 8), 0, 0.37, -0.32, 0, 0, Math.PI / 2), '#e8c25a', this.rider, false); // bedroll
+    // ── torso: parka with fur-trimmed collar, zip, pocket, backpack + bedroll ──
+    this.part(xf(new THREE.CapsuleGeometry(0.31, 0.32, 6, 14), 0, 0.02, 0, 0, 0, 0, 1, 1, 0.92), o.parka, this.rider, true, 0.2);
+    this.part(xf(new THREE.TorusGeometry(0.27, 0.07, 6, 16), 0, -0.24, 0, Math.PI / 2, 0, 0, 1, 1, 0.88), o.trim, this.rider, false, 0.1); // hem
+    this.part(xf(new THREE.BoxGeometry(0.05, 0.6, 0.05), 0, 0.02, 0.285), o.trim, this.rider, false);
+    this.part(xf(roundedBlock(0.28, 0.18, 0.06, 0.03, 0.2, 1).geometry, -0.1, -0.1, 0.27, 0, 0, 0.08), o.trim, this.rider, false);
+    this.part(xf(roundedBlock(0.48, 0.52, 0.22, 0.08, 0.3, 2).geometry, 0, 0.08, -0.33), '#9a6038', this.rider, true);
+    this.part(xf(new THREE.CylinderGeometry(0.1, 0.1, 0.46, 10), 0, 0.38, -0.33, 0, 0, Math.PI / 2), '#e8c25a', this.rider, false);
 
-    // ── arms (pivot at shoulder) ──
+    // ── arms (pivot at shoulder) + mittens ──
     for (const [grp, sx] of [[this.armL, -1], [this.armR, 1]] as [THREE.Group, number][]) {
       grp.position.set(sx * 0.33, 0.28, 0.02);
-      const upper = xf(new THREE.CapsuleGeometry(0.085, 0.16, 4, 8), sx * 0.03, -0.1, 0.03, 0, 0, sx * 0.1);
-      this.part(upper, o.parka, grp);
-      const hand = xf(new THREE.SphereGeometry(0.1, 8, 6), sx * 0.05, -0.27, 0.06);
-      this.part(hand, '#f1d8c0', grp, false);
+      this.part(xf(new THREE.CapsuleGeometry(0.088, 0.16, 4, 10), sx * 0.03, -0.1, 0.03, 0, 0, sx * 0.1), o.parka, grp);
+      this.part(xf(new THREE.TorusGeometry(0.075, 0.03, 5, 10), sx * 0.045, -0.2, 0.05, Math.PI / 2, 0, 0), o.trim, grp, false);
+      this.part(xf(new THREE.SphereGeometry(0.1, 10, 8), sx * 0.05, -0.27, 0.06), o.scarf, grp, true, 0.12);
       this.rider.add(grp);
     }
 
-    // ── head ──
+    // ── head: big chibi head, sclera + iris eyes (readable at phone size), brows, nose, blush ──
     this.head.position.set(0, 0.88, 0.02);
     this.rider.add(this.head);
-    this.part(xf(new THREE.SphereGeometry(0.43, 16, 12), 0, 0, 0, 0, 0, 0, 1, 0.94, 0.96), skin, this.head);
+    this.part(xf(new THREE.SphereGeometry(0.43, 20, 14), 0, 0, 0, 0, 0, 0, 1, 0.94, 0.96), skin, this.head, true, 0.14);
     for (const sx of [-1, 1]) this.part(xf(new THREE.SphereGeometry(0.085, 8, 6), sx * 0.42, -0.02, 0, 0, 0, 0, 0.6, 1, 0.9), skin, this.head, false);
-    // eyes
+    this.part(xf(new THREE.SphereGeometry(0.05, 8, 6), 0, -0.1, 0.42, 0, 0, 0, 1, 0.8, 0.8), '#eea283', this.head, false);
     for (const sx of [-1, 1]) {
-      const eye = mesh(solid(xf(new THREE.SphereGeometry(0.095, 10, 10), sx * 0.18, -0.07, 0.37, 0, 0, 0, 0.95, 1.2, 0.6), '#231826', true), this.mats.smooth);
-      const shine = mesh(solid(xf(new THREE.SphereGeometry(0.032, 6, 6), sx * 0.18 + 0.03, -0.01, 0.43), '#ffffff', true), this.mats.basic);
-      this.head.add(eye, shine);
+      this.part(xf(new THREE.SphereGeometry(0.07, 8, 6), sx * 0.27, -0.16, 0.33, 0, 0, 0, 1, 0.6, 0.4), '#f39a8f', this.head, false, 0);    // blush
+      this.part(xf(new THREE.CapsuleGeometry(0.022, 0.1, 3, 6), sx * 0.17, 0.15, 0.37, 0, 0, Math.PI / 2 + sx * 0.18), '#4a2a22', this.head, false, 0); // brow
+      const eye = new THREE.Group();
+      eye.position.set(sx * 0.165, -0.01, 0.35);
+      const white = solid(xf(new THREE.SphereGeometry(0.1, 14, 10), 0, 0, 0, 0, 0, 0, 0.88, 1.18, 0.55), '#fbf6ee', true, SURF.PLAIN);
+      const iris = solid(xf(new THREE.SphereGeometry(0.07, 12, 10), sx * -0.01, -0.012, 0.032, 0, 0, 0, 0.9, 1.1, 0.5), '#2a1a2c', true, SURF.PLAIN);
+      const shine = solid(xf(new THREE.SphereGeometry(0.024, 6, 6), 0.024, 0.035, 0.066), '#ffffff', true, SURF.PLAIN);
+      eye.add(mesh(merge([white, iris]), this.mats.char), mesh(shine, this.mats.basic));
+      this.head.add(eye);
       this.eyes.push(eye);
-      this.part(xf(new THREE.SphereGeometry(0.075, 6, 5), sx * 0.28, -0.17, 0.3, 0, 0, 0, 1, 0.6, 0.4), '#f08a8a', this.head, false); // blush
     }
-    this.mouth.geometry = solid(xf(new THREE.SphereGeometry(0.07, 8, 6), 0, -0.19, 0.39, 0, 0, 0, 1, 0.55, 0.5), '#6a2230', true);
-    this.mouth.material = this.mats.smooth;
+    this.mouth.geometry = solid(xf(new THREE.SphereGeometry(0.07, 10, 8), 0, -0.2, 0.385, 0, 0, 0, 1, 0.55, 0.5), '#6a2230', true, SURF.PLAIN);
+    this.mouth.material = this.mats.char;
     this.head.add(this.mouth);
-    this.part(xf(new THREE.SphereGeometry(0.045, 6, 5), 0, -0.11, 0.42, 0, 0, 0, 1, 0.8, 0.8), '#e9a98a', this.head, false); // nose
-    // goggles on the forehead
-    this.part(xf(new THREE.TorusGeometry(0.44, 0.03, 5, 20, Math.PI * 1.0), 0, 0.12, 0, Math.PI / 2 * 0, 0, Math.PI * 0.5 - 0.0), '#2b2530', this.head, false);
+    // goggles resting on the beanie brim
+    if (this.appearance.hat === 'beanie') {   // knitted badge on the beanie (a mountain on a teal disc)
+      this.part(xf(new THREE.CylinderGeometry(0.1, 0.1, 0.03, 16), 0.19, 0.36, 0.38, Math.PI / 2 - 0.55, 0, -0.42), '#1fb0a8', this.hatSlot, false, 0);
+      this.part(xf(new THREE.ConeGeometry(0.06, 0.08, 3), 0.19, 0.37, 0.4, -0.55, 0, -0.42), '#fbf6ee', this.hatSlot, false, 0);
+    }
 
-    // ── scarf ──
-    this.part(xf(new THREE.TorusGeometry(0.29, 0.085, 8, 16), 0, 0.46, 0, Math.PI / 2, 0, 0, 1, 1, 0.85), o.scarf, this.rider);
+    // ── scarf (knot ring + streaming ribbon) ──
+    this.part(xf(new THREE.TorusGeometry(0.29, 0.09, 8, 18), 0, 0.46, 0, Math.PI / 2, 0, 0, 1, 1, 0.85), o.scarf, this.rider, true, 0.15);
     const RS = 7;
     const rg = new THREE.BufferGeometry();
     rg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RS * 2 * 3), 3));
     const rc = new Float32Array(RS * 2 * 3), rn = new Float32Array(RS * 2 * 3);
     const c1 = col(o.scarf), c2 = col(o.trim);
-    for (let i = 0; i < RS; i++) { const c = i >= RS - 2 ? col('#e8a92a') : i % 2 ? c2 : c1; for (let k = 0; k < 2; k++) { rc.set([c.r, c.g, c.b], (i * 2 + k) * 3); rn.set([0, 0, 1], (i * 2 + k) * 3); } }
+    for (let i = 0; i < RS; i++) { const c = i % 3 === 2 ? c2 : c1; for (let k = 0; k < 2; k++) { rc.set([c.r, c.g, c.b], (i * 2 + k) * 3); rn.set([0, 0, 1], (i * 2 + k) * 3); } }
     rg.setAttribute('color', new THREE.BufferAttribute(rc, 3)); rg.setAttribute('normal', new THREE.BufferAttribute(rn, 3));
     const idx: number[] = [];
     for (let i = 0; i < RS - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     rg.setIndex(idx);
-    this.ribbon = new THREE.Mesh(rg, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.9 }));
+    this.ribbon = new THREE.Mesh(rg, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.85, emissive: new THREE.Color(o.scarf).multiplyScalar(0.12) }));
     this.ribbon.castShadow = false; this.ribbon.frustumCulled = false; // a dynamic strip in the shadow map produced a long ghost shadow
     this.rider.add(this.ribbon);
     this.tailPos.length = 0;
@@ -233,39 +253,42 @@ export class Character {
 
     // ── hat ──
     this.head.add(this.hatSlot);
-    this.buildHat(o);
+    this.buildHat();
+    this.flush();
     this.mouthOpen = 0;
   }
 
-  private buildHat(o: { parka: string; scarf: string }): void {
+  private buildHat(): void {
     const hs = this.hatSlot;
-    this.pom.clear();
     const hat = this.appearance.hat;
-    const add = (g: THREE.BufferGeometry, c: string, outline = true) => this.part(g, c, hs, outline);
+    const add = (g: THREE.BufferGeometry, c: string, outline = true) => this.part(g, c, hs, outline, 0.16);
     if (hat === 'propeller') {
-      add(xf(new THREE.SphereGeometry(0.46, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.05, 0, 0, 0, 0, 1, 0.9, 1), '#e84a5f');
-      add(xf(new THREE.SphereGeometry(0.46, 14, 4, 0, Math.PI * 2, Math.PI / 2 - 0.35, 0.35), 0, 0.05, 0, 0, 0, 0, 1.0, 0.9, 1), '#f5c542', false);
-      add(xf(new THREE.CylinderGeometry(0.03, 0.03, 0.25, 5), 0, 0.5, 0), '#cfd3de', false);
-      const blades = merge([xf(new THREE.BoxGeometry(0.8, 0.02, 0.14), 0, 0, 0), xf(new THREE.BoxGeometry(0.14, 0.02, 0.8), 0, 0, 0)].map(g => solid(g, '#4cc3ff', true)));
-      const bm = mesh(blades, this.mats.smooth, true); bm.position.y = 0.66; bm.userData.spin = true;
+      add(xf(new THREE.SphereGeometry(0.46, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0.05, 0, 0, 0, 0, 1, 0.9, 1), '#e84a5f');
+      add(xf(new THREE.SphereGeometry(0.465, 16, 4, 0, Math.PI * 2, Math.PI / 2 - 0.35, 0.35), 0, 0.05, 0, 0, 0, 0, 1.0, 0.9, 1), '#f5c542', false);
+      add(xf(new THREE.CylinderGeometry(0.03, 0.03, 0.25, 6), 0, 0.5, 0), '#cfd3de', false);
+      const blades = merge([xf(new THREE.BoxGeometry(0.8, 0.02, 0.14), 0, 0, 0), xf(new THREE.BoxGeometry(0.14, 0.02, 0.8), 0, 0, 0)].map(g => solid(g, '#4cc3ff', true, SURF.PLAIN)));
+      const bm = mesh(blades, this.mats.char, true); bm.position.y = 0.66; bm.userData.spin = true;
       this.pom.add(bm); hs.add(this.pom);
     } else if (hat === 'tophat') {
-      add(xf(new THREE.CylinderGeometry(0.6, 0.6, 0.06, 16), 0, 0.12, 0), '#2a2530');
-      add(xf(new THREE.CylinderGeometry(0.34, 0.38, 0.6, 14), 0, 0.42, 0), '#2a2530');
-      add(xf(new THREE.CylinderGeometry(0.385, 0.385, 0.12, 14), 0, 0.22, 0), '#d9433a', false);
+      add(xf(new THREE.CylinderGeometry(0.6, 0.6, 0.06, 20), 0, 0.12, 0), '#2a2530');
+      add(xf(new THREE.CylinderGeometry(0.34, 0.38, 0.6, 18), 0, 0.42, 0), '#2a2530');
+      add(xf(new THREE.CylinderGeometry(0.385, 0.385, 0.12, 18), 0, 0.22, 0), '#d9433a', false);
     } else if (hat === 'bucket') {
-      add(xf(new THREE.CylinderGeometry(0.42, 0.5, 0.36, 14), 0, 0.28, 0), '#7fb36a');
-      add(xf(new THREE.CylinderGeometry(0.66, 0.66, 0.05, 16), 0, 0.12, 0), '#6b9a58');
+      add(xf(new THREE.CylinderGeometry(0.42, 0.5, 0.36, 18), 0, 0.28, 0), '#7fb36a');
+      add(xf(new THREE.CylinderGeometry(0.66, 0.66, 0.05, 20), 0, 0.12, 0), '#6b9a58');
     } else if (hat === 'party') {
-      add(xf(new THREE.ConeGeometry(0.34, 0.9, 12), 0, 0.5, 0, 0, 0, 0.1), '#b362e8');
-      for (let i = 0; i < 4; i++) add(xf(new THREE.TorusGeometry(0.12 + (3 - i) * 0.03, 0.025, 4, 10), 0, 0.2 + i * 0.18, 0, Math.PI / 2, 0, 0.1), i % 2 ? '#ffd24a' : '#ffffff', false);
-      const p = xf(new THREE.IcosahedronGeometry(0.12, 1), 0.04, 0.98, 0); add(p, '#ffd24a', false);
-    } else { // beanie (default)
-      add(xf(new THREE.SphereGeometry(0.47, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.5), 0, 0.12, 0, 0, 0, 0, 1, 0.95, 1.02), '#f5c542');
-      add(xf(new THREE.TorusGeometry(0.44, 0.095, 8, 20), 0, 0.15, 0, Math.PI / 2, 0, 0, 1, 1.02, 1.0), '#e8a92a');
-      const pom = xf(new THREE.IcosahedronGeometry(0.17, 1), 0, 0.6, 0); solid(pom, '#e0463a', true);
-      const pm = mesh(pom, this.mats.smooth, true); const po = new THREE.Mesh(pom, this.mats.outline);
-      this.pom.add(pm, po); this.outlines.push(po); hs.add(this.pom);
+      add(xf(new THREE.ConeGeometry(0.34, 0.9, 16), 0, 0.5, 0, 0, 0, 0.1), '#b362e8');
+      for (let i = 0; i < 4; i++) add(xf(new THREE.TorusGeometry(0.12 + (3 - i) * 0.03, 0.025, 4, 12), 0, 0.2 + i * 0.18, 0, Math.PI / 2, 0, 0.1), i % 2 ? '#ffd24a' : '#ffffff', false);
+      add(xf(new THREE.IcosahedronGeometry(0.12, 1), 0.04, 0.98, 0), '#ffd24a', false);
+    } else { // beanie (default): knit body with ribs, folded cuff, pom-pom
+      const knit = xf(new THREE.SphereGeometry(0.47, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), 0, 0.2, 0, 0, 0, 0, 1, 0.98, 1.02);
+      const kp = knit.getAttribute('position') as THREE.BufferAttribute;
+      for (let i = 0; i < kp.count; i++) { const a = Math.atan2(kp.getZ(i), kp.getX(i)); const k = 1 + Math.sin(a * 22) * 0.012; kp.setXYZ(i, kp.getX(i) * k, kp.getY(i), kp.getZ(i) * k); }
+      add(knit, '#f5c542');
+      add(xf(new THREE.TorusGeometry(0.44, 0.085, 10, 28), 0, 0.23, 0, Math.PI / 2, 0, 0, 1, 1.02, 1.0), '#e8a92a');
+      const pom = xf(new THREE.IcosahedronGeometry(0.17, 2), 0, 0.68, 0);
+      this.part(pom, '#e0463a', this.pom, true, 0.2);
+      hs.add(this.pom);
     }
   }
 
@@ -311,13 +334,9 @@ export class Character {
     this.head.position.y = 0.88 + Math.sin(this.time * 2.1) * 0.012 * (1 - this.crouch) - this.crouch * 0.05;
     this.head.rotation.z = -f.tilt * 0.08 + Math.sin(this.time * 1.3) * 0.015;
     const compress = Math.min(1, this.crouch * 0.95 + Math.max(0, this.landK) * 1.6);
-    const springTop = -0.62 - 0.0, springBot = -this.comHeight + 0.3;
-    for (let i = 0; i < this.springRings.length; i++) {
-      const t = (i + 0.5) / this.springRings.length;
-      const span = (springTop - springBot) * (1 - compress * 0.55);
-      this.springRings[i].position.y = springBot + span * t;
-      this.springRings[i].scale.set(1 + compress * 0.1, 1 + compress * 0.1, 1 + compress * 0.1);
-    }
+    // spring: fixed between the foot collar and the peg block; it bulges as the rider loads it
+    const L0 = (-0.62 - 0.06) - (-this.comHeight + 0.1 + 0.15);
+    this.springGroup.scale.set(1 + compress * 0.35, L0 * (1 - compress * 0.12), 1 + compress * 0.35);
     // legs
     const splay = this.tuck * 0.6 + this.crouch * 0.3;
     this.legL.scale.y = 1 - this.tuck * 0.38 - this.crouch * 0.2; this.legR.scale.y = this.legL.scale.y;
@@ -338,7 +357,7 @@ export class Character {
     this.armL.rotation.z = aL; this.armR.rotation.z = aR;
     // face
     const lid = Math.max(this.blink, this.crouch * 0.55);
-    for (const e of this.eyes) { e.scale.y = Math.max(0.12, (1.25 + this.eyeWide * 0.45) * (1 - lid * 0.85)); }
+    for (const e of this.eyes) { e.scale.y = Math.max(0.1, (1 + this.eyeWide * 0.3) * (1 - lid * 0.88)); e.scale.x = 1 + this.eyeWide * 0.15; }
     this.mouth.scale.set(1 + this.mouthOpen * 0.4, 0.25 + this.mouthOpen * 1.5, 1);
     this.mouth.position.y = -this.mouthOpen * 0.02;
     // hat pom spring (reacts to vertical acceleration)
