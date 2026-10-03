@@ -9,8 +9,8 @@ class UiButton(
     private val style: Style,
     var label: String = "",
     var icon: Icon? = null,
-    /** The light sound it makes when it goes down: a plain press, back, or confirm. */
-    val cue: AudioCue = AudioCue.UI_PRESS,
+    /** The light sound it makes when it goes down: a plain press, back, or confirm; none for a button whose feedback is its own. */
+    val cue: AudioCue? = AudioCue.UI_PRESS,
     val onClick: () -> Unit,
 ) {
     enum class Style {

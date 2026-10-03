@@ -46,7 +46,7 @@ class GameView(context: Context, override val app: GameApp) : View(context), Gam
     /** Every sound of the game goes through this one manager: the settings decide how loud, the gate stops pile-ups. */
     private val audio = AudioManager(
         app.settings.audio,
-        SoundFx({ context.assets.openFd("sounds/ball_bounce_exact.ogg") }, { context.assets.openFd("sounds/clear_pulse.wav") }),
+        SoundFx { context.assets.openFd("sounds/ball_bounce_exact.ogg") },
         MusicPlayer(),
     )
     private val vibrator: Vibrator? = try {

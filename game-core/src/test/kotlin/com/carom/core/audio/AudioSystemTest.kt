@@ -138,19 +138,20 @@ class AudioSystemTest {
     }
 
     @Test
-    fun theClearPulseAnswersToMasterAndSfxAndNeverToMusic() {
+    fun theRestartTapsAnswerToMasterAndEffectsAndNeverToMusic() {
         val a = AudioSettings(MapStore())
-        val full = a.gain(AudioCue.CLEAR_PULSE)
+        val taps = listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2, AudioCue.RESTART_TAP_3)
+        val full = taps.map { a.gain(it) }
         a.musicVolume = 0.0
         a.musicEnabled = false
-        assertEquals(full, a.gain(AudioCue.CLEAR_PULSE), 0.0)
+        assertEquals(full, taps.map { a.gain(it) })
         a.sfxVolume = 0.25
-        assertEquals(full * 0.25, a.gain(AudioCue.CLEAR_PULSE), 1e-12)
+        for ((i, t) in taps.withIndex()) assertEquals(full[i] * 0.25, a.gain(t), 1e-12)
         a.sfxVolume = 1.0
         a.masterVolume = 0.5
-        assertEquals(full * 0.5, a.gain(AudioCue.CLEAR_PULSE), 1e-12)
+        for ((i, t) in taps.withIndex()) assertEquals(full[i] * 0.5, a.gain(t), 1e-12)
         a.sfxEnabled = false
-        assertEquals(0.0, a.gain(AudioCue.CLEAR_PULSE), 0.0)
+        for (t in taps) assertEquals(0.0, a.gain(t), 0.0)
     }
 
     // ---------------------------------------------------------------- the cues
@@ -163,8 +164,12 @@ class AudioSystemTest {
             assertTrue("$cue must sit under a collision", a.gain(cue) < bounce * 0.5)
         }
         assertTrue("the music sits well under a collision", a.musicGain() < bounce * 0.8)
-        assertTrue("the pulse is clear: not quieter than half a collision", a.gain(AudioCue.CLEAR_PULSE) >= bounce * 0.5)
-        assertTrue("...and no louder than one", a.gain(AudioCue.CLEAR_PULSE) <= bounce)
+        val t1 = a.gain(AudioCue.RESTART_TAP_1)
+        val t2 = a.gain(AudioCue.RESTART_TAP_2)
+        val t3 = a.gain(AudioCue.RESTART_TAP_3)
+        assertTrue("the three taps grow: 1 < 2 < 3", t1 < t2 && t2 < t3)
+        assertTrue("the first is very light", t1 <= bounce * 0.35)
+        assertTrue("the last is clear but still well under a collision", t3 >= bounce * 0.4 && t3 <= bounce * 0.6)
         for (cue in AudioCue.entries) assertTrue("$cue", a.gain(cue) in 0.0..1.0)
     }
 
@@ -187,7 +192,7 @@ class AudioSystemTest {
             }
         }
         assertEquals(AudioCategory.POWER_UP, AudioCue.CLOCK.category)
-        assertEquals(AudioCategory.FEEDBACK, AudioCue.CLEAR_PULSE.category)
+        for (t in listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2, AudioCue.RESTART_TAP_3)) assertEquals(AudioCategory.FEEDBACK, t.category)
         assertEquals(AudioCategory.GAMEPLAY, AudioCue.BOUNCE.category)
         assertTrue("the clock has a cue of its own, not shared with the bounce, the pulse or the buttons", AudioCue.entries.count { it == AudioCue.CLOCK } == 1)
     }
@@ -204,12 +209,17 @@ class AudioSystemTest {
     }
 
     @Test
-    fun theClearPulseSoundsOncePerSecondAtMost() {
+    fun threeQuickPressesOfRestartAllSoundButAStutterDoesNot() {
         val g = CueGate()
-        assertTrue(g.allow(AudioCue.CLEAR_PULSE, 10.0))
-        assertFalse(g.allow(AudioCue.CLEAR_PULSE, 10.4))
-        assertFalse(g.allow(AudioCue.CLEAR_PULSE, 10.99))
-        assertTrue(g.allow(AudioCue.CLEAR_PULSE, 11.01))
+        // three presses 0.2 s apart: each is a different cue, all sound
+        assertTrue(g.allow(AudioCue.RESTART_TAP_1, 10.0))
+        assertTrue(g.allow(AudioCue.RESTART_TAP_2, 10.2))
+        assertTrue(g.allow(AudioCue.RESTART_TAP_3, 10.4))
+        // a double trigger of the same press inside 0.12 s is dropped
+        val h = CueGate()
+        assertTrue(h.allow(AudioCue.RESTART_TAP_1, 10.0))
+        assertFalse(h.allow(AudioCue.RESTART_TAP_1, 10.05))
+        assertTrue(h.allow(AudioCue.RESTART_TAP_1, 10.13))
     }
 
     @Test
@@ -236,15 +246,15 @@ class AudioSystemTest {
         val g = CueGate()
         assertTrue(g.allow(AudioCue.UI_PRESS, 1.0))
         assertTrue(g.allow(AudioCue.BOUNCE, 1.0))
-        assertTrue(g.allow(AudioCue.CLEAR_PULSE, 1.0))
+        assertTrue(g.allow(AudioCue.RESTART_TAP_3, 1.0))
         assertTrue(g.allow(AudioCue.CLOCK, 1.0))
     }
 
     @Test
     fun resetForgetsEverythingPlayed() {
         val g = CueGate()
-        g.allow(AudioCue.CLEAR_PULSE, 5.0)
+        g.allow(AudioCue.RESTART_TAP_3, 5.0)
         g.reset()
-        assertTrue(g.allow(AudioCue.CLEAR_PULSE, 5.0))
+        assertTrue(g.allow(AudioCue.RESTART_TAP_3, 5.0))
     }
 }

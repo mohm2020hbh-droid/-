@@ -25,9 +25,6 @@ class TripleTap(
     private var down = false
     private var moved = false
 
-    /** Whether a finger landing at [time] begins a new set of taps: none counted yet, or too long since the last one lifted. */
-    fun startsSet(time: Double): Boolean = taps == 0 || time - lastUp > maxGap
-
     /** A finger lands at ([x], [y]) at [time]. */
     fun down(x: Double, y: Double, time: Double) {
         if (time - lastUp > maxGap) taps = 0

@@ -13,7 +13,6 @@ import com.carom.core.game.GameTuning
 import com.carom.core.game.HintRoute
 import com.carom.core.game.MomentumAim
 import com.carom.core.game.PressCounter
-import com.carom.core.game.RestartKind
 import com.carom.core.game.RestartSound
 import com.carom.core.game.TouchControl
 import com.carom.core.game.TripleTap
@@ -95,7 +94,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val restartPresses = PressCounter()
 
     /**
-     * Whether the ball was very slow when the player began a set of restart presses or taps. Read at the first of them, before it puts the ball
+     * Whether the ball was very slow when the player began a set of restart presses. Read at the first of them, before anything puts the ball
      * back at its start (after which the ball is at rest and would always look slow).
      */
     private var slowWhenAsked = false
@@ -108,7 +107,8 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val hint: String? = level.hintFor(kit.text.language)
     private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
 
-    internal val restartButton = UiButton(UiButton.Style.ICON, icon = Icon.RESTART) { pressRestart() }
+    /** No press sound of its own: its feedback is the 1 -> 2 -> 3 of [RestartSound], when the ball is very slow. */
+    internal val restartButton = UiButton(UiButton.Style.ICON, icon = Icon.RESTART, cue = null) { pressRestart() }
     private val levelsButton = UiButton(UiButton.Style.ICON, icon = Icon.GRID) { host.showLevels(index) }
     private val hudButtons = listOf(restartButton, levelsButton)
     private var topBarY = 0f
@@ -556,18 +556,25 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         return fails > guide.afterFails && route?.scores == true
     }
 
-    /** A press of the restart button: quiet, unless it is the third in a row. */
+    /**
+     * A press of the restart button. With a very slow ball the three presses are one gesture, 1 -> 2 -> 3: each has its own light sound
+     * ([RestartSound]) and the ball is put back at its start on the third, not before. With the ball at any other speed (or at rest) a press
+     * restarts the attempt at once, in silence, as it always has. The speed is read at the first press of a set, before anything resets the ball.
+     */
     private fun pressRestart() {
         if (restartPresses.startsSet(touchTime)) slowWhenAsked = session.isBallVerySlow()
-        restart(if (restartPresses.press(touchTime)) RestartKind.TRIPLE else RestartKind.MANUAL)
+        val finished = restartPresses.press(touchTime)
+        val step = restartPresses.step
+        RestartSound.cueFor(step, slowWhenAsked)?.let { host.sound(it) }
+        if (RestartSound.resetsNow(step, slowWhenAsked)) restart()
+        if (finished) {
+            if (slowWhenAsked) host.haptic(Haptic.CLICK) // a light touch of feedback as it completes: no shake
+            slowWhenAsked = false
+        }
     }
 
-    /**
-     * The player starts the attempt over. The low ball pulse plays only when the restart is a [RestartKind.TRIPLE] one that began while the
-     * ball was very slow ([RestartSound]), once everything is back at the start; the other kinds are silent, and a lost try never comes
-     * through here at all.
-     */
-    private fun restart(kind: RestartKind) {
+    /** The attempt starts over: everything back at its start. (Silent: the sounds belong to [pressRestart].) */
+    private fun restart() {
         host.stopSound(AudioCue.SUCCESS_SPIN)
         session.restart()
         taps.cancel()
@@ -585,15 +592,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
         host.soundPitch(1f)
         respawnTime = 0f
         guideShown = guideDue()
-        val pulse = RestartSound.playsClearPulse(kind, slowWhenAsked)
-        if (kind == RestartKind.TRIPLE) {
-            restartPresses.cancel()
-            slowWhenAsked = false
-        }
-        if (pulse) {
-            host.sound(AudioCue.CLEAR_PULSE)
-            host.haptic(Haptic.CLICK) // a light touch of feedback, no shake
-        }
     }
 
     // ---------------------------------------------------------------- scoring: the fan
@@ -675,13 +673,10 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private fun watchTaps(e: MotionEvent): Boolean {
         val unit = kit.unit.toDouble()
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                if (taps.startsSet(seconds(e))) slowWhenAsked = session.isBallVerySlow()
-                taps.down(e.x / unit, e.y / unit, seconds(e))
-            }
+            MotionEvent.ACTION_DOWN -> taps.down(e.x / unit, e.y / unit, seconds(e))
             MotionEvent.ACTION_MOVE -> taps.move(e.x / unit, e.y / unit)
             MotionEvent.ACTION_UP -> if (taps.up(seconds(e)) && (session.state == GameSession.State.AIMING || session.state == GameSession.State.MOVING)) {
-                restart(RestartKind.TRIPLE)
+                restart() // three quick taps anywhere: the same fresh start, without the button's sounds
                 return true
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_DOWN -> taps.cancel()

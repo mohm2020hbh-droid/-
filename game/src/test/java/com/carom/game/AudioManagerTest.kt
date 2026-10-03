@@ -80,19 +80,22 @@ class AudioManagerTest {
     }
 
     @Test
-    fun theClearPulseAnswersToMasterAndEffectsAndPlaysOnceAtItsOwnLevel() {
+    fun theThreeRestartTapsAnswerToMasterAndEffectsAndGrowFromOneToThree() {
         val r = Rig()
         r.settings.musicEnabled = false
         r.settings.musicVolume = 0.0
-        r.audio.play(AudioCue.CLEAR_PULSE)
-        assertEquals(1f, r.out.plays.single().second, 1e-6f)
-        r.advance(2.0)
+        for (cue in listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2, AudioCue.RESTART_TAP_3)) { r.audio.play(cue); r.advance(0.2) }
+        val v = r.out.plays.map { it.second }
+        assertEquals(3, v.size)
+        assertTrue("1 < 2 < 3: $v", v[0] < v[1] && v[1] < v[2])
         r.settings.masterVolume = 0.5
         r.settings.sfxVolume = 0.5
-        r.audio.play(AudioCue.CLEAR_PULSE)
-        assertEquals(0.25f, r.out.plays.last().second, 1e-6f)
-        r.audio.play(AudioCue.CLEAR_PULSE) // a second one at once is a pile-up
-        assertEquals(2, r.out.plays.size)
+        r.audio.play(AudioCue.RESTART_TAP_3)
+        assertEquals(v[2] * 0.25f, r.out.plays.last().second, 1e-6f)
+        r.advance(0.2)
+        r.settings.sfxEnabled = false
+        r.audio.play(AudioCue.RESTART_TAP_3)
+        assertEquals("effects off: silent", 4, r.out.plays.size)
     }
 
     @Test

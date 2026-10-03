@@ -1,19 +1,40 @@
 package com.carom.core.game
 
+import com.carom.core.audio.AudioCue
 import com.carom.core.level.LevelParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class RestartKindTest {
+class RestartPressesTest {
 
     @Test
-    fun theClearPulseNeedsAVerySlowBallAndAFullThreePressRestart() {
-        for (kind in RestartKind.entries) for (slow in listOf(false, true)) {
-            val expected = kind == RestartKind.TRIPLE && slow
-            assertEquals("$kind, slow=$slow", expected, RestartSound.playsClearPulse(kind, slow))
-        }
+    fun aVerySlowBallGivesTheThreeSoundsInOrderAndNothingElseDoes() {
+        assertEquals(AudioCue.RESTART_TAP_1, RestartSound.cueFor(1, true))
+        assertEquals(AudioCue.RESTART_TAP_2, RestartSound.cueFor(2, true))
+        assertEquals(AudioCue.RESTART_TAP_3, RestartSound.cueFor(3, true))
+        for (step in 0..5) assertEquals("a ball at any other speed: silent (step $step)", null, RestartSound.cueFor(step, false))
+        assertEquals(null, RestartSound.cueFor(4, true))
+        assertEquals(null, RestartSound.cueFor(0, true))
+    }
+
+    @Test
+    fun withAVerySlowBallTheBallIsPutBackOnTheThirdPressNotBefore() {
+        assertFalse(RestartSound.resetsNow(1, true))
+        assertFalse(RestartSound.resetsNow(2, true))
+        assertTrue(RestartSound.resetsNow(3, true))
+        for (step in 1..3) assertTrue("at any other speed a press restarts at once (step $step)", RestartSound.resetsNow(step, false))
+    }
+
+    @Test
+    fun theStepIsTheNumberOfThePressInItsSet() {
+        val c = PressCounter()
+        c.press(1.0); assertEquals(1, c.step)
+        c.press(1.2); assertEquals(2, c.step)
+        assertTrue(c.press(1.4)); assertEquals("also right after the third", 3, c.step)
+        c.press(1.6); assertEquals("a fourth press begins a new set", 1, c.step)
+        c.press(5.0); assertEquals("a long pause too", 1, c.step)
     }
 
     @Test
@@ -73,19 +94,6 @@ class RestartKindTest {
         assertTrue("after the third, the next press begins a set", c.startsSet(5.8))
         c.press(5.8)
         assertTrue("a long pause ends a set", c.startsSet(9.0))
-    }
-
-    @Test
-    fun aSetOfTapsStartsWithTheFirstTapOnly() {
-        val t = TripleTap()
-        assertTrue(t.startsSet(1.0))
-        t.down(10.0, 10.0, 1.0); t.up(1.05)
-        assertFalse(t.startsSet(1.25))
-        t.down(10.0, 10.0, 1.25); t.up(1.3)
-        assertFalse(t.startsSet(1.5))
-        t.down(10.0, 10.0, 1.5)
-        assertTrue(t.up(1.55))
-        assertTrue(t.startsSet(1.7))
     }
 
     private fun level() = LevelParser.parse("t", """{"size": [900, 2000], "bounces": 3, "ball": [450, 1600], "goal": [450, 200], "controlZone": {"rect": [90, 1440, 720, 360]}}""")

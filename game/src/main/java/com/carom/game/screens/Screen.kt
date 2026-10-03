@@ -99,7 +99,7 @@ abstract class Screen(protected val host: GameHost) {
             MotionEvent.ACTION_DOWN -> {
                 pressedButton = buttons.firstOrNull { it.hit(e.x, e.y, slop) }?.also {
                     it.pressed = true
-                    host.sound(it.cue) // the button's own light sound, the moment it goes down
+                    it.cue?.let { cue -> host.sound(cue) } // the button's own light sound, the moment it goes down
                 }
                 return pressedButton != null
             }
