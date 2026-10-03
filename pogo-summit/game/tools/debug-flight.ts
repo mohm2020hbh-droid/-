@@ -1,0 +1,13 @@
+import { LEVEL_01 } from '../src/data/levels/level01';
+import { createPhysicsConfig } from '../src/sim/PhysicsConfig';
+import { PhysicsWorld } from '../src/sim/PhysicsWorld';
+import { createPlantedState } from '../src/sim/PogoState';
+import { simulateJump } from '../src/sim/prediction';
+import { DEG } from '../src/sim/math';
+const id = process.argv[2] ?? 'p4', ang = +(process.argv[3] ?? 30), pw = +(process.argv[4] ?? 0.7), f = +(process.argv[5] ?? 0.5);
+const cfg = createPhysicsConfig(); const world = new PhysicsWorld(LEVEL_01);
+const st = createPlantedState(world, cfg, world.colliders.findIndex(c => c.id === id), f, 0);
+const r = simulateJump({ world, cfg }, st, ang * DEG, pw, { maxTicks: 700, stride: 6 });
+console.log('landed', r.landed, 'ticks', r.ticks, 'ground', r.groundId >= 0 ? world.colliders[r.groundId].id : '-', 'land', r.landX.toFixed(2), r.landY.toFixed(2));
+console.log(r.events.map(e => `${e.type}@t${e.tick}(${e.x.toFixed(1)},${e.y.toFixed(1)})n=${e.nx.toFixed(2)},${e.ny.toFixed(2)}`).join('\n'));
+console.log('path', r.points.slice(0, 40).map(v => v.toFixed(1)).join(' '));
