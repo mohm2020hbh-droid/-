@@ -9,7 +9,6 @@ import com.carom.game.screens.GameHost
 import com.carom.game.screens.Haptic
 import com.carom.game.screens.PlayScreen
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,9 +17,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The three-press restart. With a very slow ball: press 1 -> Tap 1, press 2 -> Tap 2, press 3 -> Tap 3 and the ball goes back to its start.
- * In every other case these sounds are not played: not at a start, a loss, a win, a collision, an automatic retry, a ball moving at a normal
- * speed, or anything but the restart button's presses.
+ * The three-press restart. Three presses of the restart button in a row make the sounds Tap 1, Tap 2, Tap 3, whatever the ball is doing, and every
+ * press puts the attempt back at its start. Nothing else makes them: not a start, a loss, a win, a collision, an automatic retry, or a container.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -63,103 +61,78 @@ class RestartTapsTest {
         tap(screen, b.centerX(), b.centerY(), time)
     }
 
-    /** A ball crawling on after a feeble throw (3.8 of the 120 reference units). */
-    private fun crawl(screen: PlayScreen) {
-        screen.session.launch(0.0, -1.0, 0.001)
+    private val all = listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2, AudioCue.RESTART_TAP_3)
+
+    @Test
+    fun threePressesGiveTap1Tap2Tap3InOrderWhateverTheBallIsDoing() {
+        for (throwPower in listOf(0.0, 0.001, 0.2, 1.0)) { // at rest, drifting, moving, flying fast
+            val (host, screen) = play()
+            if (throwPower > 0.0) {
+                screen.session.launch(0.0, -1.0, throwPower)
+                repeat(5) { screen.update(1 / 60f) }
+            }
+            pressRestart(screen, 1_000)
+            assertEquals("power $throwPower", listOf(AudioCue.RESTART_TAP_1), host.taps)
+            pressRestart(screen, 1_250)
+            assertEquals(listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2), host.taps)
+            pressRestart(screen, 1_500)
+            assertEquals("power $throwPower", all, host.taps)
+            assertEquals(GameSession.State.AIMING, screen.session.state)
+            assertEquals(0.0, screen.session.ball.speed, 0.0)
+            assertTrue("a light touch of feedback as the third completes", host.haptics.contains(Haptic.CLICK))
+        }
+    }
+
+    @Test
+    fun everyPressStillPutsTheAttemptBackAtItsStartAtOnce() {
+        val (host, screen) = play()
+        screen.session.launch(0.0, -1.0, 0.5)
         repeat(5) { screen.update(1 / 60f) }
-        assertTrue("the ball is very slow", screen.session.isBallVerySlow())
-    }
-
-    @Test
-    fun aVerySlowBallGivesTap1ThenTap2ThenTap3AndIsPutBackOnTheThird() {
-        val (host, screen) = play()
-        crawl(screen)
-        val before = screen.session.resetCount
+        assertEquals(GameSession.State.MOVING, screen.session.state)
         pressRestart(screen, 1_000)
-        assertEquals(listOf(AudioCue.RESTART_TAP_1), host.taps)
-        assertEquals("the first press does not touch the ball", GameSession.State.MOVING, screen.session.state)
+        assertEquals("the first press restarts at once, as it always has", GameSession.State.AIMING, screen.session.state)
+        assertEquals(1, screen.session.resetCount)
         pressRestart(screen, 1_250)
-        assertEquals(listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2), host.taps)
-        assertEquals("nor does the second", GameSession.State.MOVING, screen.session.state)
-        assertEquals(before, screen.session.resetCount)
         pressRestart(screen, 1_500)
-        assertEquals(listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2, AudioCue.RESTART_TAP_3), host.taps)
-        assertEquals("the third puts the ball back at its start", GameSession.State.AIMING, screen.session.state)
-        assertEquals(before + 1, screen.session.resetCount)
-        assertEquals(0.0, screen.session.ball.speed, 0.0)
-        assertTrue("charging again", screen.isRespawning)
-        assertTrue("a light touch of feedback on the third", host.haptics.contains(Haptic.CLICK))
+        assertEquals(3, screen.session.resetCount)
+        assertEquals(all, host.taps)
     }
 
     @Test
-    fun aFourthPressBeginsANewSetAndAtRestItIsSilent() {
+    fun aFourthPressBeginsANewSetWithTap1() {
         val (host, screen) = play()
-        crawl(screen)
         pressRestart(screen, 1_000); pressRestart(screen, 1_250); pressRestart(screen, 1_500)
-        assertEquals(3, host.taps.size)
-        pressRestart(screen, 1_750) // the ball is at its start now: nothing slow about it
-        assertEquals("no fourth sound", 3, host.taps.size)
+        pressRestart(screen, 1_750)
+        assertEquals(all + AudioCue.RESTART_TAP_1, host.taps)
+    }
+
+    @Test
+    fun aPauseBetweenPressesStartsTheCountAgain() {
+        val (host, screen) = play()
+        pressRestart(screen, 1_000)
+        pressRestart(screen, 3_000) // too long since the last: the first of a new set
+        pressRestart(screen, 3_250)
+        assertEquals(listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_2), host.taps)
     }
 
     @Test
     fun theRestartButtonHasNoPressSoundOfItsOwn() {
         val (host, screen) = play()
         pressRestart(screen, 1_000)
-        assertTrue("silent at a normal speed", host.sounds.isEmpty())
+        assertEquals("only the first of the three sounds, no button tick on top of it", listOf(AudioCue.RESTART_TAP_1), host.sounds)
     }
 
     @Test
-    fun withTheBallAtANormalSpeedEveryPressRestartsAtOnceAndNothingSounds() {
+    fun threeQuickTapsAnywhereOnTheScreenRestartAndSoundTheLastOne() {
         val (host, screen) = play()
         screen.session.launch(0.0, -1.0, 0.5)
         repeat(5) { screen.update(1 / 60f) }
-        assertFalse(screen.session.isBallVerySlow())
-        pressRestart(screen, 1_000)
-        assertEquals("the first press restarts at once, as it always has", GameSession.State.AIMING, screen.session.state)
-        pressRestart(screen, 1_250)
-        pressRestart(screen, 1_500)
-        assertTrue(host.taps.isEmpty())
-        assertEquals(3, screen.session.resetCount)
-    }
-
-    @Test
-    fun aBallAtRestBeforeAnyThrowIsSilent() {
-        val (host, screen) = play()
-        pressRestart(screen, 1_000); pressRestart(screen, 1_250); pressRestart(screen, 1_500)
-        assertTrue(host.taps.isEmpty())
-    }
-
-    @Test
-    fun theSpeedCountsAtTheFirstPressNotAtTheLater() {
-        val (host, screen) = play()
-        screen.session.launch(0.0, -1.0, 0.5) // normal when the player starts
-        repeat(5) { screen.update(1 / 60f) }
-        pressRestart(screen, 1_000) // restarts at once
-        crawl(screen) // slow now, but the set began at a normal speed
-        pressRestart(screen, 1_250)
-        pressRestart(screen, 1_500)
-        assertTrue(host.taps.isEmpty())
-    }
-
-    @Test
-    fun aPauseBetweenPressesStartsTheCountAgain() {
-        val (host, screen) = play()
-        crawl(screen)
-        pressRestart(screen, 1_000)
-        pressRestart(screen, 3_000) // too long since the last: this is the first of a new set
-        assertEquals(listOf(AudioCue.RESTART_TAP_1, AudioCue.RESTART_TAP_1), host.taps)
-        assertEquals("the ball was never touched", GameSession.State.MOVING, screen.session.state)
-    }
-
-    @Test
-    fun threeQuickTapsAnywhereRestartInSilence() {
-        val (host, screen) = play()
-        crawl(screen)
         tap(screen, 900f, 500f, 10_000)
         tap(screen, 900f, 500f, 10_220)
+        assertTrue("a lone tap is not a request to restart: no sound", host.taps.isEmpty())
         tap(screen, 900f, 500f, 10_440)
-        assertTrue("only the restart button's presses have these sounds", host.taps.isEmpty())
-        assertEquals("...but the attempt does start over", GameSession.State.AIMING, screen.session.state)
+        assertEquals(listOf(AudioCue.RESTART_TAP_3), host.taps)
+        assertEquals(GameSession.State.AIMING, screen.session.state)
     }
 
     @Test

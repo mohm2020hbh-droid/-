@@ -93,12 +93,6 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     /** Quick presses of the restart button: the third in a row is a full manual restart, like three taps on the screen. */
     private val restartPresses = PressCounter()
 
-    /**
-     * Whether the ball was very slow when the player began a set of restart presses. Read at the first of them, before anything puts the ball
-     * back at its start (after which the ball is at rest and would always look slow).
-     */
-    private var slowWhenAsked = false
-
     /** When the touch being handled happened (seconds on the event clock): the time of a button press, which has none of its own. */
     private var touchTime = 0.0
 
@@ -107,7 +101,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private val hint: String? = level.hintFor(kit.text.language)
     private val levelNumber = String.format(Locale.ROOT, "%02d", index + 1)
 
-    /** No press sound of its own: its feedback is the 1 -> 2 -> 3 of [RestartSound], when the ball is very slow. */
+    /** No press sound of its own: its feedback is the 1 -> 2 -> 3 of [RestartSound]. */
     internal val restartButton = UiButton(UiButton.Style.ICON, icon = Icon.RESTART, cue = null) { pressRestart() }
     private val levelsButton = UiButton(UiButton.Style.ICON, icon = Icon.GRID) { host.showLevels(index) }
     private val hudButtons = listOf(restartButton, levelsButton)
@@ -122,7 +116,7 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     private var leftForNext = false
     private var unlockPlayed = false
     private val nextButton = UiButton(UiButton.Style.PRIMARY, kit.text.next, Icon.PLAY, cue = AudioCue.UI_CONFIRM) { host.play(index + 1) }
-    private val replayButton = UiButton(UiButton.Style.OUTLINE, kit.text.restart, Icon.RESTART) { pressRestart() }
+    private val replayButton = UiButton(UiButton.Style.OUTLINE, kit.text.restart, Icon.RESTART, cue = null) { pressRestart() }
     private val menuButton = UiButton(UiButton.Style.OUTLINE, kit.text.levels, Icon.GRID) { host.showLevels(index) }
 
     /** Seconds since the attempt was won or lost, and seconds on this screen (for looping animations). */
@@ -557,23 +551,18 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
     }
 
     /**
-     * A press of the restart button. With a very slow ball the three presses are one gesture, 1 -> 2 -> 3: each has its own light sound
-     * ([RestartSound]) and the ball is put back at its start on the third, not before. With the ball at any other speed (or at rest) a press
-     * restarts the attempt at once, in silence, as it always has. The speed is read at the first press of a set, before anything resets the ball.
+     * A press of the restart button. Three presses in a row, at any speed of the ball, are one gesture, 1 -> 2 -> 3, and each has its own light sound
+     * ([RestartSound]); the third is the clear one that says it is done. Every press puts the attempt back at its start at once, as it always has: the
+     * sounds are the feedback of how far the three have got.
      */
     private fun pressRestart() {
-        if (restartPresses.startsSet(touchTime)) slowWhenAsked = session.isBallVerySlow()
         val finished = restartPresses.press(touchTime)
-        val step = restartPresses.step
-        RestartSound.cueFor(step, slowWhenAsked)?.let { host.sound(it) }
-        if (RestartSound.resetsNow(step, slowWhenAsked)) restart()
-        if (finished) {
-            if (slowWhenAsked) host.haptic(Haptic.CLICK) // a light touch of feedback as it completes: no shake
-            slowWhenAsked = false
-        }
+        RestartSound.cueFor(restartPresses.step)?.let { host.sound(it) }
+        restart()
+        if (finished) host.haptic(Haptic.CLICK) // a light touch of feedback as it completes: no shake
     }
 
-    /** The attempt starts over: everything back at its start. (Silent: the sounds belong to [pressRestart].) */
+    /** The attempt starts over: everything back at its start. (Silent: the sounds belong to the gestures that ask for it.) */
     private fun restart() {
         host.stopSound(AudioCue.SUCCESS_SPIN)
         session.restart()
@@ -676,7 +665,9 @@ class PlayScreen(host: GameHost, val index: Int, private val level: LevelData) :
             MotionEvent.ACTION_DOWN -> taps.down(e.x / unit, e.y / unit, seconds(e))
             MotionEvent.ACTION_MOVE -> taps.move(e.x / unit, e.y / unit)
             MotionEvent.ACTION_UP -> if (taps.up(seconds(e)) && (session.state == GameSession.State.AIMING || session.state == GameSession.State.MOVING)) {
-                restart() // three quick taps anywhere: the same fresh start, without the button's sounds
+                host.sound(AudioCue.RESTART_TAP_3) // three quick taps anywhere: the same fresh start, and the sound that says it is done
+                host.haptic(Haptic.CLICK)
+                restart()
                 return true
             }
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_DOWN -> taps.cancel()
