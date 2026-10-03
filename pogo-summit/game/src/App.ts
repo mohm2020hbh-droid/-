@@ -93,6 +93,10 @@ export class App {
     window.addEventListener('orientationchange', () => setTimeout(() => this.resize(), 120));
     this.resize();
     document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'playing') this.pause(); });
+    // Android host events (MainActivity): focus loss / onPause, and the hardware Back button
+    window.addEventListener('pogo-pause', () => { if (this.state === 'playing') this.pause(); this.audio.suspend(); });
+    window.addEventListener('focus', () => this.audio.resume());
+    (window as unknown as { PogoBack: () => boolean }).PogoBack = () => this.handleBack();
     window.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'playing') this.pause(); } });
     this.applyControlSettings();
     this.game.start();
@@ -348,6 +352,18 @@ export class App {
     if (s.vy < -21 && !this.whistled && s.mode === 'AIR') { this.whistled = true; this.sfx.play(SFX.fall); }
     if (s.vy > -6) this.whistled = false;
     void dt; void DT;
+  }
+
+  /** Hardware Back: close the topmost thing first; returns false only when the app should exit (main menu / splash). */
+  handleBack(): boolean {
+    switch (this.state) {
+      case 'playing': this.pause(); return true;
+      case 'paused': this.resume(); return true;
+      case 'results': this.toMenu(); return true;
+      case 'lab': this.lab?.dispose(); this.lab = null; Object.assign(this.game.cfg, createPhysicsConfig()); this.applyControlSettings(); this.toMenu(); return true;
+      case 'sub': this.sfx.play(SFX.uiBack); this.back(); return true;
+      default: return false;
+    }
   }
 
   /** QA/automation snapshot. */

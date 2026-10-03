@@ -1,7 +1,7 @@
 /** Stylesheet for HUD + menus (landscape-first, safe-area aware, rem scaled to the screen HEIGHT). */
 export const CSS = `
 :root{
-  --sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+  --sl:max(env(safe-area-inset-left,0px),var(--nl,0px));--sr:max(env(safe-area-inset-right,0px),var(--nr,0px));--st:max(env(safe-area-inset-top,0px),var(--nt,0px));--sb:max(env(safe-area-inset-bottom,0px),var(--nb,0px));
   --ink:#10142a;--panel:rgba(16,20,38,.64);--panel2:rgba(16,20,38,.82);--line:rgba(255,255,255,.14);
   --accent:#ff9a2e;--accent2:#ffd24a;--teal:#1fb0a8;--danger:#ff5a4a;
   font-size:clamp(13px,3.3vh,26px);
@@ -125,10 +125,10 @@ table.lb th{opacity:.7;font-size:.85rem}
 .results .kv b{display:block;font-size:1.4rem}
 .btnrow{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
 .splash{background:radial-gradient(ellipse at 50% 40%,#28305e,#0d1022);align-items:center;justify-content:center;flex-direction:column;gap:1.2rem;z-index:50}
-.lab-panel{position:absolute;right:max(.6rem,var(--sr));top:max(.6rem,var(--st));width:min(34vw,19rem);max-height:84vh;overflow:auto;pointer-events:auto;font-size:.8rem;padding:.7rem;font-weight:600}
-.lab-readout{position:absolute;left:max(.6rem,var(--sl));bottom:max(.6rem,var(--sb));pointer-events:none;font:600 .78rem ui-monospace,Menlo,monospace;line-height:1.35;padding:.5rem .7rem;white-space:pre}
-.lab-bar{position:absolute;left:50%;bottom:max(.6rem,var(--sb));transform:translateX(-50%);display:flex;gap:.4rem;pointer-events:auto;flex-wrap:wrap;justify-content:center;max-width:70vw}
-.lab-bar .btn{min-height:2.3rem;padding:.3rem .8rem;font-size:.85rem;border-radius:1.2rem}
+.lab-panel{position:absolute;right:max(.6rem,var(--sr));top:calc(max(.6rem,var(--st)) + 4rem);width:min(34vw,19rem);max-height:66vh;overflow:auto;pointer-events:auto;font-size:.8rem;padding:.7rem;font-weight:600}
+.lab-readout{position:absolute;left:max(.6rem,var(--sl));bottom:max(.6rem,var(--sb));max-width:46vw;overflow:hidden;pointer-events:none;font:600 .66rem ui-monospace,Menlo,monospace;line-height:1.3;padding:.4rem .6rem;white-space:pre}
+.lab-bar{position:absolute;right:max(6.5rem,var(--sr));bottom:max(.6rem,var(--sb));display:flex;gap:.35rem;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:46vw}
+.lab-bar .btn{min-height:2.1rem;padding:.25rem .7rem;font-size:.78rem;border-radius:1.2rem}
 .lab-panel .p{display:grid;grid-template-columns:1fr auto;gap:.1rem .5rem;margin-bottom:.5rem}
 .lab-panel .p .n{font-weight:800}
 .lab-panel .p .tag{font-size:.65rem;padding:0 .35rem;border-radius:.5rem;background:#ffb347;color:#3a1800;margin-inline-start:.3rem}

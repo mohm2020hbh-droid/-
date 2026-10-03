@@ -11,3 +11,8 @@ android/app/release/
 out/
 .DS_Store
 qa/tmp/
+android/build-legacy/
+android/shell-tests/build/
+android/shell-tests/.gradle/
+android/.gradle/
+android/**/.gradle/

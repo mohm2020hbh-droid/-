@@ -276,6 +276,7 @@ export class Character {
 
   // ─────────────────────────────────────────────────────── update ───────
   update(dt: number, f: CharFrame): void {
+    dt = Math.max(0, Math.min(0.1, dt));
     this.time += dt;
     const air = f.mode === 'AIR' || f.mode === 'SLIDING';
     const charging = f.mode === 'CHARGING';
@@ -360,6 +361,8 @@ export class Character {
       const prev = this.tailPos[i - 1], p = this.tailPos[i];
       const rest = new THREE.Vector3(prev.x - 0.17 * sgn + wind.x, prev.y - 0.05 + wind.y + 0.015 * i, prev.z - 0.015);
       p.lerp(rest, 1 - Math.exp(-13 * dt));
+      const dl = p.distanceTo(prev);
+      if (dl > 0.24) p.sub(prev).multiplyScalar(0.24 / dl).add(prev); // hard length constraint: the scarf can never stretch
     }
     for (let i = 0; i < this.tailPos.length; i++) {
       const p = this.tailPos[i];

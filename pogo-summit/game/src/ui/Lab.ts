@@ -31,15 +31,18 @@ export class Lab implements InputSource {
   constructor(parent: HTMLElement, private readonly game: Game, manual: InputSource, private readonly onExit: () => void) {
     this.manual = manual;
     this.readout = h('div.lab-readout.panel');
+    let panel!: HTMLElement;
     const bar = h('div.lab-bar', null,
       this.b('Reset', () => this.game.reset()),
       this.b('Test Jump', () => this.testJump()),
       this.b('Test Bounce', () => this.testBounce()),
       this.b('Test Boost', () => this.testBoost()),
       this.b('Test Fall', () => this.testFall()),
+      this.b('Params', () => { panel.style.display = panel.style.display === 'none' ? '' : 'none'; }),
       this.b('Exit', () => this.onExit()),
     );
-    const panel = h('div.lab-panel.panel');
+    panel = h('div.lab-panel.panel');
+    panel.style.display = 'none';
     panel.append(h('h4', null, 'Test jump'), this.slider('Angle', this.angleDeg, -65, 65, 1, v => { this.angleDeg = v; }, '°'), this.slider('Power', this.power * 100, 0, 100, 1, v => { this.power = v / 100; }, '%'));
     const groups: Record<string, ParamKey[]> = {};
     for (const k of Object.keys(PARAM_DEFS) as ParamKey[]) (groups[PARAM_DEFS[k].group] ??= []).push(k);

@@ -26,7 +26,7 @@ p.on('console', m => { const t = m.text(); if (/error|warn|fail/i.test(t) && !/4
 const touch = async (type, x, y, id = 1) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' || type === 'touchCancel' ? [] : [{ x, y, id }] });
 for (const s of steps) {
   if (s.goto !== undefined) { await p.goto(base + s.goto); await p.waitForFunction('window.__ready', null, { timeout: 40000 }); }
-  else if (s.click) { await p.getByText(s.click, { exact: false }).first().click({ timeout: 8000 }); }
+  else if (s.click) { const btn = p.getByRole('button', { name: s.click }); if (await btn.count()) await btn.first().click({ timeout: 8000 }); else await p.getByText(s.click, { exact: false }).first().click({ timeout: 8000 }); }
   else if (s.tap) { await p.touchscreen.tap(s.tap[0], s.tap[1]); }
   else if (s.wait) await p.waitForTimeout(s.wait);
   else if (s.frames) await p.evaluate(n => window.__pogo.stepFrames(n), s.frames);

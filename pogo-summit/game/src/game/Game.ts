@@ -84,7 +84,7 @@ export class Game {
     const loop = (t: number) => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(loop);
-      const dt = Math.min(0.1, (t - this.last) / 1000);
+      const dt = Math.max(0, Math.min(0.1, (t - this.last) / 1000)); // rAF stamps can precede performance.now(): never allow negative dt
       this.last = t;
       this.tick(dt);
     };

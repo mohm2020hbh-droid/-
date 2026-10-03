@@ -1,5 +1,6 @@
 import { App } from './App';
 import { createPlantedState } from './sim/PogoState';
+import { Native } from './platform/Native';
 
 /**
  * Entry point. Query flags (QA / development only, never shown to players):
@@ -9,6 +10,9 @@ const q = new URLSearchParams(location.search);
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const ui = document.getElementById('ui') as HTMLElement;
 ui.style.pointerEvents = 'none';
+// native safe-area fallback (display cutouts) when CSS env() reports 0 inside the WebView
+const ins = Native.insets();
+for (const [k, v] of [['--nt', ins.top], ['--nr', ins.right], ['--nb', ins.bottom], ['--nl', ins.left]] as const) document.documentElement.style.setProperty(k, `${v}px`);
 const app = new App(canvas, ui, q);
 
 if (q.get('debug') === '1') {

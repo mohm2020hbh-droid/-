@@ -356,7 +356,7 @@ export class GameRenderer {
 
   // ────────────────────────────────────────────────────────── frame ──────
   render(f: RenderFrame): void {
-    const dt = Math.min(0.1, f.dt);
+    const dt = Math.max(0, Math.min(0.1, f.dt));
     this.time += dt;
     const s = f.state, pose = f.pose, cfg = this.cfg;
     // fps meter (smoothed)
