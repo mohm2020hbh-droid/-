@@ -161,7 +161,7 @@ export class GameRenderer {
     // aerial layers
     this.mountains = buildMountains(rng, theme, b.minX, b.maxX);
     this.levelGroup.add(this.mountains);
-    this.clouds = buildClouds(rng, theme, b.minX, b.maxX, b.minY, b.maxY, q.decor);
+    this.clouds = buildClouds(rng, theme, b.minX, b.maxX, b.minY, b.maxY, q.decor, allPlatforms(level).map(p => ({ x: p.x, y: p.y })));
     this.levelGroup.add(this.clouds.group);
     this.buildFloatingWorld(rng, q.decor);
     this.buildLandmarks();
@@ -232,8 +232,8 @@ export class GameRenderer {
           // hanging chains to a fixed anchor high above (the platform swings under them)
           const chains: THREE.Mesh[] = [], anchors: THREE.Vector3[] = [];
           for (const sx of [-1, 1]) {
-            const m = mesh(new THREE.CylinderGeometry(0.09, 0.09, 1, 5), new THREE.MeshStandardMaterial({ color: '#8a8a9a', roughness: 0.5, metalness: 0.6 }), false, false);
-            this.levelGroup.add(m); chains.push(m); anchors.push(new THREE.Vector3(p.x + sx * (p.w / 2 - 0.35), p.y + 22, 0));
+            const m = mesh(new THREE.CylinderGeometry(0.11, 0.11, 1, 6), new THREE.MeshStandardMaterial({ color: '#b4b6c6', roughness: 0.55, metalness: 0.1 }), false, false);
+            this.levelGroup.add(m); chains.push(m); anchors.push(new THREE.Vector3(p.x + sx * (p.w / 2 - 0.35), p.y + 15, 0));
           }
           mv.chains = chains; mv.anchors = anchors;
         }
@@ -293,14 +293,28 @@ export class GameRenderer {
     const b = level.bounds;
     const placed: { x: number; y: number; z: number; r: number }[] = [];
     const nIsl = Math.round(34 * density), nPil = Math.round(7 * density);
+    // Camera stops along the climb (platform centres): the sky band above them must stay readable (reference: ~1/3 of the frame
+    // is open sky). A candidate whose vertical extent enters [camY+0.2H, camY+1.0H] at some stop that can see it is rejected.
+    const stops = allPlatforms(level).map(p => ({ x: p.x, y: p.y + 1.6 }));
+    const tanHalf = Math.tan((this.rig.baseFov * Math.PI) / 360);
+    const blocksSky = (x: number, y: number, z: number, r: number): boolean => {
+      const H = (this.rig.baseDistance + -z) * tanHalf;
+      const lo = y - r * 0.95, hi = y + r * 0.35;
+      for (const s of stops) {
+        if (Math.abs(x - s.x) > H * 2.3 + r) continue;
+        if (hi > s.y + 0.2 * H && lo < s.y + 1.0 * H) return true;
+      }
+      return false;
+    };
     let tries = 0;
-    while (placed.length < nIsl && tries++ < 1400) {
+    while (placed.length < nIsl && tries++ < 3000) {
       const z = -(11 + Math.pow(rng(), 1.3) * 78);
-      const r = range(rng, 3.6, 8) * (1 + -z / 70);
-      const x = range(rng, b.minX - 50, b.maxX + 50), y = range(rng, b.minY - 8, b.maxY + 24) - -z * 0.05;
-      // keep the sky above the climb readable: no big nearby island may hover over the playable box
+      // angular-size cap: a nearby island may never fill more than ~45 % of the frame height
+      const r = Math.min(range(rng, 3.6, 8) * (1 + -z / 70), 0.12 * (this.rig.baseDistance + -z));
+      const x = range(rng, b.minX - 50, b.maxX + 50), y = range(rng, b.minY - 40, b.maxY + 24) - -z * 0.05;
       const overPlay = x > b.minX - 12 - r && x < b.maxX + 12 + r && y > b.minY - r && y < b.maxY + 14 + r;
       if (overPlay && z > -34) continue;
+      if (blocksSky(x, y, z, r)) continue;
       if (placed.some(p => Math.hypot(p.x - x, p.y - y, (p.z - z) * 0.5) < p.r + r + 3)) continue;
       placed.push({ x, y, z, r });
       const g = buildIsland(rng, theme, r, r * range(rng, 0.6, 0.9), Math.floor(rng() * 9999), { trees: Math.round(r * range(rng, 0.5, 1.0)), detail: z > -30 ? 1 : 0 });
@@ -308,9 +322,10 @@ export class GameRenderer {
       m.name = 'island'; m.position.set(x, y, z);
       this.levelGroup.add(m);
     }
-    for (let i = 0; i < nPil; i++) {
-      const z = -range(rng, 48, 105), r = range(rng, 5, 10) * (1 + -z / 60);
-      const x = range(rng, b.minX - 60, b.maxX + 60), top = range(rng, b.minY - 6, (b.minY + b.maxY) / 2 + 4);
+    for (let i = 0, guard = 0; i < nPil && guard++ < 200; i++) {
+      const z = -range(rng, 48, 105), r = Math.min(range(rng, 5, 10) * (1 + -z / 60), 0.1 * (this.rig.baseDistance + -z));
+      const x = range(rng, b.minX - 60, b.maxX + 60), top = range(rng, b.minY - 14, (b.minY + b.maxY) / 2 + 4);
+      if (blocksSky(x, top - 2, z, 2.5)) { i--; continue; }
       const h = top + 70;
       const m = mesh(buildPillar(rng, theme, r, h, Math.floor(rng() * 9999)), mats.smooth, false, false);
       m.name = 'pillar'; m.position.set(x, top, z);

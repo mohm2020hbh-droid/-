@@ -65,8 +65,8 @@ export const LEVEL_01: LevelData = {
     { id: 'spikes1', kind: 'crystals', x: 47, y: 21, w: 3.2, h: 1.5 },
   ],
   landmarks: [
-    { id: 'castle', type: 'castle', x: 34, y: 30, z: -95, scale: 1.4, seed: 5 },
-    { id: 'arch', type: 'arch_bridge', x: 6, y: 26, z: -60, scale: 1.3, seed: 6 },
+    { id: 'castle', type: 'castle', x: 40, y: 12, z: -120, scale: 1.0, seed: 5 },
+    { id: 'arch', type: 'arch_bridge', x: 22, y: 8, z: -100, scale: 0.7, seed: 6 },
     { id: 'wf1', type: 'waterfall', x: -34, y: 26, z: -42, scale: 1.2, seed: 7 },
     { id: 'wf2', type: 'waterfall', x: 70, y: 40, z: -30, scale: 1.2, seed: 8 },
     { id: 'bridge', type: 'wood_bridge', x: 12, y: 8, z: -9, scale: 1, seed: 9 },

@@ -18,7 +18,7 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-119
 const p = await b.newPage({ viewport: { width: +W, height: +H }, deviceScaleFactor: 1 });
 p.on('pageerror', e => console.log('pageerror:', e.message));
 p.on('console', m => { const t = m.text(); if (/error|warn/i.test(t) && !/404/.test(t)) console.log('console:', t); });
-await p.goto(`http://localhost:${srv.address().port}/?debug=1&quality=default`);
+await p.goto(`http://localhost:${srv.address().port}/?debug=1&quality=default&autostart=1`);
 await p.waitForFunction('window.__ready', null, { timeout: 30000 });
 for (const v of views) {
   await p.evaluate(([v]) => { const a = window.__pogo; a.zoom(v.zoom ?? 19); if (v.js) (0, eval)(v.js); a.cam(v.x, v.y); a.stepFrames(v.frames ?? 30); }, [v]);

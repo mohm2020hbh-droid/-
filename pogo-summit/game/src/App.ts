@@ -217,7 +217,9 @@ export class App {
     if (!entry?.data) return;
     this.levelId = levelId;
     const data = entry.data;
-    const theme = WORLDS.find(w => w.worldId === entry.worldId) ?? WORLD_1;
+    // ?debug=1&world=… previews LEVEL_01 dressed in another world's theme (visual QA of worlds 2–4)
+    const preview = this.flags.get('debug') === '1' ? this.flags.get('world') : null;
+    const theme = WORLDS.find(w => preview ? (w.worldId === preview || w.id === preview) : w.worldId === entry.worldId) ?? WORLD_1;
     this.clearScreen(); this.state = 'playing'; this.finished = false; this.maxProgress = 0;
     this.game.loadLevel(data, theme);
     this.game.reset();

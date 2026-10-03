@@ -241,26 +241,31 @@ export function buildRockPlatform(o: SlabOpts & { decor?: Decor }): THREE.Buffer
 
 /** Big cliff mass used for walls / ceilings. Face toward gameplay stays inside the collision silhouette. */
 export function buildCliff(cx: number, cy: number, w: number, h: number, depth: number, seed: number, theme: WorldTheme, mossTop: boolean): THREE.BufferGeometry {
-  const rng = mulberry32(seed * 104729 + 5);
-  const sx = Math.max(2, Math.round(w / 1.6)), sy = Math.max(3, Math.round(h / 2.2)), sz = Math.max(2, Math.round(depth / 2));
+  // finer tessellation than the platforms: the cliff walls are the biggest surfaces on screen and must read as carved rock
+  const sx = Math.max(3, Math.round(w / 1.1)), sy = Math.max(4, Math.round(h / 1.35)), sz = Math.max(2, Math.round(depth / 1.6));
   const g = new THREE.BoxGeometry(w, h, depth, sx, sy, sz);
   const p = g.getAttribute('position') as THREE.BufferAttribute;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
     const n1 = noise3(x * 0.35, y * 0.25, z * 0.35, seed), n2 = noise3(x * 0.35 + 5, y * 0.25, z * 0.35, seed + 1);
     const ex = Math.abs(x) > w / 2 - 0.01, ez = Math.abs(z) > depth / 2 - 0.01;
-    // keep the playfield-facing x faces flat-ish; push the rest around freely
-    p.setXYZ(i, x + (ex ? 0 : (n1 - 0.5) * 0.9) , y + (n2 - 0.5) * 0.6, z + (ez ? (n1 - 0.5) * 1.6 : (n2 - 0.5) * 0.8));
+    // strata: stepped ledges every ~3.4 m with a noisy lip so the faces catch light along horizontal edges
+    const layer = Math.floor((y + 500) / 3.4), within = ((y + 500) / 3.4) - layer;
+    const ledge = (noise3(layer * 0.9, 0.5, 0.5, seed + 21) - 0.5) * 1.5 + (within > 0.82 ? 0.55 : 0) * (noise3(x * 0.5, layer, z * 0.5, seed + 22) + 0.3);
+    // the playfield-facing x faces stay flat (they are the collision surface); the camera-facing z faces carry the ledges
+    p.setXYZ(i, x + (ex ? 0 : (n1 - 0.5) * 0.9), y + (n2 - 0.5) * 0.6, z + (ez ? (n1 - 0.5) * 1.6 + ledge * (z > 0 ? 1 : -1) : (n2 - 0.5) * 0.8));
   }
   const rl = C(theme.terrain.rockLight), rm = C(theme.terrain.rockMid), rd = C(theme.terrain.rockDark), moss = C(theme.terrain.capB), mossD = C(theme.terrain.capDark);
   const tmp = new THREE.Color();
   paint(g, (x, y, z, nx, ny, nz) => {
     const band = Math.sin(y * 0.9 + fbm3(x * 0.2, y * 0.25, z * 0.2, seed + 9) * 6);
-    lerpColor(rd, rm, 0.35 + 0.35 * (0.5 + 0.5 * band), tmp);
-    if (nz > 0.5 || Math.abs(nx) > 0.5) tmp.lerp(rl, 0.18);
+    lerpColor(rd, rm, 0.4 + 0.4 * (0.5 + 0.5 * band), tmp);
+    if (nz > 0.5 || Math.abs(nx) > 0.5) tmp.lerp(rl, 0.3 + 0.2 * noise3(x * 0.6, y * 0.6, z * 0.6, seed + 15));
+    // faces looking up (ledge tops) catch sky light: warm light tan, with a moss fringe
+    if (ny > 0.35 && !(ny > 0.5 && mossTop)) tmp.lerp(rl, 0.35);
     if (ny > 0.5 && mossTop) tmp.copy(lerpColor(mossD, moss, fbm3(x * 0.4, 0, z * 0.4, seed + 3)));
-    else if (noise3(x * 0.7, y * 0.7, z * 0.7, seed + 12) > 0.8) tmp.lerp(moss, 0.55); // moss stains
-    tmp.multiplyScalar(0.8 + 0.4 * noise3(x * 1.3, y * 1.3, z * 1.3, seed + 13));
+    else if (noise3(x * 0.7, y * 0.7, z * 0.7, seed + 12) > 0.74) tmp.lerp(moss, 0.6); // moss / vine stains
+    tmp.multiplyScalar(0.88 + 0.4 * noise3(x * 1.6, y * 1.6, z * 1.6, seed + 13));
     return tmp.clone();
   });
   xf(g, cx, cy, 0);

@@ -280,4 +280,36 @@ export function softPuffTexture(): THREE.Texture {
   return _puff;
 }
 
+let _cumulus: THREE.Texture | null = null;
+/** Crisp storybook cumulus (defined silhouette, flat belly, lilac underside) — the reference's clouds have outlines, not veils. */
+export function cumulusTexture(): THREE.Texture {
+  if (_cumulus) return _cumulus;
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const x = c.getContext('2d')!;
+  const rng = mulberry32(2024);
+  const base = 104;
+  const puffs: [number, number, number][] = [];
+  for (let i = 0; i < 11; i++) {
+    const t = i / 10, cx = 28 + t * 200, mound = Math.sin(t * Math.PI);
+    const r = 20 + mound * 30 * (0.7 + rng() * 0.5);
+    puffs.push([cx, base - r * 0.62 - mound * 10 * rng(), r]);
+  }
+  puffs.push([128, base - 52, 44]);
+  x.fillStyle = '#ffffff';
+  for (const [cx, cy, r] of puffs) { x.beginPath(); x.arc(cx, cy, r, 0, 6.283); x.fill(); }
+  // belly shade + sun-lit top, clipped to the silhouette
+  x.globalCompositeOperation = 'source-atop';
+  const g = x.createLinearGradient(0, 20, 0, base + 6);
+  g.addColorStop(0, 'rgba(255,248,240,0)'); g.addColorStop(0.55, 'rgba(200,196,230,0.35)'); g.addColorStop(1, 'rgba(140,132,196,0.75)');
+  x.fillStyle = g; x.fillRect(0, 0, 256, 128);
+  // flat bottom: cut everything below the base line with a short fade
+  x.globalCompositeOperation = 'destination-out';
+  const cut = x.createLinearGradient(0, base - 4, 0, base + 10);
+  cut.addColorStop(0, 'rgba(0,0,0,0)'); cut.addColorStop(1, 'rgba(0,0,0,1)');
+  x.fillStyle = cut; x.fillRect(0, base - 4, 256, 128);
+  _cumulus = new THREE.CanvasTexture(c);
+  _cumulus.colorSpace = THREE.SRGBColorSpace;
+  return _cumulus;
+}
+
 export { pick };
