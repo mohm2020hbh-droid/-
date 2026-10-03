@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A ball, one bounce off a wall, into the goal: the whole game in one picture. Content stays
+     inside the 66dp safe zone of the 108dp adaptive-icon canvas. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M40,31 L66,31"
+        android:strokeWidth="3"
+        android:strokeColor="#E6D9BF"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#996FE3B4"
+        android:pathData="M42.9,58.5m-1.5,0a1.5,1.5 0,1 0,3 0a1.5,1.5 0,1 0,-3 0 M47.8,46.9m-1.5,0a1.5,1.5 0,1 0,3 0a1.5,1.5 0,1 0,-3 0 M52,37m-1.5,0a1.5,1.5 0,1 0,3 0a1.5,1.5 0,1 0,-3 0 M56.8,43.3m-1.5,0a1.5,1.5 0,1 0,3 0a1.5,1.5 0,1 0,-3 0 M61.6,49.6m-1.5,0a1.5,1.5 0,1 0,3 0a1.5,1.5 0,1 0,-3 0" />
+    <path
+        android:pathData="M69,62m-8,0a8,8 0,1 0,16 0a8,8 0,1 0,-16 0"
+        android:strokeWidth="3.2"
+        android:strokeColor="#F4C152" />
+    <path
+        android:fillColor="#F4C152"
+        android:pathData="M69,62m-2.4,0a2.4,2.4 0,1 0,4.8 0a2.4,2.4 0,1 0,-4.8 0" />
+    <path
+        android:fillColor="#6FE3B4"
+        android:fillType="evenOdd"
+        android:pathData="M38,70m-5.5,0a5.5,5.5 0,1 0,11 0a5.5,5.5 0,1 0,-11 0 M38,70m-1.8,0a1.8,1.8 0,1 1,3.6 0a1.8,1.8 0,1 1,-3.6 0" />
+</vector>

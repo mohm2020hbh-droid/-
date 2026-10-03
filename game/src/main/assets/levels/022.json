@@ -1,0 +1,1 @@
+{"name":"Soft Pad","difficulty":4,"concept":"Momentum: a gentle pad bends slow balls more than fast ones","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[690,1620],"goal":[400,710],"obstacles":[{"type":"wall","points":[-60,1060,540,1060]}],"elements":[{"kind":"booster","pos":[810,700],"scale":[300,300],"rotation":135,"force":2}]}

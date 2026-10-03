@@ -1,0 +1,1 @@
+{"name":"Wide Way","difficulty":5,"concept":"Combination: the wide way is a dead end","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[450,1620],"goal":[740,1040],"obstacles":[{"type":"poly","points":[490,820,360,900,230,820,230,680,360,600,490,680]},{"type":"wall","points":[-60,1260,180,1260]},{"type":"wall","points":[960,1260,480,1260]}]}

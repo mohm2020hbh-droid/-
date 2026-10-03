@@ -1,0 +1,1 @@
+{"name":"Elbow","difficulty":5,"concept":"Positioning: turn the corner of an L","bounces":2,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[630,840],"obstacles":[{"type":"wall","points":[90,1290,90,660,780,660]},{"type":"wall","points":[450,1290,450,1020,780,1020]}]}

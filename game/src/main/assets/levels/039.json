@@ -1,0 +1,1 @@
+{"name":"Force Chain","difficulty":7,"concept":"Combination: pull, then push","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[750,1620],"goal":[730,640],"obstacles":[{"type":"wall","points":[960,930,300,930]}],"elements":[{"kind":"attractive","pos":[360,960],"scale":[560,560],"force":300},{"kind":"repulsive","pos":[660,720],"scale":[480,480],"force":100}]}

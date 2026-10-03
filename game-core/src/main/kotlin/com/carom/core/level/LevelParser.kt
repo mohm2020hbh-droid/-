@@ -1,0 +1,418 @@
+package com.carom.core.level
+
+import com.carom.core.math.Vec2
+import kotlin.math.cos
+import kotlin.math.hypot
+import kotlin.math.sin
+
+/**
+ * Turns level JSON into [LevelData]. Only `ball`, `goal` and `bounces` are required:
+ *
+ * ```
+ * {
+ *   "name": "First Bounce",           // optional, defaults to the id
+ *   "bounces": 1,
+ *   "ball": [450, 1600],
+ *   "goal": [450, 400],
+ *   "size": [900, 2000],              // optional
+ *   "goalRadius": 48,                 // optional
+ *   "speed": 2400, "drag": 0.25,      // optional top speed, and how fast a free ball loses speed (1/s)
+ *   "friction": 0,                    // optional extra constant deceleration (units/s²)
+ *   "exitRequired": 1,                // optional: balls that must reach the exit
+ *   "difficulty": 4,                  // optional: 1 (first taste) .. 10 (last level), for tools and tests
+ *   "concept": "one bounce",          // optional: what the level teaches or asks, for tools and tests
+ *   "border": true,                   // optional: the edges bounce the ball (never drawn)
+ *   "controlZone": {"top": 1280},     // optional: where the ball may be moved before a throw (see [parseZone])
+ *   "hint": {"en": "...", "ar": "..."}, // optional teaching text (a plain string means English)
+ *   "guide": {"afterFails": 10, "angle": 271.5}, // optional path hint for players who keep failing
+ *   "timing": {"from": [450, 1620], "angle": 262, "width": 4, "speed": 1, "open": 3.1, "close": 4.4}, // optional: a throw that wins on the level clock (see Timing)
+ *   "obstacles": [
+ *     {"type": "wall", "points": [800, 0, 800, 600], "thickness": 30, "closed": false},
+ *     {"type": "rect", "x": 300, "y": 300, "w": 200, "h": 40, "angle": 45, "round": 14},
+ *     {"type": "poly", "points": [1000, 900, 1200, 600, 1400, 900]},
+ *     {"type": "circle", "x": 450, "y": 1000, "r": 90}
+ *   ],
+ *   "elements": [                     // optional: things with rules (see [parseElement])
+ *     {"kind": "booster", "pos": [450, 900], "scale": [300, 120], "rotation": -90, "force": 6.3},
+ *     {"kind": "portal", "id": "a", "link": "b", "pos": [200, 500], "scale": [140, 140]},
+ *     {"kind": "portal", "id": "b", "link": "a", "pos": [700, 1500], "scale": [140, 140], "boost": 1.1}
+ *   ]
+ * }
+ * ```
+ *
+ * An element takes: `kind` (solid, destructible, switchable, ballContainer, death, slower, booster,
+ * repulsive, attractive, portal, touchZone, slowMo, switch), `pos` [x, y] (its centre), `scale` [w, h]
+ * (a circle's diameter is w; `radius` also works), `rotation` degrees, `value` (generic value), `force`,
+ * `vector` (generic vector), `snap` [gx, gy], `moving` {to, period, wave, phase}, `scaling` {to, period,
+ * wave, phase}, `rotating` {speed, phase}, `deathTrigger`, `physical`, `switched`, `channel`, `active`,
+ * and for portals `link`, `boost`, `decay`, `angularSpeed`. The reference's names (collisionType,
+ * genericValue, genericVector, isDeathTrigger, isPhysical, isSwitched) are accepted too.
+ */
+object LevelParser {
+
+    fun parse(id: String, json: String): LevelData {
+        val root = JsonReader.parse(json) as? Map<*, *> ?: throw LevelFormatException("$id: root must be an object")
+        try {
+            val size = root["size"]?.let { point(it, "size") } ?: Vec2(LevelDefaults.WIDTH, LevelDefaults.HEIGHT)
+            val wallThickness = root.number("wallThickness") ?: LevelDefaults.WALL_THICKNESS
+            val bounces = root.number("bounces") ?: throw LevelFormatException("'bounces' is required")
+            if (bounces < 0 || bounces != Math.floor(bounces)) throw LevelFormatException("'bounces' must be a whole number ≥ 0")
+            val obstacles = (root["obstacles"] as? List<*>).orEmpty().mapIndexed { i, o ->
+                val obj = o as? Map<*, *> ?: throw LevelFormatException("obstacle #$i must be an object")
+                parseObstacle(obj, wallThickness, "obstacle #$i")
+            }
+            val elements = (root["elements"] as? List<*>).orEmpty().mapIndexed { i, o ->
+                val obj = o as? Map<*, *> ?: throw LevelFormatException("element #$i must be an object")
+                parseElement(obj, "element #$i")
+            }
+            val ball = point(root["ball"] ?: throw LevelFormatException("'ball' is required"), "ball")
+            val exitRequired = root.number("exitRequired") ?: 1.0
+            if (exitRequired < 1 || exitRequired != Math.floor(exitRequired)) throw LevelFormatException("'exitRequired' must be a whole number ≥ 1")
+            return LevelData(
+                id = id,
+                name = root["name"] as? String ?: id,
+                width = positive(size.x, "size"),
+                height = positive(size.y, "size"),
+                ball = ball,
+                goal = point(root["goal"] ?: throw LevelFormatException("'goal' is required"), "goal"),
+                goalRadius = positive(root.number("goalRadius") ?: LevelDefaults.GOAL_RADIUS, "goalRadius"),
+                bounces = bounces.toInt(),
+                maxSpeed = positive(root.number("speed") ?: LevelDefaults.MAX_SPEED, "speed"),
+                friction = (root.number("friction") ?: LevelDefaults.FRICTION).also {
+                    if (it < 0) throw LevelFormatException("'friction' must be ≥ 0")
+                },
+                border = root["border"] as? Boolean ?: true,
+                wallThickness = positive(wallThickness, "wallThickness"),
+                ballRadius = positive(root.number("ballRadius") ?: LevelDefaults.BALL_RADIUS, "ballRadius"),
+                obstacles = obstacles,
+                zone = parseZone(root, size, ball, root.number("ballRadius") ?: LevelDefaults.BALL_RADIUS),
+                hint = parseHint(root["hint"]),
+                guide = root["guide"]?.let { parseGuide(it) },
+                timing = root["timing"]?.let { parseTiming(it) },
+                elements = elements,
+                exitRequired = exitRequired.toInt(),
+                drag = (root.number("drag") ?: LevelDefaults.DRAG).also {
+                    if (it < 0) throw LevelFormatException("'drag' must be ≥ 0")
+                },
+                difficulty = (root.number("difficulty") ?: 0.0).also {
+                    if (it < 0 || it > 10 || it != Math.floor(it)) throw LevelFormatException("'difficulty' must be a whole number 0..10")
+                }.toInt(),
+                concept = root["concept"] as? String ?: "",
+            )
+        } catch (e: LevelFormatException) {
+            throw LevelFormatException("$id: ${e.message}")
+        }
+    }
+
+    /** The one place obstacle types are named. A new type is a new branch here. */
+    private fun parseObstacle(obj: Map<*, *>, defaultThickness: Double, where: String): Obstacle =
+        when (val type = obj["type"]) {
+            "wall" -> {
+                val points = points(obj["points"], "$where.points")
+                if (points.size < 2) throw LevelFormatException("$where: a wall needs at least 2 points")
+                Wall(
+                    points = points,
+                    closed = obj["closed"] as? Boolean ?: false,
+                    thickness = positive(obj.number("thickness") ?: defaultThickness, "$where.thickness"),
+                )
+            }
+            "poly" -> {
+                val points = points(obj["points"], "$where.points")
+                if (points.size < 3) throw LevelFormatException("$where: a polygon needs at least 3 points")
+                Block(points, rounding(obj, where))
+            }
+            "rect" -> {
+                val x = obj.number("x") ?: throw LevelFormatException("$where: 'x' is required")
+                val y = obj.number("y") ?: throw LevelFormatException("$where: 'y' is required")
+                val w = positive(obj.number("w") ?: 0.0, "$where.w")
+                val h = positive(obj.number("h") ?: 0.0, "$where.h")
+                Block(rotatedRect(x, y, w, h, obj.number("angle") ?: 0.0), rounding(obj, where))
+            }
+            "circle" -> {
+                val x = obj.number("x") ?: throw LevelFormatException("$where: 'x' is required")
+                val y = obj.number("y") ?: throw LevelFormatException("$where: 'y' is required")
+                val r = positive(obj.number("r") ?: 0.0, "$where.r")
+                if (r < 8.0) throw LevelFormatException("$where: 'r' must be at least 8")
+                circleBlock(x, y, r)
+            }
+            else -> throw LevelFormatException("$where: unknown type '$type'")
+        }
+
+    /**
+     * A solid disc of radius [r] at ([x], [y]). Every block is its outline pulled in and grown back by a rounding, so a
+     * disc is a tiny octagon (its core, 4 across) grown by the rest of the radius: as round as the physics can be,
+     * and it collides and draws exactly like any other block.
+     */
+    private fun circleBlock(x: Double, y: Double, r: Double): Block {
+        val core = 4.0
+        val outline = (0 until 8).map { i ->
+            val a = (i + 0.5) * Math.PI / 4
+            val corner = r / cos(Math.PI / 8) // an octagon of inradius r has its corners this far out
+            Vec2(x + cos(a) * corner, y + sin(a) * corner)
+        }
+        return Block(outline, rounding = r - core)
+    }
+
+    /**
+     * The control zone, in one of three forms (all in world units):
+     *
+     * - `"controlZone": {"top": 1280}` a band across the whole level, from y = 1280 down to the bottom edge;
+     * - `"controlZone": {"rect": [x, y, w, h]}` a rectangle (top-left corner and size);
+     * - `"controlZone": {"circle": [x, y, r]}` a disc.
+     *
+     * The older `"launchZone": n` (how far the ball's centre may go from its start) still works and means a disc round
+     * the start. With neither, the level gets the standard band ([LevelDefaults.ZONE_ABOVE_BALL] above the start).
+     */
+    private fun parseZone(root: Map<*, *>, size: Vec2, ball: Vec2, ballRadius: Double): ControlZone {
+        val zone = root["controlZone"]
+        if (zone != null) {
+            val obj = zone as? Map<*, *> ?: throw LevelFormatException("'controlZone' must be an object")
+            val keys = obj.keys.filterIsInstance<String>().filter { it in ZONE_KEYS }
+            if (keys.size != 1 || obj.size != 1) throw LevelFormatException("'controlZone' takes exactly one of 'top', 'rect' or 'circle'")
+            return when (keys[0]) {
+                "top" -> {
+                    val top = obj.number("top")!!
+                    if (top < 0 || top >= size.y) throw LevelFormatException("'controlZone.top' must be inside the level")
+                    ControlZone.Box(0.0, top, size.x, size.y - top)
+                }
+                "rect" -> {
+                    val r = numbers(obj["rect"], 4, "controlZone.rect")
+                    ControlZone.Box(r[0], r[1], positive(r[2], "controlZone.rect width"), positive(r[3], "controlZone.rect height"))
+                }
+                else -> {
+                    val c = numbers(obj["circle"], 3, "controlZone.circle")
+                    ControlZone.Circle(c[0], c[1], positive(c[2], "controlZone.circle radius"))
+                }
+            }
+        }
+        val launch = root.number("launchZone")
+        if (launch != null) {
+            if (launch < 0) throw LevelFormatException("'launchZone' must be ≥ 0")
+            return ControlZone.Circle(ball.x, ball.y, launch + ballRadius)
+        }
+        return ControlZone.band(size.x, size.y, ball.y)
+    }
+
+    private val ZONE_KEYS = setOf("top", "rect", "circle")
+
+    private fun numbers(value: Any?, count: Int, name: String): DoubleArray {
+        val list = value as? List<*>
+        if (list == null || list.size != count || list.any { it !is Double }) throw LevelFormatException("'$name' must be a list of $count numbers")
+        return DoubleArray(count) { list[it] as Double }
+    }
+
+    /** One entry of `elements`. This is the one place element fields are named. */
+    private fun parseElement(obj: Map<*, *>, where: String): Element {
+        val kindName = (obj["kind"] ?: obj["collisionType"]) as? String ?: throw LevelFormatException("$where: 'kind' is required")
+        val kind = ElementKind.parse(kindName) ?: throw LevelFormatException("$where: unknown kind '$kindName'")
+        val shape = when (val s = (obj["shape"] as? String)?.lowercase()) {
+            null -> kind.defaultShape
+            "rect", "box" -> Shape.RECT
+            "circle" -> Shape.CIRCLE
+            else -> throw LevelFormatException("$where: unknown shape '$s'")
+        }
+        val pos = (obj["pos"] ?: obj["position"])?.let { point(it, "$where.pos") }
+            ?: Vec2(
+                obj.number("x") ?: throw LevelFormatException("$where: 'pos' is required"),
+                obj.number("y") ?: throw LevelFormatException("$where: 'pos' is required"),
+            )
+        val scale = (obj["scale"] ?: obj["size"])?.let { point(it, "$where.scale") }
+            ?: obj.number("radius")?.let { Vec2(it * 2, it * 2) }
+            ?: Vec2(obj.number("w") ?: DEFAULT_ZONE, obj.number("h") ?: obj.number("w") ?: DEFAULT_ZONE)
+        fun flag(vararg keys: String, default: Boolean): Boolean = keys.firstNotNullOfOrNull { obj[it] as? Boolean } ?: default
+        fun num(vararg keys: String, default: Double): Double = keys.firstNotNullOfOrNull { obj.number(it) } ?: default
+        val moving = if (flag("isMoving", default = true)) (obj["moving"] as? Map<*, *>)?.let { m -> parseMoving(m, pos, "$where.moving") } else null
+        val scaling = if (flag("isScaling", default = true)) (obj["scaling"] as? Map<*, *>)?.let { m ->
+            val to = m["to"]?.let { point(it, "$where.scaling.to") } ?: throw LevelFormatException("$where.scaling.to is required")
+            Scaling(to.x, to.y, positive(m.number("period") ?: 4.0, "$where.scaling.period"), wave(m["wave"], where), m.number("phase") ?: 0.0)
+        } else null
+        val rotating = if (flag("isRotating", default = true)) (obj["rotating"] as? Map<*, *>)?.let { m ->
+            Rotating(m.number("speed") ?: throw LevelFormatException("$where.rotating.speed is required"), m.number("phase") ?: 0.0)
+        } else null
+        val channel = num("channel", default = 0.0)
+        if (channel != Math.floor(channel)) throw LevelFormatException("$where.channel must be a whole number")
+        return Element(
+            id = obj["id"] as? String ?: "",
+            kind = kind,
+            shape = shape,
+            x = pos.x,
+            y = pos.y,
+            rotation = num("rotation", "angle", default = 0.0),
+            scaleX = positive(scale.x, "$where.scale"),
+            scaleY = positive(scale.y, "$where.scale"),
+            value = num("value", "genericValue", default = 0.0),
+            force = num("force", default = 0.0),
+            vector = (obj["vector"] ?: obj["genericVector"])?.let { point(it, "$where.vector") } ?: Vec2(0.0, 0.0),
+            snap = obj["snap"]?.let { point(it, "$where.snap") },
+            moving = moving,
+            scaling = scaling,
+            rotating = rotating,
+            deathTrigger = flag("deathTrigger", "isDeathTrigger", default = kind == ElementKind.DEATH),
+            physical = flag("physical", "isPhysical", default = kind.physical),
+            switched = flag("switched", "isSwitched", default = kind == ElementKind.SWITCHABLE),
+            channel = channel.toInt(),
+            active = flag("active", default = true),
+            link = obj["link"] as? String ?: "",
+            boost = num("boost", default = 1.0),
+            decay = num("decay", default = 0.0),
+            angularSpeed = num("angularSpeed", default = 0.0),
+            ballBounces = num("ballBounces", default = -1.0).toInt(),
+            countsAsBounce = flag("countsAsBounce", default = true),
+        )
+    }
+
+
+    /**
+     * `moving`: `to` (the far end of a line), or `path` ("line", "circle", "polyline") with `points` (a chain), or `center`,
+     * `radius`, `angle` (a circle); `mode` ("pingpong" or "loop"); `period` seconds for a whole cycle, or `speed` in units per
+     * second instead; `delay`, `phase`, `pause`, `speedVar`, `wave`, `sweep`, `clockwise`; `clock` ("launch" or "level").
+     */
+    private fun parseMoving(m: Map<*, *>, start: Vec2, where: String): Moving {
+        val route = when (val r = (m["path"] as? String)?.lowercase()) {
+            null -> if (m["points"] != null) Route.POLYLINE else if (m["center"] != null) Route.CIRCLE else Route.LINE
+            "line" -> Route.LINE
+            "circle" -> Route.CIRCLE
+            "polyline", "chain" -> Route.POLYLINE
+            else -> throw LevelFormatException("$where: unknown path '$r'")
+        }
+        val cycle = when (val c = (m["mode"] as? String)?.lowercase()) {
+            null, "pingpong", "ping-pong" -> if (route == Route.CIRCLE && m["sweep"] == null && m["wave"] == null) Cycle.LOOP else Cycle.PINGPONG
+            "loop" -> Cycle.LOOP
+            else -> throw LevelFormatException("$where: unknown mode '$c'")
+        }
+        val clock = when (val c = (m["clock"] as? String)?.lowercase()) {
+            null, "launch" -> Clock.LAUNCH
+            "level" -> Clock.LEVEL
+            else -> throw LevelFormatException("$where: unknown clock '$c'")
+        }
+        val to = m["to"]?.let { point(it, "$where.to") }
+        val chain = (m["points"] as? List<*>)?.let { list -> (list.indices step 2).map { Vec2(list[it].toDouble(where), list[it + 1].toDouble(where)) } } ?: emptyList()
+        val center = m["center"]?.let { point(it, "$where.center") }
+        when (route) {
+            Route.LINE -> if (to == null) throw LevelFormatException("$where.to is required")
+            Route.POLYLINE -> if (chain.isEmpty()) throw LevelFormatException("$where.points needs at least one point")
+            Route.CIRCLE -> if (center == null || m.number("radius") == null) throw LevelFormatException("$where: a circle needs center and radius")
+        }
+        val pause = (m.number("pause") ?: 0.0).also { if (it < 0.0) throw LevelFormatException("$where.pause must not be negative") }
+        val sweep = m.number("sweep") ?: 180.0
+        val radius = m.number("radius") ?: 0.0
+        val pingpong = cycle == Cycle.PINGPONG
+        val length: Double = when (route) {
+            Route.LINE -> hypot((to?.x ?: 0.0) - start.x, (to?.y ?: 0.0) - start.y)
+            Route.POLYLINE -> {
+                var total = 0.0
+                var px = start.x
+                var py = start.y
+                for (p in chain) { total += hypot(p.x - px, p.y - py); px = p.x; py = p.y }
+                if (!pingpong) total += hypot(start.x - px, start.y - py)
+                total
+            }
+            Route.CIRCLE -> if (pingpong) Math.toRadians(sweep) * radius else 2 * Math.PI * radius
+        }
+        val speed = m.number("speed")
+        val period = when {
+            speed != null -> positive(speed, "$where.speed").let { (if (pingpong) 2 * length / it else length / it) + (if (pingpong) 2 * pause else 0.0) }
+            else -> positive(m.number("period") ?: m.number("duration") ?: 4.0, "$where.period")
+        }
+        if (pingpong && 2 * pause >= period) throw LevelFormatException("$where: the pauses leave no time to move")
+        val speedVar = m.number("speedVar") ?: 0.0
+        if (speedVar <= -1.0 || speedVar >= 1.0) throw LevelFormatException("$where.speedVar must be between -1 and 1")
+        return Moving(
+            toX = to?.x ?: start.x, toY = to?.y ?: start.y, period = period, wave = wave(m["wave"], where), phase = m.number("phase") ?: 0.0,
+            route = route, cycle = cycle, delay = (m.number("delay") ?: 0.0).also { if (it < 0.0) throw LevelFormatException("$where.delay must not be negative") },
+            pause = pause, speedVar = speedVar, clock = clock, points = chain,
+            centerX = center?.x ?: 0.0, centerY = center?.y ?: 0.0, radius = radius, startAngle = m.number("angle") ?: 0.0,
+            sweep = sweep, clockwise = m["clockwise"] as? Boolean ?: true,
+        )
+    }
+
+    private fun Any?.toDouble(where: String): Double = (this as? Number)?.toDouble() ?: throw LevelFormatException("$where: numbers expected")
+
+    private fun wave(value: Any?, where: String): Wave = when (val w = (value as? String)?.lowercase()) {
+        null, "sine", "pingpong", "smooth" -> Wave.SINE
+        "linear", "triangle" -> Wave.LINEAR
+        "once" -> Wave.ONCE
+        else -> throw LevelFormatException("$where: unknown wave '$w'")
+    }
+
+    private const val DEFAULT_ZONE = 200.0
+
+    /** Corner rounding of a block; 0 keeps sharp corners. */
+    private fun rounding(obj: Map<*, *>, where: String): Double =
+        (obj.number("round") ?: LevelDefaults.BLOCK_ROUNDING).also {
+            if (it < 0) throw LevelFormatException("$where.round must be ≥ 0")
+        }
+
+    private fun parseGuide(value: Any): Guide {
+        val obj = value as? Map<*, *> ?: throw LevelFormatException("'guide' must be an object")
+        val after = obj.number("afterFails") ?: DEFAULT_GUIDE_AFTER
+        if (after < 0 || after != Math.floor(after)) throw LevelFormatException("'guide.afterFails' must be a whole number ≥ 0")
+        return Guide(
+            afterFails = after.toInt(),
+            angle = obj.number("angle") ?: throw LevelFormatException("'guide.angle' is required"),
+            from = obj["from"]?.let { point(it, "guide.from") },
+        )
+    }
+
+    private fun parseTiming(value: Any): Timing {
+        val obj = value as? Map<*, *> ?: throw LevelFormatException("'timing' must be an object")
+        fun need(key: String) = obj.number(key) ?: throw LevelFormatException("'timing.$key' is required")
+        val open = need("open")
+        val close = need("close")
+        if (close < open) throw LevelFormatException("'timing.close' must not be before 'timing.open'")
+        return Timing(
+            from = point(obj["from"] ?: throw LevelFormatException("'timing.from' is required"), "timing.from"),
+            angle = need("angle"), width = need("width"), speed = obj.number("speed") ?: 1.0, open = open, close = close,
+        )
+    }
+
+    private const val DEFAULT_GUIDE_AFTER = 10.0
+
+    private fun parseHint(value: Any?): Map<String, String> = when (value) {
+        null -> emptyMap()
+        is String -> mapOf("en" to value)
+        is Map<*, *> -> value.entries.associate { (k, v) ->
+            (k as String) to (v as? String ?: throw LevelFormatException("'hint.$k' must be a string"))
+        }
+        else -> throw LevelFormatException("'hint' must be a string or an object of strings")
+    }
+
+    /** Corners of a w×h rectangle at (x, y), rotated by [degrees] about its centre. */
+    private fun rotatedRect(x: Double, y: Double, w: Double, h: Double, degrees: Double): List<Vec2> {
+        val cx = x + w / 2
+        val cy = y + h / 2
+        val r = Math.toRadians(degrees)
+        val c = cos(r)
+        val s = sin(r)
+        return listOf(-w / 2 to -h / 2, w / 2 to -h / 2, w / 2 to h / 2, -w / 2 to h / 2).map { (ox, oy) ->
+            Vec2(cx + ox * c - oy * s, cy + ox * s + oy * c)
+        }
+    }
+
+    private fun Map<*, *>.number(key: String): Double? = when (val v = this[key]) {
+        null -> null
+        is Double -> v
+        else -> throw LevelFormatException("'$key' must be a number")
+    }
+
+    private fun point(value: Any, name: String): Vec2 {
+        val list = value as? List<*>
+        if (list == null || list.size != 2 || list.any { it !is Double }) {
+            throw LevelFormatException("'$name' must be [x, y]")
+        }
+        return Vec2(list[0] as Double, list[1] as Double)
+    }
+
+    private fun points(value: Any?, name: String): List<Vec2> {
+        val list = value as? List<*>
+        if (list == null || list.size % 2 != 0 || list.any { it !is Double }) {
+            throw LevelFormatException("'$name' must be a flat list [x1, y1, x2, y2, ...]")
+        }
+        return (list.indices step 2).map { Vec2(list[it] as Double, list[it + 1] as Double) }
+    }
+
+    private fun positive(v: Double, name: String): Double {
+        if (v <= 0.0) throw LevelFormatException("'$name' must be > 0")
+        return v
+    }
+}

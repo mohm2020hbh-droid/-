@@ -1,0 +1,1 @@
+{"name":"Deep Well","difficulty":6,"concept":"Forces: a well pulls the ball through a narrow gap","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[690,860],"obstacles":[{"type":"wall","points":[960,1230,540,1230]},{"type":"wall","points":[960,1080,400,1080]}],"elements":[{"kind":"attractive","pos":[480,960],"scale":[480,480],"force":300}]}

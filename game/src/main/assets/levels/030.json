@@ -1,0 +1,1 @@
+{"name":"Pad Exam","difficulty":6,"concept":"Combination: two shelves, a pad and a tight window","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[390,730],"obstacles":[{"type":"wall","points":[960,1180,390,1180]},{"type":"wall","points":[960,960,220,960]}],"elements":[{"kind":"booster","pos":[150,820],"scale":[300,360],"rotation":45,"force":6}]}

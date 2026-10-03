@@ -1,0 +1,1 @@
+{"name":"Peak","difficulty":3,"concept":"Bounce: two banks round a triangle and a ledge","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[430,450],"obstacles":[{"type":"poly","points":[390,600,600,960,180,960]}]}

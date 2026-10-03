@@ -1,0 +1,1 @@
+{"name":"Shape Shifter","difficulty":5,"concept":"Combination: a disc and a triangle to bank round","bounces":2,"controlZone":{"rect":[90,1440,720,360]},"ball":[450,1620],"goal":[740,480],"obstacles":[{"type":"poly","points":[570,630,750,810,570,990,390,810]},{"type":"wall","points":[-60,1140,340,1140]},{"type":"wall","points":[960,1140,620,1140]}]}

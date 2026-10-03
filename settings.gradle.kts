@@ -25,3 +25,5 @@ dependencyResolutionManagement {
 rootProject.name = "My Application"
 
 include(":app")
+include(":game-core")
+include(":game")

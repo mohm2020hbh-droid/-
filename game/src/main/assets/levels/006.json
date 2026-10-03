@@ -1,0 +1,1 @@
+{"name":"Wedge","difficulty":2,"concept":"Angles: a triangle hides the goal, bank round it","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[630,1620],"goal":[700,700],"obstacles":[{"type":"poly","points":[-60,360,720,360,-60,1020]},{"type":"wall","points":[960,900,470,900]}]}

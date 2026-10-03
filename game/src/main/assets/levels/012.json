@@ -1,0 +1,1 @@
+{"name":"Tilted Bar","difficulty":3,"concept":"Bounce: a tilted rectangle hides the goal","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[750,650],"obstacles":[{"type":"rect","x":240,"y":1050,"w":600,"h":60,"angle":-30}]}

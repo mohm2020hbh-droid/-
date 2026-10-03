@@ -1,0 +1,1 @@
+{"name":"Pad and Bank","difficulty":5,"concept":"Angles: the pad sets the angle, the ceiling finishes the job","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[150,1620],"goal":[220,700],"obstacles":[{"type":"wall","points":[-60,930,600,930]}],"elements":[{"kind":"booster","pos":[660,1020],"scale":[300,300],"rotation":180,"force":6}]}

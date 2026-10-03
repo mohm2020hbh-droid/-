@@ -1,0 +1,84 @@
+package com.carom.core.progress
+
+import com.carom.core.audio.AudioSettings
+
+/** Persistent key/value storage (SharedPreferences on Android, a map in tests). */
+interface KeyValueStore {
+    fun getString(key: String): String?
+    fun putString(key: String, value: String)
+}
+
+/**
+ * Which levels are completed and unlocked. Progress is stored by level id, so inserting or
+ * reordering level files later never scrambles a player's save.
+ *
+ * Unlocking is linear: every level up to one past the furthest completed level is playable.
+ */
+class Progress(private val store: KeyValueStore, private val levelIds: List<String>) {
+
+    private val completed: MutableSet<String> =
+        store.getString(KEY_COMPLETED)?.split(',')?.filter { it.isNotEmpty() }?.toMutableSet() ?: mutableSetOf()
+
+    val levelCount: Int get() = levelIds.size
+
+    val completedCount: Int get() = levelIds.count { it in completed }
+
+    /** Index of the furthest level the player may play. */
+    val highestUnlockedIndex: Int
+        get() {
+            val furthestCompleted = levelIds.indexOfLast { it in completed }
+            return (furthestCompleted + 1).coerceAtMost(levelIds.size - 1).coerceAtLeast(0)
+        }
+
+    fun isCompleted(index: Int): Boolean = levelIds.getOrNull(index) in completed
+
+    fun isUnlocked(index: Int): Boolean = index in levelIds.indices && index <= highestUnlockedIndex
+
+    /** The level "Play" continues from: the first unlocked level not yet completed, else the last. */
+    val currentIndex: Int
+        get() = (0..highestUnlockedIndex).firstOrNull { !isCompleted(it) } ?: highestUnlockedIndex
+
+    fun markCompleted(index: Int) {
+        val id = levelIds.getOrNull(index) ?: return
+        if (completed.add(id)) store.putString(KEY_COMPLETED, completed.sorted().joinToString(","))
+    }
+
+    /** How many attempts at level [index] have failed, over all sessions. */
+    fun failCount(index: Int): Int = levelIds.getOrNull(index)?.let { store.getString(KEY_FAILS + it)?.toIntOrNull() } ?: 0
+
+    /** Counts one more failed attempt at level [index] and returns the new total. */
+    fun recordFail(index: Int): Int {
+        val id = levelIds.getOrNull(index) ?: return 0
+        val count = failCount(index) + 1
+        store.putString(KEY_FAILS + id, count.toString())
+        return count
+    }
+
+    var lastPlayedIndex: Int
+        get() = levelIds.indexOf(store.getString(KEY_LAST_PLAYED))
+        set(value) {
+            levelIds.getOrNull(value)?.let { store.putString(KEY_LAST_PLAYED, it) }
+        }
+
+    private companion object {
+        const val KEY_COMPLETED = "progress.completed"
+        const val KEY_LAST_PLAYED = "progress.lastPlayed"
+        const val KEY_FAILS = "progress.fails."
+    }
+}
+
+/** Player preferences: the audio choices ([audio]) and whether the phone vibrates. */
+class Settings(store: KeyValueStore) {
+    val audio = AudioSettings(store)
+
+    private val prefs = store
+
+    /** Vibration on or off: the one feedback that is not sound. */
+    var hapticsEnabled: Boolean
+        get() = prefs.getString(KEY_HAPTICS) != "off"
+        set(value) = prefs.putString(KEY_HAPTICS, if (value) "on" else "off")
+
+    private companion object {
+        const val KEY_HAPTICS = "settings.haptics"
+    }
+}

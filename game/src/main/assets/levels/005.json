@@ -1,0 +1,1 @@
+{"name":"Two Banks","difficulty":2,"concept":"Bounce: two banks round two shelves","bounces":2,"controlZone":{"rect":[90,1440,720,360]},"ball":[450,1620],"goal":[540,420],"obstacles":[{"type":"wall","points":[-60,1210,420,1210]},{"type":"wall","points":[960,780,310,780]}]}

@@ -1,0 +1,1 @@
+{"name":"Narrow Gate","difficulty":3,"concept":"Precision: a gate that wants a careful aim","bounces":0,"controlZone":{"rect":[90,1440,720,360]},"ball":[150,1620],"goal":[260,620],"obstacles":[{"type":"wall","points":[-60,1080,260,1080]},{"type":"wall","points":[960,1080,520,1080]}]}

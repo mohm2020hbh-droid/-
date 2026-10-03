@@ -1,0 +1,1 @@
+{"name":"Foundation Exam","difficulty":3,"concept":"Combination: a narrow gate, then a slanted wall","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[160,670],"obstacles":[{"type":"wall","points":[960,960,390,390]},{"type":"wall","points":[-60,1080,420,1080]},{"type":"wall","points":[960,1080,660,1080]}]}

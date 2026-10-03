@@ -1,0 +1,1 @@
+{"name":"Round Bumper","difficulty":4,"concept":"Angles: a disc hides the goal, bank past it","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[690,1620],"goal":[460,510],"obstacles":[{"type":"circle","x":450,"y":930,"r":180}]}

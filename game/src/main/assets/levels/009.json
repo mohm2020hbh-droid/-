@@ -1,0 +1,1 @@
+{"name":"Mirror","difficulty":3,"concept":"Angles: read the slant of a wall","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[270,1620],"goal":[190,580],"obstacles":[{"type":"wall","points":[960,960,270,270]},{"type":"wall","points":[-60,780,410,780]}]}

@@ -1,0 +1,1 @@
+{"name":"Over the Top","difficulty":2,"concept":"Bounce: one bounce off the ceiling","bounces":1,"controlZone":{"rect":[90,1440,720,360]},"ball":[510,1620],"goal":[360,540],"obstacles":[{"type":"wall","points":[-60,1020,650,1020]}],"hint":{"en":"Every wall or edge you hit uses one bounce","ar":"كل اصطدام بجدار أو بحافة يستهلك ارتدادًا واحدًا"}}

@@ -1,0 +1,1 @@
+{"name":"Round the Corner","difficulty":3,"concept":"Bounce: an indirect path over a shelf","bounces":2,"controlZone":{"rect":[90,1440,720,360]},"ball":[210,1620],"goal":[740,580],"obstacles":[{"type":"wall","points":[270,-60,270,1110]},{"type":"wall","points":[960,780,520,780]}]}
