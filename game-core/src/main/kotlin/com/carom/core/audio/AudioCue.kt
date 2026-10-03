@@ -61,13 +61,13 @@ enum class AudioCue(
      * The restart button's first press while the ball is very slow: a very light, rounded tick. The three presses 1 -> 2 -> 3 are one gesture, and these
      * three sounds say how far it has got. Nothing else plays them.
      */
-    RESTART_TAP_1(AudioBus.SFX, AudioCategory.FEEDBACK, VoicePool.Priority.EXIT_PARTIAL, 0.32, 1, 0.12),
+    RESTART_TAP_1(AudioBus.SFX, AudioCategory.FEEDBACK, VoicePool.Priority.EXIT_PARTIAL, 0.28, 1, 0.12),
 
     /** The second press: the same tick a step higher, with the first one's echo behind it: it is going somewhere. */
     RESTART_TAP_2(AudioBus.SFX, AudioCategory.FEEDBACK, VoicePool.Priority.EXIT_PARTIAL, 0.4, 1, 0.12),
 
     /** The third press: three notes climbing and a soft low settle under them, "done": the ball is back at its start. */
-    RESTART_TAP_3(AudioBus.SFX, AudioCategory.FEEDBACK, VoicePool.Priority.EXIT_PARTIAL, 0.55, 1, 0.12),
+    RESTART_TAP_3(AudioBus.SFX, AudioCategory.FEEDBACK, VoicePool.Priority.EXIT_PARTIAL, 0.52, 1, 0.12),
 
     // ---- interface (all light, none ever louder than a collision)
     /** A button goes down. */

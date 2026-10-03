@@ -174,19 +174,19 @@ object Synth {
 
     /** Press 1: one very light, rounded tick (E5 with a faint octave): there. */
     fun restartTap1(): ShortArray {
-        val out = FloatArray(seconds(0.12))
-        partial(out, 0.0, 659.25, 0.6, 0.016, attack = 0.002)
-        partial(out, 0.0, 1318.5, 0.14, 0.008, attack = 0.002)
-        return finish(out, peak = 0.5)
+        val out = FloatArray(seconds(0.2))
+        partial(out, 0.0, 659.25, 0.6, 0.04, attack = 0.002)
+        partial(out, 0.0, 1318.5, 0.16, 0.022, attack = 0.002)
+        return finish(out, peak = 0.8)
     }
 
     /** Press 2: the same tick a step up (G5) with the first one's echo just behind it, so it sounds like it is going somewhere. */
     fun restartTap2(): ShortArray {
-        val out = FloatArray(seconds(0.17))
-        partial(out, 0.0, 659.25, 0.22, 0.012, attack = 0.002)
-        partial(out, 0.04, 784.0, 0.6, 0.02, attack = 0.002)
-        partial(out, 0.04, 1568.0, 0.14, 0.01, attack = 0.002)
-        return finish(out, peak = 0.55)
+        val out = FloatArray(seconds(0.26))
+        partial(out, 0.0, 659.25, 0.3, 0.025, attack = 0.002)
+        partial(out, 0.05, 784.0, 0.6, 0.05, attack = 0.002)
+        partial(out, 0.05, 1568.0, 0.16, 0.025, attack = 0.002)
+        return finish(out, peak = 0.85)
     }
 
     /**
@@ -194,14 +194,14 @@ object Synth {
      * start, in a very small room. A little longer and a little clearer than the other two, and still quiet.
      */
     fun restartTap3(): ShortArray {
-        val out = FloatArray(seconds(0.5))
-        partial(out, 0.0, 196.0, 0.35, 0.05, attack = 0.004)
-        partial(out, 0.0, 659.25, 0.4, 0.014, attack = 0.002)
-        partial(out, 0.05, 784.0, 0.45, 0.016, attack = 0.002)
-        partial(out, 0.10, 987.77, 0.55, 0.05, attack = 0.002)
-        partial(out, 0.10, 1975.5, 0.14, 0.03, attack = 0.002)
-        reverb(out, mix = 0.08)
-        return finish(out, peak = 0.65)
+        val out = FloatArray(seconds(0.65))
+        partial(out, 0.0, 196.0, 0.45, 0.09, attack = 0.005)
+        partial(out, 0.0, 659.25, 0.45, 0.04, attack = 0.002)
+        partial(out, 0.06, 784.0, 0.5, 0.045, attack = 0.002)
+        partial(out, 0.12, 987.77, 0.6, 0.12, attack = 0.002)
+        partial(out, 0.12, 1975.5, 0.15, 0.06, attack = 0.002)
+        reverb(out, mix = 0.1)
+        return finish(out, peak = 0.9)
     }
 
     // ---------------------------------------------------------------- interface (light: none of them is ever as loud as a collision)

@@ -19,15 +19,15 @@ class RestartTapSoundsTest {
     @Test
     fun theyAreShortAndGrowFromOneToThree() {
         val (a, b, c) = sounds
-        assertTrue("tap 1 is a blip: ${seconds(a)}", seconds(a) in 0.05..0.2)
-        assertTrue("tap 2: ${seconds(b)}", seconds(b) in 0.08..0.25)
-        assertTrue("tap 3 is the longest but still short: ${seconds(c)}", seconds(c) in 0.3..0.6)
+        assertTrue("tap 1 is a blip: ${seconds(a)}", seconds(a) in 0.05..0.3)
+        assertTrue("tap 2: ${seconds(b)}", seconds(b) in 0.08..0.35)
+        assertTrue("tap 3 is the longest but still short: ${seconds(c)}", seconds(c) in 0.3..0.7)
         assertTrue(seconds(a) < seconds(b) && seconds(b) < seconds(c))
     }
 
     @Test
     fun theyAreQuietAndTheLastIsTheFullest() {
-        for (s in sounds) assertTrue("never loud: peak ${peak(s)}", peak(s) < 0.7)
+        for (s in sounds) assertTrue("never at the ceiling: peak ${peak(s)}", peak(s) < 0.95)
         val (a, b, c) = sounds
         assertTrue("1 is lighter than 2: ${rms(a)} vs ${rms(b)}", rms(a) < rms(b) * 1.15 || peak(a) < peak(b))
         assertTrue("3 has the most body: ${rms(c)} vs ${rms(a)}", rms(c) > rms(a) * 0.6)

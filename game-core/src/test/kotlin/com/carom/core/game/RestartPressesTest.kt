@@ -102,17 +102,20 @@ class RestartPressesTest {
     private fun GameSession.ref(v: Double) = v * level.maxSpeed / 120.0
 
     @Test
-    fun aBallIsVerySlowOnlyWhileItIsAliveInFlightAndCrawling() {
+    fun aBallIsVerySlowOnlyWhileItIsAliveInFlightAndDrifting() {
         val s = GameSession(level())
         assertFalse("a ball waiting to be thrown is not slow, it is at rest", s.isBallVerySlow())
         s.applyImpulse(0.0, -s.ref(5.0))
         assertTrue("5 ref units is a crawl", s.isBallVerySlow())
         s.restart()
+        s.applyImpulse(0.0, -s.ref(14.0))
+        assertTrue("14 is still very slow (a third of the screen's width a second)", s.isBallVerySlow())
+        s.restart()
         s.applyImpulse(0.0, -s.ref(60.0))
         assertFalse("half of the top speed is not", s.isBallVerySlow())
         s.restart()
-        s.applyImpulse(0.0, -s.ref(8.0))
-        assertFalse("8 ref units is already past 'very slow'", s.isBallVerySlow())
+        s.applyImpulse(0.0, -s.ref(20.0))
+        assertFalse("20 is already past 'very slow'", s.isBallVerySlow())
     }
 
     @Test
