@@ -1,0 +1,13 @@
+node_modules/
+game/dist/
+*.log
+android/**/build/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/www/
+android/app/release/
+*.keystore
+*.jks
+out/
+.DS_Store
+qa/tmp/
