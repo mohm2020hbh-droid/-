@@ -180,10 +180,11 @@ export function buildPillar(rng: Rng, theme: WorldTheme, radius: number, height:
 }
 
 /** A storybook castle: keep, towers with red cone roofs, curtain walls, lit windows. */
-export function buildCastle(rng: Rng, theme: WorldTheme): { body: THREE.BufferGeometry; glow: THREE.BufferGeometry } {
+export function buildCastle(rng: Rng, theme: WorldTheme, style: 'storybook' | 'frost' = 'storybook'): { body: THREE.BufferGeometry; glow: THREE.BufferGeometry } {
   const parts: THREE.BufferGeometry[] = [];
   const wins: THREE.BufferGeometry[] = [];
-  const stone = C('#d9ccb8'), stoneD = C('#a99a8c'), roof = C('#b9432f'), roofD = C('#7c2d28');
+  const frost = style === 'frost';
+  const stone = C(frost ? '#dfe6f0' : '#d9ccb8'), stoneD = C(frost ? '#9fb0c8' : '#a99a8c'), roof = C(frost ? '#3f7fb8' : '#b9432f'), roofD = C(frost ? '#24507c' : '#7c2d28');
   // rock spire the castle stands on (instead of a green blob): stepped rock column + grass cap
   const spire = rockColumn(theme, 15, 5, 46, 4, { radial: 14, strata: 4.5, tip: 6 });
   xf(spire, 0, -0.6, 0, 0, 0, 0, 1.35, 1, 0.9);
@@ -200,7 +201,7 @@ export function buildCastle(rng: Rng, theme: WorldTheme): { body: THREE.BufferGe
     paint(t, (_x, _y, _z, nx) => lerpColor(stoneD, stone, 0.5 + 0.5 * nx));
     parts.push(t);
     const rf = new THREE.ConeGeometry(r * 1.45, h * 0.5, 8, 1); xf(rf, x, h + h * 0.25, z);
-    paint(rf, (_x, y) => lerpColor(roofD, roof, Math.min(1, (y - h) / (h * 0.5))));
+    paint(rf, (_x, y) => { const c = lerpColor(roofD, roof, Math.min(1, (y - h) / (h * 0.5))); if (frost && y > h + h * 0.28) c.lerp(C('#f6faff'), 0.85); return c; });
     parts.push(rf);
     const flag = new THREE.BoxGeometry(1.6, 0.8, 0.1); xf(flag, x + 0.9, h + h * 0.5 + 0.8, z); solid(flag, '#f4b63a'); parts.push(flag);
     const pole = new THREE.CylinderGeometry(0.06, 0.06, 2, 4); xf(pole, x, h + h * 0.5 + 0.6, z); solid(pole, '#4a3a30'); parts.push(pole);
@@ -216,8 +217,64 @@ export function buildCastle(rng: Rng, theme: WorldTheme): { body: THREE.BufferGe
   return { body: merge(parts), glow: merge(wins) };
 }
 
+/** Ruined sandstone temple on a mesa spire (Ancient Ruins landmark): stepped plinth, columns (some broken), fallen drums, pediment fragment, obelisks. */
+export function buildTemple(rng: Rng, theme: WorldTheme): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const spire = rockColumn(theme, 15, 6, 46, 7, { radial: 12, strata: 3.5, tip: 6, moss: 0.3 });
+  xf(spire, 0, -0.6, 0, 0, 0, 0, 1.35, 1, 0.9);
+  parts.push(spire, capDisc(theme, 15, 7, 1.35, 0.9));
+  const sand = C(theme.terrain.stone), sandD = C(theme.terrain.rockMid), sandL = C('#f2dcb4');
+  for (let k = 0; k < 3; k++) { const st = roundedBlock(22 - k * 2.4, 1, 12 - k * 1.6, 0.15, 2, 1).geometry; xf(st, 0, 0.5 + k, 0); paint(st, (_x, _y, _z, _nx, ny) => (ny > 0.5 ? sandL.clone() : lerpColor(sandD, sand, 0.6)), true); parts.push(st); }
+  const colX = [-8, -5.3, -2.6, 0, 2.6, 5.3, 8];
+  for (const [i, x] of colX.entries()) for (const z of [-3.2, 3.2]) {
+    const broken = (i === 1 && z > 0) || i === 5 || (i === 3 && z < 0);
+    const hh = broken ? range(rng, 2.5, 6) : 10;
+    const c = new THREE.CylinderGeometry(0.75, 0.85, hh, 12, 1, true);
+    const cp = c.getAttribute('position') as THREE.BufferAttribute;
+    for (let v = 0; v < cp.count; v++) { const a = Math.atan2(cp.getZ(v), cp.getX(v)); const fl = 1 - 0.06 * Math.max(0, Math.cos(a * 12)); cp.setXYZ(v, cp.getX(v) * fl, cp.getY(v), cp.getZ(v) * fl); }
+    c.computeVertexNormals(); xf(c, x, 3 + hh / 2, z);
+    paint(c, (_x, y) => lerpColor(sandD, sandL, 0.4 + 0.5 * sstep(3, 13, y)), true); parts.push(c);
+    if (!broken) { const cap = roundedBlock(2, 0.6, 2, 0.1, 1, 1).geometry; xf(cap, x, 13.3, z); paint(cap, () => sandL.clone(), true); parts.push(cap); }
+  }
+  // architrave over the intact left half + a tilted fallen block
+  const arch = roundedBlock(9, 1.2, 8.2, 0.15, 1.5, 1).geometry; xf(arch, -5.3, 14.2, 0); paint(arch, (_x, _y, _z, _nx, ny) => (ny > 0.5 ? sandL.clone() : sand.clone()), true); parts.push(arch);
+  const ped = new THREE.CylinderGeometry(0.01, 5.4, 2.6, 3, 1); xf(ped, -5.3, 16.1, 0, Math.PI / 2, 0, 0, 1, 1, 1); ped.rotateZ(0); paint(ped, () => sand.clone().multiplyScalar(0.95), true); parts.push(ped);
+  for (let i = 0; i < 4; i++) { const d = new THREE.CylinderGeometry(0.75, 0.75, 1.4, 12); xf(d, range(rng, 3, 9), 3.6, range(rng, -5, 5), Math.PI / 2, rng() * 3, 0); paint(d, () => lerpColor(sandD, sand, 0.6), true); parts.push(d); }
+  for (const x of [-13, 13]) { const ob = new THREE.CylinderGeometry(0.5, 1.1, 12, 4, 1); xf(ob, x, 6, 4, 0, Math.PI / 4, 0); paint(ob, (_x, y) => lerpColor(sandD, sandL, sstep(0, 12, y)), true); parts.push(ob); const tip = new THREE.ConeGeometry(0.72, 1.4, 4); xf(tip, x, 12.7, 4, 0, Math.PI / 4, 0); solid(tip, '#e8b04a', true); parts.push(tip); }
+  return merge(parts);
+}
+
+/** Volcano (Volcanic Depths landmark): steep cone with a glowing crater and lava rivers; returns body + emissive glow parts. */
+export function buildVolcano(rng: Rng, theme: WorldTheme): { body: THREE.BufferGeometry; glow: THREE.BufferGeometry } {
+  const parts: THREE.BufferGeometry[] = [];
+  const glow: THREE.BufferGeometry[] = [];
+  const cone = weldedCylinder(4.5, 26, 34, 24, 10, false);
+  const p = cone.getAttribute('position') as THREE.BufferAttribute;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), r = Math.hypot(x, z);
+    const a = Math.atan2(z, x), n = fbm3(Math.cos(a) * 2, y * 0.08, Math.sin(a) * 2, 31, 3) - 0.5;
+    const ridge = 1 + n * 0.35 - 0.08 * Math.pow(Math.abs(Math.sin(a * 7)), 3);
+    p.setXYZ(i, r > 1e-3 ? x * ridge : 0, y + 17 - (r < 4.6 && y > 16.9 ? 3 : 0), r > 1e-3 ? z * ridge : 0);
+  }
+  cone.computeVertexNormals();
+  const rk = C('#3a2a32'), rkL = C('#6a4a50'), ash = C('#8a7070');
+  paint(cone, (x, y, z, _nx, ny) => { const c = lerpColor(rk, rkL, 0.3 + 0.5 * noise3(x * 0.15, y * 0.15, z * 0.15, 5)); if (ny > 0.6) c.lerp(ash, 0.4); return c.multiplyScalar(0.8 + 0.3 * sstep(0, 34, y)); }, true);
+  parts.push(cone);
+  // crater glow disc + lava rivers down the front
+  const crater = new THREE.CircleGeometry(4.2, 16); xf(crater, 0, 33.6, 0, -Math.PI / 2, 0, 0); solid(crater, '#ffb03a', false, SURF.PLAIN); glow.push(crater);
+  for (let k = 0; k < 3; k++) {
+    const a0 = -0.6 + k * 0.6 + range(rng, -0.15, 0.15);
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 12; i++) { const t = i / 12, rr = 4.6 + t * 20, a = a0 + Math.sin(t * 5 + k) * 0.12; pts.push(new THREE.Vector3(Math.sin(a) * rr, 34 - t * 33.5, Math.cos(a) * rr + 0.4)); }
+    const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.55 - k * 0.08, 5, false);
+    paint(tube, (_x, y) => lerpColor(C('#ff4a12'), C('#ffd060'), sstep(0, 34, y)), true, SURF.PLAIN);
+    glow.push(tube);
+  }
+  return { body: merge(parts), glow: merge(glow) };
+}
+
 /** Stone viaduct with N arches (extruded shape with arch holes). */
-export function buildArchBridge(theme: WorldTheme, arches = 5): THREE.BufferGeometry {
+export function buildArchBridge(theme: WorldTheme, arches = 5, style: 'stone' | 'snow' | 'ruin' | 'basalt' = 'stone'): THREE.BufferGeometry {
   const L = arches * 10, H = 12, deck = 3;
   const s = new THREE.Shape();
   s.moveTo(0, 0); s.lineTo(0, H); s.lineTo(L, H); s.lineTo(L, 0);
@@ -231,16 +288,28 @@ export function buildArchBridge(theme: WorldTheme, arches = 5): THREE.BufferGeom
   s.closePath();
   const g = new THREE.ExtrudeGeometry(s, { depth: 3, bevelEnabled: false, curveSegments: 8 });
   xf(g, -L / 2, 0, -1.5);
-  const stone = C(theme.terrain.stone), dark = C(theme.terrain.rockMid), moss = C(theme.terrain.capB);
+  const stone = C(style === 'basalt' ? '#4a3a44' : theme.terrain.stone), dark = C(style === 'basalt' ? '#241820' : theme.terrain.rockMid);
+  const moss = C(style === 'snow' ? '#f4f8ff' : style === 'basalt' ? '#ff6a2a' : style === 'ruin' ? '#c9a46a' : theme.terrain.capB);
   paint(g, (x, y, z, nx, ny, nz) => {
     const c = lerpColor(dark, stone, 0.45 + 0.5 * Math.abs(nz) + (noise3(x * 0.8, y * 0.8, z, 2) - 0.5) * 0.4);
-    if (ny > 0.5) c.lerp(moss, 0.55);
+    if (ny > 0.5) c.lerp(moss, style === 'basalt' ? 0.25 : 0.65);
     return c;
   });
   const parts: THREE.BufferGeometry[] = [g];
   for (let i = 0; i <= arches; i++) { const p = new THREE.BoxGeometry(1.6, H - deck + 1, 3.4); xf(p, -L / 2 + i * 10, (H - deck) / 2 + 0.5, 0); paint(p, () => dark.clone().lerp(stone, 0.4)); parts.push(p); }
-  for (let i = 0; i < arches * 5; i++) { const b = new THREE.BoxGeometry(1.4, 0.8, 0.5); xf(b, -L / 2 + 1 + i * 2, H + 0.4, 1.5); solid(b, stone); parts.push(b); }
-  return merge(parts);
+  for (let i = 0; i < arches * 5; i++) {
+    if (style === 'ruin' && (i % 7 === 3 || i % 5 === 1)) continue;          // missing crenels
+    const b = new THREE.BoxGeometry(1.4, 0.8, 0.5); xf(b, -L / 2 + 1 + i * 2, H + 0.4, 1.5); solid(b, stone); parts.push(b);
+    if (style === 'snow') { const sn = new THREE.BoxGeometry(1.5, 0.25, 0.65); xf(sn, -L / 2 + 1 + i * 2, H + 0.9, 1.5); solid(sn, '#f6faff'); parts.push(sn); }
+  }
+  if (style === 'snow') for (let i = 0; i < arches * 3; i++) { const ic = new THREE.ConeGeometry(0.25, 1.4, 5); xf(ic, -L / 2 + 1.6 + i * 3.3, -0.7, 1.4, Math.PI, 0, 0); solid(ic, '#cfefff'); parts.push(ic); }
+  const out = merge(parts);
+  if (style === 'ruin') {   // collapsed span: drop every vertex of one arch bay into rubble below
+    const p = out.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i); if (x > 3 && x < 12.5 && p.getY(i) > 2) p.setY(i, Math.min(p.getY(i), 2 + (x - 3) * 0.15)); }
+    out.computeVertexNormals();
+  }
+  return out;
 }
 
 /** Rope-and-plank bridge between two points (visible in the mid-ground, like the reference). */
@@ -269,14 +338,14 @@ export interface WaterfallView { group: THREE.Group; update(t: number): void }
 
 const waterVert = `varying vec2 vUv; varying float vFogDepth;
 void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vFogDepth = -mv.z; gl_Position = projectionMatrix * mv; }`;
-const waterFrag = `uniform float uTime; uniform vec3 uColor; uniform vec3 uFoam; uniform vec3 uFogColor; uniform float uFogDensity;
+const waterFrag = `uniform float uTime; uniform float uSpeed; uniform vec3 uColor; uniform vec3 uFoam; uniform vec3 uFogColor; uniform float uFogDensity;
 varying vec2 vUv; varying float vFogDepth;
 float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
 void main(){
   float x = vUv.x; float y = vUv.y;
   float streak = 0.0;
   for(int i=0;i<4;i++){ float fi=float(i); float cx = x*(6.0+fi*5.0)+fi*3.1; float id=floor(cx); float f=fract(cx);
-    float sp = 0.9+h(vec2(id,fi))*1.3; float v = fract(y*(1.5+fi*0.7) + uTime*sp + h(vec2(id,fi+9.0)));
+    float sp = (0.9+h(vec2(id,fi))*1.3) * uSpeed; float v = fract(y*(1.5+fi*0.7) + uTime*sp + h(vec2(id,fi+9.0)));
     streak += smoothstep(0.55,0.9,v) * smoothstep(0.0,0.35,f) * smoothstep(1.0,0.65,f) * (0.35 - fi*0.05); }
   float edge = smoothstep(0.0,0.14,x)*smoothstep(1.0,0.86,x);
   float top = smoothstep(1.0,0.9,y); float foam = smoothstep(0.12,0.0,y) + smoothstep(0.9,1.0,y)*0.6;
@@ -299,7 +368,8 @@ export function buildWaterfall(rng: Rng, theme: WorldTheme, mats: StyleMaterials
     const layer = Math.floor(-Y / 3.2), within = (-Y / 3.2) % 1;
     const ledge = (noise3(layer * 1.3, x * 0.08, 0.5, seed) - 0.5) * 1.6 + (within < 0.15 ? 0.5 : 0);
     const n = fbm3(x * 0.15, Y * 0.12, z * 0.15, seed, 3) - 0.5;
-    out.set(x + dx * (n * 2.2 + ledge * 0.6), Y + (dy > 0.5 ? n * 0.6 : 0), z + dz * (n * 1.8 + ledge));
+    const flute = -0.6 * Math.pow(Math.abs(Math.sin(x * 0.9 + n * 5 + seed)), 6);
+    out.set(x + dx * (n * 2.2 + ledge * 0.6), Y + (dy > 0.5 ? n * 0.6 : 0), z + dz * (n * 1.8 + ledge + flute));
   });
   const cliff = blk.geometry;
   const rl = C(theme.terrain.rockLight), rm = C(theme.terrain.rockMid), rd = C(theme.terrain.rockDark), moss = C(theme.terrain.capB);
@@ -311,7 +381,9 @@ export function buildWaterfall(rng: Rng, theme: WorldTheme, mats: StyleMaterials
     if (ny > 0.5) return lerpColor(C(theme.terrain.capDark), moss, fbm3(x * 0.4, 0, z * 0.4, seed));
     if (ny > 0.25) c.lerp(moss, 0.6);                                       // mossy ledges
     if (noise3(x * 0.5, y * 0.3, z * 0.5, seed + 4) > 0.68) c.lerp(moss, 0.55); // moss streaks
-    return c.multiplyScalar(0.85 + 0.3 * noise3(x * 1.3, y * 1.3, z * 1.3, seed + 7));
+    if (fbm3(x * 0.2, y * 0.1, z * 0.2, seed + 17, 2) > 0.57) c.lerp(moss, 0.5);
+    c.multiplyScalar(0.8 + 0.32 * noise3(x * 1.2, y * 0.1, z * 1.2, seed + 19));  // vertical water stains
+    return c.multiplyScalar(0.88 + 0.24 * noise3(x * 1.3, y * 1.3, z * 1.3, seed + 7));
   }, true);
   const parts: THREE.BufferGeometry[] = [cliff];
   for (let i = 0; i < 6; i++) {
@@ -323,7 +395,7 @@ export function buildWaterfall(rng: Rng, theme: WorldTheme, mats: StyleMaterials
   body.position.y = 0;
   g.add(body);
   const uniforms = {
-    uTime: { value: 0 }, uColor: { value: C(theme.water) }, uFoam: { value: C(theme.foam) },
+    uTime: { value: 0 }, uSpeed: { value: theme.worldId === 'world_2' ? 0.04 : theme.worldId === 'world_4' ? 0.4 : 1 }, uColor: { value: C(theme.water) }, uFoam: { value: C(theme.foam) },
     uFogColor: { value: C(theme.fog.color) }, uFogDensity: { value: theme.fog.density },
   };
   const wh = 46;

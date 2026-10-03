@@ -5,8 +5,8 @@ import type { ControlScheme } from '../progression/settings';
 import type { PadElements } from '../input/TouchControls';
 
 /**
- * Gameplay HUD (Phase 10) — minimal, matches the reference layout:
- *   top-left: Timer · Height (m) · Jumps  |  top-centre: Progress  |  top-right: Pause
+ * Gameplay HUD (Phase 10, redesigned in the visual upgrade) — matches the reference layout with a clear hierarchy:
+ *   top-left: stat card (TIMER hero number; height · jumps · boosts chips)  |  top-centre: progress track + hint  |  top-right: Pause
  *   bottom-right: Boost (+ Jump/Charge in PAD mode) · bottom-left: stick (PAD mode)
  * Landscape only, safe-area aware, large touch targets (≥ 3.3 rem ≈ 48 dp).
  */
@@ -16,7 +16,7 @@ export class Hud {
   readonly boostBtn: HTMLElement;
   readonly pad: PadElements;
   private timeEl!: HTMLElement; private heightEl!: HTMLElement; private jumpsEl!: HTMLElement; private boostsEl!: HTMLElement;
-  private progFill!: HTMLElement; private progText!: HTMLElement; private hintEl!: HTMLElement; private toastEl!: HTMLElement;
+  private progFill!: HTMLElement; private progText!: HTMLElement; private hintEl!: HTMLElement; private hintText!: HTMLElement; private toastEl!: HTMLElement;
   private flashEl!: HTMLElement; private ring!: HTMLElement; private ringFg!: SVGCircleElement; private boostCount!: HTMLElement;
   private last = { time: '', h: -1, j: -1, b: -1, p: -1 };
   private hintTimer = 0; private toastTimer = 0;
@@ -24,7 +24,10 @@ export class Hud {
 
   constructor(parent: HTMLElement) {
     this.pauseBtn = h('button.circle-btn.pause', { 'aria-label': 'Pause' }, svg(ICON.pause));
-    this.boostBtn = h('button.circle-btn.boost', { 'aria-label': 'Boost' }, svg(ICON.chevrons));
+    this.boostBtn = h('button.circle-btn.boost', { 'aria-label': 'Boost' });
+    // readiness ring (fills + glows when the boost is armed) around the chevrons
+    this.boostBtn.innerHTML = '<svg class="meter" viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg>';
+    this.boostBtn.append(svg(ICON.chevrons, 'chev'));
     this.boostCount = h('span.count', null, '0');
     this.boostBtn.append(this.boostCount);
     const stickKnob = h('div.knob');
@@ -32,14 +35,19 @@ export class Hud {
     const jumpBtn = h('button.circle-btn.jump', { 'aria-label': 'Jump' }, svg(ICON.charge));
     this.pad = { stickZone, stickKnob, jumpBtn };
 
-    const stat = (icon: string) => { const v = h('span'); return { v, el: h('div.stat.panel', null, svg(icon), v) }; };
-    const tm = stat(ICON.clock), ht = stat(ICON.mountain), jp = stat(ICON.boot), bs = stat(ICON.bolt);
-    this.timeEl = tm.v; this.heightEl = ht.v; this.jumpsEl = jp.v; this.boostsEl = bs.v;
-    this.progFill = h('i'); this.progText = h('span');
-    this.hintEl = h('div.hint.panel');
-    this.toastEl = h('div.toast.panel');
+    // stat card: the timer is the hero number; height / jumps / boosts are compact coloured chips under it
+    this.timeEl = h('span.t');
+    const chip = (cls: string, icon: string) => { const v = h('b'); return { v, el: h(`div.chip.${cls}`, null, svg(icon), v) }; };
+    const ht = chip('c-h', ICON.mountain), jp = chip('c-j', ICON.boot), bs = chip('c-b', ICON.bolt);
+    this.heightEl = ht.v; this.jumpsEl = jp.v; this.boostsEl = bs.v;
+    const card = h('div.statcard', null, h('div.timer', null, svg(ICON.clock), this.timeEl), h('div.chips', null, ht.el, jp.el, bs.el));
+
+    this.progFill = h('i'); this.progText = h('span.pct');
+    this.hintEl = h('div.hint');
+    this.hintText = h('span');
+    this.hintEl.append(svg(ICON.info, 'hi'), this.hintText);
+    this.toastEl = h('div.toast');
     this.flashEl = h('div.flash');
-    this.ringFg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     this.ring = h('div.charge-ring');
     this.ring.innerHTML = '<svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="46"/><circle class="fg" cx="50" cy="50" r="46"/></svg>';
     this.ringFg = this.ring.querySelector('.fg') as unknown as SVGCircleElement;
@@ -47,15 +55,14 @@ export class Hud {
     const lab = (key: string) => { const el = h('div.btn-label', null, t(key)); this.labels.push({ el, key }); return el; };
     this.root = h('div.hud.drag', null,
       h('div.vignette'), this.flashEl,
-      h('div.stats', null, tm.el, ht.el, jp.el, bs.el),
-      h('div.top-mid', null, h('div.prog', null, this.progFill), this.progText, this.hintEl),
+      card,
+      h('div.top-mid', null, h('div.prog', null, h('div.track', null, this.progFill), svg(ICON.flag, 'goalflag')), this.progText, this.hintEl),
       this.pauseBtn,
       h('div.btn-wrap.stick-wrap.pad-only', null, stickZone),
       h('div.btn-wrap.jump-wrap.pad-only', null, jumpBtn, lab('jumpCharge')),
       h('div.btn-wrap.boost-wrap', null, this.boostBtn, lab('boost')),
       this.ring, this.toastEl,
     );
-    this.progText.style.cssText = 'font-size:.85rem;opacity:.9;text-shadow:0 .1rem .3rem rgba(0,0,0,.6)';
     parent.append(this.root);
     // buttons must never leak events to the canvas
     for (const el of [this.pauseBtn]) el.addEventListener('pointerdown', e => e.stopPropagation());
@@ -78,17 +85,17 @@ export class Hud {
     const ts = `${String(m).padStart(2, '0')}:${s.toFixed(2).padStart(5, '0')}`;
     if (ts !== this.last.time) { this.timeEl.textContent = ts; this.last.time = ts; }
     const hh = Math.max(0, Math.round(o.height));
-    if (hh !== this.last.h) { this.heightEl.textContent = `${hh} m`; this.last.h = hh; }
+    if (hh !== this.last.h) { this.heightEl.innerHTML = `${hh}<small>m</small>`; this.last.h = hh; }
     if (o.jumps !== this.last.j) { this.jumpsEl.textContent = String(o.jumps); this.last.j = o.jumps; }
     if (o.boosts !== this.last.b) { this.boostsEl.textContent = String(o.boosts); this.boostCount.textContent = String(o.boosts); this.last.b = o.boosts; }
     const pp = Math.round(o.progress * 100);
-    if (pp !== this.last.p) { this.progFill.style.width = `${pp}%`; this.progText.textContent = `${t('progress')} ${pp}%`; this.last.p = pp; }
+    if (pp !== this.last.p) { this.progFill.style.width = `${pp}%`; this.progText.textContent = `${t('progress')} · ${pp}%`; this.last.p = pp; }
     this.boostBtn.classList.toggle('ready', o.boostReady);
     this.boostBtn.classList.toggle('queued', o.boostQueued);
   }
 
   setHint(text: string | null): void {
-    if (text) { this.hintEl.textContent = text; this.hintEl.classList.add('show'); window.clearTimeout(this.hintTimer); }
+    if (text) { this.hintText.textContent = text; this.hintEl.classList.add('show'); window.clearTimeout(this.hintTimer); }
     else this.hintEl.classList.remove('show');
   }
 

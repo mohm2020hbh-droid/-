@@ -79,3 +79,6 @@
 
 ### نتائج Phase 20 (مُنفَّذة)
 الأرقام والحكم والفجوة المتبقية: قسم «Visual QA مقابل الصورة المرجعية» في GAME_IMPLEMENTATION_PLAN.md، والمخرجات الخام: `qa/qa-compare-report.txt` ولقطات `qa/final_*.png` و`qa/w09_world_*.png`. الأمر: `python3 tools/qa-compare.py reference/gameplay_reference.webp qa/final_*.png`.
+
+### Visual upgrade pass (second request)
+Before/after sheets: `qa/before_after_world1.jpg`, `qa/before_after_worlds234.jpg`; live gameplay frames: `qa/live_gameplay_run.jpg`; metrics: `qa/qa-compare-after.txt`. Decisions: DEC-038…043 in DECISIONS.md. Remaining gap: fine painted detail (edge density ≈ 0.04 vs 0.095).

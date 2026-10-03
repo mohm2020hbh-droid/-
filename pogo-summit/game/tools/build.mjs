@@ -12,6 +12,12 @@ const toAndroid = process.argv.includes('--android');
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 cpSync(join(root, 'src', 'index.html'), join(dist, 'index.html'));
+// bundled UI fonts (SIL OFL 1.1): Baloo 2 (Latin) + Baloo Bhaijaan 2 (Arabic) — offline, no network at runtime
+mkdirSync(join(dist, 'fonts'), { recursive: true });
+for (const [pkg, file] of [['baloo-2', 'baloo-2-latin'], ['baloo-bhaijaan-2', 'baloo-bhaijaan-2-arabic']]) {
+  for (const wgt of [600, 800]) cpSync(join(root, 'node_modules', '@fontsource', pkg, 'files', `${file}-${wgt}-normal.woff2`), join(dist, 'fonts', `${file}-${wgt}.woff2`));
+  cpSync(join(root, 'node_modules', '@fontsource', pkg, 'LICENSE'), join(dist, 'fonts', `${pkg}-OFL.txt`));
+}
 
 const opts = {
   entryPoints: [join(root, 'src', 'main.ts')],

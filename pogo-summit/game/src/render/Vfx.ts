@@ -3,9 +3,9 @@ import { type Rng, mulberry32, range } from './noise';
 
 /**
  * Vfx — pooled billboard particles (Phase 13): one InstancedMesh, one draw call, zero allocation in the hot path.
- * Types: 0 soft puff · 1 ring · 2 star · 3 confetti square · 4 streak · 5 leaf/diamond · 6 snow flake
+ * Types: 0 shaded puff · 1 ring · 2 star · 3 confetti · 4 oriented streak · 5 leaf · 6 dot · 7 ground ring · 8 flash
  */
-export type FxKind = 'dust' | 'ring' | 'sparkle' | 'ice' | 'goo' | 'boost' | 'confetti' | 'hazard' | 'speed' | 'debris' | 'charge';
+export type FxKind = 'dust' | 'jumpdust' | 'ring' | 'groundring' | 'impact' | 'sparkle' | 'ice' | 'goo' | 'boost' | 'confetti' | 'goal' | 'hazard' | 'speed' | 'debris' | 'charge';
 
 const vert = `
 attribute vec3 iPos; attribute vec4 iCol; attribute vec3 iData; // size, rot, type
@@ -13,8 +13,10 @@ varying vec4 vCol; varying vec2 vUv; varying float vType; varying float vFog;
 void main(){
   vec4 mv = viewMatrix * vec4(iPos, 1.0);
   float s = iData.x; float c = cos(iData.y), sn = sin(iData.y);
-  vec2 p = vec2(position.x*c - position.y*sn, position.x*sn + position.y*c) * s;
-  if (iData.z > 3.5 && iData.z < 4.5) p = vec2(position.x * s * 0.16, position.y * s * 1.6);
+  vec2 q = position.xy * s;
+  if (iData.z > 3.5 && iData.z < 4.5) q = vec2(position.x * s * 0.16, position.y * s * 1.6);   // streak: stretch, then orient
+  if (iData.z > 6.5 && iData.z < 7.5) q.y *= 0.32;                                              // ground ring: flattened ellipse
+  vec2 p = (iData.z > 6.5 && iData.z < 7.5) ? q : vec2(q.x*c - q.y*sn, q.x*sn + q.y*c);
   mv.xy += p;
   vFog = -mv.z;
   gl_Position = projectionMatrix * mv;
@@ -25,16 +27,23 @@ varying vec4 vCol; varying vec2 vUv; varying float vType; varying float vFog;
 uniform vec3 uFogColor; uniform float uFogDensity;
 void main(){
   vec2 q = vUv - 0.5; float r = length(q); float a = 0.0;
-  if (vType < 0.5) a = smoothstep(0.5, 0.05, r);
+  vec3 col = vCol.rgb;
+  if (vType < 0.5) {                                   // shaded, lumpy dust puff (lit top, darker belly)
+    float ang = atan(q.y, q.x);
+    float edge = 0.43 + 0.05 * sin(ang * 5.0 + vCol.a * 3.0);
+    a = smoothstep(edge, edge - 0.12, r);
+    col *= 0.78 + 0.42 * smoothstep(-0.3, 0.35, q.y);
+  }
   else if (vType < 1.5) a = smoothstep(0.5, 0.42, r) * smoothstep(0.24, 0.40, r);
   else if (vType < 2.5) { float k = min(abs(q.x), abs(q.y)); a = smoothstep(0.5, 0.0, r) * smoothstep(0.1, 0.0, k) + smoothstep(0.18, 0.0, r); }
   else if (vType < 3.5) a = 1.0 - step(0.5, max(abs(q.x), abs(q.y)) * 1.05);
   else if (vType < 4.5) a = smoothstep(0.5, 0.2, abs(q.y)) * smoothstep(0.5, 0.0, abs(q.x) * 4.0);
   else if (vType < 5.5) a = 1.0 - smoothstep(0.38, 0.5, abs(q.x) * 1.3 + abs(q.y));
-  else a = smoothstep(0.5, 0.2, r);
+  else if (vType < 6.5) a = smoothstep(0.5, 0.2, r);
+  else if (vType < 7.5) a = smoothstep(0.5, 0.44, r) * smoothstep(0.3, 0.42, r);   // ground ring
+  else { a = pow(smoothstep(0.5, 0.0, r), 1.6); col += 0.25; }                        // flash
   a *= vCol.a;
   if (a < 0.01) discard;
-  vec3 col = vCol.rgb;
   float f = 1.0 - exp(-pow(uFogDensity * vFog, 2.0));
   gl_FragColor = vec4(mix(col, uFogColor, f * 0.6), a);
 }`;
@@ -91,7 +100,7 @@ export class Vfx {
   private emit(x: number, y: number, z: number, vx: number, vy: number, vz: number, life: number, s0: number, s1: number, type: number, c0: THREE.Color, c1: THREE.Color, a0 = 0.9, a1 = 0, grav = 0, drag = 1, spin = 0): void {
     const p = this.spawn();
     p.active = true; p.x = x; p.y = y; p.z = z; p.vx = vx; p.vy = vy; p.vz = vz; p.life = 0; p.max = life;
-    p.s0 = s0; p.s1 = s1; p.rot = this.rng() * 6.283; p.spin = spin; p.type = type; p.grav = grav; p.drag = drag;
+    p.s0 = s0; p.s1 = s1; p.rot = type === 4 || type === 7 ? 0 : this.rng() * 6.283; p.spin = spin; p.type = type; p.grav = grav; p.drag = drag;
     p.r0 = c0.r; p.g0 = c0.g; p.b0 = c0.b; p.r1 = c1.r; p.g1 = c1.g; p.b1 = c1.b; p.a0 = a0; p.a1 = a1;
   }
 
@@ -111,6 +120,32 @@ export class Vfx {
           const side = i % 2 ? 1 : -1, sp = range(r, 1.2, 3.6 + power * 4);
           this.emit(x + side * range(r, 0, 0.3), y + 0.1, z + range(r, -0.5, 0.5), tx * side * sp + nx * range(r, 0, 1.2), ty * side * sp * 0.2 + ny * range(r, 0.4, 1.8) + 0.3, range(r, -0.3, 0.6), range(r, 0.45, 0.85), range(r, 0.25, 0.45), range(r, 0.8, 1.5) + power * 0.7, 0, t0.clone().lerp(t1, 0.15), t1, 0.62, 0, -0.8, 2.2, range(r, -1, 1));
         }
+        break;
+      }
+      case 'jumpdust': {                                  // take-off: puffs kicked sideways along the ground + a ground ring
+        const n = Math.round((4 + power * 6) * d);
+        for (let i = 0; i < n; i++) {
+          const side = i % 2 ? 1 : -1, sp = range(r, 1.5, 3 + power * 3.5);
+          this.emit(x + side * range(r, 0.05, 0.25), y + 0.08, z + range(r, -0.4, 0.4), tx * side * sp, ty * side * sp * 0.2 + range(r, 0.2, 0.9), range(r, -0.3, 0.3), range(r, 0.35, 0.6), range(r, 0.22, 0.36), range(r, 0.6, 1.1) + power * 0.5, 0, t0.clone().lerp(t1, 0.2), t1, 0.7, 0, -0.6, 3.2, 0);
+        }
+        this.emit(x, y + 0.04, z, 0, 0, 0, 0.32, 0.4, 1.6 + power * 1.4, 7, t1, t1, 0.55 * power + 0.2, 0, 0, 1);
+        break;
+      }
+      case 'groundring':
+        this.emit(x, y + 0.04, z, 0, 0, 0, 0.4, 0.5, 2.6 + power * 2.2, 7, t0, t1, 0.75, 0, 0, 1);
+        break;
+      case 'impact': {                                    // hard landing: flash + big ground ring + heavy puffs + debris
+        this.emit(x, y + 0.3, z + 0.1, 0, 0, 0, 0.16, 1.2, 3.2, 8, Vfx.D.set('#fff6e0'), Vfx.D, 0.85, 0, 0, 1);
+        this.emit(x, y + 0.04, z, 0, 0, 0, 0.5, 0.6, 4.6 + power * 2, 7, Vfx.C.set('#ffffff'), Vfx.C, 0.85, 0, 0, 1);
+        const n = Math.round(10 * d);
+        for (let i = 0; i < n; i++) { const side = i % 2 ? 1 : -1; this.emit(x + side * range(r, 0, 0.4), y + 0.15, z + range(r, -0.6, 0.6), tx * side * range(r, 3, 7), range(r, 0.5, 2.5), range(r, -0.5, 0.5), range(r, 0.55, 0.95), range(r, 0.4, 0.6), range(r, 1.3, 2.1), 0, t0, t1, 0.75, 0, -1.2, 2.6, 0); }
+        break;
+      }
+      case 'goal': {                                      // finish: star burst ring + rising sparkles (confetti is separate)
+        this.emit(x, y + 1.2, z, 0, 0, 0, 0.6, 1, 7, 1, Vfx.C.set('#ffd24a'), Vfx.D.set('#ffffff'), 0.9, 0, 0, 1);
+        this.emit(x, y + 1.2, z + 0.1, 0, 0, 0, 0.25, 2, 5, 8, Vfx.C.set('#fff2b0'), Vfx.C, 0.9, 0, 0, 1);
+        const n = Math.round(24 * d);
+        for (let i = 0; i < n; i++) { const a = r() * 6.283, sp = range(r, 2, 7); this.emit(x + Math.cos(a) * 0.5, y + 1, z, Math.cos(a) * sp, Math.sin(a) * sp * 0.6 + 4, 0, range(r, 0.9, 1.6), range(r, 0.3, 0.5), 0.05, 2, Vfx.C.set('#ffe27a'), Vfx.D.set('#ffffff'), 1, 0, -3, 1, range(r, -5, 5)); }
         break;
       }
       case 'debris': {
@@ -157,12 +192,16 @@ export class Vfx {
     }
   }
 
-  /** Continuous boost trail: call every frame while boosting. */
+  /** Continuous boost trail: call every frame while boosting — oriented streaks (comet tail) + glowing puffs + sparks. */
   trail(x: number, y: number, vx: number, vy: number, tint = '#ffb347'): void {
     const r = this.rng;
-    const n = Math.max(1, Math.round(2 * this.density));
+    const sp = Math.hypot(vx, vy) || 1;
+    const rot = Math.atan2(vy, vx) - Math.PI / 2;
+    this.emit(x - vx * 0.02, y - vy * 0.02, 0.35, -vx * 0.05, -vy * 0.05, 0, 0.28, 1.2 + sp * 0.04, 0.2, 4, Vfx.C.set('#fff4d0'), Vfx.D.set(tint), 0.8, 0, 0, 2, 0);
+    this.ps[(this.cursor + this.capacity - 1) % this.capacity].rot = rot;
+    const n = Math.max(1, Math.round(1.5 * this.density));
     for (let i = 0; i < n; i++) {
-      this.emit(x + range(r, -0.2, 0.2), y + range(r, -0.2, 0.2), 0.3 + range(r, -0.3, 0.3), -vx * 0.08 + range(r, -0.6, 0.6), -vy * 0.08 + range(r, -0.6, 0.6), 0, range(r, 0.35, 0.6), range(r, 0.5, 0.8), 0.05, i % 2 ? 2 : 0, Vfx.C.set(tint), Vfx.D.set('#ff6a3a'), 0.85, 0, 0, 2, range(r, -6, 6));
+      this.emit(x + range(r, -0.2, 0.2), y + range(r, -0.2, 0.2), 0.3 + range(r, -0.3, 0.3), -vx * 0.08 + range(r, -0.6, 0.6), -vy * 0.08 + range(r, -0.6, 0.6), 0, range(r, 0.35, 0.6), range(r, 0.45, 0.7), 0.05, i % 2 ? 2 : 0, Vfx.C.set(tint), Vfx.D.set('#ff6a3a'), 0.85, 0, 0, 2, range(r, -6, 6));
     }
   }
 

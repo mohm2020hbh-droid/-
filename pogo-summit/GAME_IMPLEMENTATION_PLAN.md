@@ -76,6 +76,25 @@
 
 **الفجوة المتبقية بصراحة:** الصورة المرجعية مرسومة/مُصيَّرة بتفاصيل دقيقة (خامات، كروم، نباتات صغيرة). لوحتنا إجرائية low-poly بألوان رؤوس (لا خامات) فتبدو أنظف وأقل تفصيلًا. مقياس الحواف ≈ 0.04 مقابل 0.095. هذا الفارق **لم يُغلق**؛ الإغلاق يتطلب أصولًا مرسومة/خامات (نقاط عمل للإصدار التالي).
 
+### Visual upgrade pass (2nd user request: "VISUAL QUALITY UPGRADE — DO NOT REBUILD GAMEPLAY") — results
+**Gameplay unchanged:** no changes under `src/sim`, `src/input`, `src/data/levels`, `src/progression`. Proof: the 78 vitest tests pass unchanged, and the recorded route replay in the real app gives the same result before and after (`FINISHED`, 18 jumps, 0 falls); the replay was also run **with full rendering every frame** through the whole level up to the results screen (`qa/live_gameplay_run.jpg`).
+
+| Area | What was done (see DEC-038…043) | Visual evidence |
+|---|---|---|
+| Surfaces / lighting | Triplanar procedural detail + sky occlusion + separate rim light for the player; W1 and W4 brightened | `qa/before_after_world1.jpg` |
+| Assets | `shapes.ts` kit (rounded edges, smooth shading); rocks/cliffs with strata, ledges, fluting, moss, shelves with trees; smooth trees with baked AO; flowers/bushes/mushrooms redone | same |
+| Platforms | A distinct identity per type (rock / wood with posts or chains / glossy ice / bounce pad with helix springs / hazard per world / goal with a light pillar) + rock supports under platforms with nothing below | `qa/after_*.png` |
+| World variety | Landmark, bridge, vegetation, decor, hazard, waterfall flow and clouds all differ per world | `qa/before_after_worlds234.jpg` |
+| Player | Every part redrawn: real eyes, helix pogo spring, tubes, foot pegs, red scarf, beanie badge; ≈ 20 draw calls instead of ≈ 60 | `qa/after_*.png` |
+| HUD | Bundled offline font, stat card with the timer as the hero number, progress bar with a flag, light hint card, Boost readiness ring | all screenshots |
+| VFX | Jump dust + ground ring, landing dust + debris, hard impact (flash + big ring), bounce, oriented boost trail, goal effect | `qa/live_gameplay_run.jpg` |
+| Performance | **101–124 draw calls · 103k–142k triangles** (including the shadow pass) across 4 worlds and 7 views; APK grew from 366 KB to 454 KB | `renderer.info` (headless Chromium) |
+| Production build | The minified bundle that ships in the APK renders correctly (screenshot taken from it) | `qa/after_prodbuild.png` |
+
+**Numeric metrics (`qa/qa-compare-after.txt`) — reported honestly:** brightness 0.45–0.52 (reference 0.485) ✔, saturation 0.41–0.51 (0.47) ✔, open sky 0.25–0.49 (0.33) ✔. **Edge density did not improve numerically (≈ 0.034–0.045 vs 0.095 in the reference):** the improvement came from forms, smooth shading and soft surface detail, which the Sobel filter at 360 px barely registers. The reference is a painted image with very fine detail, and **that gap is still open** (it needs hand-painted textures/assets).
+
+**Still unverified:** a real device (FPS, thermals, haptics), AAB/Play — unchanged from the section above.
+
 ### ما لم يُتحقَّق منه (لا يُدَّعى)
 - ✘ **تشغيل على جهاز/محاكي Android**: لا KVM ولا جهاز هنا. لم يُجرَّب: Immersive، Cutout/Safe-area الفعلي، الاهتزاز الفعلي، لمس بإصبع حقيقي، الأداء الحقيقي (كل `fps` المقاسة هنا من SwiftShader/CPU ولا تمثل هاتفًا).
 - ✘ **Gradle/AGP وإنتاج AAB وتوقيع الإطلاق**: `dl.google.com` محجوب في هذه البيئة (403). مشروع Gradle مكتوب (compileSdk/targetSdk 35) لكنه غير مبني. الـAPK الحالي debug موقّع بمفتاح debug ويُبنى بسلسلة apt القديمة (android-23.jar، targetSdk 34 في الـmanifest).

@@ -1,0 +1,12 @@
+REFERENCE (gameplay crop)    lum=0.485 lum_std=0.253 sat=0.470 sky_top=0.328 cloud_top=0.118 warm=0.237 green=0.014 edge=0.095
+                             palette: #4a271b(25%) #7a9bda(18%) #dad3e8(18%) #6e5f63(15%) #d6a86f(12%) #ba401f(12%)
+after_start.png              lum=0.449 lum_std=0.217 sat=0.514 sky_top=0.249 cloud_top=0.159 warm=0.208 green=0.040 edge=0.041
+                             palette: #8a8341(22%) #c3c3db(20%) #3d2a12(19%) #59492c(14%) #7f4b22(13%) #7085cb(12%)
+after_p3.png                 lum=0.511 lum_std=0.237 sat=0.407 sky_top=0.296 cloud_top=0.196 warm=0.155 green=0.011 edge=0.045
+                             palette: #d7d3e1(22%) #492a19(19%) #76563a(17%) #a3a7d0(17%) #5874c7(15%) #987f50(10%)
+after_q3.png                 lum=0.459 lum_std=0.207 sat=0.509 sky_top=0.348 cloud_top=0.166 warm=0.234 green=0.027 edge=0.038
+                             palette: #5a3b1b(35%) #947849(21%) #5c7cc8(13%) #d0d0e2(13%) #a0a3d3(12%) #3a59b9(6%)
+after_r2.png                 lum=0.522 lum_std=0.222 sat=0.432 sky_top=0.493 cloud_top=0.275 warm=0.067 green=0.005 edge=0.034
+                             palette: #5371c4(30%) #c8cee4(25%) #94a3d2(16%) #522819(14%) #867055(8%) #194a68(8%)
+after_goal.png               lum=0.492 lum_std=0.224 sat=0.505 sky_top=0.424 cloud_top=0.238 warm=0.177 green=0.034 edge=0.038
+                             palette: #573919(28%) #d1d4e7(19%) #5b7bc7(16%) #947a37(16%) #98a7d6(13%) #3758bd(7%)

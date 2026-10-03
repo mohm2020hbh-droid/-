@@ -16,8 +16,8 @@ import { type StyleMaterials, createStyleMaterials } from './materials';
 import { buildClouds, buildMountains, createSky, type CloudSea, type SkyView } from './atmosphere';
 import { buildRockPlatform, buildCliff } from './builders/rock';
 import { buildBouncePad, buildGoal, buildHazard, buildIcePlatform, buildWoodPlatform, chainGeometry, glowTexture, type BouncePadView, type GoalView } from './builders/special';
-import { buildArchBridge, buildCastle, buildIsland, buildPillar, buildSupport, buildWaterfall, buildWoodBridge, type WaterfallView } from './builders/structures';
-import { bigTree } from './builders/trees';
+import { buildArchBridge, buildCastle, buildIsland, buildPillar, buildSupport, buildTemple, buildVolcano, buildWaterfall, buildWoodBridge, softPuffTexture, type WaterfallView } from './builders/structures';
+import { bigTree, cypressTree, deadTree, pineTree } from './builders/trees';
 import { SURF, col, lerpColor, merge, mesh, paint, xf } from './geom';
 import { smoothBlob, sstep } from './shapes';
 import { mulberry32, noise3, range } from './noise';
@@ -200,7 +200,7 @@ export class GameRenderer {
     this.scene.remove(this.levelGroup);
     this.levelGroup.traverse(o => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); });
     this.levelGroup = new THREE.Group();
-    this.waterfalls = []; this.bouncePads.clear(); this.movers = []; this.hazardGlows = [];
+    this.waterfalls = []; this.bouncePads.clear(); this.movers = []; this.hazardGlows = []; this.smoke = [];
     for (const o of [this.hemi, this.sun, this.sun?.target, this.sky?.mesh, this.shadowBlob, this.character?.root, this.vfx.mesh]) if (o) this.scene.remove(o);
     this.rig.camera.remove(this.frameFoliage);
     this.frameFoliage = new THREE.Group();
@@ -268,7 +268,8 @@ export class GameRenderer {
       const m = mesh(buildHazard(h, this.theme), this.mats.smooth, true, true);
       m.position.set(h.x, h.y, 0);
       this.levelGroup.add(m);
-      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('#ff4a3a'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 }));
+      const gc = this.theme.worldId === 'world_2' ? '#6aa8ff' : this.theme.worldId === 'world_3' ? '#ffb04a' : this.theme.worldId === 'world_4' ? '#ff7a2a' : '#ff4a3a';
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(gc), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 }));
       glow.scale.set(h.w * 2.4, h.h * 3, 1); glow.position.set(h.x, h.y + h.h * 0.5, 0.6);
       this.levelGroup.add(glow); this.hazardGlows.push(glow);
     }
@@ -281,18 +282,33 @@ export class GameRenderer {
       const s = l.scale ?? 1;
       switch (l.type) {
         case 'castle': {
-          const c = buildCastle(rng, theme);
-          const m = mesh(c.body, mats.smooth, false, false); m.position.set(l.x, l.y, l.z); m.scale.setScalar(s); this.levelGroup.add(m);
-          const gm = new THREE.Mesh(c.glow, new THREE.MeshBasicMaterial({ vertexColors: true })); gm.position.copy(m.position); gm.scale.setScalar(s); this.levelGroup.add(gm);
+          // the level's hero landmark, dressed per world: storybook castle · frost monastery · ruined temple · volcano
+          const w = theme.worldId;
+          if (w === 'world_3') { const m = mesh(buildTemple(rng, theme), mats.smooth, false, false); m.name = `landmark:${l.id}`; m.position.set(l.x, l.y, l.z); m.scale.setScalar(s); this.levelGroup.add(m); break; }
+          const c = w === 'world_4' ? buildVolcano(rng, theme) : buildCastle(rng, theme, w === 'world_2' ? 'frost' : 'storybook');
+          const ys = w === 'world_4' ? l.y - 16 : l.y;
+          const m = mesh(c.body, mats.smooth, false, false); m.name = `landmark:${l.id}`; m.position.set(l.x, ys, l.z); m.scale.setScalar(s); this.levelGroup.add(m);
+          const gm = new THREE.Mesh(c.glow, new THREE.MeshBasicMaterial({ vertexColors: true, fog: w !== 'world_4' })); gm.position.copy(m.position); gm.scale.setScalar(s); this.levelGroup.add(gm);
+          if (w === 'world_4') this.addSmoke(l.x, ys + 34 * s, l.z, s);
           break;
         }
-        case 'arch_bridge': { const m = mesh(buildArchBridge(theme), mats.smooth, false, false); m.position.set(l.x, l.y, l.z); m.scale.setScalar(s); if (l.flip) m.rotation.y = Math.PI; this.levelGroup.add(m); break; }
+        case 'arch_bridge': { const st = theme.worldId === 'world_2' ? 'snow' : theme.worldId === 'world_3' ? 'ruin' : theme.worldId === 'world_4' ? 'basalt' : 'stone'; const m = mesh(buildArchBridge(theme, 5, st), mats.smooth, false, false); m.position.set(l.x, l.y, l.z); m.scale.setScalar(s); if (l.flip) m.rotation.y = Math.PI; this.levelGroup.add(m); break; }
         case 'wood_bridge': { const m = mesh(buildWoodBridge(theme), mats.smooth, true, false); m.position.set(l.x, l.y, l.z); m.scale.setScalar(s); this.levelGroup.add(m); break; }
         case 'waterfall': { const w = buildWaterfall(rng, theme, mats, s, l.seed ?? 1); w.group.name = `landmark:${l.id}`; w.group.position.set(l.x, l.y, l.z); this.levelGroup.add(w.group); this.waterfalls.push(w); break; }
         case 'floating_island': { const m = mesh(buildIsland(rng, theme, 7 * s, 5 * s, l.seed ?? 1, { detail: 1 }), mats.smooth, false, true); m.position.set(l.x, l.y, l.z); this.levelGroup.add(m); break; }
-        case 'big_tree': { const m = mesh(merge(bigTree(rng, theme, s)), mats.leaf, false, false); m.name = `landmark:${l.id}`; m.position.set(l.x, l.y, l.z); this.levelGroup.add(m); break; }
+        case 'big_tree': { const m = mesh(merge(theme.worldId === 'world_4' ? deadTree(rng, theme, 14 * s) : theme.worldId === 'world_3' ? cypressTree(rng, theme, 15 * s) : theme.worldId === 'world_2' ? pineTree(rng, theme, 16 * s, true, 2) : bigTree(rng, theme, s)), mats.leaf, false, false); m.name = `landmark:${l.id}`; m.position.set(l.x, l.y, l.z); this.levelGroup.add(m); break; }
         default: break;
       }
+    }
+  }
+
+  private smoke: { s: THREE.Sprite; x: number; y: number; ph: number; sc: number }[] = [];
+  /** Slow volcanic smoke plume (a few soft sprites that rise, grow and fade on a loop). */
+  private addSmoke(x: number, y: number, z: number, s: number): void {
+    for (let i = 0; i < 7; i++) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: softPuffTexture(), color: i % 2 ? '#5a4448' : '#7a6266', transparent: true, depthWrite: false, opacity: 0.7 }));
+      sp.position.set(x, y, z); this.levelGroup.add(sp);
+      this.smoke.push({ s: sp, x, y, ph: i / 7, sc: s });
     }
   }
 
@@ -379,7 +395,7 @@ export class GameRenderer {
       [-0.97, 0.94, 1.0], [-0.78, 1.04, 0.8], [-1.04, 0.62, 0.75],      // top-left cluster (as in the reference)
       [0.98, 1.0, 0.85], [0.8, 1.06, 0.7],                               // top-right
       [-1.0, -1.02, 0.8], [-0.82, -1.1, 0.6],                            // bottom-left
-      [1.02, -0.98, 0.7], [0.86, -1.08, 0.55],                           // bottom-right
+      [1.08, -1.05, 0.6], [0.93, -1.16, 0.45],                           // bottom-right (kept small: the Boost button sits there)
     ];
     this.frameFoliage.children.forEach((c, i) => {
       const s = slots[i % slots.length];
@@ -463,6 +479,12 @@ export class GameRenderer {
     // ambient motion
     this.clouds.update(dt);
     for (const w of this.waterfalls) w.update(this.time);
+    for (const sm of this.smoke) {
+      const t = (this.time * 0.05 + sm.ph) % 1;
+      sm.s.position.set(sm.x + Math.sin(t * 3 + sm.ph * 9) * 3 * sm.sc + t * 8 * sm.sc, sm.y + t * 30 * sm.sc, sm.s.position.z);
+      const k = (6 + t * 22) * sm.sc; sm.s.scale.set(k, k * 0.8, 1);
+      sm.s.material.opacity = 0.75 * Math.sin(Math.PI * Math.min(1, t * 1.2));
+    }
     this.goal.update(this.time);
     const gl = 0.5 + Math.sin(this.time * 3) * 0.1;
     for (const h of this.hazardGlows) h.material.opacity = gl;
@@ -482,19 +504,20 @@ export class GameRenderer {
     if (!this.screenShake && (e.type === 'hard_impact' || e.type === 'wall_hit')) { /* shake toggled off: skip trauma below */ }
     const tint = DUST[e.material ?? 'grass'] ?? '#d8d0a0';
     switch (e.type) {
-      case 'launch': this.character.triggerLaunch(e.intensity); this.vfx.burst('dust', e.x, e.y, e.nx === 0 ? 0 : 0, 1, 0.4 + e.intensity * 0.6, tint); break;
+      case 'launch': this.character.triggerLaunch(e.intensity); this.vfx.burst('jumpdust', e.x, e.y, 0, 1, 0.35 + e.intensity * 0.65, tint); break;
       case 'land': {
         this.character.triggerLand(e.intensity);
         this.rig.landKick(e.intensity);
         const kind = e.surface === 'slippery' ? 'ice' : e.surface === 'sticky' ? 'goo' : 'dust';
         this.vfx.burst(kind, e.x, e.y, e.nx, e.ny, e.intensity, tint);
-        if (e.intensity > 0.45) { this.vfx.burst('debris', e.x, e.y, e.nx, e.ny, e.intensity, tint); this.vfx.burst('ring', e.x, e.y, e.nx, e.ny, e.intensity, '#ffffff', '#fff3d0'); }
+        if (e.intensity > 0.3) this.vfx.burst('groundring', e.x, e.y, e.nx, e.ny, e.intensity, tint, '#ffffff');
+        if (e.intensity > 0.45) this.vfx.burst('debris', e.x, e.y, e.nx, e.ny, e.intensity, tint);
         break;
       }
-      case 'hard_impact': this.rig.addTrauma(0.55); break;
+      case 'hard_impact': this.rig.addTrauma(0.55); this.vfx.burst('impact', e.x, e.y, e.nx, e.ny, Math.min(1, e.intensity + 0.3), tint, '#ffffff'); break;
       case 'bounce': {
         this.character.triggerLand(0.8); this.rig.landKick(0.7);
-        this.vfx.burst('ring', e.x, e.y, e.nx, e.ny, 1, '#ffe08a', '#ffffff'); this.vfx.burst('sparkle', e.x, e.y, e.nx, e.ny, 0.8, '#ffe27a', '#ffffff');
+        this.vfx.burst('groundring', e.x, e.y, e.nx, e.ny, 1, '#ffe08a', '#ffffff'); this.vfx.burst('ring', e.x, e.y + 0.4, e.nx, e.ny, 0.8, '#ffe08a', '#ffffff'); this.vfx.burst('sparkle', e.x, e.y, e.nx, e.ny, 0.8, '#ffe27a', '#ffffff');
         if (e.collider !== undefined) { const p = this.bouncePads.get(e.collider); if (p) p.comp = 1; }
         break;
       }
@@ -505,7 +528,7 @@ export class GameRenderer {
       case 'hazard': this.vfx.burst('hazard', e.x, e.y, e.nx, e.ny, 1); this.rig.addTrauma(0.6); break;
       case 'fall': this.rig.addTrauma(0.3); break;
       case 'respawn': this.rig.snap(e.x, e.y); this.vfx.burst('sparkle', e.x, e.y - 1, 0, 1, 0.6, '#ffffff', '#cfe9ff'); break;
-      case 'goal': this.vfx.burst('confetti', e.x, e.y, 0, 1, 1); this.rig.addTrauma(0.2); this.character.triggerEmote('cheer'); break;
+      case 'goal': this.vfx.burst('confetti', e.x, e.y, 0, 1, 1); this.vfx.burst('goal', e.x, e.y, 0, 1, 1); this.rig.addTrauma(0.2); this.character.triggerEmote('cheer'); break;
       default: break;
     }
   }

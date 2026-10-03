@@ -114,10 +114,10 @@ export const WORLD_3: WorldTheme = {
 export const WORLD_4: WorldTheme = {
   id: 'volcanic_depths', worldId: 'world_4', name: 'Volcanic Depths', subtitle: 'Lava rivers & embers',
   palette: { primary: '#ff5a1f', secondary: '#3a2c36', accent: '#ffcf3a', background: '#4a1f2c' },
-  sky: { top: '#1c1020', mid: '#4a1f2c', horizon: '#c8472a', sun: '#ff8a4a', sunDir: [0.2, 0.5, 0.8], sunIntensity: 1.7, hemiSky: '#a05a58', hemiGround: '#3a1a1a', hemiIntensity: 1.0, exposure: 1.05 },
-  fog: { color: '#6a2a2e', density: 0.0058 },
+  sky: { top: '#2a1630', mid: '#6a2638', horizon: '#ff7a3a', sun: '#ffb27a', sunDir: [0.25, 0.55, 0.8], sunIntensity: 2.1, hemiSky: '#d08a80', hemiGround: '#5a2a24', hemiIntensity: 1.3, exposure: 1.12 },
+  fog: { color: '#7a3434', density: 0.0046 },
   terrain: {
-    rockLight: '#7a5a64', rockMid: '#4f3a46', rockDark: '#241820', capA: '#5a4a52', capB: '#3f3138', capDark: '#241820', soil: '#2a1c24',
+    rockLight: '#9a7478', rockMid: '#6a4c56', rockDark: '#33222c', capA: '#7a666a', capB: '#5a484e', capDark: '#33242a', soil: '#3a2830',
     wood: '#8a5a38', woodDark: '#4a2e1c', stone: '#6a5560', ice: '#8fd2f6', bounceTop: '#ffcf3a', bounceCoil: '#b5b8c4', hazardRock: '#7a2a2a', hazardCrystal: '#ff5a1f', special: '#ff9a3a',
   },
   capStyle: 'ash',
@@ -125,7 +125,7 @@ export const WORLD_4: WorldTheme = {
   pine: ['#3a2a28'],
   trunk: '#2a1c18',
   water: '#ff6a1f', foam: '#ffd36a',
-  cloud: { light: '#8a5a58', shade: '#3a1a22', amount: 0.9, seaY: -10 },
+  cloud: { light: '#c08a84', shade: '#6a3a44', amount: 0.55, seaY: -10 },
   mountains: [
     { z: -140, height: 80, width: 80, color: '#4a2430', snow: false, y: -66 },
     { z: -210, height: 110, width: 110, color: '#5e2c34', snow: false, y: -86 },

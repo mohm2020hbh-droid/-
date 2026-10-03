@@ -22,4 +22,6 @@ export const ICON = {
   sound: S('<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>'),
   hand: S('<path d="M9 12V5.5a1.5 1.5 0 0 1 3 0V11M12 10.5V4.5a1.5 1.5 0 0 1 3 0V11M15 11V6.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a5 5 0 0 1-4-2L4 14.5a1.5 1.5 0 0 1 2.4-1.7L9 15"/>'),
   close: S('<path d="m6 6 12 12M18 6 6 18"/>'),
+  flag: S('<path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6" fill="currentColor"/>'),
+  info: S('<circle cx="12" cy="12" r="9.5" fill="currentColor" stroke="none" opacity=".22"/><path d="M12 11v6M12 7.5h.01"/>'),
 };

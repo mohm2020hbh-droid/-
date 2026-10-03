@@ -218,18 +218,34 @@ export function buildHazard(h: HazardDef, theme: WorldTheme): THREE.BufferGeomet
   const rng = mulberry32(h.id.length * 977 + Math.round(h.x * 13));
   const parts: THREE.BufferGeometry[] = [];
   const T = theme.terrain;
-  const metal = theme.worldId === 'world_3';
+  const w = theme.worldId;
   withSurface(SURF.PLAIN, () => {
+    if (w === 'world_3') {
+      // Ancient Ruins: bronze spear trap — a row of tall spears with a stone sill
+      const n = Math.max(5, Math.round(h.w * 2.2));
+      for (let i = 0; i < n; i++) {
+        const f = i / (n - 1) - 0.5, hh = h.h * range(rng, 0.85, 1.1);
+        const sz = range(rng, -0.3, 0.3);
+        const shaft = new THREE.CylinderGeometry(0.045, 0.05, hh, 6); xf(shaft, f * h.w * 0.9, hh / 2, sz);
+        paint(shaft, (_x, y) => lerpColor(col('#5a3a1e'), col('#c98a3a'), sstep(0, hh, y)), true); parts.push(shaft);
+        const tip = new THREE.ConeGeometry(0.11, 0.38, 4); xf(tip, f * h.w * 0.9, hh + 0.17, sz);
+        paint(tip, () => col('#ffd27a'), true); parts.push(tip);
+      }
+      const sill = roundedBlock(h.w + 0.6, 0.35, 1.6, 0.08, 0.6, 1).geometry; xf(sill, 0, 0.12, 0); paint(sill, () => col(T.stone).multiplyScalar(0.85), true); parts.push(sill);
+      return;
+    }
     const n = Math.max(5, Math.round(h.w * 2.6));
+    const icy = w === 'world_2', lava = w === 'world_4';
     for (let i = 0; i < n; i++) {
       const f = i / (n - 1) - 0.5;
       const hh = h.h * range(rng, 0.6, 1.1) * (1 - Math.abs(f) * 0.45);
-      const rr = metal ? range(rng, 0.05, 0.08) : range(rng, 0.13, 0.26);
-      const g = new THREE.CylinderGeometry(0, rr, hh, metal ? 4 : 6, 1);
+      const rr = range(rng, 0.13, 0.26) * (icy ? 0.8 : 1);
+      const g = new THREE.CylinderGeometry(0, rr, hh, icy ? 5 : 6, 1);
       xf(g, f * h.w * 0.9, hh / 2, range(rng, -0.7, 0.7), range(rng, -0.18, 0.18), rng() * 6, range(rng, -0.25, 0.25));
-      const c = col(T.hazardCrystal), tip = c.clone().lerp(new THREE.Color('#ffffff'), 0.55);
+      const c = col(icy ? '#3a6ad8' : lava ? '#ff4a12' : T.hazardCrystal);
+      const tip = icy ? col('#e8f6ff') : lava ? col('#ffe07a') : c.clone().lerp(new THREE.Color('#ffffff'), 0.55);
       const gg = g.toNonIndexed(); gg.computeVertexNormals();
-      paint(gg, (_x, y) => lerpColor(c.clone().multiplyScalar(0.55), tip, sstep(0, h.h, y) * 0.9));
+      paint(gg, (_x, y) => lerpColor(lava ? col('#2a1420') : c.clone().multiplyScalar(0.55), lava ? c : tip, sstep(0, h.h * 0.6, y)).lerp(tip, lava ? sstep(h.h * 0.5, h.h, y) * 0.8 : 0));
       parts.push(gg);
     }
   });

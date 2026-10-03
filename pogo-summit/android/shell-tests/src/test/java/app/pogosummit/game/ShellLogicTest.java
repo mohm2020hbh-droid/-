@@ -29,6 +29,7 @@ public class ShellLogicTest {
         assertEquals("text/javascript", ShellLogic.mime("/game.js"));
         assertEquals("text/javascript", ShellLogic.mime("/GAME.JS"));
         assertEquals("image/png", ShellLogic.mime("/i.png"));
+        assertEquals("font/woff2", ShellLogic.mime("/fonts/baloo-2-latin-800.woff2"));
         assertEquals("application/octet-stream", ShellLogic.mime("/x.bin"));
     }
     @Test public void amplitudeIsClampedToAndroidRange() {

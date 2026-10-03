@@ -34,6 +34,8 @@ final class ShellLogic {
         if (s.endsWith(".svg")) return "image/svg+xml";
         if (s.endsWith(".ogg")) return "audio/ogg";
         if (s.endsWith(".wav")) return "audio/wav";
+        if (s.endsWith(".woff2")) return "font/woff2";
+        if (s.endsWith(".txt")) return "text/plain";
         return "application/octet-stream";
     }
 

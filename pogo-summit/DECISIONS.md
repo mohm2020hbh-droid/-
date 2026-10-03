@@ -124,6 +124,32 @@
 ### DEC-037 — معاينة العوالم بدل ادّعاء مراحل لها
 - العوالم 2–4 تُعاين بـ`?debug=1&autostart=1&world=world_2…` على LEVEL_01 بثيمها. هذا يتحقق من الثيم فقط؛ **لا توجد مراحل للعوالم 2–4 بعد** (مذكور في خطة التنفيذ).
 
+### DEC-038 — Visual upgrade: surface detail without texture assets
+- **Problem (user QA screenshots):** flat vertex colour over large faces made platforms and cliffs read as "cubes with a material".
+- **Decision:** one procedural detail texture, 256² RGBA (rock cracks / grass / grain / cavity), generated at start-up and sampled **triplanar in world space** by the terrain material (`render/surface.ts`). Mipmaps are on and detail fades with distance. The surface type (natural / foliage / wood / plain) lives in **vertex-colour alpha**, so a merged mesh carries several looks in one draw call. The player keeps a clean material with its own rim light (`mats.char`), so it separates from the background.
+- **Cost:** 1 extra texture of about 340 KB; no extra draw calls.
+
+### DEC-039 — Organic shape kit instead of BoxGeometry
+- `render/shapes.ts`: `roundedBlock` (rounded edges + welded vertices + smooth normals + free deformation), `smoothBlob`, `rockColumn`. Every platform, rock, cliff, island, support and castle spire is built from it.
+- **Collision rule unchanged:** gameplay-facing faces only ever move **inward** and the walkable top stays exactly at y = 0, so the visuals never leave the collider silhouette. Physics files untouched (verified: route/determinism tests unchanged).
+
+### DEC-040 — A distinct identity per platform type
+- Rock = grass cap with a draped edge, moss drips, terraced body · wood = bevelled planks, nails, rope trim, posts (static) / iron hooks + link chains (moving) · ice = faceted glossy crystal with its own material (`mats.ice`) · bounce = cushion with a rim and dots on twin helix springs and a pedestal · hazard = per world (red crystals / blue ice spikes / bronze spears / glowing lava shards) · goal = plinth + flag + light pillar.
+
+### DEC-041 — Real variety between worlds (not just recolours)
+- Hero landmark: storybook castle (W1), blue-roofed frost castle (W2), ruined temple on a sandstone spire (W3), volcano with lava rivers and smoke (W4).
+- Bridge: stone / snow-capped with icicles / collapsed ruin / basalt.
+- Vegetation: autumn + pine (W1), snowy pine (W2), cypress (W3), bare dead trees (W4).
+- Platform decor: flowers / snow lumps + ice crystals / dry grass + broken column stumps / obsidian shards.
+- Waterfall flow: nearly frozen in W2, slow lava in W4.
+- W4 was too dark; it was brightened (sun 2.1, hemi 1.3, exposure 1.12) while keeping its dark-red identity.
+
+### DEC-042 — Mobile budget after the upgrade
+- Merging the character (≈ 20 draw calls instead of ≈ 60) and reducing tessellation (rounded steps 0.6–1.35 m; one-piece flowers; foliage detail 1) brought it to **≈ 118 draw calls and ≈ 115k rendered triangles** (including the shadow pass), within the < 250 / < 150k budget (measured with `renderer.info` in headless Chromium).
+
+### DEC-043 — Bundled HUD font
+- Baloo 2 (Latin) + Baloo Bhaijaan 2 (Arabic), **SIL OFL 1.1** (license copied with the files into `fonts/`); ≈ 80 KB woff2 for 4 files. No network at runtime (the app has no INTERNET permission). Added `font/woff2` to the shell's `ShellLogic.mime` + a JUnit test.
+
 ---
 
 ## ما لم يتحقق منه بعد (يُحدَّث في آخر الجلسة)

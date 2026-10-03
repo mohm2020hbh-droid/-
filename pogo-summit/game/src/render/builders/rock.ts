@@ -3,6 +3,7 @@ import type { WorldTheme } from '../../data/worlds';
 import { type Rng, fbm3, mulberry32, noise3, pick, range } from '../noise';
 import { SURF, blobGeometry, col, lerpColor, merge, paint, solid, withSurface, xf } from '../geom';
 import { deform, roundedBlock, smoothBlob, sstep } from '../shapes';
+import { autumnTree, cypressTree, deadTree, pineTree } from './trees';
 
 /**
  * Rock / platform builders.  Local frame: origin = centre of the TOP surface (the collision top), +x right, −y down,
@@ -182,7 +183,7 @@ export function flower(rng: Rng, x: number, z: number, colors: string[], scale =
   });
 }
 
-export function bush(rng: Rng, theme: WorldTheme, x: number, z: number, r: number, seed: number): THREE.BufferGeometry[] {
+export function bush(rng: Rng, theme: WorldTheme, x: number, z: number, r: number, seed: number, snowy = false): THREE.BufferGeometry[] {
   return withSurface(SURF.FOLIAGE, () => {
     const out: THREE.BufferGeometry[] = [];
     const base = pick(rng, theme.foliage.length > 1 ? theme.foliage : ['#6c9a3a', '#4f7f34']);
@@ -196,7 +197,8 @@ export function bush(rng: Rng, theme: WorldTheme, x: number, z: number, r: numbe
       const hsl = { h: 0, s: 0, l: 0 }; cc.getHSL(hsl); cc.setHSL(hsl.h + range(rng, -0.015, 0.015), hsl.s, hsl.l * range(rng, 0.88, 1.12));
       const dark = cc.clone().multiplyScalar(0.45);
       // ambient occlusion: dark at the base / inside, sun-lit crown
-      paint(g, (_x, y, _z, _nx, ny) => lerpColor(dark, cc, sstep(0, rr * 1.4, y) * 0.75 + Math.max(0, ny) * 0.25), true);
+      const snow = new THREE.Color('#f4f8ff');
+      paint(g, (_x, y, _z, _nx, ny) => { const c = lerpColor(dark, cc, sstep(0, rr * 1.4, y) * 0.75 + Math.max(0, ny) * 0.25); if (snowy && ny > 0.35) c.lerp(snow, Math.min(1, (ny - 0.35) * 2.5)); return c; }, true);
       out.push(g);
     }
     return out;
@@ -280,24 +282,39 @@ export function buildRockPlatform(o: SlabOpts & { decor?: Decor }): THREE.Buffer
     const nf = Math.round(o.w * 0.5);
     for (let i = 0; i < nf; i++) parts.push(...flower(rng, range(rng, -o.w / 2 + 0.4, o.w / 2 - 0.4), range(rng, 0.5, o.depth / 2 - 0.3), ['#ffffff', '#fff3d8', '#ffd1e0', '#fff0a0'], 0.9));
   }
+  const w = o.theme.worldId;
+  const X = () => range(rng, -o.w / 2 + 0.6, o.w / 2 - 0.6);
   switch (o.decor) {
     case 'flowers':
-      for (let i = 0; i < o.w * 1.3; i++) parts.push(...flower(rng, range(rng, -o.w / 2 + 0.4, o.w / 2 - 0.4), range(rng, -o.depth / 2 + 0.6, o.depth / 2 - 0.3), ['#ffffff', '#ffd1e0', '#fff0a0', '#c9a6ff'], 1));
+      if (w === 'world_2') for (let i = 0; i < o.w * 0.5; i++) parts.push(...snowLump(rng, X(), range(rng, -o.depth / 2 + 0.6, o.depth / 2 - 0.4)));
+      else if (w === 'world_3') for (let i = 0; i < o.w * 0.9; i++) parts.push(...dryGrass(rng, X(), range(rng, -o.depth / 2 + 0.6, o.depth / 2 - 0.3)));
+      else if (w === 'world_4') for (let i = 0; i < o.w * 0.4; i++) parts.push(...shard(rng, X(), back + range(rng, 0, 1), range(rng, 0.25, 0.5), '#ff7a2a', '#ffd070'));
+      else for (let i = 0; i < o.w * 1.3; i++) parts.push(...flower(rng, X(), range(rng, -o.depth / 2 + 0.6, o.depth / 2 - 0.3), ['#ffffff', '#ffd1e0', '#fff0a0', '#c9a6ff'], 1));
       break;
     case 'bushes': {
       const nb = Math.max(1, Math.round(o.w / 3));
-      for (let i = 0; i < nb; i++) parts.push(...bush(rng, o.theme, range(rng, -o.w / 2 + 0.8, o.w / 2 - 0.8), back + range(rng, 0, 0.4), range(rng, 0.55, 0.9), o.seed + i));
+      for (let i = 0; i < nb; i++) {
+        const x = range(rng, -o.w / 2 + 0.8, o.w / 2 - 0.8), z = back + range(rng, 0, 0.4);
+        if (w === 'world_4') deadTree(rng, o.theme, range(rng, 1.2, 2)).forEach(g => { xf(g, x, 0, z); parts.push(g); });
+        else parts.push(...bush(rng, o.theme, x, z, range(rng, 0.55, 0.9), o.seed + i, w === 'world_2'));
+      }
       break;
     }
-    case 'vines': parts.push(...vines(rng, o.theme, o.w, o.depth, Math.round(o.w * 0.9))); break;
+    case 'vines': if (w !== 'world_4') parts.push(...vines(rng, o.theme, o.w, o.depth, Math.round(o.w * 0.9))); break;
     case 'mushrooms':
-      for (let i = 0; i < 3 + Math.round(o.w / 3); i++) parts.push(...mushroom(rng, range(rng, -o.w / 2 + 0.6, o.w / 2 - 0.6), back + range(rng, 0, 0.8), range(rng, 0.8, 1.7)));
+      for (let i = 0; i < 3 + Math.round(o.w / 3); i++) {
+        const x = X(), z = back + range(rng, 0, 0.8), sc = range(rng, 0.8, 1.7);
+        if (w === 'world_2') parts.push(...shard(rng, x, z, sc * 0.45, '#7fd0ff', '#f0fbff'));
+        else if (w === 'world_3') parts.push(...columnStump(rng, o.theme, x, z, sc));
+        else if (w === 'world_4') parts.push(...shard(rng, x, z, sc * 0.5, '#3a2440', '#ff8a3a'));
+        else parts.push(...mushroom(rng, x, z, sc));
+      }
       break;
     case 'fence': parts.push(...fence(o.theme, -o.w / 2 + 0.8, o.w / 2 - 0.8, back)); break;
-    case 'sign': parts.push(...signPost(o.theme, -o.w / 2 + 0.7, back + 0.4)); parts.push(...bush(rng, o.theme, o.w / 2 - 0.9, back + 0.2, 0.7, o.seed)); break;
+    case 'sign': parts.push(...signPost(o.theme, -o.w / 2 + 0.7, back + 0.4)); if (w !== 'world_4') parts.push(...bush(rng, o.theme, o.w / 2 - 0.9, back + 0.2, 0.7, o.seed, w === 'world_2')); break;
     default: break;
   }
-  if (o.decor !== 'vines' && o.w > 4) parts.push(...vines(rng, o.theme, o.w, o.depth, Math.round(o.w * 0.35)));
+  if (o.decor !== 'vines' && o.w > 4 && w !== 'world_4' && w !== 'world_3') parts.push(...vines(rng, o.theme, o.w, o.depth, Math.round(o.w * 0.35)));
   return merge(parts);
 }
 
@@ -312,7 +329,8 @@ export function buildCliff(cx: number, cy: number, w: number, h: number, depth: 
     const ledge = (noise3(layer * 0.9, 0.5, 0.5, seed + 21) - 0.5) * 1.4 + (within > 0.82 ? 0.5 : 0) * (noise3(x * 0.5, layer, z * 0.5, seed + 22) + 0.3);
     const n = fbm3(x * 0.3, y * 0.22, z * 0.3, seed, 3) - 0.5;
     const sideX = Math.abs(dx) > 0.5;
-    out.set(x + (sideX ? -Math.sign(dx) * Math.abs(n) * 0.25 : dx * n * 0.8), y + dy * n * 0.5, z + dz * (n * 1.5 + ledge));
+    const flute = -0.35 * Math.pow(Math.abs(Math.sin(x * 1.9 + n * 4 + seed)), 6);        // vertical grooves
+    out.set(x + (sideX ? -Math.sign(dx) * Math.abs(n) * 0.25 : dx * n * 0.8), y + dy * n * 0.5, z + dz * (n * 1.5 + ledge + flute));
   });
   const rl = C(theme.terrain.rockLight), rm = C(theme.terrain.rockMid), rd = C(theme.terrain.rockDark), moss = C(theme.terrain.capB), mossD = C(theme.terrain.capDark);
   const tmp = new THREE.Color();
@@ -324,20 +342,81 @@ export function buildCliff(cx: number, cy: number, w: number, h: number, depth: 
     if (ny > 0.6 && mossTop) tmp.copy(lerpColor(mossD, moss, fbm3(x * 0.4, 0, z * 0.4, seed + 3)));
     else if (noise3(x * 0.7, y * 0.5, z * 0.7, seed + 12) > 0.72) tmp.lerp(moss, 0.5);      // moss / vine stains
     if (ny < -0.4) tmp.multiplyScalar(0.7);                                                   // overhang undersides
-    tmp.multiplyScalar(0.88 + 0.3 * noise3(x * 1.6, y * 1.6, z * 1.6, seed + 13));
+    if (fbm3(x * 0.25, y * 0.12, z * 0.25, seed + 17, 2) > 0.58) tmp.lerp(moss, 0.55);         // big moss patches
+    tmp.multiplyScalar(0.8 + 0.32 * noise3(x * 1.4, y * 0.12, z * 1.4, seed + 19));           // vertical water stains
+    tmp.multiplyScalar(0.92 + 0.2 * noise3(x * 1.6, y * 1.6, z * 1.6, seed + 13));
     return tmp.clone();
   }, true);
   const parts: THREE.BufferGeometry[] = [blk.geometry];
-  // clinging vegetation on the camera face: bushes on ledges + hanging vines
+  // clinging vegetation on the camera face: grassy rock shelves with bushes / small trees, hanging vines
   const rng = mulberry32(seed * 977 + 3);
   const nV = Math.round(h / 7);
   for (let i = 0; i < nV; i++) {
     const y = -h / 2 + range(rng, 1, h - 1), x = range(rng, -w / 2 + 0.4, w / 2 - 0.4);
     const v = vines(rng, theme, 0.8, 0, 2);
     v.forEach(g => { xf(g, x, y, depth / 2 + 0.1); parts.push(g); });
-    if (rng() < 0.6) bush(rng, theme, 0, 0, range(rng, 0.5, 0.9), seed + i).forEach(g => { xf(g, x, y - 0.2, depth / 2 - 0.3); parts.push(g); });
+  }
+  if (mossTop || theme.capStyle !== 'ash') {
+    const nS = Math.max(1, Math.round(h / 9));
+    for (let i = 0; i < nS; i++) {
+      const y = -h / 2 + (i + 0.5) * (h / nS) + range(rng, -1.2, 1.2);
+      const sw = Math.min(w * 0.9, range(rng, 2.4, 4.2)), sx = range(rng, -w / 2 + sw / 2, w / 2 - sw / 2);
+      const so: SlabOpts = { w: sw, h: range(rng, 0.8, 1.4), depth: range(rng, 1.4, 2.2), taper: 0.6, seed: seed * 31 + i, theme };
+      const shelf = [rockBody(so), capGeometry(so), ...capDrips(so, rng)];
+      const r = rng();
+      if (r < 0.45) shelf.push(...bush(rng, theme, range(rng, -sw / 3, sw / 3), 0, range(rng, 0.5, 0.85), seed + i));
+      else if (r < 0.8) vegetation4Cliff(rng, theme, range(rng, 2.2, 3.8)).forEach(g => { xf(g, range(rng, -sw / 4, sw / 4), 0, range(rng, -0.2, 0.2)); shelf.push(g); });
+      if (theme.capStyle === 'grass') for (let k = 0; k < 3; k++) shelf.push(...flower(rng, range(rng, -sw / 2 + 0.3, sw / 2 - 0.3), range(rng, 0, so.depth / 2 - 0.2), ['#ffffff', '#ffd1e0', '#fff0a0'], 1));
+      shelf.forEach(g => { xf(g, sx, y, depth / 2 + so.depth / 2 - 0.3); parts.push(g); });
+    }
   }
   const out = merge(parts);
   xf(out, cx, cy, 0);
   return out;
+}
+
+/** Small tree for cliff shelves (kept here to avoid an import cycle with structures.ts). */
+function vegetation4Cliff(rng: Rng, theme: WorldTheme, h: number): THREE.BufferGeometry[] {
+  if (theme.worldId === 'world_4') return deadTree(rng, theme, h);
+  if (theme.worldId === 'world_3') return cypressTree(rng, theme, h);
+  return rng() < theme.scatter.autumn / (theme.scatter.autumn + theme.scatter.pines + 1e-4) ? autumnTree(rng, theme, h, 0) : pineTree(rng, theme, h, theme.capStyle === 'snow', 0);
+}
+
+/** Snow lump (Snow Peaks decor). */
+function snowLump(rng: Rng, x: number, z: number): THREE.BufferGeometry[] {
+  const r = range(rng, 0.25, 0.5);
+  const g = smoothBlob(r, 1, 0.2, (a, b, c) => noise3(a, b, c, 4)); xf(g, x, r * 0.25, z, 0, rng() * 6, 0, 1, 0.55, 1);
+  return [paint(g, (_x, y) => lerpColor(new THREE.Color('#b9cce6'), new THREE.Color('#f8fbff'), sstep(-0.1, r * 0.5, y)), true, SURF.PLAIN)];
+}
+
+/** Dry grass clump (Ancient Ruins decor). */
+function dryGrass(rng: Rng, x: number, z: number): THREE.BufferGeometry[] {
+  const out: THREE.BufferGeometry[] = [];
+  for (let k = 0; k < 5; k++) {
+    const hgt = range(rng, 0.25, 0.5), g = new THREE.ConeGeometry(0.03, hgt, 3, 1);
+    xf(g, x + range(rng, -0.08, 0.08), hgt / 2, z + range(rng, -0.08, 0.08), range(rng, -0.4, 0.4), rng() * 6, range(rng, -0.4, 0.4), 1, 1, 0.4);
+    out.push(paint(g, (_x, y) => lerpColor(new THREE.Color('#8a6a3a'), new THREE.Color('#f0d48a'), sstep(0, hgt, y)), false, SURF.PLAIN));
+  }
+  return out;
+}
+
+/** Crystal / obsidian shard cluster (Snow: ice crystals · Volcanic: glowing obsidian). */
+function shard(rng: Rng, x: number, z: number, s: number, base: string, tip: string): THREE.BufferGeometry[] {
+  const out: THREE.BufferGeometry[] = [];
+  const b = new THREE.Color(base), t = new THREE.Color(tip);
+  for (let k = 0; k < 3; k++) {
+    const hh = s * range(rng, 0.8, 1.6), g = new THREE.CylinderGeometry(0, s * 0.3, hh, 5, 1);
+    xf(g, x + range(rng, -0.2, 0.2) * s, hh / 2 - 0.05, z + range(rng, -0.2, 0.2) * s, range(rng, -0.35, 0.35), rng() * 6, range(rng, -0.35, 0.35));
+    const gg = g.toNonIndexed(); gg.computeVertexNormals();
+    out.push(paint(gg, (_x, y) => lerpColor(b, t, sstep(0, hh, y)), false, SURF.PLAIN));
+  }
+  return out;
+}
+
+/** Broken fluted column stump (Ancient Ruins decor). */
+function columnStump(rng: Rng, theme: WorldTheme, x: number, z: number, s: number): THREE.BufferGeometry[] {
+  const hh = range(rng, 0.4, 1.1) * s, g = new THREE.CylinderGeometry(0.28 * s, 0.32 * s, hh, 10, 1);
+  xf(g, x, hh / 2, z, range(rng, -0.08, 0.08), rng() * 3, range(rng, -0.08, 0.08));
+  const c = new THREE.Color(theme.terrain.stone);
+  return [paint(g, (_x, y) => c.clone().multiplyScalar(0.75 + 0.3 * sstep(0, hh, y)), true)];
 }
