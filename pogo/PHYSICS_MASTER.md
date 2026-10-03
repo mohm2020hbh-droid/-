@@ -105,6 +105,24 @@ Grades: **A** game files / extracted data · **B** developer / documentation · 
 | Jump Release | `jumpBufferTime`, `maxLaunchAngleFromNormalDeg`, `launchNormalBlend` |
 | Ground Contact | `groundContactNormalMinY`, `tipOffset`, `tipRadius`, `springOffset`, `springRadius`, `torsoRadius`, `headOffset`, `headRadius` |
 
+## Surface table (`data/surfaces.json`, every number grade D)
+
+Surface response is data too: friction / bounce / hazard / launch multiplier / feedback ids per material.
+
+| Surface | Type | Friction | Bounce | Hazard | Launch ×  | Pad launch m/s | Effect | Sound | Particle | Haptic | Confidence |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `stone` | NORMAL_GROUND | 0.9 | 0 | no | 1 | 0 | NONE | surface_stone | dust | landing | D |
+| `wood` | PLATFORM | 0.8 | 0.05 | no | 1 | 0 | NONE | surface_wood | dust | landing | D |
+| `wall` | WALL | 0.35 | 0.1 | no | 1 | 0 | NONE | surface_stone | dust | hard_collision | D |
+| `slope` | SLOPE | 0.9 | 0 | no | 1 | 0 | NONE | surface_stone | dust | landing | D |
+| `ice` | SPECIAL | 0.2 | 0 | no | 1 | 0 | ICE | surface_ice | frost | landing | D |
+| `sticky` | SPECIAL | 3 | 0 | no | 1 | 0 | STICKY | surface_sticky | dust | landing | D |
+| `boost_pad` | SPECIAL | 0.9 | 0 | no | 1.25 | 0 | SPEED_PAD | surface_pad | boost | boost | D |
+| `bounce` | BOUNCE | 0.5 | 0.9 | no | 1 | 19 | NONE | surface_bounce | bounce | bounce | D |
+| `moving` | MOVING_PLATFORM | 0.9 | 0 | no | 1 | 0 | NONE | surface_metal | dust | landing | D |
+| `hazard` | HAZARD | 0.5 | 0.2 | yes | 1 | 0 | NONE | surface_hazard | spark | hard_collision | D |
+| `goal` | GOAL | 0.9 | 0 | no | 1 | 0 | NONE | surface_goal | goal | goal | D |
+
 ## Derived quantities (computed, not stored)
 
 | Quantity | Formula | Value with current config |

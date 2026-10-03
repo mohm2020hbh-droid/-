@@ -9,11 +9,56 @@
         "accent": "#FFFFFF", "player": "#3A86FF", "light": "#FFF6DD"
       },
       "environment": "Open meadows, wooden ledges, drifting clouds",
-      "obstacleLanguage": "Wide stone and wood platforms, soft walls, gentle ramps",
+      "obstacleLanguage": "Wide stone and wood platforms, soft walls, gentle one-way ledges, first bounce pads",
       "musicStyle": "pastoral_major", "ambience": "wind_birds",
-      "difficultyFocus": "Basic movement then precision",
+      "difficultyFocus": "Basic movement, then precision",
       "difficultyMin": 1, "difficultyMax": 3, "unlockLevelsRequired": 0,
-      "levels": ["level_01"]
+      "levels": ["level_01", "level_02", "level_03"]
+    },
+    {
+      "id": "world_2", "name": "Frozen Peaks", "order": 2, "theme": "ice",
+      "palette": {
+        "skyTop": "#3E5C9A", "skyBottom": "#CFE7F7", "fog": "#C3DDF0",
+        "ground": "#9CC9E4", "platform": "#7FB3D5", "wall": "#6C7A96", "bounce": "#FF8FC7",
+        "hazard": "#D7263D", "special": "#BDF2FF", "goal": "#FFD43B", "moving": "#A9A3D9",
+        "accent": "#F2FAFF", "player": "#3A86FF", "light": "#E9F4FF"
+      },
+      "environment": "Snowy cliffs, frozen waterfalls, crystal spires",
+      "obstacleLanguage": "Slippery ice ledges, narrower footing, sliding platforms",
+      "musicStyle": "crystal_minor", "ambience": "ice_wind",
+      "difficultyFocus": "Timing and momentum",
+      "difficultyMin": 3, "difficultyMax": 5, "unlockLevelsRequired": 3,
+      "levels": ["level_04"]
+    },
+    {
+      "id": "world_3", "name": "Crystal Caverns", "order": 3, "theme": "cave",
+      "palette": {
+        "skyTop": "#1B1038", "skyBottom": "#4B2E83", "fog": "#3A2670",
+        "ground": "#5C4B8A", "platform": "#7A5C99", "wall": "#4A3F63", "bounce": "#FF4FD8",
+        "hazard": "#FF3B3B", "special": "#35F2D0", "goal": "#FFE066", "moving": "#6C8CFF",
+        "accent": "#B388FF", "player": "#35F2D0", "light": "#D9C8FF"
+      },
+      "environment": "Glowing caverns, hanging crystals, dripping stone",
+      "obstacleLanguage": "Sticky and boost surfaces, bounce pads, hanging spikes",
+      "musicStyle": "synth_pulse", "ambience": "cave_drip",
+      "difficultyFocus": "Boost and complex surfaces",
+      "difficultyMin": 5, "difficultyMax": 7, "unlockLevelsRequired": 4,
+      "levels": ["level_05"]
+    },
+    {
+      "id": "world_4", "name": "Storm Spire", "order": 4, "theme": "storm",
+      "palette": {
+        "skyTop": "#222B3A", "skyBottom": "#7A8BA6", "fog": "#667791",
+        "ground": "#586577", "platform": "#7B8798", "wall": "#434C5A", "bounce": "#FFB703",
+        "hazard": "#FF3B30", "special": "#8ECAE6", "goal": "#FFD60A", "moving": "#9D8DF1",
+        "accent": "#C9D3E0", "player": "#FFB703", "light": "#E6EEF8"
+      },
+      "environment": "A lightning-lit tower above the clouds",
+      "obstacleLanguage": "Many moving platforms, narrow ledges, spikes beneath the route",
+      "musicStyle": "storm_drone", "ambience": "storm",
+      "difficultyFocus": "Moving obstacles and high-risk sections",
+      "difficultyMin": 7, "difficultyMax": 10, "unlockLevelsRequired": 5,
+      "levels": ["level_06"]
     }
   ]
 }

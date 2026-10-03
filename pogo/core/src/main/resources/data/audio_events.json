@@ -1,0 +1,1179 @@
+{
+ "recipes": [
+  {
+   "id": "launch",
+   "durationMs": 280,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 160,
+     "freqEnd": 640,
+     "gain": 0.5,
+     "decayMs": 140,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.12,
+     "decayMs": 90,
+     "attackMs": 3,
+     "cutoff": 2500
+    }
+   ]
+  },
+  {
+   "id": "boost",
+   "durationMs": 420,
+   "layers": [
+    {
+     "wave": "saw",
+     "freqStart": 200,
+     "freqEnd": 900,
+     "gain": 0.3,
+     "decayMs": 220,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 400,
+     "freqEnd": 1600,
+     "gain": 0.3,
+     "decayMs": 180,
+     "attackMs": 3,
+     "delayMs": 40
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.2,
+     "decayMs": 160,
+     "attackMs": 3,
+     "cutoff": 4000
+    }
+   ]
+  },
+  {
+   "id": "boost_armed",
+   "durationMs": 260,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 880,
+     "freqEnd": 1760,
+     "gain": 0.3,
+     "decayMs": 130,
+     "attackMs": 3,
+     "tremolo": 0.6,
+     "tremoloHz": 24
+    }
+   ]
+  },
+  {
+   "id": "land_soft",
+   "durationMs": 160,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 140,
+     "freqEnd": 70,
+     "gain": 0.6,
+     "decayMs": 60,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.25,
+     "decayMs": 40,
+     "attackMs": 3,
+     "cutoff": 900
+    }
+   ]
+  },
+  {
+   "id": "land_hard",
+   "durationMs": 280,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 110,
+     "freqEnd": 45,
+     "gain": 0.8,
+     "decayMs": 120,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.45,
+     "decayMs": 90,
+     "attackMs": 3,
+     "cutoff": 1400
+    }
+   ]
+  },
+  {
+   "id": "charge_tick",
+   "durationMs": 70,
+   "layers": [
+    {
+     "wave": "triangle",
+     "freqStart": 520,
+     "freqEnd": 560,
+     "gain": 0.35,
+     "decayMs": 25,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "charge_full",
+   "durationMs": 260,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 660,
+     "freqEnd": 990,
+     "gain": 0.4,
+     "decayMs": 90,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 990,
+     "freqEnd": 1320,
+     "gain": 0.3,
+     "decayMs": 90,
+     "attackMs": 3,
+     "delayMs": 80
+    }
+   ]
+  },
+  {
+   "id": "bounce",
+   "durationMs": 340,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 220,
+     "freqEnd": 880,
+     "gain": 0.5,
+     "decayMs": 140,
+     "attackMs": 3
+    },
+    {
+     "wave": "triangle",
+     "freqStart": 440,
+     "freqEnd": 1760,
+     "gain": 0.25,
+     "decayMs": 120,
+     "attackMs": 3,
+     "delayMs": 30
+    }
+   ]
+  },
+  {
+   "id": "collision_soft",
+   "durationMs": 130,
+   "layers": [
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.5,
+     "decayMs": 45,
+     "attackMs": 3,
+     "cutoff": 1500
+    },
+    {
+     "wave": "sine",
+     "freqStart": 180,
+     "freqEnd": 90,
+     "gain": 0.4,
+     "decayMs": 60,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "collision_hard",
+   "durationMs": 260,
+   "layers": [
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.7,
+     "decayMs": 100,
+     "attackMs": 3,
+     "cutoff": 2200
+    },
+    {
+     "wave": "sine",
+     "freqStart": 140,
+     "freqEnd": 50,
+     "gain": 0.8,
+     "decayMs": 130,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "slip",
+   "durationMs": 280,
+   "layers": [
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.4,
+     "decayMs": 110,
+     "attackMs": 3,
+     "cutoff": 3500
+    },
+    {
+     "wave": "saw",
+     "freqStart": 500,
+     "freqEnd": 150,
+     "gain": 0.2,
+     "decayMs": 100,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "fall",
+   "durationMs": 720,
+   "layers": [
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.3,
+     "decayMs": 400,
+     "attackMs": 250,
+     "cutoff": 1200
+    },
+    {
+     "wave": "sine",
+     "freqStart": 600,
+     "freqEnd": 150,
+     "gain": 0.15,
+     "decayMs": 400,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "hazard",
+   "durationMs": 360,
+   "layers": [
+    {
+     "wave": "saw",
+     "freqStart": 300,
+     "freqEnd": 80,
+     "gain": 0.5,
+     "decayMs": 150,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.3,
+     "decayMs": 100,
+     "attackMs": 3,
+     "cutoff": 3000
+    }
+   ]
+  },
+  {
+   "id": "checkpoint",
+   "durationMs": 420,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 523,
+     "freqEnd": 523,
+     "gain": 0.35,
+     "decayMs": 120,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 659,
+     "freqEnd": 659,
+     "gain": 0.35,
+     "decayMs": 120,
+     "attackMs": 3,
+     "delayMs": 90
+    },
+    {
+     "wave": "sine",
+     "freqStart": 784,
+     "freqEnd": 784,
+     "gain": 0.35,
+     "decayMs": 160,
+     "attackMs": 3,
+     "delayMs": 180
+    }
+   ]
+  },
+  {
+   "id": "goal",
+   "durationMs": 1200,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 523,
+     "freqEnd": 523,
+     "gain": 0.35,
+     "decayMs": 420,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 659,
+     "freqEnd": 659,
+     "gain": 0.35,
+     "decayMs": 420,
+     "attackMs": 3,
+     "delayMs": 120
+    },
+    {
+     "wave": "sine",
+     "freqStart": 784,
+     "freqEnd": 784,
+     "gain": 0.35,
+     "decayMs": 420,
+     "attackMs": 3,
+     "delayMs": 240
+    },
+    {
+     "wave": "sine",
+     "freqStart": 1047,
+     "freqEnd": 1047,
+     "gain": 0.4,
+     "decayMs": 520,
+     "attackMs": 3,
+     "delayMs": 360
+    },
+    {
+     "wave": "triangle",
+     "freqStart": 261,
+     "freqEnd": 261,
+     "gain": 0.25,
+     "decayMs": 700,
+     "attackMs": 3,
+     "delayMs": 360
+    }
+   ]
+  },
+  {
+   "id": "failure",
+   "durationMs": 520,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 440,
+     "freqEnd": 110,
+     "gain": 0.5,
+     "decayMs": 250,
+     "attackMs": 3
+    },
+    {
+     "wave": "square",
+     "freqStart": 220,
+     "freqEnd": 55,
+     "gain": 0.15,
+     "decayMs": 200,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "ui_click",
+   "durationMs": 80,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 900,
+     "freqEnd": 700,
+     "gain": 0.35,
+     "decayMs": 30,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "ui_back",
+   "durationMs": 90,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 600,
+     "freqEnd": 400,
+     "gain": 0.3,
+     "decayMs": 35,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "ui_toggle",
+   "durationMs": 100,
+   "layers": [
+    {
+     "wave": "triangle",
+     "freqStart": 700,
+     "freqEnd": 1000,
+     "gain": 0.3,
+     "decayMs": 40,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "ui_unlock",
+   "durationMs": 560,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 660,
+     "freqEnd": 660,
+     "gain": 0.3,
+     "decayMs": 150,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 880,
+     "freqEnd": 880,
+     "gain": 0.3,
+     "decayMs": 150,
+     "attackMs": 3,
+     "delayMs": 110
+    },
+    {
+     "wave": "sine",
+     "freqStart": 1320,
+     "freqEnd": 1320,
+     "gain": 0.35,
+     "decayMs": 260,
+     "attackMs": 3,
+     "delayMs": 220
+    }
+   ]
+  },
+  {
+   "id": "surf_stone",
+   "durationMs": 170,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 150,
+     "freqEnd": 75,
+     "gain": 0.6,
+     "decayMs": 60,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.25,
+     "decayMs": 40,
+     "attackMs": 3,
+     "cutoff": 900
+    }
+   ]
+  },
+  {
+   "id": "surf_wood",
+   "durationMs": 190,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 320,
+     "freqEnd": 190,
+     "gain": 0.5,
+     "decayMs": 70,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.22,
+     "decayMs": 45,
+     "attackMs": 3,
+     "cutoff": 700
+    },
+    {
+     "wave": "sine",
+     "freqStart": 640,
+     "freqEnd": 380,
+     "gain": 0.18,
+     "decayMs": 40,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "surf_ice",
+   "durationMs": 260,
+   "layers": [
+    {
+     "wave": "triangle",
+     "freqStart": 1800,
+     "freqEnd": 1200,
+     "gain": 0.3,
+     "decayMs": 110,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 2400,
+     "freqEnd": 2000,
+     "gain": 0.2,
+     "decayMs": 90,
+     "attackMs": 3,
+     "delayMs": 25
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.12,
+     "decayMs": 40,
+     "attackMs": 3,
+     "cutoff": 6000
+    }
+   ]
+  },
+  {
+   "id": "surf_sticky",
+   "durationMs": 200,
+   "layers": [
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.35,
+     "decayMs": 90,
+     "attackMs": 3,
+     "cutoff": 500
+    },
+    {
+     "wave": "sine",
+     "freqStart": 110,
+     "freqEnd": 60,
+     "gain": 0.5,
+     "decayMs": 90,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "surf_pad",
+   "durationMs": 260,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 500,
+     "freqEnd": 900,
+     "gain": 0.4,
+     "decayMs": 120,
+     "attackMs": 3
+    },
+    {
+     "wave": "triangle",
+     "freqStart": 250,
+     "freqEnd": 450,
+     "gain": 0.3,
+     "decayMs": 110,
+     "attackMs": 3
+    }
+   ]
+  },
+  {
+   "id": "surf_bounce",
+   "durationMs": 340,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 200,
+     "freqEnd": 620,
+     "gain": 0.5,
+     "decayMs": 150,
+     "attackMs": 3
+    },
+    {
+     "wave": "triangle",
+     "freqStart": 400,
+     "freqEnd": 1240,
+     "gain": 0.2,
+     "decayMs": 110,
+     "attackMs": 3,
+     "delayMs": 20
+    }
+   ]
+  },
+  {
+   "id": "surf_metal",
+   "durationMs": 420,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 800,
+     "freqEnd": 790,
+     "gain": 0.35,
+     "decayMs": 220,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 1210,
+     "freqEnd": 1200,
+     "gain": 0.25,
+     "decayMs": 180,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.15,
+     "decayMs": 40,
+     "attackMs": 3,
+     "cutoff": 5000
+    }
+   ]
+  },
+  {
+   "id": "surf_hazard",
+   "durationMs": 300,
+   "layers": [
+    {
+     "wave": "saw",
+     "freqStart": 420,
+     "freqEnd": 120,
+     "gain": 0.4,
+     "decayMs": 130,
+     "attackMs": 3
+    },
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.3,
+     "decayMs": 80,
+     "attackMs": 3,
+     "cutoff": 3500
+    }
+   ]
+  },
+  {
+   "id": "surf_goal",
+   "durationMs": 600,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 784,
+     "freqEnd": 784,
+     "gain": 0.35,
+     "decayMs": 240,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 1047,
+     "freqEnd": 1047,
+     "gain": 0.3,
+     "decayMs": 300,
+     "attackMs": 3,
+     "delayMs": 90
+    }
+   ]
+  },
+  {
+   "id": "env_chirp",
+   "durationMs": 160,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 2600,
+     "freqEnd": 3600,
+     "gain": 0.25,
+     "decayMs": 45,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 3200,
+     "freqEnd": 2400,
+     "gain": 0.2,
+     "decayMs": 40,
+     "attackMs": 3,
+     "delayMs": 70
+    }
+   ]
+  },
+  {
+   "id": "env_drip",
+   "durationMs": 300,
+   "layers": [
+    {
+     "wave": "sine",
+     "freqStart": 1400,
+     "freqEnd": 900,
+     "gain": 0.3,
+     "decayMs": 110,
+     "attackMs": 3
+    },
+    {
+     "wave": "sine",
+     "freqStart": 1400,
+     "freqEnd": 900,
+     "gain": 0.12,
+     "decayMs": 150,
+     "attackMs": 3,
+     "delayMs": 140
+    }
+   ]
+  },
+  {
+   "id": "env_gust",
+   "durationMs": 900,
+   "layers": [
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.25,
+     "decayMs": 420,
+     "attackMs": 300,
+     "cutoff": 1100
+    }
+   ]
+  },
+  {
+   "id": "rumble",
+   "durationMs": 1400,
+   "layers": [
+    {
+     "wave": "noise",
+     "freqStart": 1,
+     "freqEnd": 1,
+     "gain": 0.5,
+     "decayMs": 700,
+     "attackMs": 350,
+     "cutoff": 260
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "id": "jump_launch",
+   "category": "JUMP",
+   "recipe": "launch",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.06,
+   "volumeVariation": 0.05,
+   "cooldown": 0.05,
+   "spatial": false,
+   "priority": 6
+  },
+  {
+   "id": "jump_boost",
+   "category": "BOOST",
+   "recipe": "boost",
+   "volume": 0.9,
+   "pitch": 1.0,
+   "pitchVariation": 0.03,
+   "volumeVariation": 0,
+   "cooldown": 0.2,
+   "spatial": false,
+   "priority": 9
+  },
+  {
+   "id": "boost_armed",
+   "category": "BOOST",
+   "recipe": "boost_armed",
+   "volume": 0.6,
+   "pitch": 1.0,
+   "pitchVariation": 0.0,
+   "volumeVariation": 0,
+   "cooldown": 0.4,
+   "spatial": false,
+   "priority": 8
+  },
+  {
+   "id": "charge_tick",
+   "category": "PLAYER",
+   "recipe": "charge_tick",
+   "volume": 0.5,
+   "pitch": 1.0,
+   "pitchVariation": 0.0,
+   "volumeVariation": 0,
+   "cooldown": 0.045,
+   "spatial": false,
+   "priority": 2
+  },
+  {
+   "id": "charge_full",
+   "category": "PLAYER",
+   "recipe": "charge_full",
+   "volume": 0.6,
+   "pitch": 1.0,
+   "pitchVariation": 0.0,
+   "volumeVariation": 0,
+   "cooldown": 0.3,
+   "spatial": false,
+   "priority": 6
+  },
+  {
+   "id": "land_soft",
+   "category": "LANDING",
+   "recipe": "land_soft",
+   "volume": 0.7,
+   "pitch": 1.0,
+   "pitchVariation": 0.08,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "land_hard",
+   "category": "LANDING",
+   "recipe": "land_hard",
+   "volume": 0.9,
+   "pitch": 1.0,
+   "pitchVariation": 0.05,
+   "volumeVariation": 0.05,
+   "cooldown": 0.08,
+   "spatial": true,
+   "priority": 7
+  },
+  {
+   "id": "surface_stone",
+   "category": "LANDING",
+   "recipe": "surf_stone",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_wood",
+   "category": "LANDING",
+   "recipe": "surf_wood",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_ice",
+   "category": "LANDING",
+   "recipe": "surf_ice",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_sticky",
+   "category": "LANDING",
+   "recipe": "surf_sticky",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_pad",
+   "category": "LANDING",
+   "recipe": "surf_pad",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_bounce",
+   "category": "LANDING",
+   "recipe": "surf_bounce",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_metal",
+   "category": "LANDING",
+   "recipe": "surf_metal",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_hazard",
+   "category": "LANDING",
+   "recipe": "surf_hazard",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "surface_goal",
+   "category": "LANDING",
+   "recipe": "surf_goal",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0.07,
+   "volumeVariation": 0.08,
+   "cooldown": 0.06,
+   "spatial": true,
+   "priority": 5
+  },
+  {
+   "id": "bounce_pad",
+   "category": "COLLISION",
+   "recipe": "bounce",
+   "volume": 0.9,
+   "pitch": 1.0,
+   "pitchVariation": 0.05,
+   "volumeVariation": 0.05,
+   "cooldown": 0.1,
+   "spatial": true,
+   "priority": 7
+  },
+  {
+   "id": "collision_soft",
+   "category": "COLLISION",
+   "recipe": "collision_soft",
+   "volume": 0.6,
+   "pitch": 1.0,
+   "pitchVariation": 0.1,
+   "volumeVariation": 0.1,
+   "cooldown": 0.08,
+   "spatial": true,
+   "priority": 4
+  },
+  {
+   "id": "collision_hard",
+   "category": "COLLISION",
+   "recipe": "collision_hard",
+   "volume": 1.0,
+   "pitch": 1.0,
+   "pitchVariation": 0.06,
+   "volumeVariation": 0.05,
+   "cooldown": 0.1,
+   "spatial": true,
+   "priority": 8
+  },
+  {
+   "id": "slip",
+   "category": "COLLISION",
+   "recipe": "slip",
+   "volume": 0.7,
+   "pitch": 1.0,
+   "pitchVariation": 0.08,
+   "volumeVariation": 0.05,
+   "cooldown": 0.15,
+   "spatial": true,
+   "priority": 7
+  },
+  {
+   "id": "fall_whoosh",
+   "category": "FALL",
+   "recipe": "fall",
+   "volume": 0.6,
+   "pitch": 1.0,
+   "pitchVariation": 0.05,
+   "volumeVariation": 0,
+   "cooldown": 1.5,
+   "spatial": false,
+   "priority": 3
+  },
+  {
+   "id": "hazard_hit",
+   "category": "FAILURE",
+   "recipe": "hazard",
+   "volume": 0.9,
+   "pitch": 1.0,
+   "pitchVariation": 0.03,
+   "volumeVariation": 0,
+   "cooldown": 0.5,
+   "spatial": false,
+   "priority": 9
+  },
+  {
+   "id": "checkpoint",
+   "category": "GOAL",
+   "recipe": "checkpoint",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0,
+   "volumeVariation": 0,
+   "cooldown": 1.0,
+   "spatial": false,
+   "priority": 7
+  },
+  {
+   "id": "goal_fanfare",
+   "category": "GOAL",
+   "recipe": "goal",
+   "volume": 1.0,
+   "pitch": 1.0,
+   "pitchVariation": 0,
+   "volumeVariation": 0,
+   "cooldown": 2.0,
+   "spatial": false,
+   "priority": 10
+  },
+  {
+   "id": "failure_respawn",
+   "category": "FAILURE",
+   "recipe": "failure",
+   "volume": 0.8,
+   "pitch": 1.0,
+   "pitchVariation": 0,
+   "volumeVariation": 0,
+   "cooldown": 1.0,
+   "spatial": false,
+   "priority": 9
+  },
+  {
+   "id": "ui_click",
+   "category": "UI",
+   "recipe": "ui_click",
+   "volume": 0.7,
+   "pitch": 1.0,
+   "pitchVariation": 0.04,
+   "volumeVariation": 0,
+   "cooldown": 0.03,
+   "spatial": false,
+   "priority": 8
+  },
+  {
+   "id": "ui_back",
+   "category": "UI",
+   "recipe": "ui_back",
+   "volume": 0.7,
+   "pitch": 1.0,
+   "pitchVariation": 0.0,
+   "volumeVariation": 0,
+   "cooldown": 0.03,
+   "spatial": false,
+   "priority": 8
+  },
+  {
+   "id": "ui_toggle",
+   "category": "UI",
+   "recipe": "ui_toggle",
+   "volume": 0.7,
+   "pitch": 1.0,
+   "pitchVariation": 0.0,
+   "volumeVariation": 0,
+   "cooldown": 0.03,
+   "spatial": false,
+   "priority": 8
+  },
+  {
+   "id": "ui_unlock",
+   "category": "UI",
+   "recipe": "ui_unlock",
+   "volume": 0.9,
+   "pitch": 1.0,
+   "pitchVariation": 0.0,
+   "volumeVariation": 0,
+   "cooldown": 0.5,
+   "spatial": false,
+   "priority": 9
+  },
+  {
+   "id": "env_chirp",
+   "category": "ENVIRONMENT",
+   "recipe": "env_chirp",
+   "volume": 0.35,
+   "pitch": 1.0,
+   "pitchVariation": 0.25,
+   "volumeVariation": 0.3,
+   "cooldown": 0.4,
+   "spatial": true,
+   "priority": 1
+  },
+  {
+   "id": "env_drip",
+   "category": "ENVIRONMENT",
+   "recipe": "env_drip",
+   "volume": 0.35,
+   "pitch": 1.0,
+   "pitchVariation": 0.2,
+   "volumeVariation": 0.3,
+   "cooldown": 0.4,
+   "spatial": true,
+   "priority": 1
+  },
+  {
+   "id": "env_gust",
+   "category": "ENVIRONMENT",
+   "recipe": "env_gust",
+   "volume": 0.3,
+   "pitch": 1.0,
+   "pitchVariation": 0.1,
+   "volumeVariation": 0.2,
+   "cooldown": 2.0,
+   "spatial": false,
+   "priority": 1
+  },
+  {
+   "id": "ambient_rumble",
+   "category": "AMBIENT",
+   "recipe": "rumble",
+   "volume": 0.5,
+   "pitch": 1.0,
+   "pitchVariation": 0.15,
+   "volumeVariation": 0.2,
+   "cooldown": 6.0,
+   "spatial": false,
+   "priority": 1
+  }
+ ]
+}

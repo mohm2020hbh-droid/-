@@ -1,19 +1,21 @@
 package com.pogoascent.levels
 
+import com.pogoascent.physics.Collider
 import com.pogoascent.physics.PhysicsConfig
 import com.pogoascent.physics.SurfaceCatalog
 import com.pogoascent.player.EventType
 import com.pogoascent.player.GameEvent
 import com.pogoascent.player.PlayerInput
 import com.pogoascent.player.PogoPlayer
-import java.util.ArrayDeque
+import java.util.PriorityQueue
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class JumpStep(val fromX: Double, val fromY: Double, val lean: Double, val charge: Double, val toX: Double, val toY: Double)
+/** One planned jump. [fromTime] is the world time at which the route expects to start it (matters for moving platforms). */
+class JumpStep(val fromX: Double, val fromY: Double, val lean: Double, val charge: Double, val toX: Double, val toY: Double, val fromTime: Double = 0.0)
 
 class ValidationReport(
   val levelId: String,
@@ -50,9 +52,11 @@ class ValidationReport(
 object LevelValidator {
   private val LEANS = doubleArrayOf(-1.0, -0.7, -0.4, 0.0, 0.4, 0.7, 1.0)
   private val CHARGES = doubleArrayOf(0.3, 0.55, 0.8, 1.0)
-  private const val BIN_WIDTH = 1.25
+  private const val BIN_WIDTH = 0.5
   private val VARIANTS = arrayOf(doubleArrayOf(0.05, 0.0), doubleArrayOf(-0.05, 0.0), doubleArrayOf(0.0, 0.04), doubleArrayOf(0.0, -0.04))
-  private const val MAX_NODES = 1500
+  private const val MAX_NODES = 4000
+  /** With moving platforms the player may wait: launches are tried at this many moments across the longest platform cycle. */
+  private const val WAITS = 8
   private const val EDGE_MARGIN = 0.35
   private const val MIN_THICKNESS = 0.3
 
@@ -107,23 +111,31 @@ object LevelValidator {
 
   // ---------------------------------------------------------------------------------------------
 
-  /** A standing position: the pinned tip-circle centre and the world time (matters for moving platforms). */
-  class Spot(val tipX: Double, val tipY: Double, val time: Double)
+  /**
+   * A standing position: the pinned tip-circle centre and the world time of arrival. When the player stands on a moving
+   * platform ([moverId]), [localX]/[localY] are the tip's coordinates relative to that platform, so the spot can be
+   * re-projected to any later time (the player may wait on a platform for the right moment).
+   */
+  class Spot(val tipX: Double, val tipY: Double, val time: Double, val moverId: String? = null, val localX: Double = tipX, val localY: Double = tipY)
 
-  /** Where a simulated jump ended: robustly landed on solid [solidId] at [spot] (or at the goal). */
-  class Landing(val solidId: String, val spot: Spot, val atGoal: Boolean, val lean: Double, val charge: Double)
+  /** Where a simulated jump ended: robustly landed on solid [solidId] at [spot] (or at the goal). [launchTime] = when it started. */
+  class Landing(val solidId: String, val spot: Spot, val atGoal: Boolean, val lean: Double, val charge: Double, val launchTime: Double)
 
-  private class Node(val spot: Spot, val parent: Node?, val lean: Double, val charge: Double, val depth: Int)
+  private class Node(val spot: Spot, val parent: Node?, val lean: Double, val charge: Double, val depth: Int, val launchTime: Double, val key: Long)
 
   /**
    * The jump simulator shared by the validator and the level generator. [hops] answers: "from this standing position, which
-   * platforms can a competent player *robustly* reach with one jump?"
+   * platforms can a competent player *robustly* reach with one jump?" – trying several launch moments when the level has
+   * moving platforms, because a player can simply wait for the right phase.
    */
   class JumpSearch(val level: LoadedLevel, val physics: PhysicsConfig) {
     var trials = 0; private set
     private val hz = physics.fixedTimestepHz
+    private val byId: Map<String, Collider> = level.colliders.associateBy { it.id }
+    private val indexOf: Map<String, Int> = level.colliders.withIndex().associate { it.value.id to it.index }
+    private val waitStep: Double = level.colliders.mapNotNull { it.mover?.period }.maxOrNull()?.let { it / WAITS } ?: 0.0
 
-    private class Outcome(val tipX: Double, val tipY: Double, val time: Double, val goal: Boolean, val colliderIdx: Int, val localX: Double, val phase: Int)
+    private class Outcome(val tipX: Double, val tipY: Double, val time: Double, val goal: Boolean, val colliderIdx: Int, val moverId: String?, val localX: Double, val localY: Double)
 
     fun startSpot(): Spot? {
       val p = PogoPlayer(physics, level.world) { }
@@ -132,25 +144,34 @@ object LevelValidator {
       return if (p.grounded) Spot(p.tipCenterX, p.tipCenterY, 0.0) else null
     }
 
-    /** All robust single-jump landings from [from], one per (lean, charge) that passes the robustness test. */
+    /** Where [from] is at world time [t] (moving platforms carry the player). */
+    private fun at(from: Spot, t: Double): Spot {
+      val m = from.moverId?.let { byId[it]?.mover } ?: return Spot(from.tipX, from.tipY, t)
+      return Spot(from.localX + m.offsetX(t), from.localY + m.offsetY(t), t, from.moverId, from.localX, from.localY)
+    }
+
+    /** All robust single-jump landings from [from], one per (launch time, lean, charge) that passes the robustness test. */
     fun hops(from: Spot): List<Landing> {
       val out = ArrayList<Landing>()
-      for (lean in LEANS) for (charge in CHARGES) {
-        trials++
-        val o = simulate(from, lean, charge) ?: continue
-        if (!robust(from, lean, charge, o)) continue
-        val col = level.colliders[o.colliderIdx]
-        out += Landing(col.id, Spot(o.tipX, o.tipY, o.time), o.goal, lean, charge)
+      val launches = if (waitStep > 0.0) WAITS else 1
+      for (w in 0 until launches) {
+        val start = at(from, from.time + w * waitStep)
+        for (lean in LEANS) for (charge in CHARGES) {
+          trials++
+          val o = simulate(start, lean, charge) ?: continue
+          if (!robust(start, lean, charge, o)) continue
+          val col = level.colliders[o.colliderIdx]
+          out += Landing(col.id, Spot(o.tipX, o.tipY, o.time, o.moverId, o.localX, o.localY), o.goal, lean, charge, start.time)
+        }
       }
       return out
     }
 
-    /** Distinct landing key (collider + 2.5 m bin + mover phase) used to de-duplicate nodes. */
+    /** De-duplication key: platform + position bin along it (arrival time is handled by "earliest arrival wins"). */
     fun keyOf(l: Landing): Long {
-      val idx = level.colliders.indexOfFirst { it.id == l.solidId }
+      val idx = indexOf.getValue(l.solidId)
       val col = level.colliders[idx]
-      val phase = col.mover?.let { ((l.spot.time / it.period) % 1.0 * 4).toInt() } ?: 0
-      return (idx.toLong() shl 40) xor ((Math.floor((l.spot.tipX - col.ox) / BIN_WIDTH).toLong() and 0xFFFFFF) shl 8) xor phase.toLong()
+      return (idx.toLong() shl 32) xor (Math.floor((l.spot.tipX - col.ox) / BIN_WIDTH).toLong() and 0xFFFFFFL)
     }
 
     /**
@@ -222,11 +243,11 @@ object LevelValidator {
       if (!insideSurface(p.tipCenterX, p.tipCenterY)) return null
       // never treat a hazard landing as a safe node
       if (col.surface.hazard) return null
-      val idx = level.colliders.indexOf(col)
-      val phase = col.mover?.let { ((level.world.time / it.period) % 1.0 * 4).toInt() } ?: 0
+      val idx = indexOf.getValue(col.id)
       val g = level.data.goal
       val atGoal = abs(p.tipCenterX - g.x) <= g.w / 2 - 0.3 && abs(p.tipCenterY - physics.tipRadius - g.y) < 0.3
-      return Outcome(p.tipCenterX, p.tipCenterY, level.world.time, atGoal, idx, p.tipCenterX - col.ox, phase)
+      val moverId = if (col.mover != null) col.id else null
+      return Outcome(p.tipCenterX, p.tipCenterY, level.world.time, atGoal, idx, moverId, p.tipCenterX - col.ox, p.tipCenterY - col.oy)
     }
   }
 
@@ -235,36 +256,36 @@ object LevelValidator {
     var found = false
     val reachedIds = HashSet<String>()
     private var goalNode: Node? = null
-    private val seen = HashSet<Long>()
-    private val queue = ArrayDeque<Node>()
-    private var maxY = -1e9
+    private val arrival = HashMap<Long, Double>()
+    // best-first: always expand the highest standing spot found so far (reaches the goal sooner than breadth-first)
+    private val queue = PriorityQueue<Node>(compareByDescending<Node> { it.spot.tipY }.thenBy { it.depth })
     private val js = JumpSearch(level, physics)
     val trials: Int get() = js.trials
 
     fun run() {
       val start = js.startSpot() ?: return
-      enqueue(Node(start, null, 0.0, 0.0, 0))
+      val first = Node(start, null, 0.0, 0.0, 0, 0.0, -1L)
+      nodes += first; queue.add(first)
       while (queue.isNotEmpty() && nodes.size < MAX_NODES && !found) {
         val n = queue.poll()
-        if (n.spot.tipY < maxY - 18.0) continue // fell far behind the best progress – skip exploring from here
+        if (n.key != -1L && (arrival[n.key] ?: n.spot.time) < n.spot.time - 1e-9) continue // a faster way to this spot exists
         for (l in js.hops(n.spot)) {
           reachedIds += l.solidId
           if (l.atGoal) {
-            goalNode = Node(l.spot, n, l.lean, l.charge, n.depth + 1)
+            goalNode = Node(l.spot, n, l.lean, l.charge, n.depth + 1, l.launchTime, -2L)
             nodes += goalNode!!
             found = true
             return
           }
-          if (!seen.add(js.keyOf(l))) continue
-          enqueue(Node(l.spot, n, l.lean, l.charge, n.depth + 1))
+          val k = js.keyOf(l)
+          val prev = arrival[k]
+          // static levels: the first representative of a spot wins; with movers an earlier arrival dominates (it can wait)
+          if (prev != null && (!level.world.hasMovers || prev <= l.spot.time + 1e-9)) continue
+          arrival[k] = l.spot.time
+          val node = Node(l.spot, n, l.lean, l.charge, n.depth + 1, l.launchTime, k)
+          nodes += node; queue.add(node)
         }
       }
-    }
-
-    private fun enqueue(n: Node) {
-      nodes += n
-      if (n.spot.tipY > maxY) maxY = n.spot.tipY
-      queue.add(n)
     }
 
     fun path(): List<JumpStep> {
@@ -272,7 +293,7 @@ object LevelValidator {
       val out = ArrayList<JumpStep>()
       while (n.parent != null) {
         val p = n.parent!!
-        out += JumpStep(p.spot.tipX, p.spot.tipY, n.lean, n.charge, n.spot.tipX, n.spot.tipY)
+        out += JumpStep(p.spot.tipX, p.spot.tipY, n.lean, n.charge, n.spot.tipX, n.spot.tipY, n.launchTime)
         n = p
       }
       out.reverse()

@@ -14,7 +14,7 @@ class PhysicsWorld(
 ) {
   var time = 0.0
     private set
-  private val movers: List<Collider> = colliders.filter { it.mover != null }
+  private val movers: Array<Collider> = colliders.filter { it.mover != null }.toTypedArray()
   private val scratch = ContactResult()
 
   val hasMovers: Boolean get() = movers.isNotEmpty()
@@ -22,12 +22,12 @@ class PhysicsWorld(
   /** Advance kinematic colliders to simulation time [t]. */
   fun advanceTo(t: Double) {
     time = t
-    for (c in movers) c.update(t)
+    for (i in movers.indices) movers[i].update(t)
   }
 
   fun reset() {
     time = 0.0
-    for (c in colliders) c.reset()
+    for (i in colliders.indices) colliders[i].reset()
   }
 
   /**

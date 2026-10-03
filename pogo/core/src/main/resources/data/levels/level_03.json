@@ -1,0 +1,581 @@
+{
+  "id": "level_03",
+  "name": "Bounce Garden",
+  "world": "world_1",
+  "index": 1,
+  "theme": "meadow",
+  "difficulty": 3,
+  "parTimeSec": 200.0,
+  "start": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "goal": {
+    "x": 6.849672563360322,
+    "y": 62.1,
+    "w": 9.0,
+    "h": 0.8
+  },
+  "killY": -12.0,
+  "platforms": [
+    {
+      "id": "ground",
+      "kind": "box",
+      "x": 0.0,
+      "y": -1.0,
+      "w": 28.0,
+      "h": 2.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p1",
+      "kind": "box",
+      "x": 6.143394092596568,
+      "y": 2.4,
+      "w": 6.286788185193137,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p2",
+      "kind": "box",
+      "x": -4.406991997890309,
+      "y": 5.4,
+      "w": 6.468831179739984,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p3",
+      "kind": "box",
+      "x": 5.2958839554261585,
+      "y": 8.0,
+      "w": 5.301654008283863,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p5",
+      "kind": "box",
+      "x": 5.944131780354348,
+      "y": 14.1,
+      "w": 6.204424978266081,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p6",
+      "kind": "box",
+      "x": -3.6892575198790425,
+      "y": 16.8,
+      "w": 5.3759576310898485,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p7",
+      "kind": "box",
+      "x": 5.604615235463319,
+      "y": 20.0,
+      "w": 5.278368639832278,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p8",
+      "kind": "box",
+      "x": -4.460801705383965,
+      "y": 23.2,
+      "w": 6.3077288989411615,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p9",
+      "kind": "box",
+      "x": 5.945343522832015,
+      "y": 26.3,
+      "w": 6.532984513880894,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p12",
+      "kind": "box",
+      "x": -4.07848853670328,
+      "y": 34.8,
+      "w": 4.975587110291838,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p14",
+      "kind": "box",
+      "x": -4.663896119713622,
+      "y": 41.4,
+      "w": 6.558254254208054,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p15",
+      "kind": "box",
+      "x": 6.067572175430798,
+      "y": 44.1,
+      "w": 6.3313850628693995,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p16",
+      "kind": "box",
+      "x": -5.299009781729856,
+      "y": 46.9,
+      "w": 6.586681905681984,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p17",
+      "kind": "box",
+      "x": 5.896496545430931,
+      "y": 50.0,
+      "w": 6.210081524967103,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p18",
+      "kind": "box",
+      "x": -5.109952466767706,
+      "y": 52.5,
+      "w": 6.1543714534773555,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p20",
+      "kind": "box",
+      "x": -4.370046340416847,
+      "y": 58.6,
+      "w": 5.237279259414843,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "goalbase",
+      "kind": "box",
+      "x": 6.849672563360322,
+      "y": 61.6,
+      "w": 9.0,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    }
+  ],
+  "obstacles": [
+    {
+      "id": "wall_l",
+      "kind": "box",
+      "x": -16.0,
+      "y": 34.05,
+      "w": 3.0,
+      "h": 76.1,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wall",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "wall_r",
+      "kind": "box",
+      "x": 16.0,
+      "y": 34.05,
+      "w": 3.0,
+      "h": 76.1,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wall",
+      "oneWay": false,
+      "mover": null
+    }
+  ],
+  "hazards": [
+    {
+      "id": "spikes_p14",
+      "kind": "box",
+      "x": -4.663896119713622,
+      "y": 40.65,
+      "w": 2.623301701683222,
+      "h": 0.5,
+      "rot": 0.0,
+      "points": [],
+      "surface": "hazard",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "spikes_p20",
+      "kind": "box",
+      "x": -4.370046340416847,
+      "y": 57.85,
+      "w": 2.0949117037659373,
+      "h": 0.5,
+      "rot": 0.0,
+      "points": [],
+      "surface": "hazard",
+      "oneWay": false,
+      "mover": null
+    }
+  ],
+  "movers": [
+    {
+      "id": "p4",
+      "kind": "box",
+      "x": -4.200561760149209,
+      "y": 11.0,
+      "w": 5.0,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "moving",
+      "oneWay": false,
+      "mover": {
+        "ax": 2.5,
+        "ay": 0.0,
+        "period": 7.933762250172855,
+        "phase": 1.2253519955400314
+      }
+    },
+    {
+      "id": "p10",
+      "kind": "box",
+      "x": -4.561501274375547,
+      "y": 29.3,
+      "w": 5.0,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "moving",
+      "oneWay": false,
+      "mover": {
+        "ax": 2.5,
+        "ay": 0.0,
+        "period": 7.9568237988906985,
+        "phase": 5.569452608245509
+      }
+    },
+    {
+      "id": "p11",
+      "kind": "box",
+      "x": 5.985667628899003,
+      "y": 32.2,
+      "w": 5.0,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "moving",
+      "oneWay": false,
+      "mover": {
+        "ax": 2.5,
+        "ay": 0.0,
+        "period": 7.896346074474656,
+        "phase": 1.3906277283377928
+      }
+    },
+    {
+      "id": "p13",
+      "kind": "box",
+      "x": 5.945005737278097,
+      "y": 38.2,
+      "w": 5.0,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "moving",
+      "oneWay": false,
+      "mover": {
+        "ax": 2.5,
+        "ay": 0.0,
+        "period": 6.11654052863782,
+        "phase": 2.110360542288219
+      }
+    },
+    {
+      "id": "p19",
+      "kind": "box",
+      "x": 5.712854431191342,
+      "y": 55.7,
+      "w": 5.0,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "moving",
+      "oneWay": false,
+      "mover": {
+        "ax": 2.5,
+        "ay": 0.0,
+        "period": 6.025802246628641,
+        "phase": 0.7703492803065908
+      }
+    }
+  ],
+  "bounceObjects": [],
+  "checkpoints": [
+    {
+      "id": "cp1",
+      "x": -3.6892575198790425,
+      "y": 18.8,
+      "w": 5.3759576310898485,
+      "h": 3.0,
+      "respawnX": -3.6892575198790425,
+      "respawnY": 17.3
+    },
+    {
+      "id": "cp2",
+      "x": -4.07848853670328,
+      "y": 36.8,
+      "w": 4.975587110291839,
+      "h": 3.0,
+      "respawnX": -4.07848853670328,
+      "respawnY": 35.3
+    },
+    {
+      "id": "cp3",
+      "x": -5.109952466767706,
+      "y": 54.5,
+      "w": 6.0,
+      "h": 3.0,
+      "respawnX": -5.109952466767706,
+      "respawnY": 53.0
+    }
+  ],
+  "decor": [
+    {
+      "kind": "cloud",
+      "x": -11.466872050604884,
+      "y": 8.0,
+      "z": -15.894382375137871,
+      "w": 6.146403829731525,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 17.302862489151593,
+      "y": 17.06451021851624,
+      "z": -15.540768704473958,
+      "w": 6.888405964394388,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -9.503893231677942,
+      "y": 25.626317775817164,
+      "z": -15.403121467715078,
+      "w": 7.9514469704918564,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 17.98665800301156,
+      "y": 34.2613104839439,
+      "z": -15.008552258871946,
+      "w": 8.930681779629088,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -20.69823429213188,
+      "y": 41.61423623854737,
+      "z": -14.958717975971068,
+      "w": 8.79330703252697,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 18.188695325359618,
+      "y": 50.696318728165586,
+      "z": -16.132574194760128,
+      "w": 8.36071421841333,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -18.50377003722641,
+      "y": 58.433511243600016,
+      "z": -17.56745688312946,
+      "w": 6.6621170155789935,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 9.567156719124702,
+      "y": 66.94430764947818,
+      "z": -17.744992633557167,
+      "w": 7.222854681026446,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -17.72797958748913,
+      "y": 75.45910406423367,
+      "z": -16.772012151674314,
+      "w": 7.94334770018431,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 21.342212838921412,
+      "y": 82.96739166614267,
+      "z": -16.64781049117631,
+      "w": 6.036202572890057,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "tree",
+      "x": -20.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 4.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": -13.0,
+      "y": 0.0,
+      "z": -11.0,
+      "w": 2.0,
+      "h": 5.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": -6.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 6.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 1.0,
+      "y": 0.0,
+      "z": -11.0,
+      "w": 2.0,
+      "h": 4.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 8.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 5.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 15.0,
+      "y": 0.0,
+      "z": -11.0,
+      "w": 2.0,
+      "h": 6.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 22.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 4.0,
+      "role": "ground"
+    }
+  ],
+  "rules": {
+    "fallLossHeight": 8.0,
+    "stuckSeconds": 3.0
+  },
+  "notes": "Introduces bounce pads (they throw you upward), sliding moving platforms and spikes hanging under ledges."
+}

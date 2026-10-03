@@ -3,6 +3,7 @@ package com.pogoascent.tools
 import com.pogoascent.camera.CameraConfig
 import com.pogoascent.physics.PhysicsConfig
 import com.pogoascent.physics.PhysicsParams
+import com.pogoascent.physics.SurfaceCatalog
 import java.io.File
 
 /**
@@ -10,7 +11,7 @@ import java.io.File
  * (a unit test fails when the checked-in file differs). Regenerate with `./gradlew :core:generateDocs`.
  */
 object PhysicsDocs {
-  fun renderMarkdown(config: PhysicsConfig): String {
+  fun renderMarkdown(config: PhysicsConfig, surfaces: SurfaceCatalog = SurfaceCatalog.load()): String {
     val sb = StringBuilder()
     sb.append("# PHYSICS_MASTER\n\n")
     sb.append("> **Generated file – do not edit by hand.** Source of truth: `PhysicsParams.kt` (metadata) and\n")
@@ -47,6 +48,18 @@ object PhysicsDocs {
     for (cat in PhysicsParams.requiredCategories) {
       val keys = PhysicsParams.all.filter { it.category == cat }.joinToString(", ") { "`${it.key}`" }
       sb.append("| ").append(cat).append(" | ").append(keys).append(" |\n")
+    }
+
+    sb.append("\n## Surface table (`data/surfaces.json`, every number grade D)\n\n")
+    sb.append("Surface response is data too: friction / bounce / hazard / launch multiplier / feedback ids per material.\n\n")
+    sb.append("| Surface | Type | Friction | Bounce | Hazard | Launch ×  | Pad launch m/s | Effect | Sound | Particle | Haptic | Confidence |\n")
+    sb.append("|---|---|---|---|---|---|---|---|---|---|---|---|\n")
+    for (sf in surfaces.all) {
+      sb.append("| `").append(sf.id).append("` | ").append(sf.type.name)
+        .append(" | ").append(PhysicsParams.format(sf.friction)).append(" | ").append(PhysicsParams.format(sf.bounce))
+        .append(" | ").append(if (sf.hazard) "yes" else "no").append(" | ").append(PhysicsParams.format(sf.velocityMultiplier))
+        .append(" | ").append(PhysicsParams.format(sf.launchSpeed)).append(" | ").append(sf.effect.name)
+        .append(" | ").append(sf.sound).append(" | ").append(sf.particle).append(" | ").append(sf.haptic).append(" | D |\n")
     }
 
     sb.append("\n## Derived quantities (computed, not stored)\n\n")

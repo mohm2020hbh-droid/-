@@ -1,0 +1,135 @@
+{
+  "levelId": "level_01",
+  "steps": [
+    {
+      "lean": -0.4,
+      "charge": 1.0,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 1.0,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 1.0,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -1.0,
+      "charge": 0.55,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.4,
+      "charge": 1.0,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -1.0,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 1.0,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 1.0,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.7,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -1.0,
+      "charge": 0.55,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.4,
+      "charge": 1.0,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.3,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": -0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    },
+    {
+      "lean": 0.4,
+      "charge": 0.8,
+      "fromTime": 0.0
+    }
+  ]
+}

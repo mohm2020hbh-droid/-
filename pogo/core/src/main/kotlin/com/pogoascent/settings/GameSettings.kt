@@ -79,8 +79,10 @@ data class GameplaySettings(
   val cameraShake: Double = 1.0,
   val cameraZoom: Double = 1.0,
   val tutorialHints: Boolean = true,
+  /** "auto" follows the device language; "en" or "ar" forces one. */
+  val language: String = "auto",
 ) {
-  fun sanitized() = copy(cameraShake = cameraShake.coerceIn(0.0, 1.0), cameraZoom = cameraZoom.coerceIn(0.65, 1.6))
+  fun sanitized() = copy(cameraShake = cameraShake.coerceIn(0.0, 1.0), cameraZoom = cameraZoom.coerceIn(0.65, 1.6), language = if (language in listOf("auto", "en", "ar")) language else "auto")
 }
 
 @Serializable

@@ -30,7 +30,7 @@ class AudioManager(
   private class Voice(val handle: Int, val eventId: String, val priority: Int, val endsAt: Double, val category: AudioCategory, val baseVolume: Float)
 
   var settings = AudioSettings()
-    set(value) {
+    @Synchronized set(value) {
       field = value.sanitized()
       applyVolumes()
     }
@@ -39,7 +39,7 @@ class AudioManager(
   var listenerX = 0.0
   var listenerY = 0.0
   var paused = false
-    set(value) {
+    @Synchronized set(value) {
       field = value
       if (value) backend.stopAll().also { voices.clear(); musicHandle = -1; ambientHandle = -1 }
     }
@@ -73,6 +73,7 @@ class AudioManager(
    * Play an event. [intensity] (0..1+) scales volume (e.g. impact speed); [x]/[y] are world coordinates used when the event
    * is spatial. Returns true when a voice was started.
    */
+  @Synchronized
   fun trigger(eventId: String, intensity: Double = 1.0, x: Double = listenerX, y: Double = listenerY): Boolean {
     if (paused) return false
     val ev = catalog.events[eventId] ?: return false
@@ -113,6 +114,7 @@ class AudioManager(
   }
 
   /** Start (or switch) the looping music bed. [pcm] comes from [MusicGenerator]. */
+  @Synchronized
   fun playMusic(clipId: String, pcm: ShortArray) {
     stopMusic()
     backend.register(clipId, pcm, SoundSynth.SAMPLE_RATE)
@@ -120,6 +122,7 @@ class AudioManager(
     musicHandle = if (paused) -1 else backend.play(clipId, (musicBase * categoryVolume(AudioCategory.MUSIC)).toFloat(), 1f, 0f, true)
   }
 
+  @Synchronized
   fun playAmbient(clipId: String, pcm: ShortArray) {
     stopAmbient()
     backend.register(clipId, pcm, SoundSynth.SAMPLE_RATE)
@@ -127,8 +130,8 @@ class AudioManager(
     ambientHandle = if (paused) -1 else backend.play(clipId, (ambientBase * categoryVolume(AudioCategory.AMBIENT)).toFloat(), 1f, 0f, true)
   }
 
-  fun stopMusic() { if (musicHandle >= 0) backend.stop(musicHandle); musicHandle = -1 }
-  fun stopAmbient() { if (ambientHandle >= 0) backend.stop(ambientHandle); ambientHandle = -1 }
+  @Synchronized fun stopMusic() { if (musicHandle >= 0) backend.stop(musicHandle); musicHandle = -1 }
+  @Synchronized fun stopAmbient() { if (ambientHandle >= 0) backend.stop(ambientHandle); ambientHandle = -1 }
 
   private fun applyVolumes() {
     if (musicHandle >= 0) backend.setVolume(musicHandle, (musicBase * categoryVolume(AudioCategory.MUSIC)).toFloat().coerceIn(0f, 1f))
@@ -136,9 +139,9 @@ class AudioManager(
     for (v in voices) if (v.endsAt == Double.MAX_VALUE) backend.setVolume(v.handle, (v.baseVolume * categoryVolume(v.category)).toFloat().coerceIn(0f, 1f))
   }
 
-  val activeVoices: Int get() = voices.count { it.endsAt > clock() }
+  val activeVoices: Int @Synchronized get() = voices.count { it.endsAt > clock() }
 
-  fun release() { backend.stopAll(); backend.release(); voices.clear() }
+  @Synchronized fun release() { backend.stopAll(); backend.release(); voices.clear() }
 
   companion object {
     const val PAN_RANGE = 12.0

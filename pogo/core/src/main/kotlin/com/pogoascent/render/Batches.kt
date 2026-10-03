@@ -11,6 +11,14 @@ class InstanceBatch(val capacity: Int) {
 
   fun clear() { count = 0 }
 
+  /** Appends the first [n] instances of [src] (bounded by this batch's remaining capacity). */
+  fun copyFrom(src: InstanceBatch, n: Int = src.count) {
+    val k = minOf(n, src.count, capacity - count)
+    if (k <= 0) return
+    System.arraycopy(src.data, 0, data, count * STRIDE, k * STRIDE)
+    count += k
+  }
+
   /** Adds translate · rotateZ · scale. Returns false (and drops it) when the batch is full. */
   fun add(tx: Float, ty: Float, tz: Float, rz: Float, sx: Float, sy: Float, sz: Float, r: Float, g: Float, b: Float, a: Float = 1f): Boolean {
     if (count >= capacity) return false

@@ -4,7 +4,7 @@
     { "id": "wood",    "type": "PLATFORM",        "friction": 0.8,  "bounce": 0.05, "sound": "surface_wood",   "particle": "dust",   "haptic": "landing",       "colorRole": "platform" },
     { "id": "wall",    "type": "WALL",            "friction": 0.35, "bounce": 0.1,  "sound": "surface_stone",  "particle": "dust",   "haptic": "hard_collision","colorRole": "wall" },
     { "id": "slope",   "type": "SLOPE",           "friction": 0.9,  "bounce": 0.0,  "sound": "surface_stone",  "particle": "dust",   "haptic": "landing",       "colorRole": "ground" },
-    { "id": "ice",     "type": "SPECIAL",         "friction": 0.06, "bounce": 0.0,  "effect": "ICE",    "sound": "surface_ice",    "particle": "frost",  "haptic": "landing",       "colorRole": "special" },
+    { "id": "ice",     "type": "SPECIAL",         "friction": 0.2,  "bounce": 0.0,  "effect": "ICE",    "sound": "surface_ice",    "particle": "frost",  "haptic": "landing",       "colorRole": "special" },
     { "id": "sticky",  "type": "SPECIAL",         "friction": 3.0,  "bounce": 0.0,  "effect": "STICKY", "sound": "surface_sticky", "particle": "dust",   "haptic": "landing",       "colorRole": "special" },
     { "id": "boost_pad","type": "SPECIAL",        "friction": 0.9,  "bounce": 0.0,  "effect": "SPEED_PAD", "velocityMultiplier": 1.25, "sound": "surface_pad", "particle": "boost", "haptic": "boost", "colorRole": "special" },
     { "id": "bounce",  "type": "BOUNCE",          "friction": 0.5,  "bounce": 0.9,  "launchSpeed": 19.0, "sound": "surface_bounce", "particle": "bounce", "haptic": "bounce",  "colorRole": "bounce" },

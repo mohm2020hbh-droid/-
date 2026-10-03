@@ -1,0 +1,377 @@
+{
+ "items": [
+  {
+   "id": "hat_cap_red",
+   "category": "HAT",
+   "name": "Red Cap",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "hat_cap",
+   "icon": "🧢",
+   "rarity": "COMMON",
+   "colors": [
+    "#F25C45"
+   ]
+  },
+  {
+   "id": "hat_beanie",
+   "category": "HAT",
+   "name": "Beanie",
+   "unlock": "coins",
+   "price": 40,
+   "prefab": "hat_beanie",
+   "icon": "🧶",
+   "rarity": "COMMON",
+   "colors": [
+    "#3AAFA9"
+   ]
+  },
+  {
+   "id": "hat_helmet",
+   "category": "HAT",
+   "name": "Rider Helmet",
+   "unlock": "level:level_01",
+   "price": 0,
+   "prefab": "hat_helmet",
+   "icon": "⛑️",
+   "rarity": "UNCOMMON",
+   "colors": [
+    "#F2C230"
+   ]
+  },
+  {
+   "id": "hat_tophat",
+   "category": "HAT",
+   "name": "Top Hat",
+   "unlock": "coins",
+   "price": 60,
+   "prefab": "hat_tophat",
+   "icon": "🎩",
+   "rarity": "UNCOMMON",
+   "colors": [
+    "#2B2D42"
+   ]
+  },
+  {
+   "id": "hat_propeller",
+   "category": "HAT",
+   "name": "Propeller Cap",
+   "unlock": "coins",
+   "price": 150,
+   "prefab": "hat_propeller",
+   "icon": "🚁",
+   "rarity": "RARE",
+   "colors": [
+    "#E63946"
+   ]
+  },
+  {
+   "id": "hat_crown",
+   "category": "HAT",
+   "name": "Crown",
+   "unlock": "coins",
+   "price": 400,
+   "prefab": "hat_crown",
+   "icon": "👑",
+   "rarity": "LEGENDARY",
+   "colors": [
+    "#FFD43B"
+   ]
+  },
+  {
+   "id": "hat_none",
+   "category": "HAT",
+   "name": "No Hat",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "hat_none",
+   "icon": "∅",
+   "rarity": "COMMON",
+   "colors": [
+    "#FFFFFF"
+   ]
+  },
+  {
+   "id": "stick_steel",
+   "category": "STICK",
+   "name": "Steel Stick",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "stick_plain",
+   "icon": "🔩",
+   "rarity": "COMMON",
+   "colors": [
+    "#B8BDC7",
+    "#E5483A"
+   ]
+  },
+  {
+   "id": "stick_candy",
+   "category": "STICK",
+   "name": "Candy Stick",
+   "unlock": "coins",
+   "price": 120,
+   "prefab": "stick_plain",
+   "icon": "🍬",
+   "rarity": "UNCOMMON",
+   "colors": [
+    "#FF8FB1",
+    "#FFFFFF"
+   ]
+  },
+  {
+   "id": "stick_gold",
+   "category": "STICK",
+   "name": "Gold Stick",
+   "unlock": "coins",
+   "price": 200,
+   "prefab": "stick_plain",
+   "icon": "🥇",
+   "rarity": "RARE",
+   "colors": [
+    "#F5C542",
+    "#C0392B"
+   ]
+  },
+  {
+   "id": "stick_neon",
+   "category": "STICK",
+   "name": "Neon Stick",
+   "unlock": "world:world_3",
+   "price": 0,
+   "prefab": "stick_plain",
+   "icon": "💠",
+   "rarity": "EPIC",
+   "colors": [
+    "#35F2D0",
+    "#FF3DCB"
+   ]
+  },
+  {
+   "id": "clothes_blue",
+   "category": "CLOTHES",
+   "name": "Blue Jersey",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "clothes_plain",
+   "icon": "👕",
+   "rarity": "COMMON",
+   "colors": [
+    "#3A86FF",
+    "#2E3250"
+   ]
+  },
+  {
+   "id": "clothes_red",
+   "category": "CLOTHES",
+   "name": "Red Jersey",
+   "unlock": "coins",
+   "price": 30,
+   "prefab": "clothes_plain",
+   "icon": "👕",
+   "rarity": "COMMON",
+   "colors": [
+    "#E5383B",
+    "#2E3250"
+   ]
+  },
+  {
+   "id": "clothes_green",
+   "category": "CLOTHES",
+   "name": "Green Jersey",
+   "unlock": "coins",
+   "price": 30,
+   "prefab": "clothes_plain",
+   "icon": "👕",
+   "rarity": "COMMON",
+   "colors": [
+    "#38B000",
+    "#2E3250"
+   ]
+  },
+  {
+   "id": "clothes_purple",
+   "category": "CLOTHES",
+   "name": "Purple Hoodie",
+   "unlock": "coins",
+   "price": 150,
+   "prefab": "clothes_plain",
+   "icon": "🧥",
+   "rarity": "RARE",
+   "colors": [
+    "#7B2CBF",
+    "#240046"
+   ]
+  },
+  {
+   "id": "clothes_sunset",
+   "category": "CLOTHES",
+   "name": "Sunset Tee",
+   "unlock": "level:level_02",
+   "price": 0,
+   "prefab": "clothes_plain",
+   "icon": "🌇",
+   "rarity": "UNCOMMON",
+   "colors": [
+    "#FF7B00",
+    "#5A189A"
+   ]
+  },
+  {
+   "id": "skin_light",
+   "category": "SKIN",
+   "name": "Light",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "skin_plain",
+   "icon": "🙂",
+   "rarity": "COMMON",
+   "colors": [
+    "#F5C6A5"
+   ]
+  },
+  {
+   "id": "skin_tan",
+   "category": "SKIN",
+   "name": "Tan",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "skin_plain",
+   "icon": "🙂",
+   "rarity": "COMMON",
+   "colors": [
+    "#D9A066"
+   ]
+  },
+  {
+   "id": "skin_brown",
+   "category": "SKIN",
+   "name": "Brown",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "skin_plain",
+   "icon": "🙂",
+   "rarity": "COMMON",
+   "colors": [
+    "#9C6644"
+   ]
+  },
+  {
+   "id": "skin_dark",
+   "category": "SKIN",
+   "name": "Dark",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "skin_plain",
+   "icon": "🙂",
+   "rarity": "COMMON",
+   "colors": [
+    "#5E3B26"
+   ]
+  },
+  {
+   "id": "skin_robot",
+   "category": "SKIN",
+   "name": "Robot",
+   "unlock": "coins",
+   "price": 300,
+   "prefab": "skin_plain",
+   "icon": "🤖",
+   "rarity": "EPIC",
+   "colors": [
+    "#AEB6C2"
+   ]
+  },
+  {
+   "id": "trail_gold",
+   "category": "BOOST_EFFECT",
+   "name": "Gold Spark",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "trail_plain",
+   "icon": "✨",
+   "rarity": "COMMON",
+   "colors": [
+    "#FFC83D"
+   ]
+  },
+  {
+   "id": "trail_cyan",
+   "category": "BOOST_EFFECT",
+   "name": "Ice Spark",
+   "unlock": "coins",
+   "price": 80,
+   "prefab": "trail_plain",
+   "icon": "❄️",
+   "rarity": "UNCOMMON",
+   "colors": [
+    "#59E0FF"
+   ]
+  },
+  {
+   "id": "trail_pink",
+   "category": "BOOST_EFFECT",
+   "name": "Candy Spark",
+   "unlock": "coins",
+   "price": 120,
+   "prefab": "trail_plain",
+   "icon": "💖",
+   "rarity": "UNCOMMON",
+   "colors": [
+    "#FF6FB5"
+   ]
+  },
+  {
+   "id": "trail_green",
+   "category": "BOOST_EFFECT",
+   "name": "Toxic Spark",
+   "unlock": "world:world_2",
+   "price": 0,
+   "prefab": "trail_plain",
+   "icon": "☣️",
+   "rarity": "RARE",
+   "colors": [
+    "#7CFF4D"
+   ]
+  },
+  {
+   "id": "emote_none",
+   "category": "EMOTE",
+   "name": "Calm",
+   "unlock": "default",
+   "price": 0,
+   "prefab": "emote_none",
+   "icon": "😐",
+   "rarity": "COMMON",
+   "colors": [
+    "#FFFFFF"
+   ]
+  },
+  {
+   "id": "emote_happy",
+   "category": "EMOTE",
+   "name": "Happy Bounce",
+   "unlock": "coins",
+   "price": 50,
+   "prefab": "emote_happy",
+   "icon": "😄",
+   "rarity": "UNCOMMON",
+   "colors": [
+    "#FFFFFF"
+   ]
+  },
+  {
+   "id": "emote_wiggle",
+   "category": "EMOTE",
+   "name": "Hat Wiggle",
+   "unlock": "coins",
+   "price": 90,
+   "prefab": "emote_wiggle",
+   "icon": "🤪",
+   "rarity": "RARE",
+   "colors": [
+    "#FFFFFF"
+   ]
+  }
+ ]
+}

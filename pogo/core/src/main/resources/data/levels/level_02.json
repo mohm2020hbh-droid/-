@@ -1,0 +1,484 @@
+{
+  "id": "level_02",
+  "name": "Zigzag Ridge",
+  "world": "world_1",
+  "index": 1,
+  "theme": "meadow",
+  "difficulty": 2,
+  "parTimeSec": 150.0,
+  "start": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "goal": {
+    "x": 3.897936056303826,
+    "y": 57.0,
+    "w": 9.0,
+    "h": 0.8
+  },
+  "killY": -12.0,
+  "platforms": [
+    {
+      "id": "ground",
+      "kind": "box",
+      "x": 0.0,
+      "y": -1.0,
+      "w": 28.0,
+      "h": 2.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p1",
+      "kind": "box",
+      "x": 6.5665669092622245,
+      "y": 2.6,
+      "w": 7.133133818524449,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p2",
+      "kind": "box",
+      "x": -5.124209392878061,
+      "y": 6.0,
+      "w": 7.551071955407741,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p3",
+      "kind": "box",
+      "x": 5.90444640110337,
+      "y": 8.7,
+      "w": 7.062815303620491,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": true,
+      "mover": null
+    },
+    {
+      "id": "p4",
+      "kind": "box",
+      "x": -5.307492443754842,
+      "y": 12.0,
+      "w": 6.056654328244682,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p5",
+      "kind": "box",
+      "x": 5.277866467440909,
+      "y": 15.3,
+      "w": 7.089722025711214,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p6",
+      "kind": "box",
+      "x": -6.137844202958775,
+      "y": 17.8,
+      "w": 7.0509129131444634,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p7",
+      "kind": "box",
+      "x": 4.990835323312176,
+      "y": 20.7,
+      "w": 6.92906224409964,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": true,
+      "mover": null
+    },
+    {
+      "id": "p8",
+      "kind": "box",
+      "x": -7.3366177497842004,
+      "y": 23.8,
+      "w": 7.766484820163685,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p9",
+      "kind": "box",
+      "x": 3.5540430536346843,
+      "y": 27.0,
+      "w": 7.028218857848845,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": true,
+      "mover": null
+    },
+    {
+      "id": "p10",
+      "kind": "box",
+      "x": -7.102103510024486,
+      "y": 29.5,
+      "w": 7.034370633593557,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": true,
+      "mover": null
+    },
+    {
+      "id": "p11",
+      "kind": "box",
+      "x": 4.674811408523087,
+      "y": 32.2,
+      "w": 6.982532060918863,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p12",
+      "kind": "box",
+      "x": -7.671917183710564,
+      "y": 35.1,
+      "w": 7.723787903540239,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p13",
+      "kind": "box",
+      "x": 4.4479549971217125,
+      "y": 38.1,
+      "w": 7.195057826190999,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p14",
+      "kind": "box",
+      "x": -6.335817165914162,
+      "y": 41.1,
+      "w": 6.93492899844802,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": true,
+      "mover": null
+    },
+    {
+      "id": "p15",
+      "kind": "box",
+      "x": 4.184532320004859,
+      "y": 44.4,
+      "w": 7.2427880695648215,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p16",
+      "kind": "box",
+      "x": -7.881915898694921,
+      "y": 46.8,
+      "w": 7.934407958517342,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": true,
+      "mover": null
+    },
+    {
+      "id": "p17",
+      "kind": "box",
+      "x": 3.713291610303493,
+      "y": 49.9,
+      "w": 7.1458214440278915,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "p18",
+      "kind": "box",
+      "x": -7.595929435073873,
+      "y": 53.3,
+      "w": 6.839374294253809,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wood",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "goalbase",
+      "kind": "box",
+      "x": 3.897936056303826,
+      "y": 56.5,
+      "w": 9.0,
+      "h": 1.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "stone",
+      "oneWay": false,
+      "mover": null
+    }
+  ],
+  "obstacles": [
+    {
+      "id": "wall_l",
+      "kind": "box",
+      "x": -16.0,
+      "y": 31.5,
+      "w": 3.0,
+      "h": 71.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wall",
+      "oneWay": false,
+      "mover": null
+    },
+    {
+      "id": "wall_r",
+      "kind": "box",
+      "x": 16.0,
+      "y": 31.5,
+      "w": 3.0,
+      "h": 71.0,
+      "rot": 0.0,
+      "points": [],
+      "surface": "wall",
+      "oneWay": false,
+      "mover": null
+    }
+  ],
+  "hazards": [],
+  "movers": [],
+  "bounceObjects": [],
+  "checkpoints": [
+    {
+      "id": "cp1",
+      "x": -6.137844202958775,
+      "y": 19.8,
+      "w": 6.0,
+      "h": 3.0,
+      "respawnX": -6.137844202958775,
+      "respawnY": 18.3
+    },
+    {
+      "id": "cp2",
+      "x": -7.671917183710564,
+      "y": 37.1,
+      "w": 6.0,
+      "h": 3.0,
+      "respawnX": -7.671917183710564,
+      "respawnY": 35.6
+    }
+  ],
+  "decor": [
+    {
+      "kind": "cloud",
+      "x": -10.294598984730293,
+      "y": 8.0,
+      "z": -16.4674248198382,
+      "w": 6.02826542958444,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 10.284762198045714,
+      "y": 16.236272195090827,
+      "z": -18.841914525336772,
+      "w": 6.33648913456174,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -10.216757566179934,
+      "y": 23.94502939419449,
+      "z": -19.12815964601143,
+      "w": 8.905275809369869,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 16.65747168549008,
+      "y": 31.912534470172687,
+      "z": -18.2056562705568,
+      "w": 6.899227211703015,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -16.6726316254642,
+      "y": 41.614374963560564,
+      "z": -14.23755412159307,
+      "w": 6.663603033015448,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 15.823743835327189,
+      "y": 51.521408356676766,
+      "z": -14.229084915921279,
+      "w": 7.643704595485415,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -14.127366498712357,
+      "y": 61.37776605723127,
+      "z": -19.706351313535933,
+      "w": 6.683188236191082,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": 20.398768923620516,
+      "y": 71.29452725822993,
+      "z": -16.85183976829505,
+      "w": 6.907329645074567,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "cloud",
+      "x": -16.36102900609397,
+      "y": 78.55708779676921,
+      "z": -17.587318717138714,
+      "w": 8.997851784254378,
+      "h": 2.2,
+      "role": "accent"
+    },
+    {
+      "kind": "tree",
+      "x": -20.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 4.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": -13.0,
+      "y": 0.0,
+      "z": -11.0,
+      "w": 2.0,
+      "h": 5.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": -6.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 6.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 1.0,
+      "y": 0.0,
+      "z": -11.0,
+      "w": 2.0,
+      "h": 4.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 8.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 5.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 15.0,
+      "y": 0.0,
+      "z": -11.0,
+      "w": 2.0,
+      "h": 6.0,
+      "role": "ground"
+    },
+    {
+      "kind": "tree",
+      "x": 22.0,
+      "y": 0.0,
+      "z": -8.0,
+      "w": 2.0,
+      "h": 4.0,
+      "role": "ground"
+    }
+  ],
+  "rules": {
+    "fallLossHeight": 8.0,
+    "stuckSeconds": 3.0
+  },
+  "notes": "Teaches precision: narrower ledges, longer gaps, and one-way wooden platforms you can jump up through."
+}

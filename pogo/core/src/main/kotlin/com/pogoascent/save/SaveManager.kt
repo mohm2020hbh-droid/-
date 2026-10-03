@@ -81,7 +81,7 @@ enum class LoadOutcome { LOADED, FRESH, RECOVERED_FROM_BACKUP, CORRUPT_RESET }
  * and if that fails too the game starts fresh (the broken text is kept as `corruptText` for support/debugging).
  */
 class SaveManager(private val storage: SaveStorage) {
-  var data: SaveData = SaveData(); private set
+  @Volatile var data: SaveData = SaveData(); private set
   var corruptText: String? = null; private set
   var lastLoad: LoadOutcome = LoadOutcome.FRESH; private set
 
@@ -113,6 +113,7 @@ class SaveManager(private val storage: SaveStorage) {
   fun save() { storage.write(GameJson.compact.encodeToString(SaveData.serializer(), data)) }
 
   /** Atomic update helper: mutate, then persist. */
+  @Synchronized
   fun update(save: Boolean = true, block: (SaveData) -> SaveData) {
     data = block(data)
     if (save) save()

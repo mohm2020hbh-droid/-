@@ -45,12 +45,6 @@ class GenProfile(
  * from the start through the geometry placed so far. The output is plain LevelData (JSON) that designers then edit by hand.
  */
 object LevelGen {
-  private class State(
-    val solids: List<SolidDef>, val movers: List<SolidDef>, val bounces: List<SolidDef>, val hazards: List<SolidDef>,
-    val frontier: List<LevelValidator.Spot>, val top: List<DoubleArray>,
-    val curLeft: Double, val curRight: Double, val curTop: Double, val prevRise: Double, val dir: Int, val placed: Int,
-  )
-
   fun generate(p: GenProfile, surfaces: SurfaceCatalog, physics: PhysicsConfig, log: (String) -> Unit = {}): LevelData {
     val rnd = Random(p.seed)
     var solids: List<SolidDef> = listOf(SolidDef("ground", x = 0.0, y = -1.0, w = 28.0, h = 2.0, surface = "stone"))
@@ -100,15 +94,8 @@ object LevelGen {
     val base = level(0.0, 1.0, 1.0, null, "")
     val startSpot = checkNotNull(LevelValidator.JumpSearch(LevelLoader.load(base, surfaces), physics).startSpot()) { "start is not on the ground" }
     var frontier: List<LevelValidator.Spot> = listOf(startSpot)
-    val snapshots = ArrayList<State>()
 
-    fun snapshot() = State(solids, movers, bounces, hazards, frontier, top, curLeft, curRight, curTop, prevRise, dir, placed)
-    fun restore(s: State) {
-      solids = s.solids; movers = s.movers; bounces = s.bounces; hazards = s.hazards; frontier = s.frontier; top = s.top
-      curLeft = s.curLeft; curRight = s.curRight; curTop = s.curTop; prevRise = s.prevRise; dir = s.dir; placed = s.placed
-    }
-
-    while (placed < p.platforms && attempts < p.platforms * 80) {
+    while (placed < p.platforms && attempts < p.platforms * 160) {
       attempts++
       val rise = (p.riseMin + rnd.nextDouble() * (p.riseMax - p.riseMin)).coerceAtLeast(p.minPairRise - prevRise)
       val gap = p.gapMin + rnd.nextDouble() * (p.gapMax - p.gapMin)
@@ -149,14 +136,15 @@ object LevelGen {
       val trial = level(cx, newTop, right - left, solid, kind)
       val spots = landOn(trial, id, frontier)
       if (spots.isEmpty()) continue
+      // cheap filter passed – now prove the WHOLE route from the start still works with this platform in place
+      if (id !in LevelValidator.validate(trial, surfaces, physics).reachedSolids) { log("  reject $id: breaks the route"); continue }
 
-      snapshots += snapshot()
       when (kind) { "m" -> movers = movers + solid; "b" -> bounces = bounces + solid; else -> solids = solids + solid }
       if (kind == "p" && !solid.oneWay && rnd.nextDouble() < p.ceilingHazardChance) {
         val hz = SolidDef("spikes_$id", x = cx, y = newTop - 1.25, w = minOf(width * 0.4, 3.0), h = 0.5, surface = "hazard")
         val withHz = hazards + hz
-        val again = landOn(level(cx, newTop, right - left, null, "", withHz), id, frontier)
-        if (again.isNotEmpty()) { hazards = withHz; log("  spikes under $id") }
+        val lvlHz = level(cx, newTop, right - left, null, "", withHz)
+        if (landOn(lvlHz, id, frontier).isNotEmpty() && id in LevelValidator.validate(lvlHz, surfaces, physics).reachedSolids) { hazards = withHz; log("  spikes under $id") }
       }
       top = top + doubleArrayOf(left, right, newTop)
       prevRise = newTop - curTop
@@ -165,16 +153,6 @@ object LevelGen {
       placed++
       log("  placed $id kind=$kind top=$newTop x=[%.1f, %.1f] (%d spots, attempt %d)".format(left, right, spots.size, attempts))
 
-      // every few platforms prove the whole chain again: a new platform can roof over an earlier launch zone
-      if (placed % 4 == 0 || placed == p.platforms) {
-        val rep = LevelValidator.validate(level(cx, newTop, right - left, null, ""), surfaces, physics)
-        if (id !in rep.reachedSolids) {
-          val back = minOf(4, snapshots.size)
-          log("  full re-validation failed at $id – rolling back $back platforms")
-          restore(snapshots[snapshots.size - back])
-          repeat(back) { snapshots.removeAt(snapshots.size - 1) }
-        }
-      }
     }
     check(placed == p.platforms) { "generator only placed $placed/${p.platforms} platforms for ${p.id}" }
 

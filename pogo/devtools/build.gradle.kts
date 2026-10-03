@@ -45,3 +45,11 @@ tasks.register<JavaExec>("generateLevels") {
   args(listOf(rootProject.projectDir.absolutePath) + which)
   System.getProperty("verbose")?.let { systemProperty("verbose", it) }
 }
+
+tasks.register<JavaExec>("generateDemoRoute") {
+  group = "pogo tools"
+  description = "Write the autopilot route used as the main-menu backdrop"
+  classpath = sourceSets["main"].runtimeClasspath
+  mainClass.set("com.pogoascent.devtools.GenerateDemoRouteKt")
+  args(rootProject.projectDir.absolutePath)
+}

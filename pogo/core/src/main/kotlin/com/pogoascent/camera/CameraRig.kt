@@ -145,28 +145,28 @@ class CameraRig(var config: CameraConfig = CameraConfig()) {
     }
   }
 
+  private var sdVel = 0.0
+
   private fun smoothDampFocus(cur: Double, target: Double, horizontal: Boolean, smoothTime: Double, dt: Double): Double {
-    val vel = if (horizontal) velX else velY
-    val (value, newVel) = smoothDampCore(cur, target, vel, smoothTime, dt)
-    if (horizontal) velX = newVel else velY = newVel
+    val value = smoothDampCore(cur, target, if (horizontal) velX else velY, smoothTime, dt)
+    if (horizontal) velX = sdVel else velY = sdVel
     return value
   }
 
   private fun smoothDamp(cur: Double, target: Double, horizontal: Boolean, smoothTime: Double, dt: Double): Double {
-    val vel = if (horizontal) lookVelX else lookVelY
-    val (value, newVel) = smoothDampCore(cur, target, vel, smoothTime, dt)
-    if (horizontal) lookVelX = newVel else lookVelY = newVel
+    val value = smoothDampCore(cur, target, if (horizontal) lookVelX else lookVelY, smoothTime, dt)
+    if (horizontal) lookVelX = sdVel else lookVelY = sdVel
     return value
   }
 
   private fun smoothDampZoom(cur: Double, target: Double, smoothTime: Double, dt: Double): Double {
-    val (value, newVel) = smoothDampCore(cur, target, zoomVel, smoothTime, dt)
-    zoomVel = newVel
+    val value = smoothDampCore(cur, target, zoomVel, smoothTime, dt)
+    zoomVel = sdVel
     return value
   }
 
-  /** Critically damped spring (Unity-style SmoothDamp). Returns (position, velocity). */
-  private fun smoothDampCore(cur: Double, target: Double, vel: Double, smoothTime: Double, dt: Double): Pair<Double, Double> {
+  /** Critically damped spring (Unity-style SmoothDamp). Returns the new position; the new velocity is left in [sdVel] (no allocation). */
+  private fun smoothDampCore(cur: Double, target: Double, vel: Double, smoothTime: Double, dt: Double): Double {
     val st = max(0.0001, smoothTime)
     val omega = 2.0 / st
     val x = omega * dt
@@ -176,7 +176,8 @@ class CameraRig(var config: CameraConfig = CameraConfig()) {
     var newVel = (vel - omega * temp) * e
     var out = target + (change + temp) * e
     if ((target - cur > 0.0) == (out > target)) { out = target; newVel = 0.0 }
-    return Pair(out, newVel)
+    sdVel = newVel
+    return out
   }
 
   /** Deterministic smooth noise in -1..1 (value noise on a hashed lattice). */

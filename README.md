@@ -123,3 +123,12 @@
 ---
 
 ✨ **ClipFlow Mobile - السرعة، الأمان، والإنتاجية بين يديك!**
+
+---
+
+## 🎮 Pogo Ascent (game) — `pogo/`
+
+This repository also contains **Pogo Ascent**, an independent 3D pogo-stick climbing game for Android, in its own standalone Gradle
+build under [`pogo/`](pogo/README.md). It does not touch the ClipFlow app above. Start with
+[`pogo/FINAL_BUILD_REPORT.md`](pogo/FINAL_BUILD_REPORT.md) (what is verified and what is not) and
+[`pogo/DECISIONS.md`](pogo/DECISIONS.md).
