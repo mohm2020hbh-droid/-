@@ -115,6 +115,6 @@ These values are our working starting points from earlier stages (U-xx refers to
 
 ## 6) What would turn any value here into "confirmed"
 
-1. Disassemble `Pogostuck.exe`/`pogoMain.dll` around the found symbols and recover the floating-point literals (the doc's "next stage" steps 1–4). **Not done here: no binary files in this environment.**
+1. Disassemble `Pogostuck.exe`/`pogoMain.dll` around the found symbols and recover the floating-point literals (the doc's "next stage" steps 1–4). **Done later, once the binaries were supplied:** see `Pogostuck_Original_Physics_Extraction.md` and `Pogostuck_Physics_Constants.csv`. Several assumptions in this file are corrected there (§12 of the extraction): `jump_high`/`jump_degrees` are achievements; `vec_bounce` is never called; there is no restitution/spring k/c/mass; the step is variable per frame.
 2. Or measure from recordings: apex height, air time, landing slide distance, wall bounce, rotation rate. The method is in PHYSICS_MASTER.md §5.
 3. Every value confirmed later changes from `C` to `MEASURED` in `PhysicsConfig`, with its source cited, and is recorded in this file.
