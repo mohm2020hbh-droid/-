@@ -6,7 +6,7 @@
 >
 > **Not used as evidence:** values from the GDD, `Pogostuck_Physics_Master*.docx/.xlsx`, or Unity, Box2D and Three.js.
 >
-> **Companion file:** `Pogostuck_Physics_Constants.csv` (96 rows: every constant with value, IEEE/int hex, literal address, use address, function, instruction and role).
+> **Companion file:** `Pogostuck_Physics_Constants.csv` (99 rows after the final review: every constant with value, IEEE/int hex, literal address, use address, function, instruction, full untruncated statement, unit, scope, `VALUE_CLASS`, `MEANING_CLASS` and math). See also `Pogostuck_Physics_Final_Review.md` (§14) and `Pogostuck_Physics_LOCKED_SPEC.md`.
 >
 > **Confidence classes (as requested):**
 > - **A** — confirmed from machine code.
@@ -28,14 +28,14 @@ All player physics is hand-written game code inside one compiled Lite-C function
 - the turn controller: target `32`°/tick, response `0.525`, ground factor `1/3`;
 - the grounded "stick" velocity, `‑24·n`;
 - the landing impact law: `1.65·|v|^0.925`;
-- the spring window: min = `max(40, I^0.9)`; max = `clamp(I+20p, 95+25p, 300)`;
+- the spring window: min = `max(40, I^0.9)`; max = `clamp(I+20p+e, 95+25p+e, 300)` (e = 0 in normal play);
 - the charge rate, `16`/tick;
 - the launch law: `v = 0.74235·load`, along the pogo axis biased `0.1875` toward the surface normal (clamped ±45°);
 - the launch spin kick;
-- the wall/"bonk" response (a manual reflection, not `vec_bounce`);
+- the wall/"bonk" response: all gains and magnitudes. The direction comes from the engine `bounce` vector written by `c_move`, with a manual reflection `v−2(v·n)n` as fallback; `vec_bounce` is never called;
 - the ice-slide model;
 - the collision hull;
-- the frame-time handling: `time_factor = 0.95`, default `fps_max = 120`, user range 30–240.
+- the frame-time handling: `time_factor = 0.95` (stored as var 973/1024 = 0.9501953125), default `fps_max = 120`, user range 30–240.
 
 A second function, `playerPredictPos`, contains an independent copy of the airborne step (`‑0.05`, `‑8.5`). It corroborates the integrator.
 
@@ -181,61 +181,66 @@ The full list is in the CSV. Value units: **quants** (engine length) and **ticks
 
 | ID | PHYSICS CONSTANT | VALUE | HEX | FILE | ADDRESS | FUNCTION | ASSEMBLY EVIDENCE | ROLE | CONFIDENCE |
 |---|---|---|---|---|---|---|---|---|---|
-| P01 | `GRAVITY_ACCEL` | -8.5 | `0xc021000000000000` | EXE·overlay | lit IMG:0x0ba1f5 · use IMG:0x3d2080 | `playerMove @0x3d20f4` | `3d2080: fld qword ptr [ebx + 0xba1b0]` | gravity: speed += rotate((.., 0, -8.5*time_step), gravityAngle); applied to arg0.speed by vec_add @3d224e (main map: L114=1) | **A** |
-| P02 | `AIR_DRAG_LATERAL` | -0.05 (stored -0.05000000074505806) | `0xbfa99999a0000000` | EXE·overlay | lit IMG:0x0ba1ed · use IMG:0x3d1ffe | `playerMove @0x3d20f4` | `3d1ffe: fld qword ptr [ebx + 0xba1a8]` | linear drag on velocity component along gravity-perpendicular axis: dv_lat = -0.05*v_lat*time_step (no vertical drag) | **A** |
-| P03 | `GRAVITY_ACCEL_LEVEL8_TILTED` | -6.125 | `0xc018800000000000` | EXE·overlay | lit IMG:0x0ba19d · use IMG:0x3d0381 | `playerMove @0x3d03f5` | `3d0381: fld qword ptr [ebx + 0xba158]` | level_current==8 && gravityAngle!=0: vertical accel -6.125*time_step (replaces P01) | **A** |
-| P05 | `GRAVITY_ACCEL_TILTED` | -4.175 (stored -4.175000190734863) | `0xc010b33340000000` | EXE·overlay | lit IMG:0x0ba1cd · use IMG:0x3d1ca0 | `playerMove @0x3d1d14` | `3d1ca0: fld qword ptr [ebx + 0xba188]` | level!=9 && gravityAngle!=0 (gravity zones): vertical accel -4.175*time_step | **A** |
-| P07 | `GRAVITY_ACCEL_WATER` | -2 | `0xfffffffe` | EXE·overlay | lit IMG:0x0ba0ad · use IMG:0x3d10b6 | `playerMove @0x3d1126` | `3d10b6: mov eax, dword ptr [ebx + 0xba068]` | level 9 water (not swimming): vertical accel -2*time_step | **A** |
-| P09 | `MAX_SPEED` | 300 | `0x0000012c` | EXE·overlay | lit IMG:0x0b9ca9 · use IMG:0x3d2bc8 | `playerMove @0x3d2bf9` | `3d2bc8: mov eax, dword ptr [ebx + 0xb9c64]` | if \|speed\|>300 then vec_normalize(speed,300) (also @3eabdc after platform carry) | **A** |
-| P11 | `SLIDE_Z_DISPLACEMENT_GAIN` | 4 | `0x00000004` | EXE·overlay | lit IMG:0x0b99dd · use IMG:0x3d4a3a | `playerMove @0x3d4c92` | `3d4a3a: mov eax, dword ptr [ebx + 0xb9998]` | displacement.z = (speed.z + 4*slideSpeed.z*L3a8)*time_step  (x uses 1*slideSpeed.x) | **A** |
-| P12 | `CMOVE_MODE` | 548 | `0x00000224` | EXE·overlay | lit IMG:0x0ba121 · use IMG:0x3d2f52 | `playerMove @0x3d2f58` | `3d2f52: mov eax, dword ptr [ebx + 0xba0dc]` | c_move(me, nullvector, displacement, 548) for player; flag bits are engine-defined (acknex.h not supplied) | **A** |
-| P14 | `GROUND_STICK_SPEED` | -24 | `0xc038000000000000` | EXE·overlay | lit IMG:0x0ba179 · use IMG:0x3cfe00 | `playerMove @0x3cfe1b` | `3cfe00: fld qword ptr [ebx + 0xba134]` | while grounded: speed = vec_rotate((-24,0,0),(0,surfaceNormal,0)) = -24*n (press into surface) | **A** |
-| P15 | `GROUND_TURN_DIVISOR` | 2 | `0x00000002` | EXE·overlay | lit IMG:0x0b9965 · use IMG:0x3cea7d | `playerMove @0x3ceacc` | `3cea7d: imul eax, dword ptr [ebx + 0xb9920]` | turn factor Lb1c4 = 1/(1+2*heroGroundContact): rotation rate x1/3 on ground | **A** |
-| P16 | `TURN_TARGET_RATE` | 32 | `0x00000020` | EXE·overlay | lit IMG:0x0b9b39 · use IMG:0x3ceb16 | `playerMove @0x3cebae` | `3ceb16: mov eax, dword ptr [ebx + 0xb9af4]` | target turn speed L438 = (in[A]-in[D])*32 (deg per tick) | **A** |
-| P17 | `TURN_RESPONSE_RATE` | 0.525 (stored 0.5249999761581421) | `0x3fe0ccccc0000000` | EXE·overlay | lit IMG:0x0ba14d · use IMG:0x3cf1e9 | `playerMove @0x3cf32d` | `3cf1e9: fmul qword ptr [ebx + 0xba108]` | heroTurnSpeed += (L438-heroTurnSpeed)*0.525/(1+sqrt(jumpTimer))*time_step | **A** |
-| P19 | `PIVOT_MAX_CORRECTION` | 256 | `0x00000100` | EXE·overlay | lit IMG:0x0ba16d · use IMG:0x3cfb29 | `playerMove @0x3cfbee` | `3cfb29: mov eax, dword ptr [ebx + 0xba128]` | grounded: after c_rotate, c_move by (prevBone1Pos - Bone1) if \|dx\|,\|dz\|<256 -> rotation pivots on pogo tip | **A** |
-| P20 | `GROUND_PROBE_EXTENSION` | 6 | `0x00000006` | EXE·overlay | lit IMG:0x0b9d55 · use IMG:0x3d81fb | `playerMove @0x3d823f` | `3d81fb: mov eax, dword ptr [ebx + 0xb9d10]` | probe end = Bone1 + normalize(Bone1-Bone2, 6+\|slideSpeed.z\|) | **A** |
-| P21 | `GROUND_PROBE_TRACE_MODE` | 613 | `0x00000265` | EXE·overlay | lit IMG:0x0ba2cd · use IMG:0x3d850c | `playerMove @0x3d8544` | `3d850c: mov eax, dword ptr [ebx + 0xba288]` | pogo_trace(me, me.x, probeEnd, 613, 4) -> c_trace mode 613\|8192\|1 | **A** |
-| P22 | `GROUND_PROBE_BOX_HALFSIZE` | 4 | `0x00000004` | EXE·overlay | lit IMG:0x0b99dd · use IMG:0x3d84f6 | `playerMove @0x3d8544` | `3d84f6: mov eax, dword ptr [ebx + 0xb9998]` | pogo_trace arg4: helper entity bbox = +-4 on x,y,z | **A** |
-| P23 | `IMPACT_EXPONENT` | 0.925 (stored 0.925000011920929) | `0x3fed9999a0000000` | EXE·overlay | lit IMG:0x0ba361 · use IMG:0x3dac5f | `playerMove @0x3dac96` | `3dac5f: mov eax, dword ptr [ebx + 0xba31c]` | landing: impact = pow(\|speed\|,0.925)*1.65 | **A** |
-| P24 | `IMPACT_GAIN` | 1.65 (stored 1.649999976158142) | `0x3ffa666660000000` | EXE·overlay | lit IMG:0x0ba369 · use IMG:0x3dacb8 | `playerMove @0x3dace6` | `3dacb8: fmul qword ptr [ebx + 0xba324]` | landing: impact = pow(\|speed\|,0.925)*1.65 | **A** |
-| P25a | `IMPACT_POWERJUMP_BONUS` | 20 | `0x00000014` | EXE·overlay | lit IMG:0x0b9de5 · use IMG:0x3daeac | `playerMove @0x3daf10` | `3daeac: mov eax, dword ptr [ebx + 0xb9da0]` | +20*powerJumpNext added to impact before the L_max clamp (same expression feeds clamp @3daff4) | **A** |
-| P25 | `SPRING_MAX_FLOOR` | 95 | `0x0000005f` | EXE·overlay | lit IMG:0x0ba371 · use IMG:0x3daf93 | `playerMove @0x3daff4` | `3daf93: mov eax, dword ptr [ebx + 0xba32c]` | heroSpringLoadedMax = clamp(impact+20*powerJump+extra, 95+25*powerJump+extra, 300) | **A** |
-| P26 | `SPRING_MAX_FLOOR_POWER_BONUS` | 25 | `0x00000019` | EXE·overlay | lit IMG:0x0b9875 · use IMG:0x3daf69 | `playerMove @0x3daff4` | `3daf69: mov eax, dword ptr [ebx + 0xb9830]` | +25 to the floor of heroSpringLoadedMax when powerJumpNext | **A** |
-| P27 | `SPRING_MAX_CAP` | 300 | `0x0000012c` | EXE·overlay | lit IMG:0x0b9ca9 · use IMG:0x3dafca | `playerMove @0x3daff4` | `3dafca: mov eax, dword ptr [ebx + 0xb9c64]` | upper clamp of heroSpringLoadedMax | **A** |
-| P28 | `SPRING_MIN_EXPONENT` | 0.9 (stored 0.8999999761581421) | `0x3fecccccc0000000` | EXE·overlay | lit IMG:0x0b9cfd · use IMG:0x3db37f | `playerMove @0x3db3b6` | `3db37f: mov eax, dword ptr [ebx + 0xb9cb8]` | heroSpringLoadedMin = max(40, pow(impact,0.9)) | **A** |
-| P29 | `SPRING_MIN_FLOOR` | 40 | `0x00000028` | EXE·overlay | lit IMG:0x0b9ba9 · use IMG:0x3db401 | `playerMove @0x3db41d` | `3db401: mov eax, dword ptr [ebx + 0xb9b64]` | heroSpringLoadedMin = max(40, ...) | **A** |
-| P31 | `INPUT_CHARGE_BUTTON` | 4 | `0x00000004` | EXE·overlay | lit IMG:0x0b99dd · use IMG:0x3dbd78 | `playerMove @0x3dbe7e` | `3dbd78: mov eax, dword ptr [ebx + 0xb9998]` | inputIsDown(4) keeps charging (button 4 = scancode 57 Space / joy 257 by inputButtonSetDefault) | **A** |
-| P32 | `SPRING_CHARGE_RATE` | 16 | `0x00000010` | EXE·overlay | lit IMG:0x0b9d4d · use IMG:0x3dbf94 | `playerMove @0x3dc019` | `3dbf94: mov eax, dword ptr [ebx + 0xb9d08]` | heroSpringLoaded = min(load + 16*time_step, heroSpringLoadedMax) | **A** |
-| P33 | `LAUNCH_MIN_LOAD` | 2 | `0x00000002` | EXE·overlay | lit IMG:0x0b9965 · use IMG:0x3dc310 | `playerMove @0x3dc341` | `3dc310: mov eax, dword ptr [ebx + 0xb9920]` | launch only if heroSpringLoaded > 2 | **A** |
-| P34 | `LAUNCH_SPEED_PER_LOAD` | 0.74235 (stored 0.7423499822616577) | `0x3fe7c154c0000000` | EXE·overlay | lit IMG:0x0ba3c1 · use IMG:0x3dd2e5 | `playerMove @0x3dd346` | `3dd2e5: fmul qword ptr [ebx + 0xba37c]` | launch: v = vec_rotate((0,0,0.74235*heroSpringLoaded),(0,a,0)) | **A** |
-| P35 | `NORMAL_ANGLE_OFFSET` | 90 | `0x0000005a` | EXE·overlay | lit IMG:0x0b9d29 · use IMG:0x3dd407 | `playerMove @0x3dd47e` | `3dd407: mov eax, dword ptr [ebx + 0xb9ce4]` | d = ang(atan2v(n.z,n.x) - 90 - angle) | **A** |
-| P36 | `NORMAL_BLEND_CLAMP` | 45 | `0x0000002d` | EXE·overlay | lit IMG:0x0ba3c9 · use IMG:0x3dd48c | `playerMove @0x3dd4c5` | `3dd48c: mov eax, dword ptr [ebx + 0xba384]` | d clamped to [-45,45] | **A** |
-| P37 | `NORMAL_BLEND_FACTOR` | 0.1875 | `0x3fc8000000000000` | EXE·overlay | lit IMG:0x0ba3d1 · use IMG:0x3dd52e | `playerMove @0x3dd5c3` | `3dd52e: fld qword ptr [ebx + 0xba38c]` | launch angle a = angle + 0.1875*clamp(d,-45,45) | **A** |
-| P38 | `LAUNCH_SLIDE_CARRY_X` | 0.25 | `0x3fd0000000000000` | EXE·overlay | lit IMG:0x0b9c55 · use IMG:0x3dd6ef | `playerMove @0x3dd775` | `3dd6ef: fmul qword ptr [ebx + 0xb9c10]` | speed.x = Vlaunch.x + 0.25*slideSpeed.x | **A** |
-| P40 | `LAUNCH_SPIN_FROM_TILT` | 0.1245 (stored 0.12449999898672104) | `0x3fbfdf3b60000000` | EXE·overlay | lit IMG:0x0ba43d · use IMG:0x3e007e | `playerMove @0x3e0185` | `3e007e: fmul qword ptr [ebx + 0xba3f8]` | heroTurnSpeed += (0.1245*clamp(ang(angle-gravityAngle),-45,45) - 0.25*1.5*sign(s)*\|s\|^0.75)*(1-0.5*special), s=asinv(normal.x) | **A** |
-| P44 | `NO_GROUND_TIMER_AFTER_LAUNCH` | 2 | `0x00000002` | EXE·overlay | lit IMG:0x0b9965 · use IMG:0x3e030d | `playerMove @0x3e0339` | `3e030d: mov eax, dword ptr [ebx + 0xb9920]` | noGroundContactTimer = 2 (ticks) after launch; grounded flag forced 0 while >0 | **A** |
-| P45 | `JUMP_TIMER_GAIN` | 0.45 (stored 0.44999998807907104) | `0x3fdcccccc0000000` | EXE·overlay | lit IMG:0x0ba449 · use IMG:0x3e03e0 | `playerMove @0x3e0438` | `3e03e0: fmul qword ptr [ebx + 0xba404]` | jumpTimer = 0.45*sqrt(heroSpringLoadedMax); damps turn response via 1/(1+sqrt(jumpTimer)) | **A** |
-| P46 | `POWERJUMP_ROTATION_THRESHOLD` | 285 | `0x0000011d` | EXE·overlay | lit IMG:0x0ba661 · use IMG:0x3ee4f7 | `playerMove @0x3ee58b` | `3ee4f7: mov edx, dword ptr [ebx + 0xba61c]` | in air: \|angle-lastJumpAngle\| > 285 deg -> powerJumpNext = 1 (boost on next landing) | **A** |
-| P47 | `BONK_REFLECT` | -2 | `0xfffffffe` | EXE·overlay | lit IMG:0x0ba0ad · use IMG:0x3e56b3 | `playerMove @0x3e56f1` | `3e56b3: mov eax, dword ptr [ebx + 0xba068]` | bounce = speed - 2*(n.speed)*n (manual reflection; engine vec_bounce never called) | **A** |
-| P48 | `BONK_DIR_REFLECT_WEIGHT` | 0.9 (stored 0.8999999761581421) | `0x3fecccccc0000000` | EXE·overlay | lit IMG:0x0b9cfd · use IMG:0x3e5845 | `playerMove @0x3e5867` | `3e5845: fld qword ptr [ebx + 0xb9cb8]` | bounce = normalize(reflect,0.9) + n | **A** |
-| P49 | `BONK_SPEED_FACTOR` | 0.4 (stored 0.4000000059604645) | `0x3fd99999a0000000` | EXE·overlay | lit IMG:0x0ba539 · use IMG:0x3e591f | `playerMove @0x3e596a` | `3e591f: fmul qword ptr [ebx + 0xba4f4]` | bonk speed = max(28, 0.4*\|speed\|)*min(1+normal.z,1) | **A** |
-| P50 | `BONK_MIN_SPEED` | 28 | `0x0000001c` | EXE·overlay | lit IMG:0x0b9fc1 · use IMG:0x3e594e | `playerMove @0x3e596a` | `3e594e: mov eax, dword ptr [ebx + 0xb9f7c]` | bonk speed floor 28 | **A** |
-| P51 | `BONK_X_SCALE` | 0.875 | `0x3fec000000000000` | EXE·overlay | lit IMG:0x0ba541 · use IMG:0x3e5cfc | `playerMove @0x3e5dd5` | `3e5cfc: fmul qword ptr [ebx + 0xba4fc]` | speed.x = 0.875*bounce.x + slideSpeed.x; speed.z = bounce.z + slideSpeed.z | **A** |
-| P52 | `BONK_SPIN_RIGHTING` | 0.5 | `0x3fe0000000000000` | EXE·overlay | lit IMG:0x0b986d · use IMG:0x3e610c | `playerMove @0x3e61a4` | `3e610c: fmul qword ptr [ebx + 0xb9828]` | heroTurnSpeed = 0.5*ang(gravityAngle-angle) - 0.2*1.5*sign(s)*\|s\|^0.75 | **A** |
-| P55 | `ICE_SLIDE_TARGET_SPEED` | 48 | `0x00000030` | EXE·overlay | lit IMG:0x0b9ba1 · use IMG:0x3cbba9 | `playerMove @0x3cbbed` | `3cbba9: mov eax, dword ptr [ebx + 0xb9b5c]` | slide target = normalize(surfaceNormalVector + gravityDir, 48 - 24*(level10\|L30)) | **A** |
-| P57 | `ICE_SLIDE_RESPONSE` | 0.25 | `0x3fd0000000000000` | EXE·overlay | lit IMG:0x0b9c55 · use IMG:0x3cbdc1 | `playerMove @0x3cbe3c` | `3cbdc1: fmul qword ptr [ebx + 0xb9c10]` | slideSpeed += clamp((target-slideSpeed)*0.25, -1.35, 1.35)*time_step (x and z) | **A** |
-| P58 | `ICE_SLIDE_ACCEL_CLAMP` | 1.35 (stored 1.350000023841858) | `0x3ff59999a0000000` | EXE·overlay | lit IMG:0x0ba0d5 · use IMG:0x3cbddb | `playerMove @0x3cbe3c` | `3cbddb: fld qword ptr [ebx + 0xba090]` | per-tick change limited to +-1.35 | **A** |
-| P59 | `SLIDE_DECAY_RATE` | 0.5 | `0x3fe0000000000000` | EXE·overlay | lit IMG:0x0b986d · use IMG:0x3cca3b | `playerMove @0x3cca8b` | `3cca3b: fld qword ptr [ebx + 0xb9828]` | not in slide mode & grounded & \|slide\|>=0.25: slideSpeed = lerp(slideSpeed, 0, 0.5*time_step); else 0 | **A** |
-| P71 | `LEDGE_EXIT_POP_SPEED` | 5 | `0x00000005` | EXE·overlay | lit IMG:0x0b9889 · use IMG:0x3d86c9 | `playerMove @0x3d86f5` | `3d86c9: mov eax, dword ptr [ebx + 0xb9844]` | was grounded && probe misses: speed.x = slideSpeed.x; speed.z = 5 (leave ledge with small upward speed) | **A** |
-| P62 | `HULL_MIN_X` | -12.5 | `0xc029000000000000` | EXE·overlay | lit IMG:0x0b9a81 · use IMG:0x3b3dde | `playerMove @0x3b3e09` | `3b3dde: fld qword ptr [ebx + 0xb9a3c]` | player entity bbox min_x | **A** |
-| P63 | `HULL_MAX_X` | 12.5 | `0x4029000000000000` | EXE·overlay | lit IMG:0x0b9a79 · use IMG:0x3b3e4c | `playerMove @0x3b3e77` | `3b3e4c: fld qword ptr [ebx + 0xb9a34]` | player entity bbox max_x | **A** |
-| P64 | `HULL_MAX_Z` | 30 | `0x0000001e` | EXE·overlay | lit IMG:0x0b9a99 · use IMG:0x3b3f5e | `playerMove @0x3b3f8a` | `3b3f5e: mov eax, dword ptr [ebx + 0xb9a54]` | player entity bbox max_z | **A** |
-| P65 | `HULL_MIN_Z_BASE` | -55 | `0xffffffc9` | EXE·overlay | lit IMG:0x0ba5a1 · use IMG:0x3eb14b | `playerMove @0x3eb19e` | `3eb14b: mov eax, dword ptr [ebx + 0xba55c]` | min_z = -55 + max(heroSpringLoadedBoneExtend,-12.25) (when noGroundContactTimer==0) | **A** |
-| T01 | `TIME_FACTOR_PLAY` | 0.95 (stored 0.949999988079071) | `0x3fee666660000000` | EXE·overlay | lit IMG:0x0dad09 · use IMG:0x69c64f | `mainFrameEventPlay @0x69c67a` | `69c64f: fld qword ptr [ebx + 0xdacc4]` | *time_factor = 0.95 every frame in play (engine scales time_step by time_factor) | **A (write) / B (engine semantics)** |
-| T02 | `FPS_LIMIT_DEFAULT` | 120 | `0x00000078` | EXE·overlay | lit IMG:0x0c6efd · use IMG:0x4e750d | `settingsDefault @0x4e7522` | `4e750d: mov eax, dword ptr [ebx + 0xc6eb8]` | fps_limit2 = 120 -> *fps_max = fps_limit | **A** |
-| T03 | `FPS_LIMIT_RANGE_MAX` | 240 | `0x000000f0` | EXE·overlay | lit IMG:0x0c7ed9 · use IMG:0x4ee498 | `dec_do @0x4ee4d1` | `4ee498: mov eax, dword ptr [ebx + 0xc7e94]` | fps_limit2 clamped to [30,240] | **A** |
-| U01 | `QUANTS_PER_DISPLAY_METER` | 52 | `0x00000034` | EXE·overlay | lit IMG:0x0ba679 · use IMG:0x3eeba5 | `playerMove @0x3eebe5` | `3eeba5: mov eax, dword ptr [ebx + 0xba634]` | jump height shown as int(dz/52) "%dm" | **A** |
+| P01 | `GRAVITY_ACCEL` | -8.5 | `0xc021000000000000` | EXE·overlay | lit IMG:0x0ba1f5 · use IMG:0x3d2080 | `playerMove @0x3d20f4` | `3d2080  fld qword ptr [ebx + 0xba1b0] ; @const_135341{DOUBLE=-8.5 init=-8.5 hex=00000000000021c0}` | gravity: speed += rotate((.., 0, -8.5*time_step), gravityAngle); applied to arg0.speed by vec_add @3d224e (main map: L114=1) | **A** |
+| P02 | `AIR_DRAG_LATERAL` | -0.05 (stored -0.05000000074505806) | `0xbfa99999a0000000` | EXE·overlay | lit IMG:0x0ba1ed · use IMG:0x3d1ffe | `playerMove @0x3d20f4` | `3d1ffe  fld qword ptr [ebx + 0xba1a8] ; @const_135335{DOUBLE=-0.05000000074505806 init=-0.05 hex=000000a09999a9bf}` | linear drag on velocity component along gravity-perpendicular axis: dv_lat = -0.05*v_lat*time_step (no vertical drag) | **A** |
+| P03 | `GRAVITY_ACCEL_LEVEL8_TILTED` | -6.125 | `0xc018800000000000` | EXE·overlay | lit IMG:0x0ba19d · use IMG:0x3d0381 | `playerMove @0x3d03f5` | `3d0381  fld qword ptr [ebx + 0xba158] ; @const_135048{DOUBLE=-6.125 init=-6.125 hex=00000000008018c0}` | level_current==8 && gravityAngle!=0: vertical accel -6.125*time_step (replaces P01) | **A** |
+| P05 | `GRAVITY_ACCEL_TILTED` | -4.175 (stored -4.175000190734863) | `0xc010b33340000000` | EXE·overlay | lit IMG:0x0ba1cd · use IMG:0x3d1ca0 | `playerMove @0x3d1d14` | `3d1ca0  fld qword ptr [ebx + 0xba188] ; @const_135297{DOUBLE=-4.175000190734863 init=-4.175 hex=0000004033b310c0}` | level!=9 && gravityAngle!=0 (gravity zones): vertical accel -4.175*time_step | **A** |
+| P07 | `GRAVITY_ACCEL_WATER` | -2 | `0xfffffffe` | EXE·overlay | lit IMG:0x0ba0ad · use IMG:0x3d10b6 | `playerMove @0x3d1126` | `3d10b6  mov eax, dword ptr [ebx + 0xba068] ; @const_134248{LONG=-2 init=0xfffffffe hex=feffffff}` | level 9 water (not swimming): vertical accel -2*time_step | **A** |
+| P09 | `MAX_SPEED` | 300 | `0x0000012c` | EXE·overlay | lit IMG:0x0b9ca9 · use IMG:0x3d2bc8 | `playerMove @0x3d2bf9` | `3d2bc8  mov eax, dword ptr [ebx + 0xb9c64] ; @const_131759{LONG=300 init=300 hex=2c010000}` | if \|speed\|>300 then vec_normalize(speed,300) (also @3eabdc after platform carry) | **A** |
+| P11 | `SLIDE_Z_DISPLACEMENT_GAIN` | 4 | `0x00000004` | EXE·overlay | lit IMG:0x0b99dd · use IMG:0x3d4a3a | `playerMove @0x3d4c92` | `3d4a3a  mov eax, dword ptr [ebx + 0xb9998] ; @const_130436{LONG=4 init=4 hex=04000000}` | displacement.z = (speed.z + 4*slideSpeed.z*L3a8)*time_step  (x uses 1*slideSpeed.x) | **A** |
+| P12 | `CMOVE_MODE` | 548 | `0x00000224` | EXE·overlay | lit IMG:0x0ba121 · use IMG:0x3d2f52 | `playerMove @0x3d2f58` | `3d2f52  mov eax, dword ptr [ebx + 0xba0dc] ; @const_134627{LONG=548 init=0x224 hex=24020000}` | c_move(me, nullvector, displacement, 548) for player; flag bits are engine-defined (acknex.h not supplied) | **A (value+operation) / D (meaning)** |
+| P14 | `GROUND_STICK_SPEED` | -24 | `0xc038000000000000` | EXE·overlay | lit IMG:0x0ba179 · use IMG:0x3cfe00 | `playerMove @0x3cfe1b` | `3cfe00  fld qword ptr [ebx + 0xba134] ; @const_134990{DOUBLE=-24.0 init=-24 hex=00000000000038c0}` | while grounded: speed = vec_rotate((-24,0,0),(0,surfaceNormal,0)) = -24*n (press into surface) | **A (value+operation) / B (meaning)** |
+| P15 | `GROUND_TURN_DIVISOR` | 2 | `0x00000002` | EXE·overlay | lit IMG:0x0b9965 · use IMG:0x3cea7d | `playerMove @0x3ceacc` | `3cea7d  imul eax, dword ptr [ebx + 0xb9920] ; @const_130373{LONG=2 init=2 hex=02000000}` | turn factor Lb1c4 = 1/(1+2*heroGroundContact): rotation rate x1/3 on ground | **A** |
+| P16 | `TURN_TARGET_RATE` | 32 | `0x00000020` | EXE·overlay | lit IMG:0x0b9b39 · use IMG:0x3ceb16 | `playerMove @0x3cebae` | `3ceb16  mov eax, dword ptr [ebx + 0xb9af4] ; @const_130964{LONG=32 init=32 hex=20000000}` | target turn speed L438 = (in[A]-in[D])*32 (deg per tick) | **A** |
+| P17 | `TURN_RESPONSE_RATE` | 0.525 (stored 0.5249999761581421) | `0x3fe0ccccc0000000` | EXE·overlay | lit IMG:0x0ba14d · use IMG:0x3cf1e9 | `playerMove @0x3cf32d` | `3cf1e9  fmul qword ptr [ebx + 0xba108] ; @const_134836{DOUBLE=0.5249999761581421 init=0.525 hex=000000c0cccce03f}` | heroTurnSpeed += (L438-heroTurnSpeed)*0.525/(1+sqrt(jumpTimer))*time_step | **A** |
+| P19 | `PIVOT_MAX_CORRECTION` | 256 | `0x00000100` | EXE·overlay | lit IMG:0x0ba16d · use IMG:0x3cfb29 | `playerMove @0x3cfbee` | `3cfb29  mov eax, dword ptr [ebx + 0xba128] ; @const_134965{LONG=256 init=256 hex=00010000}` | grounded: after c_rotate, c_move by (prevBone1Pos - Bone1) if \|dx\|,\|dz\|<256 -> rotation pivots on pogo tip | **A** |
+| P20 | `GROUND_PROBE_EXTENSION` | 6 | `0x00000006` | EXE·overlay | lit IMG:0x0b9d55 · use IMG:0x3d81fb | `playerMove @0x3d823f` | `3d81fb  mov eax, dword ptr [ebx + 0xb9d10] ; @const_132256{LONG=6 init=6 hex=06000000}` | probe end = Bone1 + normalize(Bone1-Bone2, 6+\|slideSpeed.z\|) | **A** |
+| P21 | `GROUND_PROBE_TRACE_MODE` | 613 | `0x00000265` | EXE·overlay | lit IMG:0x0ba2cd · use IMG:0x3d850c | `playerMove @0x3d8544` | `3d850c  mov eax, dword ptr [ebx + 0xba288] ; @const_136174{LONG=613 init=0x265 hex=65020000}` | pogo_trace(me, me.x, probeEnd, 613, 4) -> c_trace mode 613\|8192\|1 | **A (value+operation) / D (meaning)** |
+| P22 | `GROUND_PROBE_BOX_HALFSIZE` | 4 | `0x00000004` | EXE·overlay | lit IMG:0x0b99dd · use IMG:0x3d84f6 | `playerMove @0x3d8544` | `3d84f6  mov eax, dword ptr [ebx + 0xb9998] ; @const_130436{LONG=4 init=4 hex=04000000}` | pogo_trace arg4: helper entity bbox = +-4 on x,y,z | **A (value+operation) / B (meaning)** |
+| P23 | `IMPACT_EXPONENT` | 0.925 (stored 0.925000011920929) | `0x3fed9999a0000000` | EXE·overlay | lit IMG:0x0ba361 · use IMG:0x3dac5f | `playerMove @0x3dac96` | `3dac5f  mov eax, dword ptr [ebx + 0xba31c] ; @const_136749{DOUBLE=0.925000011920929 init=0.925 hex=000000a09999ed3f}` | landing: impact = pow(\|speed\|,0.925)*1.65 | **A** |
+| P24 | `IMPACT_GAIN` | 1.65 (stored 1.649999976158142) | `0x3ffa666660000000` | EXE·overlay | lit IMG:0x0ba369 · use IMG:0x3dacb8 | `playerMove @0x3dace6` | `3dacb8  fmul qword ptr [ebx + 0xba324] ; @const_136752{DOUBLE=1.649999976158142 init=1.65 hex=000000606666fa3f}` | landing: impact = pow(\|speed\|,0.925)*1.65 | **A** |
+| P25a | `IMPACT_POWERJUMP_BONUS` | 20 | `0x00000014` | EXE·overlay | lit IMG:0x0b9de5 · use IMG:0x3daeac | `playerMove @0x3daf10` | `3daeac  mov eax, dword ptr [ebx + 0xb9da0] ; @const_132449{LONG=20 init=20 hex=14000000}` | +20*powerJumpNext added to impact before the L_max clamp (same expression feeds clamp @3daff4) | **A** |
+| P25 | `SPRING_MAX_FLOOR` | 95 | `0x0000005f` | EXE·overlay | lit IMG:0x0ba371 · use IMG:0x3daf93 | `playerMove @0x3daff4` | `3daf93  mov eax, dword ptr [ebx + 0xba32c] ; @const_136778{LONG=95 init=95 hex=5f000000}` | heroSpringLoadedMax = clamp(impact+20*powerJump+extra, 95+25*powerJump+extra, 300) | **A** |
+| P26 | `SPRING_MAX_FLOOR_POWER_BONUS` | 25 | `0x00000019` | EXE·overlay | lit IMG:0x0b9875 · use IMG:0x3daf69 | `playerMove @0x3daff4` | `3daf69  mov eax, dword ptr [ebx + 0xb9830] ; @const_130224{LONG=25 init=25 hex=19000000}` | +25 to the floor of heroSpringLoadedMax when powerJumpNext | **A** |
+| P27 | `SPRING_MAX_CAP` | 300 | `0x0000012c` | EXE·overlay | lit IMG:0x0b9ca9 · use IMG:0x3dafca | `playerMove @0x3daff4` | `3dafca  mov eax, dword ptr [ebx + 0xb9c64] ; @const_131759{LONG=300 init=300 hex=2c010000}` | upper clamp of heroSpringLoadedMax | **A** |
+| P28 | `SPRING_MIN_EXPONENT` | 0.9 (stored 0.8999999761581421) | `0x3fecccccc0000000` | EXE·overlay | lit IMG:0x0b9cfd · use IMG:0x3db37f | `playerMove @0x3db3b6` | `3db37f  mov eax, dword ptr [ebx + 0xb9cb8] ; @const_132070{DOUBLE=0.8999999761581421 init=0.9 hex=000000c0ccccec3f}` | heroSpringLoadedMin = max(40, pow(impact,0.9)) | **A** |
+| P29 | `SPRING_MIN_FLOOR` | 40 | `0x00000028` | EXE·overlay | lit IMG:0x0b9ba9 · use IMG:0x3db401 | `playerMove @0x3db41d` | `3db401  mov eax, dword ptr [ebx + 0xb9b64] ; @const_131357{LONG=40 init=40 hex=28000000}` | heroSpringLoadedMin = max(40, ...) | **A** |
+| P31 | `INPUT_CHARGE_BUTTON` | 4 | `0x00000004` | EXE·overlay | lit IMG:0x0b99dd · use IMG:0x3dbd78 | `playerMove @0x3dbe7e` | `3dbd78  mov eax, dword ptr [ebx + 0xb9998] ; @const_130436{LONG=4 init=4 hex=04000000}` | inputIsDown(4) keeps charging (button 4 = scancode 57 Space / joy 257 by inputButtonSetDefault) | **A (value+operation) / B (meaning)** |
+| P32 | `SPRING_CHARGE_RATE` | 16 | `0x00000010` | EXE·overlay | lit IMG:0x0b9d4d · use IMG:0x3dbf94 | `playerMove @0x3dc019` | `3dbf94  mov eax, dword ptr [ebx + 0xb9d08] ; @const_132243{LONG=16 init=16 hex=10000000}` | heroSpringLoaded = min(load + 16*time_step, heroSpringLoadedMax) | **A** |
+| P33 | `LAUNCH_MIN_LOAD` | 2 | `0x00000002` | EXE·overlay | lit IMG:0x0b9965 · use IMG:0x3dc310 | `playerMove @0x3dc341` | `3dc310  mov eax, dword ptr [ebx + 0xb9920] ; @const_130373{LONG=2 init=2 hex=02000000}` | launch only if heroSpringLoaded > 2 | **A** |
+| P34 | `LAUNCH_SPEED_PER_LOAD` | 0.74235 (stored 0.7423499822616577) | `0x3fe7c154c0000000` | EXE·overlay | lit IMG:0x0ba3c1 · use IMG:0x3dd2e5 | `playerMove @0x3dd346` | `3dd2e5  fmul qword ptr [ebx + 0xba37c] ; @const_137124{DOUBLE=0.7423499822616577 init=0.74235 hex=000000c054c1e73f}` | launch: v = vec_rotate((0,0,0.74235*heroSpringLoaded),(0,a,0)) | **A** |
+| P35 | `NORMAL_ANGLE_OFFSET` | 90 | `0x0000005a` | EXE·overlay | lit IMG:0x0b9d29 · use IMG:0x3dd407 | `playerMove @0x3dd47e` | `3dd407  mov eax, dword ptr [ebx + 0xb9ce4] ; @const_132176{LONG=90 init=90 hex=5a000000}` | d = ang(atan2v(n.z,n.x) - 90 - angle) | **A (value+operation) / B (meaning)** |
+| P36 | `NORMAL_BLEND_CLAMP` | 45 | `0x0000002d` | EXE·overlay | lit IMG:0x0ba3c9 · use IMG:0x3dd48c | `playerMove @0x3dd4c5` | `3dd48c  mov eax, dword ptr [ebx + 0xba384] ; @const_137143{LONG=45 init=45 hex=2d000000}` | d clamped to [-45,45] | **A** |
+| P37 | `NORMAL_BLEND_FACTOR` | 0.1875 | `0x3fc8000000000000` | EXE·overlay | lit IMG:0x0ba3d1 · use IMG:0x3dd52e | `playerMove @0x3dd5c3` | `3dd52e  fld qword ptr [ebx + 0xba38c] ; @const_137151{DOUBLE=0.1875 init=0.1875 hex=000000000000c83f}` | launch angle a = angle + 0.1875*clamp(d,-45,45) | **A** |
+| P38 | `LAUNCH_SLIDE_CARRY_X` | 0.25 | `0x3fd0000000000000` | EXE·overlay | lit IMG:0x0b9c55 · use IMG:0x3dd6ef | `playerMove @0x3dd775` | `3dd6ef  fmul qword ptr [ebx + 0xb9c10] ; @const_131557{DOUBLE=0.25 init=0.25 hex=000000000000d03f}` | speed.x = Vlaunch.x + 0.25*slideSpeed.x | **A** |
+| P40 | `LAUNCH_SPIN_FROM_TILT` | 0.1245 (stored 0.12449999898672104) | `0x3fbfdf3b60000000` | EXE·overlay | lit IMG:0x0ba43d · use IMG:0x3e007e | `playerMove @0x3e0185` | `3e007e  fmul qword ptr [ebx + 0xba3f8] ; @const_137580{DOUBLE=0.12449999898672104 init=0.1245 hex=000000603bdfbf3f}` | heroTurnSpeed += (0.1245*clamp(ang(angle-gravityAngle),-45,45) - 0.25*1.5*sign(s)*\|s\|^0.75)*(1-0.5*special), s=asinv(normal.x) | **A** |
+| P40b | `LAUNCH_SPIN_TILT_CLAMP` | 45 | `0x0000002d` | EXE·overlay | lit IMG:0x0ba3c9 · use IMG:0x3dfe3d | `playerMove @0x3dfe76` | `3dfe3d  mov eax, dword ptr [ebx + 0xba384] ; @const_137143{LONG=45 init=45 hex=2d000000}` | tilt term clamp(ang(angle-gravityAngle),-45,45) | **A** |
+| P43b | `LAUNCH_SPIN_SPECIAL_HALF` | 0.5 | `0x3fe0000000000000` | EXE·overlay | lit IMG:0x0b986d · use IMG:0x3e00ef | `playerMove @0x3e0185` | `3e00ef  fld qword ptr [ebx + 0xb9828] ; @const_130217{DOUBLE=0.5 init=0.5 hex=000000000000e03f}` | launch spin multiplied by (1-0.5*(collisionSpecialTypeResult==1)) | **A** |
+| P44 | `NO_GROUND_TIMER_AFTER_LAUNCH` | 2 | `0x00000002` | EXE·overlay | lit IMG:0x0b9965 · use IMG:0x3e030d | `playerMove @0x3e0339` | `3e030d  mov eax, dword ptr [ebx + 0xb9920] ; @const_130373{LONG=2 init=2 hex=02000000}` | noGroundContactTimer = 2 (ticks) after launch; grounded flag forced 0 while >0 | **A** |
+| P45 | `JUMP_TIMER_GAIN` | 0.45 (stored 0.44999998807907104) | `0x3fdcccccc0000000` | EXE·overlay | lit IMG:0x0ba449 · use IMG:0x3e03e0 | `playerMove @0x3e0438` | `3e03e0  fmul qword ptr [ebx + 0xba404] ; @const_137613{DOUBLE=0.44999998807907104 init=0.45 hex=000000c0ccccdc3f}` | jumpTimer = 0.45*sqrt(heroSpringLoadedMax); damps turn response via 1/(1+sqrt(jumpTimer)) | **A** |
+| P46 | `POWERJUMP_ROTATION_THRESHOLD` | 285 | `0x0000011d` | EXE·overlay | lit IMG:0x0ba661 · use IMG:0x3ee4f7 | `playerMove @0x3ee58b` | `3ee4f7  mov edx, dword ptr [ebx + 0xba61c] ; @const_139827{LONG=285 init=285 hex=1d010000}` | in air: \|angle-lastJumpAngle\| > 285 deg -> powerJumpNext = 1 (boost on next landing) | **A** |
+| P47 | `BONK_REFLECT` | -2 | `0xfffffffe` | EXE·overlay | lit IMG:0x0ba0ad · use IMG:0x3e56b3 | `playerMove @0x3e56f1` | `3e56b3  mov eax, dword ptr [ebx + 0xba068] ; @const_134248{LONG=-2 init=0xfffffffe hex=feffffff}` | bounce = speed - 2*(n.speed)*n (manual reflection; engine vec_bounce never called) | **A** |
+| P48 | `BONK_DIR_REFLECT_WEIGHT` | 0.9 (stored 0.8999999761581421) | `0x3fecccccc0000000` | EXE·overlay | lit IMG:0x0b9cfd · use IMG:0x3e5845 | `playerMove @0x3e5867` | `3e5845  fld qword ptr [ebx + 0xb9cb8] ; @const_132070{DOUBLE=0.8999999761581421 init=0.9 hex=000000c0ccccec3f}` | bounce = normalize(reflect,0.9) + n | **A (value+operation) / B (meaning)** |
+| P49 | `BONK_SPEED_FACTOR` | 0.4 (stored 0.4000000059604645) | `0x3fd99999a0000000` | EXE·overlay | lit IMG:0x0ba539 · use IMG:0x3e591f | `playerMove @0x3e596a` | `3e591f  fmul qword ptr [ebx + 0xba4f4] ; @const_138467{DOUBLE=0.4000000059604645 init=0.4 hex=000000a09999d93f}` | bonk speed = max(28, 0.4*\|speed\|)*min(1+normal.z,1) | **A** |
+| P50 | `BONK_MIN_SPEED` | 28 | `0x0000001c` | EXE·overlay | lit IMG:0x0b9fc1 · use IMG:0x3e594e | `playerMove @0x3e596a` | `3e594e  mov eax, dword ptr [ebx + 0xb9f7c] ; @const_133582{LONG=28 init=28 hex=1c000000}` | bonk speed floor 28 | **A** |
+| P73 | `BONK_SLOPE_ATTEN` | 1 | `0x00000001` | EXE·overlay | lit IMG:0x0b9849 · use IMG:0x3e59ab | `playerMove @0x3e59f1` | `3e59ab  mov eax, dword ptr [ebx + 0xb9804] ; @const_130182{LONG=1 init=1 hex=01000000}` | bonk speed factor min(1+normal.z, 1) | **A** |
+| P51 | `BONK_X_SCALE` | 0.875 | `0x3fec000000000000` | EXE·overlay | lit IMG:0x0ba541 · use IMG:0x3e5cfc | `playerMove @0x3e5dd5` | `3e5cfc  fmul qword ptr [ebx + 0xba4fc] ; @const_138503{DOUBLE=0.875 init=0.875 hex=000000000000ec3f}` | speed.x = 0.875*bounce.x + slideSpeed.x; speed.z = bounce.z + slideSpeed.z | **A** |
+| P52 | `BONK_SPIN_RIGHTING` | 0.5 | `0x3fe0000000000000` | EXE·overlay | lit IMG:0x0b986d · use IMG:0x3e610c | `playerMove @0x3e61a4` | `3e610c  fmul qword ptr [ebx + 0xb9828] ; @const_130217{DOUBLE=0.5 init=0.5 hex=000000000000e03f}` | heroTurnSpeed = 0.5*ang(gravityAngle-angle) - 0.2*1.5*sign(s)*\|s\|^0.75 | **A** |
+| P55 | `ICE_SLIDE_TARGET_SPEED` | 48 | `0x00000030` | EXE·overlay | lit IMG:0x0b9ba1 · use IMG:0x3cbba9 | `playerMove @0x3cbbed` | `3cbba9  mov eax, dword ptr [ebx + 0xb9b5c] ; @const_131276{LONG=48 init=48 hex=30000000}` | slide target = normalize(surfaceNormalVector + gravityDir, 48 - 24*(level10\|L30)) | **A (value+operation) / B (meaning)** |
+| P57 | `ICE_SLIDE_RESPONSE` | 0.25 | `0x3fd0000000000000` | EXE·overlay | lit IMG:0x0b9c55 · use IMG:0x3cbdc1 | `playerMove @0x3cbe3c` | `3cbdc1  fmul qword ptr [ebx + 0xb9c10] ; @const_131557{DOUBLE=0.25 init=0.25 hex=000000000000d03f}` | slideSpeed += clamp((target-slideSpeed)*0.25, -1.35, 1.35)*time_step (x and z) | **A** |
+| P58 | `ICE_SLIDE_ACCEL_CLAMP` | 1.35 (stored 1.350000023841858) | `0x3ff59999a0000000` | EXE·overlay | lit IMG:0x0ba0d5 · use IMG:0x3cbddb | `playerMove @0x3cbe3c` | `3cbddb  fld qword ptr [ebx + 0xba090] ; @const_134375{DOUBLE=1.350000023841858 init=1.35 hex=000000a09999f53f}` | per-tick change limited to +-1.35 | **A** |
+| P59 | `SLIDE_DECAY_RATE` | 0.5 | `0x3fe0000000000000` | EXE·overlay | lit IMG:0x0b986d · use IMG:0x3cca3b | `playerMove @0x3cca8b` | `3cca3b  fld qword ptr [ebx + 0xb9828] ; @const_130217{DOUBLE=0.5 init=0.5 hex=000000000000e03f}` | not in slide mode & grounded & \|slide\|>=0.25: slideSpeed = lerp(slideSpeed, 0, 0.5*time_step); else 0 | **A (value+operation) / B (meaning)** |
+| P60 | `ICE_LANDING_Z_CARRY` | 0.25 | `0x3fd0000000000000` | EXE·overlay | lit IMG:0x0b9c55 · use IMG:0x3da813 | `playerMove @0x3da86b` | `3da813  fmul qword ptr [ebx + 0xb9c10] ; @const_131557{DOUBLE=0.25 init=0.25 hex=000000000000d03f}` | landing on slippery (ent.flags&64): slideSpeed.x = speed.x; slideSpeed.z = 0.25*speed.z (some levels, speed.z>0) else 0 | **A** |
+| P71 | `LEDGE_EXIT_POP_SPEED` | 5 | `0x00000005` | EXE·overlay | lit IMG:0x0b9889 · use IMG:0x3d86c9 | `playerMove @0x3d86f5` | `3d86c9  mov eax, dword ptr [ebx + 0xb9844] ; @const_130266{LONG=5 init=5 hex=05000000}` | was grounded && probe misses: speed.x = slideSpeed.x; speed.z = 5 (leave ledge with small upward speed) | **A** |
+| P72 | `SLIDE_STOP_THRESHOLD` | 0.25 | `0x3fd0000000000000` | EXE·overlay | lit IMG:0x0b9c55 · use IMG:0x3cc8bc | `playerMove @0x3cc945` | `3cc8bc  fcomp qword ptr [ebx + 0xb9c10] ; @const_131557{DOUBLE=0.25 init=0.25 hex=000000000000d03f}` | \|slideSpeed\| < 0.25 or airborne -> slideSpeed = 0 (else decays, P59) | **A** |
+| P62 | `HULL_MIN_X` | -12.5 | `0xc029000000000000` | EXE·overlay | lit IMG:0x0b9a81 · use IMG:0x3b3dde | `playerMove @0x3b3e09` | `3b3dde  fld qword ptr [ebx + 0xb9a3c] ; @const_130575{DOUBLE=-12.5 init=-12.5 hex=00000000000029c0}` | player entity bbox min_x | **A (value+operation) / B (meaning)** |
+| P63 | `HULL_MAX_X` | 12.5 | `0x4029000000000000` | EXE·overlay | lit IMG:0x0b9a79 · use IMG:0x3b3e4c | `playerMove @0x3b3e77` | `3b3e4c  fld qword ptr [ebx + 0xb9a34] ; @const_130574{DOUBLE=12.5 init=12.5 hex=0000000000002940}` | player entity bbox max_x | **A (value+operation) / B (meaning)** |
+| P64 | `HULL_MAX_Z` | 30 | `0x0000001e` | EXE·overlay | lit IMG:0x0b9a99 · use IMG:0x3b3f5e | `playerMove @0x3b3f8a` | `3b3f5e  mov eax, dword ptr [ebx + 0xb9a54] ; @const_130591{LONG=30 init=30 hex=1e000000}` | player entity bbox max_z | **A (value+operation) / B (meaning)** |
+| P65 | `HULL_MIN_Z_BASE` | -55 | `0xffffffc9` | EXE·overlay | lit IMG:0x0ba5a1 · use IMG:0x3eb14b | `playerMove @0x3eb19e` | `3eb14b  mov eax, dword ptr [ebx + 0xba55c] ; @const_139311{LONG=-55 init=0xffffffc9 hex=c9ffffff}` | min_z = -55 + max(heroSpringLoadedBoneExtend,-12.25) (when noGroundContactTimer==0) | **A (value+operation) / B (meaning)** |
+| T01 | `TIME_FACTOR_PLAY` | 0.95 (stored 0.949999988079071; written as var 973/1024 = 0.9501953125) | `0x3fee666660000000` | EXE·overlay | lit IMG:0x0dad09 · use IMG:0x69c64f | `mainFrameEventPlay @0x69c67a` | `69c64f  fld qword ptr [ebx + 0xdacc4] ; @const_258634{DOUBLE=0.949999988079071 init=0.95 hex=000000606666ee3f}` | *time_factor = 0.95 every frame in play (engine scales time_step by time_factor) | **A (value+operation) / B (meaning)** |
+| T02 | `FPS_LIMIT_DEFAULT` | 120 | `0x00000078` | EXE·overlay | lit IMG:0x0c6efd · use IMG:0x4e750d | `settingsDefault @0x4e7522` | `4e750d  mov eax, dword ptr [ebx + 0xc6eb8] ; @const_183142{LONG=120 init=120 hex=78000000}` | fps_limit2 = 120 -> *fps_max = fps_limit | **A** |
+| T03 | `FPS_LIMIT_RANGE_MAX` | 240 | `0x000000f0` | EXE·overlay | lit IMG:0x0c7ed9 · use IMG:0x4ee498 | `dec_do @0x4ee4d1` | `4ee498  mov eax, dword ptr [ebx + 0xc7e94] ; @const_184499{LONG=240 init=240 hex=f0000000}` | fps_limit2 clamped to [30,240] | **A** |
+| U01 | `QUANTS_PER_DISPLAY_METER` | 52 | `0x00000034` | EXE·overlay | lit IMG:0x0ba679 · use IMG:0x3eeba5 | `playerMove @0x3eebe5` | `3eeba5  mov eax, dword ptr [ebx + 0xba634] ; @const_139898{LONG=52 init=52 hex=34000000}` | jump height shown as int(dz/52) "%dm" | **A** |
 
 ---
 
@@ -426,12 +431,13 @@ The same vector is built by `playerPredictPos` @`0x269a78` with `Δt = 1.5` (@`0
 
 **Power jump.** If the body turned more than **285°** in the air since the last jump (`|angle − lastJumpAngle| > 285`, @`0x3ee58b`), `powerJumpNext = 1`. The next landing then gets `+20` on `I` and a floor of `120`, and boost effects play.
 
-### 7.8 Wall / body hit ("bonk"): manual reflection (P47–P54)
+### 7.8 Wall / body hit ("bonk") (P47–P54, P73)
 
 This path runs when `c_move` reported a hit (`hit.flags & 0x600`), the probe is not a valid ground contact, and the contact point is within 256 quants (@`0x3e2b57`).
 
 ```asm
-3e5632  vec_set(bounce, n)        ; only when the engine's bounce vector is not available (L98==0)
+3e5593  if L98 (= hit.flags & 0x600) != 0: skip to 3e575f and keep the engine-written `bounce` (usual case)
+3e5632  vec_set(bounce, n)        ; fallback only (L98 == 0)
 3e56a5  vec_dot(n, speed) ; 3e56b3 LONG -2 ; 3e56f1 vec_scale(bounce, -2*dot) ; 3e5757 vec_add(bounce, speed)
 3e5845  DOUBLE 0.9 ; 3e5867 vec_normalize(bounce, 0.9) ; 3e58a5 vec_add(bounce, n)
 3e58ef  vec_length(speed) ; 3e591f fmul 0.4 ; 3e594e LONG 28 ; 3e596a maxv
@@ -443,7 +449,8 @@ This path runs when `c_move` reported a hit (`hit.flags & 0x600`), the probe is 
 ```
 
 **Derivation.**
-- Direction: **d = normalize(0.9·r̂ + n)**, where `r = v − 2(v·n)n`. The engine's `bounce` vector is used instead of `r` when `c_move` supplied one (`L98 ≠ 0`); its exact computation is engine-internal (§10).
+- Direction: **d = normalize(0.9·r̂ + n)**. In the usual case (`L98 = hit.flags & 0x600 ≠ 0`) `r̂` is the engine's `bounce` vector written by `c_move` (meaning **B**). Only when `L98 = 0` does the code compute `r = v − 2(v·n)n` itself (**A**).
+- Before this, the bounce sets `oofTimer = 16`, `N = 2`, `powerJumpNext = 0`, `angle = ang(angle)`, `lastJumpAngle = angle` and `heroSpringLoaded = 0`, and in water `jumpTimer = 4` (@`3e50fe…3e5575`).
 - Speed: **|v′| = max(28, 0.4|v|)·min(1 + n.z, 1)**.
 - If `n.z > 0`, `v′.z = n.z·|v′|`.
 - `v′.x` is then scaled by `0.875`.
@@ -494,7 +501,7 @@ Hazard entities (e.g. `skill[99]==33` thorn/fall blocks, lava zones) override th
 
 ### 7.12 Time step (T01–T05)
 
-- **`mainFrameEventPlay`** (@`0x69c67a`): `*time_factor = 0.95` **every play frame**. It then calls `playerMoveAll()` → `playerMove(playerDataLocal)` **once per frame** (@`0x69ceda`, `0x3f825a`).
+- **`mainFrameEventPlay`** (@`0x69c67a`): `*time_factor = 0.95` **every play frame**. It is written as a var (`fmul 1024; fistp`) = 973/1024 = 0.9501953125. Skate mode writes 1 (@`0x69dc1f`). It then calls `playerMoveAll()` → `playerMove(playerDataLocal)` **once per frame** (@`0x69ceda`, `0x3f825a`).
 - **Super-jump slow motion:** `time_step *= 0.5…1` (@`0x69ccd3`). Map-3 outro: `time_step *= 0.15`.
 - **Frame-rate cap:**
   - `settingsDefault` (@`0x4e7522`): `fps_limit2 = 120`, then `fps_max = fps_limit`;
@@ -553,19 +560,19 @@ Units: L = quants, T = ticks (Δt = `time_step`). State is 22.10 fixed-point; mi
 | 5 | Turn | `ω += (32·u − ω)·0.525·Δt/(1+√jumpTimer)`; rotate `ω·Δt` (air) or `ω·Δt/3` (ground) | `3cf32d`, `3cf7de` |
 | 6 | Grounded velocity | `v = −24·n̂`; pivot on `Bone1` | `3cfe1b…3d004b`, `3cfdbe` |
 | 7 | Impact | `I = 1.65·|v|^0.925` | `3dace6` |
-| 8 | Spring window | `L_min = max(40, I^0.9)`, `L_max = clamp(I+20p+e, 95+25p+e, 300)` | `3db41d`, `3daff4` |
+| 8 | Spring window | `L_min = max(40, I^0.9)`, `L_max = clamp(I+20p+e, 95+25p+e, 300)`, e = 0 in normal play | `3db41d`, `3daff4` |
 | 9 | Charge | `L = min(L + 16·Δt, L_max)` while `L < L_min` or Space held | `3dc019` |
 | 10 | Launch speed | `|v₀| = 0.74235·L` (velocity replaced) | `3dd346` |
 | 11 | Launch direction | `a = angle + 0.1875·clamp(ang(θₙ−90−angle), ±45)` | `3dd5c3` |
 | 12 | Launch carry | `v.x += 0.25·slide.x`, `v.z += 0·slide.z` | `3dd775`, `3dd8ac` |
-| 13 | Launch spin | `ω += 0.1245·clamp(ang(angle−gravityAngle),±45) − 0.375·sign(s)|s|^0.75` | `3e0185` |
+| 13 | Launch spin | `ω += (0.1245·clamp(ang(angle−gravityAngle),−45,45) − 0.25·1.5·sign(s)·|s|^0.75)·(1 − 0.5·special)`, s = asinv(n_x) | `3dfe76`, `3e0185` |
 | 14 | Post-launch | `noGroundContactTimer = 2`, `jumpTimer = 0.45·√L_max` | `3e0339`, `3e0438` |
 | 15 | Power jump | air rotation `> 285°` → `p = 1` | `3ee58b` |
-| 16 | Bonk | `d = norm(0.9·r̂ + n)`, `|v′| = max(28, 0.4|v|)·min(1+n.z,1)`, `v′.x·0.875`, `ω = 0.5·ang(gA−angle) − 0.3·sign(s)|s|^0.75` | `3e5867…3e61a4` |
-| 17 | Ice slide | `slide += clamp((48·norm(n+g) − slide)·0.25, ±1.35)·Δt`; displacement gain x 1, z 4 | `3cbe3c`, `3d4c92` |
+| 16 | Bonk | `r̂` = engine `bounce` (B) or `v−2(v·n)n` (fallback, A); `r̂_y = 0`; `d = 0.9·r̂/|r̂| + n`; `S = max(28, 0.4|v|)·min(1+n_z, 1)`; `b = S·d/|d|`; if `n_z > 0`: `b_z = n_z·S`; `v = (0.875·b_x + s_x, b_z + s_z)`; `ω = 0.5·ang(γ−θ) − 0.2·1.5·sign(s)·|s|^0.75`; `N = 2`, `p = 0`, `L = 0`, `lastJumpAngle = θ` | `3e50fe…3e61a4` |
+| 17 | Ice slide | Entry (contact entity flag 64): `s_x = v_x`, `s_z = 0` on the main map. In slide mode, per axis: `s ← s + clamp(0.25·(48·norm(n + R_γ(0,0,−1)) − s), −1.35, 1.35)·Δt`. Out of slide mode: `|s| < 0.25 ∨ airborne ⇒ s = 0`, else `s ← s·(1 − 0.5·Δt)`. Displacement `((v_x + s_x)Δt, (v_z + 4s_z)Δt)`. | `3cbe3c`, `3cca8b`, `3da52a`, `3d4c92` |
 | 18 | Hull | x ±12.5, y ±32, z_max 30, z_min = −55 + max(ext, −12.25) | `3b3e09…`, `3eb19e` |
 | 19 | Ground probe | box trace ±4 to `Bone1 + (6+|slide.z|)·stick̂` | `3d8544`, `1e500a` |
-| 20 | Clock | `time_factor = 0.95`; `fps_max` default 120 (30–240) | `69c67a`, `4e7522` |
+| 20 | Clock | `time_factor` ← 973/1024 (0.95 as var) each play frame; `fps_max` default 120 (30–240); one `playerMove` per frame | `69c67a`, `4e7522` |
 | 21 | Engine friction | `move_friction = 0` for the player | `3d30ff` |
 
 ---
@@ -601,15 +608,15 @@ per rendered frame (Δt = time_step in ticks; nominal 0.12667 at 120 fps with ti
   if |v|>300: v = 300*v̂
   move with collision by (v + slide*(1,4))*Δt          # engine-friction 0
   probe from body origin to tip + (6+|slide.z|) along stick (box ±4) -> n, grounded
-  if just landed: I = 1.65|v|^0.925 ; Lmin = max(40, I^0.9) ; Lmax = clamp(I+20p, 95+25p, 300)
+  if just landed: I = 1.65|v|^0.925 ; Lmin = max(40, I^0.9) ; Lmax = clamp(I+20p+e, 95+25p+e, 300)   (e = 0 normally)
   if grounded:
       if L < Lmin or (hold and L < Lmax): L = min(L + 16*Δt, Lmax)
       elif L > 2: launch:
           a = angle + 0.1875*clamp(ang(atan2(n.z,n.x)-90-angle), -45, 45)
           v = 0.74235*L * (-sin a, cos a) + (0.25*slide.x, 0)
-          ω += 0.1245*clamp(ang(angle-gravityAngle),-45,45) - 0.375*sign(s)*|s|^0.75   (s = asin(n.x) in deg)
+          ω += (0.1245*clamp(ang(angle-gravityAngle),-45,45) - 0.25*1.5*sign(s)*|s|^0.75) * (1 - 0.5*special)   (s = asin(n.x) in deg)
           L = 0 ; grounded = false ; noGroundContactTimer = 2 ; jumpTimer = 0.45*sqrt(Lmax) ; p = 0
-  elif hit && contact near: bonk (§7.8)
+  elif hit && contact near: bonk (§7.8; full equation E14 in Pogostuck_Physics_Final_Review.md)
   if |rotation since last jump| > 285°: p = 1
 ```
 
@@ -664,3 +671,25 @@ The fixed-point (22.10) rounding of every stored value is part of the original b
 - **No protection bypassed.** The overlay is LZSS-compressed, not encrypted. The licensee field was not decoded or published. The game's anti-tamper checks (`fuser(…)/sys_exit` paths) were only observed. No binary was modified.
 - **Nothing original committed.** Neither the binaries nor the decoded image are in the repository. This report quotes only the minimal machine-code lines needed as evidence.
 - **Originality rule still applies.** Physics equations and numeric parameters are functional facts. The Android project must still not copy the original code text, levels, models, textures, audio or branding.
+
+---
+
+## 14. Final review (pre-IMPLEMENT)
+
+A complete re-verification was done after this report was first written:
+- every CSV row mechanically re-checked against the decoded image: **99/99 pass**;
+- argument order checked on raw pushes;
+- storage precision checked.
+
+Details and every A constant with its full evidence are in **`Pogostuck_Physics_Final_Review.md`**. The transferable subset is in **`Pogostuck_Physics_LOCKED_SPEC.md`**.
+
+Corrections applied to this report:
+- the missing `+e` term in `L_max`;
+- the `(1 − 0.5·special)` factor of the launch spin;
+- the wall-bounce direction source (engine `bounce` vector in the usual case: B; manual reflection only as fallback);
+- the full wall-bounce and slide equations;
+- `time_factor` stored as 973/1024;
+- the CSV statements are no longer truncated;
+- confidence is split into value/operation class and meaning class.
+
+No numeric value was found to be wrong.
