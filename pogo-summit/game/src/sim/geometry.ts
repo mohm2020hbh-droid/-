@@ -150,3 +150,39 @@ export function polysOverlapDepth(a: Poly, b: Poly): number {
   }
   return minDepth;
 }
+
+/**
+ * Oriented box vs convex polygon (SAT). The box has centre (cx,cy), unit axis `a = (ax, ay)` with half-extent `hz`
+ * along it and the perpendicular axis `b = (ay, −ax)` with half-extent `hx`.
+ * On overlap fills `out` with the minimum-translation axis: `nx,ny` points from the polygon toward the box and
+ * `depth` is the overlap along it.
+ */
+export function obbVsConvex(poly: Poly, cx: number, cy: number, ax: number, ay: number, hz: number, hx: number, out: Contact): boolean {
+  const { pts, enx, eny } = poly;
+  const n = pts.length;
+  const bx = ay, by = -ax;
+  let best = Infinity, bnx = 0, bny = 1;
+  // box axes
+  for (let k = 0; k < 2; k++) {
+    const ux = k === 0 ? ax : bx, uy = k === 0 ? ay : by;
+    let minP = Infinity, maxP = -Infinity;
+    for (let i = 0; i < n; i++) { const d = pts[i].x * ux + pts[i].y * uy; if (d < minP) minP = d; if (d > maxP) maxP = d; }
+    const c = cx * ux + cy * uy, r = k === 0 ? hz : hx;
+    const ov = Math.min(c + r, maxP) - Math.max(c - r, minP);
+    if (ov <= 0) return false;
+    if (ov < best) { best = ov; const sg = c < (minP + maxP) / 2 ? -1 : 1; bnx = ux * sg; bny = uy * sg; }
+  }
+  // polygon edge normals
+  for (let i = 0; i < n; i++) {
+    const ux = enx[i], uy = eny[i];
+    const pd = pts[i].x * ux + pts[i].y * uy; // every polygon point projects to ≤ pd (outward normal)
+    let minP = pd;
+    for (let k = 0; k < n; k++) { const d = pts[k].x * ux + pts[k].y * uy; if (d < minP) minP = d; }
+    const c = cx * ux + cy * uy, r = hz * Math.abs(ax * ux + ay * uy) + hx * Math.abs(bx * ux + by * uy);
+    const ov = Math.min(c + r, pd) - Math.max(c - r, minP);
+    if (ov <= 0) return false;
+    if (ov < best) { best = ov; const sg = c < (minP + pd) / 2 ? -1 : 1; bnx = ux * sg; bny = uy * sg; }
+  }
+  out.depth = best; out.nx = bnx; out.ny = bny; out.px = cx; out.py = cy;
+  return true;
+}

@@ -7,7 +7,7 @@ import type { Pose } from '../sim/PogoState';
 import type { PogoState } from '../sim/PogoState';
 import type { SimEvent } from '../sim/events';
 import { DEG } from '../sim/math';
-import { launchPower } from '../sim/JumpSystem';
+import { geometryM } from '../sim/units';
 import type { PhysicsConfig } from '../sim/PhysicsConfig';
 import { CameraRig } from './CameraRig';
 import { Character, type CharacterAppearance } from './Character';
@@ -186,7 +186,7 @@ export class GameRenderer {
     this.shadowBlob.renderOrder = 2;
     this.scene.add(this.shadowBlob);
 
-    this.character = new Character(this.mats, this.cfg.comHeight);
+    this.character = new Character(this.mats, geometryM(this.cfg).comHeight);
     if (this.appearance) this.character.setAppearance(this.appearance);
     this.scene.add(this.character.root);
     this.scene.add(this.vfx.mesh);
@@ -422,10 +422,10 @@ export class GameRenderer {
     const ch = this.character;
     ch.root.position.set(pose.x, pose.y, 0);
     ch.root.rotation.z = -pose.angle;
-    const charge01 = s.mode === 'CHARGING' ? Math.max(launchPower(s, cfg, f.pull), s.charge / cfg.chargeTicksMax) : 0;
-    ch.update(dt, { mode: s.mode, charge01: Math.min(1, charge01), vx: s.vx, vy: s.vy, omega: s.omega, boosting: this.boostFxT > 0, tilt: f.tilt, finished: s.mode === 'FINISHED' });
+    const charge01 = s.mode === 'CHARGING' ? s.charge01 : 0;
+    ch.update(dt, { mode: s.mode, charge01: Math.min(1, charge01), vx: s.vx, vy: s.vy, omega: s.omegaRad, boosting: this.boostFxT > 0, tilt: f.tilt, finished: s.mode === 'FINISHED' });
     if (this.boostFxT > 0) { this.boostFxT -= dt; this.vfx.trail(pose.x, pose.y, s.vx, s.vy, this.boostTint); }
-    if (s.mode === 'CHARGING') { this.chargeFxT -= dt; if (this.chargeFxT <= 0 && charge01 > 0.1) { this.chargeFxT = 0.07 - charge01 * 0.04; this.vfx.burst('charge', pose.footX, pose.footY, 0, 1, charge01); } }
+    if (s.mode === 'CHARGING' && s.held) { this.chargeFxT -= dt; if (this.chargeFxT <= 0 && charge01 > 0.1) { this.chargeFxT = 0.07 - charge01 * 0.04; this.vfx.burst('charge', pose.footX, pose.footY, 0, 1, charge01); } }
 
     // contact shadow
     const sb = { y: 0, nx: 0, ny: 1, found: false };

@@ -1,16 +1,23 @@
 import type { LevelData } from '../data/LevelData';
 import type { PhysicsConfig } from './PhysicsConfig';
 import { PhysicsWorld } from './PhysicsWorld';
-import { NEUTRAL_INPUT, type PogoInput, type PogoState, createPogoState, tipCenterLen } from './PogoState';
+import { NEUTRAL_INPUT, type PogoInput, type PogoState, createPogoState, tipCenterQ } from './PogoState';
 import { stepPogo } from './PogoPhysicsController';
 import type { SimEvent } from './events';
 
 /**
  * routeBot — plays a designed route END TO END on the real simulation, through the same input path a player uses
- * (lean while standing, short press with a pull-power, release). Proves the level is completable in ONE continuous run,
- * including waiting for moving platforms, and yields a replayable input script (used by the browser E2E test).
+ * (a turn input and the charge hold, nothing else), so the result is a replayable per-tick input script.
+ *
+ * The pogo hops by itself (LOCKED_SPEC E8), so a "hop" here is a plan the bot applies from a landing:
+ *   idle      number of extra idle hops first (waits for a moving platform)
+ *   tiltG     turn input during the first `tt` ticks of the plan (rotates the stick on the ground)
+ *   hold      charge held for the first `hd` ticks (longer hold = more load, up to L_max)
+ *   tiltA     turn input while airborne (steers the landing angle, which the next hop starts from)
+ * A depth-first search with a small branching factor picks, for every target platform, the plans that land on it with
+ * the largest margin from the edges, backtracking when a later hop becomes impossible.
  */
-export interface Hop { from: string; to: string; wait: number; tilt: number; power: number; ticks: number }
+export interface Hop { from: string; to: string; idle: number; tiltG: number; tt: number; hd: number; tiltA: number; ticks: number }
 export interface RoutePlan {
   success: boolean;
   hops: Hop[];
@@ -19,111 +26,128 @@ export interface RoutePlan {
   ticks: number;
   jumps: number;
   failedAt?: string;
+  expansions: number;
 }
 
-const ROTATE_TICKS = 70, PRESS_TICKS = 3;
+interface Candidate { hop: Hop; end: PogoState; script: PogoInput[]; score: number; finished: boolean; landedId: string }
 
-function runHop(world: PhysicsWorld, cfg: PhysicsConfig, from: PogoState, wait: number, tilt: number, power: number, maxFlight = 700) {
+const TILTS_G = [-1, -0.5, 0.5, 1];
+const TT = [15, 30, 45];
+const HD = [0, 20, 28, 36, 44, 52];
+const TILTS_A = [-1, -0.5, 0, 0.5, 1];
+
+function runHop(world: PhysicsWorld, cfg: PhysicsConfig, from: PogoState, p: Omit<Hop, 'from' | 'to' | 'ticks'>, maxTicks = 900) {
   const s: PogoState = { ...from };
   const ctx = { world, cfg };
   const ev: SimEvent[] = [];
   const script: PogoInput[] = [];
-  const push = (i: PogoInput) => { script.push(i); stepPogo(ctx, s, i, ev); };
-  for (let i = 0; i < wait; i++) push({ ...NEUTRAL_INPUT });
-  for (let i = 0; i < ROTATE_TICKS; i++) push({ ...NEUTRAL_INPUT, tilt });
-  for (let i = 0; i < PRESS_TICKS; i++) push({ ...NEUTRAL_INPUT, tilt, jumpHeld: true, pull: power });
-  push({ ...NEUTRAL_INPUT, tilt, jumpHeld: false, pull: power });
-  let hazard = false, finished = false, airborne = false;
-  for (let t = 0; t < maxFlight; t++) {
-    ev.length = 0;
-    push({ ...NEUTRAL_INPUT });
-    if (ev.some(e => e.type === 'hazard' || e.type === 'fall')) hazard = true;
-    if (s.mode === 'FINISHED') { finished = true; break; }
-    if (s.mode === 'AIR' || s.mode === 'SLIDING') airborne = true;
-    if (hazard) break;
-    if (airborne && (s.mode === 'GROUNDED' || s.mode === 'CHARGING')) {
-      // settle a few ticks so the plant is stable
-      for (let k = 0; k < 30; k++) push({ ...NEUTRAL_INPUT });
-      break;
-    }
+  let hazard = false, finished = false;
+  const push = (i: PogoInput): boolean => {
+    script.push(i); ev.length = 0; stepPogo(ctx, s, i, ev);
+    for (const e of ev) { if (e.type === 'hazard' || e.type === 'fall') hazard = true; }
+    if (s.mode === 'FINISHED') finished = true;
+    return ev.some(e => e.type === 'land');
+  };
+  // idle hops: neutral input until `idle` landings happened
+  let landings = 0, guard = 0;
+  while (landings < p.idle && guard++ < 3000 && !hazard && !finished) if (push({ ...NEUTRAL_INPUT })) landings++;
+  if (hazard) return { s, script, hazard, finished, landed: false };
+  let airborne = false, landed = false;
+  for (let t = 0; t < maxTicks && !hazard && !finished; t++) {
+    const inp: PogoInput = { ...NEUTRAL_INPUT };
+    if (s.grounded && !airborne) { inp.tilt = t < p.tt ? p.tiltG : 0; inp.jumpHeld = t < p.hd; }
+    else { airborne = true; inp.tilt = p.tiltA; }
+    const land = push(inp);
+    if (!s.grounded) airborne = true;
+    if (airborne && land && s.grounded) { landed = true; break; }
   }
-  return { s, script, hazard, finished, landed: s.mode === 'GROUNDED' };
+  return { s, script, hazard, finished, landed };
 }
 
-/** Distance of the landing tip from the nearest end of the collider's top edge (bigger = safer landing). */
-function margin(world: PhysicsWorld, s: PogoState): number {
+/** Distance (m) of the landing tip from the nearest end of the collider's top edge (bigger = safer landing). */
+function margin(world: PhysicsWorld, cfg: PhysicsConfig, s: PogoState): number {
   const c = world.colliders[s.groundId];
   if (!c) return -1;
-  const { pts, eny } = c.poly;
+  const { pts, eny } = c.qpoly;
   let best = 0;
   for (let i = 1; i < pts.length; i++) if (eny[i] > eny[best]) best = i;
   const a = pts[best], b = pts[(best + 1) % pts.length];
   const lo = Math.min(a.x, b.x), hi = Math.max(a.x, b.x);
-  const x = s.lx;
-  return Math.min(x - lo, hi - x);
+  const tip = { x: 0, y: 0 };
+  tipCenterQ(cfg, s, tip);
+  const off = { x: 0, y: 0, vx: 0, vy: 0 };
+  world.offsetAtQ(c, s.tick, off);
+  const x = tip.x - off.x;
+  return Math.min(x - lo, hi - x) / cfg.qPerMetre;
 }
 
-export function playRoute(level: LevelData, cfg: PhysicsConfig, opts: { tiltStep?: number; powerStep?: number; waits?: number[] } = {}): RoutePlan {
-  const { tiltStep = 0.1, powerStep = 0.05 } = opts;
+export function playRoute(level: LevelData, cfg: PhysicsConfig, opts: { maxExpansions?: number; idleMax?: number } = {}): RoutePlan {
+  const { maxExpansions = 400, idleMax = 8 } = opts;
   const route = level.route ?? [];
-  const world = new PhysicsWorld(level);
-  let state = createPogoState(world, cfg);
-  const plan: RoutePlan = { success: false, hops: [], script: [], ticks: 0, jumps: 0 };
+  const world = new PhysicsWorld(level, cfg.qPerMetre);
   const byId = new Map(world.colliders.map(c => [c.id, c.index]));
-  // route nodes that are bounce pads are traversed *through* (the bot targets the platform after the pad)
-  const targets = route.slice(1).filter(id => world.colliders[byId.get(id)!].surface !== 'bounce');
-  const goalId = 'goal';
-  targets.push(goalId);
-  for (let k = 0; k < targets.length; k++) {
-    const target = targets[k];
-    const isGoal = target === goalId;
-    const tIdx = byId.get(target)!;
-    const movingHere = !!world.colliders[state.groundId]?.move || !!world.colliders[tIdx]?.move || targets.slice(k, k + 2).some(id => world.colliders[byId.get(id)!].move);
-    const waits = opts.waits ?? (movingHere ? Array.from({ length: 25 }, (_, i) => i * 30) : [0]);
-    // up to 5 attempts: a direct hop to the target, else a REPOSITION hop along the current platform toward it
-    let reached = false;
-    for (let attempt = 0; attempt < 6 && !reached; attempt++) {
-      let best: { hop: Hop; r: ReturnType<typeof runHop>; score: number } | null = null;
-      let repo: { hop: Hop; r: ReturnType<typeof runHop>; score: number } | null = null;
-      const here = world.colliders[state.groundId];
-      const tc = world.colliders[tIdx];
-      const dir = Math.sign((tc.minX + tc.maxX) / 2 - (here.minX + here.maxX) / 2) || 1;
-      for (const wait of waits) {
-        for (let ti = -Math.round(1 / tiltStep); ti <= Math.round(1 / tiltStep); ti++) {
-          const tilt = +(ti * tiltStep).toFixed(3);
-          for (let pw = 0; pw <= 1.0001; pw += powerStep) {
-            const power = +Math.min(1, pw).toFixed(3);
-            const r = runHop(world, cfg, state, wait, tilt, power);
-            if (r.hazard) continue;
-            const hop: Hop = { from: here.id, to: target, wait, tilt, power, ticks: r.script.length };
-            if (isGoal && r.finished) { if (1000 > (best?.score ?? -Infinity)) best = { hop, r, score: 1000 }; continue; }
-            if (!r.landed) continue;
-            const landedOn = world.colliders[r.s.groundId];
-            if (!isGoal && landedOn.id === target) {
-              const sc = margin(world, r.s) * 10 - wait * 0.02 - r.script.length * 0.001;
-              if (sc > (best?.score ?? -Infinity)) best = { hop, r, score: sc };
-            } else if (landedOn.id === here.id && margin(world, r.s) > 0.7 && !landedOn.move) {
-              // reposition: progress toward the target side of THIS platform
-              const sc = (r.s.lx - state.lx) * dir - r.script.length * 0.0005;
-              if (sc > (repo?.score ?? 0.5)) repo = { hop: { ...hop, to: here.id }, r, score: sc };
-            }
-          }
-        }
+  const targets = route.slice(1).filter(id => byId.has(id));
+  targets.push('goal');
+  const plan: RoutePlan = { success: false, hops: [], script: [], ticks: 0, jumps: 0, expansions: 0 };
+  const stack: { hop: Hop; script: PogoInput[] }[] = [];
+
+  const candidates = (state: PogoState, target: string, isGoal: boolean) => {
+    const here = world.colliders[state.groundId];
+    const tc = world.colliders[byId.get(target)!];
+    const movingHere = !!here?.move || !!tc?.move;
+    const idles = movingHere ? Array.from({ length: idleMax + 1 }, (_, i) => i) : [0];
+    const direct: Candidate[] = [];
+    const repo: Candidate[] = [];
+    const dir = Math.sign((tc.minX + tc.maxX) / 2 - (here.minX + here.maxX) / 2) || 1;
+    const combos: [number, number][] = [[0, 0]];
+    for (const g of TILTS_G) for (const tt of TT) combos.push([g, tt]);
+    for (const idle of idles) for (const [tiltG, tt] of combos) for (const hd of HD) for (const tiltA of TILTS_A) {
+      const r = runHop(world, cfg, state, { idle, tiltG, tt, hd, tiltA });
+      if (r.hazard) continue;
+      const hop: Hop = { from: here.id, to: target, idle, tiltG, tt, hd, tiltA, ticks: r.script.length };
+      if (isGoal && r.finished) { direct.push({ hop, end: r.s, script: r.script, score: 1000 - r.script.length * 0.001, finished: true, landedId: 'goal' }); continue; }
+      if (!r.landed) continue;
+      const on = world.colliders[r.s.groundId];
+      const m = margin(world, cfg, r.s);
+      if (!isGoal && on.id === target) direct.push({ hop, end: r.s, script: r.script, score: m * 10 - idle * 0.5 - r.script.length * 0.001, finished: false, landedId: on.id });
+      else if (on.id === here.id && !on.move && m > 0.7) {
+        const lat = (tipX(r.s) - tipX(state)) * dir;
+        if (lat > 0) repo.push({ hop: { ...hop, to: here.id }, end: r.s, script: r.script, score: lat - r.script.length * 0.0005, finished: false, landedId: on.id });
       }
-      const pick = best && best.score >= 0 ? best : repo;
-      if (!pick) { plan.failedAt = target; return plan; }
-      plan.hops.push(pick.hop);
-      plan.script.push(...pick.r.script);
-      state = pick.r.s;
-      plan.jumps = state.jumps;
-      if (pick === best) reached = true;
-      if (isGoal && state.mode === 'FINISHED') { plan.success = true; plan.ticks = state.tick; return plan; }
     }
-    if (!reached) { plan.failedAt = target; return plan; }
-    if (isGoal) { plan.success = state.mode === 'FINISHED'; plan.ticks = state.tick; return plan; }
-  }
-  plan.ticks = state.tick;
+    direct.sort((a, b) => b.score - a.score);
+    repo.sort((a, b) => b.score - a.score);
+    return { direct, repo };
+  };
+  const tipX = (s: PogoState): number => { const t = { x: 0, y: 0 }; tipCenterQ(cfg, s, t); return t.x / cfg.qPerMetre; };
+
+  const dfs = (state: PogoState, k: number, repoLeft: number): boolean => {
+    if (plan.expansions++ >= maxExpansions) return false;
+    const target = targets[k];
+    const isGoal = target === 'goal';
+    const { direct, repo } = candidates(state, target, isGoal);
+    for (const c of direct.slice(0, 3)) {
+      if (!isGoal && c.score < 0) continue;
+      stack.push({ hop: c.hop, script: c.script });
+      if (isGoal) { plan.ticks = c.end.tick; plan.jumps = c.end.jumps; return true; }
+      if (dfs(c.end, k + 1, 3)) return true;
+      stack.pop();
+    }
+    if (repoLeft > 0) for (const c of repo.slice(0, 2)) {
+      stack.push({ hop: c.hop, script: c.script });
+      if (dfs(c.end, k, repoLeft - 1)) return true;
+      stack.pop();
+    }
+    if (!plan.failedAt || k > targets.indexOf(plan.failedAt)) plan.failedAt = target;
+    return false;
+  };
+
+  const start = createPogoState(world, cfg);
+  plan.success = dfs(start, 0, 3);
+  plan.hops = stack.map(x => x.hop);
+  plan.script = stack.flatMap(x => x.script);
+  if (!plan.success) plan.ticks = plan.script.length;
   return plan;
 }
 
-export { tipCenterLen };
+export { tipCenterQ };

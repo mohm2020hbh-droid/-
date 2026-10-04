@@ -28,9 +28,9 @@ if (q.get('debug') === '1') {
     light(o: { sun?: number; hemi?: number; exposure?: number; rim?: number; tone?: string }) { game.renderer.setLighting(o); },
     zoom(d: number) { game.renderer.rig.baseDistance = d; },
     hide(prefix: string, on = false) { game.renderer.scene.traverse(o => { if (o.name.startsWith(prefix)) o.visible = on; }); },
-    /** QA: fast-forward a recorded input script ([tilt, held, pull] per tick) through the REAL game loop (no rendering). */
-    playScript(rows: [number, number, number][]) {
-      const frames = rows.map(([tilt, held, pull]) => ({ tilt, jumpHeld: !!held, pull, boostPressed: false, cancel: false }));
+    /** QA: fast-forward a recorded input script ([tilt, held] per tick) through the REAL game loop (no rendering). */
+    playScript(rows: [number, number, number?][]) {
+      const frames = rows.map(([tilt, held, pull]) => ({ tilt, jumpHeld: !!held, pull: pull ?? 0, boostPressed: false, cancel: false }));
       const inp = new ScriptInput(frames);
       game.reset(); // tick 0: moving platforms are a function of the absolute tick, the recorded plan assumes a fresh start
       const prev = game.input; game.input = inp; game.renderEvery = 100000;

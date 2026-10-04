@@ -7,7 +7,7 @@ export interface ControlSettings {
   scheme: ControlScheme;
   /** Pixels of finger travel for full tilt (DRAG) — "Swipe Distance". */
   swipeDistance: number;
-  /** Gain of the pull-down gesture on charge power (0 disables) — "Swipe Strength". */
+  /** Inert since the locked physics (no pull-power gesture); kept so existing saves still load. */
   swipeStrength: number;
   /** Tilt multiplier — "Touch Sensitivity". */
   sensitivity: number;
@@ -15,7 +15,7 @@ export interface ControlSettings {
   deadzone: number;
   /** 0 = raw, 1 = very smooth — "Input Smoothing". */
   smoothing: number;
-  /** Charge time multiplier (1 = PhysicsConfig.chargeTicksMax) — "Charge Time". */
+  /** Inert since the locked physics (fixed charge rate, E8); kept so existing saves still load. */
   chargeTime: number;
   leftHanded: boolean;
   guide: GuideMode;

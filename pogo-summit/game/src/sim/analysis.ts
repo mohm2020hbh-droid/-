@@ -2,20 +2,24 @@ import type { LevelData } from '../data/LevelData';
 import type { PhysicsConfig } from './PhysicsConfig';
 import { PhysicsWorld } from './PhysicsWorld';
 import { type PogoState, createPlantedState, createPogoState } from './PogoState';
-import { simulateJump } from './prediction';
-import { DEG } from './math';
-import { stepPogo } from './PogoPhysicsController';
-import type { SimEvent } from './events';
+import { simulateLaunch } from './prediction';
 
 /**
  * Level analysis "bot" — proves a level is solvable and measures how forgiving each hop is, using the REAL physics
- * (no separate approximation). It brute-forces a grid of (stick angle × charge power) launches from sampled standing
- * points and records where each ends up. This is the level-design counterpart of XLSX "fidelity" rules: numbers come
- * from the simulation, never from assumptions.
+ * (no separate approximation). It brute-forces a grid of (stick angle × spring load) launches from sampled standing
+ * points and records where each ends up.
+ *
+ * Model of the player's freedom (LOCKED_SPEC §6): the angle is free within ±maxTiltDeg of the surface normal (the
+ * stick can be rotated in the air and on the ground before the pogo launches) and the load can be anything between the
+ * landing window's minimum and maximum (hold the charge for more). The window assumed for a standing node is the one
+ * of a landing with v = 0 (L ∈ [40, 95]); falling faster only widens it, so the result is a conservative reachability test.
  */
 export interface AnalysisOptions {
   angleStepDeg: number;
-  powerStep: number;
+  /** Maximum |angle| from the surface normal (deg). */
+  maxTiltDeg: number;
+  /** Load grid step (L). */
+  loadStep: number;
   /** Fractions along the top edge to start from. */
   samplesX: number[];
   /** Start ticks (moving-platform phases) to try. */
@@ -24,19 +28,20 @@ export interface AnalysisOptions {
 
 export const DEFAULT_ANALYSIS: AnalysisOptions = {
   angleStepDeg: 5,
-  powerStep: 0.1,
-  samplesX: [0.15, 0.5, 0.85],
+  maxTiltDeg: 70,
+  loadStep: 5,
+  samplesX: [0.02, 0.15, 0.5, 0.85, 0.98],
   phases: [0, 180, 360, 540],
 };
 
 export interface Edge {
   from: string;
   to: string;
-  /** Best number of (angle,power) cells landing on `to` from a single start node (target size). */
+  /** Best number of (angle, load) cells landing on `to` from a single start node (target size). */
   cells: number;
   total: number;
   bestAngleDeg: number;
-  bestPower: number;
+  bestLoad: number;
 }
 
 export interface Analysis {
@@ -47,57 +52,33 @@ export interface Analysis {
   hazardShare: Record<string, number>;
 }
 
-function gridAngles(cfg: PhysicsConfig, stepDeg: number): number[] {
+function gridAngles(maxDeg: number, stepDeg: number): number[] {
   const out: number[] = [];
-  const m = Math.floor(cfg.tiltMaxAngle / stepDeg);
+  const m = Math.floor(maxDeg / stepDeg);
   for (let i = -m; i <= m; i++) out.push(i * stepDeg);
   return out;
 }
 
-function gridPowers(step: number): number[] {
+function gridLoads(cfg: PhysicsConfig, step: number, lo: number, hi: number): number[] {
   const out: number[] = [];
-  for (let p = 0; p <= 1 + 1e-9; p += step) out.push(Math.min(1, +p.toFixed(4)));
+  for (let l = lo; l <= hi + 1e-9; l += step) out.push(+l.toFixed(3));
+  if (out[out.length - 1] < hi) out.push(hi);
+  void cfg;
   return out;
 }
 
 /** All outcomes of launching from one planted node. */
-function launchOutcomes(world: PhysicsWorld, cfg: PhysicsConfig, start: PogoState, opts: AnalysisOptions) {
-  const results: { angle: number; power: number; to?: string; goal: boolean; hazard: boolean; viaBounce?: string }[] = [];
-  const nAngle = Math.atan2(start.gnx, start.gny);
-  for (const a of gridAngles(cfg, opts.angleStepDeg)) {
-    for (const p of gridPowers(opts.powerStep)) {
-      const pr = simulateJump({ world, cfg }, start, nAngle + a * DEG, p, { maxTicks: 700, stride: 100 });
-      const bounce = pr.events.find((e: SimEvent) => e.type === 'bounce');
+export function launchOutcomes(world: PhysicsWorld, cfg: PhysicsConfig, start: PogoState, opts: AnalysisOptions) {
+  const results: { angle: number; load: number; to?: string; goal: boolean; hazard: boolean }[] = [];
+  const base = start.thetaN - cfg.normalAngleOffset;
+  for (const a of gridAngles(opts.maxTiltDeg, opts.angleStepDeg)) {
+    for (const load of gridLoads(cfg, opts.loadStep, start.loadMin, start.loadMax)) {
+      const pr = simulateLaunch({ world, cfg }, start, { theta: base + a, load, maxTicks: 700, stride: 100 });
       results.push({
-        angle: a, power: p,
+        angle: a, load,
         to: pr.landed ? world.colliders[pr.groundId].id : undefined,
         goal: pr.finished, hazard: pr.hazard || pr.fell,
-        viaBounce: bounce && bounce.collider !== undefined ? world.colliders[bounce.collider].id : undefined,
       });
-    }
-  }
-  return results;
-}
-
-/** Outcomes when rebounding off a bounce pad with every stick angle (pad aim), starting from a typical drop. */
-function bounceOutcomes(world: PhysicsWorld, cfg: PhysicsConfig, padIndex: number, opts: AnalysisOptions) {
-  const results: { angle: number; power: number; to?: string; goal: boolean; hazard: boolean }[] = [];
-  const pad = world.colliders[padIndex];
-  const cx = (pad.minX + pad.maxX) / 2, top = pad.maxY;
-  for (const f of opts.samplesX) {
-    for (const a of gridAngles(cfg, opts.angleStepDeg)) {
-      const s = createPogoState(world, cfg);
-      Object.assign(s, { mode: 'AIR', groundId: -1, x: pad.minX + (pad.maxX - pad.minX) * f, y: top + 2.2, vx: 0, vy: -9, angle: a * DEG, omega: 0, tick: 0 });
-      const ev: SimEvent[] = [];
-      let landed: string | undefined, goal = false, hazard = false;
-      for (let t = 0; t < 700; t++) {
-        stepPogo({ world, cfg }, s, { tilt: 0, jumpHeld: false, boostPressed: false, pull: 0, cancel: false }, ev);
-        if (ev.some(e => e.type === 'hazard' || e.type === 'fall')) { hazard = true; break; }
-        if (s.mode === 'FINISHED') { goal = true; break; }
-        if (s.mode === 'GROUNDED' && t > 5 && world.colliders[s.groundId] !== pad) { landed = world.colliders[s.groundId].id; break; }
-        ev.length = 0;
-      }
-      results.push({ angle: a, power: 0, to: landed, goal, hazard });
     }
   }
   return results;
@@ -105,7 +86,7 @@ function bounceOutcomes(world: PhysicsWorld, cfg: PhysicsConfig, padIndex: numbe
 
 export function analyzeLevel(level: LevelData, cfg: PhysicsConfig, partial: Partial<AnalysisOptions> = {}): Analysis {
   const opts = { ...DEFAULT_ANALYSIS, ...partial };
-  const world = new PhysicsWorld(level);
+  const world = new PhysicsWorld(level, cfg.qPerMetre);
   const startState = createPogoState(world, cfg);
   const startId = world.colliders[startState.groundId].id;
   const idToIdx = new Map(world.colliders.map(c => [c.id, c.index]));
@@ -114,47 +95,33 @@ export function analyzeLevel(level: LevelData, cfg: PhysicsConfig, partial: Part
   const edges: Edge[] = [];
   const hazardShare: Record<string, number> = {};
   let goalReached = false;
-
-  const record = (from: string, counts: Map<string, { n: number; a: number; p: number }>, total: number) => {
-    for (const [to, v] of counts) {
-      if (to === from) continue;
-      edges.push({ from, to, cells: v.n, total, bestAngleDeg: v.a, bestPower: v.p });
-      if (!reached.has(to)) { reached.add(to); queue.push(to); }
-    }
-  };
+  const total = gridAngles(opts.maxTiltDeg, opts.angleStepDeg).length * gridLoads(cfg, opts.loadStep, startState.loadMin, startState.loadMax).length;
 
   while (queue.length) {
     const id = queue.shift()!;
     const idx = idToIdx.get(id)!;
     const c = world.colliders[idx];
-    if (c.surface === 'bounce') {
-      const res = bounceOutcomes(world, cfg, idx, opts);
-      const perTarget = new Map<string, { n: number; a: number; p: number }>();
-      for (const r of res) if (r.to) { const e = perTarget.get(r.to) ?? { n: 0, a: r.angle, p: 0 }; e.n++; perTarget.set(r.to, e); }
-      if (res.some(r => r.goal)) goalReached = true;
-      record(id, perTarget, res.length);
-      continue;
-    }
-    // best single start node per target
-    const best = new Map<string, { n: number; a: number; p: number }>();
+    const best = new Map<string, { n: number; a: number; l: number }>();
     let hz = 0, tot = 0;
     for (const f of opts.samplesX) {
       for (const ph of (c.move ? opts.phases : [opts.phases[0]])) {
         const start = createPlantedState(world, cfg, idx, f, ph);
         const res = launchOutcomes(world, cfg, start, opts);
-        const counts = new Map<string, { n: number; a: number; p: number }>();
+        const counts = new Map<string, { n: number; a: number; l: number }>();
         for (const r of res) {
           tot++; if (r.hazard) hz++;
           if (r.goal) goalReached = true;
-          if (r.to) { const e = counts.get(r.to) ?? { n: 0, a: r.angle, p: r.power }; e.n++; counts.set(r.to, e); }
-          if (r.viaBounce) { const e = counts.get(r.viaBounce) ?? { n: 0, a: r.angle, p: r.power }; e.n++; counts.set(r.viaBounce, e); }
+          if (r.to) { const e = counts.get(r.to) ?? { n: 0, a: r.angle, l: r.load }; e.n++; counts.set(r.to, e); }
         }
         for (const [to, v] of counts) { const b = best.get(to); if (!b || v.n > b.n) best.set(to, v); }
       }
     }
     hazardShare[id] = tot ? hz / tot : 0;
-    const total = gridAngles(cfg, opts.angleStepDeg).length * gridPowers(opts.powerStep).length;
-    record(id, best, total);
+    for (const [to, v] of best) {
+      if (to === id) continue;
+      edges.push({ from: id, to, cells: v.n, total, bestAngleDeg: v.a, bestLoad: v.l });
+      if (!reached.has(to)) { reached.add(to); queue.push(to); }
+    }
   }
   const all = world.solids.map(c => c.id).filter(i => !i.startsWith('wall') && !i.startsWith('ceil'));
   return { reached: [...reached], edges, goalReached, unreachable: all.filter(i => !reached.has(i)), hazardShare };

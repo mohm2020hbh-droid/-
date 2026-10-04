@@ -14,12 +14,12 @@ import { progressFraction } from '../src/data/LevelData';
  * fails — regenerate with `npx tsx tools/route-plan.ts tests/fixtures/level01.route.json` ONLY after confirming the change is intended.
  */
 describe('LEVEL_01 end-to-end replay', () => {
-  const fx = JSON.parse(readFileSync(join(process.cwd(), 'tests/fixtures/level01.route.json'), 'utf8')) as { hops: { from: string; to: string }[]; script: [number, number, number][] };
-  const frames: PogoInput[] = fx.script.map(([tilt, held, pull]) => ({ ...NEUTRAL_INPUT, tilt, jumpHeld: !!held, pull }));
+  const fx = JSON.parse(readFileSync(join(process.cwd(), 'tests/fixtures/level01.route.json'), 'utf8')) as { hops: { from: string; to: string }[]; script: [number, number][] };
+  const frames: PogoInput[] = fx.script.map(([tilt, held]) => ({ ...NEUTRAL_INPUT, tilt, jumpHeld: !!held }));
 
   it('reaches the goal, never touching a hazard, with a plausible number of jumps', () => {
     const cfg = createPhysicsConfig();
-    const pogo = new PogoPhysicsController(new PhysicsWorld(LEVEL_01), cfg);
+    const pogo = new PogoPhysicsController(new PhysicsWorld(LEVEL_01, cfg.qPerMetre), cfg);
     let hazards = 0, goal = false, maxProgress = 0;
     for (const f of frames) {
       for (const e of pogo.step(f)) { if (e.type === 'hazard') hazards++; if (e.type === 'goal') goal = true; }
@@ -30,16 +30,17 @@ describe('LEVEL_01 end-to-end replay', () => {
     expect(hazards).toBe(0);
     expect(pogo.state.falls).toBe(0);
     expect(pogo.state.mode).toBe('FINISHED');
-    expect(pogo.state.jumps).toBeGreaterThanOrEqual(15);
-    expect(pogo.state.jumps).toBeLessThanOrEqual(30);
+    // the pogo hops by itself (LOCKED_SPEC E8), so the counter includes the idle hops used for repositioning
+    expect(pogo.state.jumps).toBeGreaterThanOrEqual(17);
+    expect(pogo.state.jumps).toBeLessThanOrEqual(60);
     expect(maxProgress).toBeGreaterThan(0.95);
     const seconds = (pogo.state.finishedTick - pogo.state.startedTick) / 120;
     expect(seconds).toBeLessThan(LEVEL_01.parTimeSec); // a perfect run beats the 3-star par
   });
 
-  it('uses every mechanic the level teaches: a bounce, a moving-platform wait, ice and the low ceiling', () => {
+  it('uses every mechanic the level teaches that the locked spec defines: a moving-platform wait, ice and the low ceiling', () => {
     const hops = fx.hops.map(h => `${h.from}>${h.to}`);
-    expect(hops.some(h => h.startsWith('p5>q1'))).toBe(true);   // via the bounce pad
+    expect(hops.some(h => h.startsWith('p5>pad1'))).toBe(true); // onto the (spec-less) bounce-pad surface
     expect(hops.some(h => h.startsWith('q3>q4'))).toBe(true);   // onto the moving platform
     expect(hops.some(h => h.startsWith('r1>r2'))).toBe(true);   // ice
     expect(hops.some(h => h.startsWith('r2>r3'))).toBe(true);   // under the ceiling

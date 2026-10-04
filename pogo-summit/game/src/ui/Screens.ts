@@ -137,10 +137,8 @@ export class Screens {
         toggle(t('leftHanded'), () => S.control.leftHanded, v => { S.control.leftHanded = v; }, 'control'),
         slider(t('sensitivity'), () => S.control.sensitivity, v => { S.control.sensitivity = v; }, 0.4, 2.5, 0.05, v => `${v.toFixed(2)}×`, 'control'),
         slider(t('swipeDistance'), () => S.control.swipeDistance, v => { S.control.swipeDistance = v; }, 40, 220, 5, v => `${v} px`, 'control'),
-        slider(t('swipeStrength'), () => S.control.swipeStrength, v => { S.control.swipeStrength = v; }, 0, 2, 0.1, v => `${v.toFixed(1)}`, 'control'),
         slider(t('deadzone'), () => S.control.deadzone, v => { S.control.deadzone = v; }, 0, 0.4, 0.01, pc, 'control'),
-        slider(t('smoothing'), () => S.control.smoothing, v => { S.control.smoothing = v; }, 0, 0.9, 0.05, pc, 'control'),
-        slider(t('chargeTime'), () => S.control.chargeTime, v => { S.control.chargeTime = v; }, 0.6, 1.6, 0.05, v => `${v.toFixed(2)}×`, 'control'));
+        slider(t('smoothing'), () => S.control.smoothing, v => { S.control.smoothing = v; }, 0, 0.9, 0.05, pc, 'control'));
       if (tab === 'graphics') body.append(
         seg(t('quality'), [['high', t('qHigh')], ['default', t('qDefault')], ['simplified', t('qSimplified')]], () => S.graphics.quality, v => { S.graphics.quality = v; }, 'graphics'),
         toggle(t('shake'), () => S.graphics.screenShake, v => { S.graphics.screenShake = v; }, 'graphics'));

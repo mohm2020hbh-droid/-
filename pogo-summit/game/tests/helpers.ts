@@ -21,7 +21,7 @@ export const flatGround = (over: Partial<PlatformDef> = {}): PlatformDef =>
 
 export function setup(level: LevelData, cfgOver: Partial<PhysicsConfig> = {}) {
   const cfg = createPhysicsConfig(cfgOver);
-  const world = new PhysicsWorld(level);
+  const world = new PhysicsWorld(level, cfg.qPerMetre);
   const pogo = new PogoPhysicsController(world, cfg);
   return { cfg, world, pogo };
 }

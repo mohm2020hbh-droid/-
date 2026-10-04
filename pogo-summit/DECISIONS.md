@@ -150,6 +150,26 @@
 ### DEC-043 — Bundled HUD font
 - Baloo 2 (Latin) + Baloo Bhaijaan 2 (Arabic), **SIL OFL 1.1** (license copied with the files into `fonts/`); ≈ 80 KB woff2 for 4 files. No network at runtime (the app has no INTERNET permission). Added `font/woff2` to the shell's `ShellLogic.mime` + a JUnit test.
 
+### DEC-044 — Locked-spec physics replaces the earlier hand-tuned model
+- **السياق:** طلب IMPLEMENT: تطبيق `Pogostuck_Physics_LOCKED_SPEC.md` وحده.
+- **القرار:** حُذفت `JumpSystem/BoostSystem/CollisionResponse` وكل قيم TUNE_ME/C؛ الفيزياء الآن في `src/sim/core/*` (E1–E18)، والثوابت في `PhysicsConfig.ts` بقيمها المخزّنة (مثل 0.7423499822616577). لا يوجد زر boost ولا إيماءة سحب-للقوة ولا coyote/press-buffer ولا restitution، لأن المواصفة لا تحتوي أيًّا منها.
+- **الأثر:** الإعدادات `swipeStrength` و`chargeTime` بلا تأثير (تبقى فقط لتوافق الحفظ القديم).
+
+### DEC-045 — Our own collision (spec §7 class D), kept separate from the locked equations
+- الحركة مع الاصطدام، فحص الدوران، والمسبار هي تنفيذنا (`core/collision.ts`): دائرة طرف r=4 Q + صندوق هيكل موجّه (±12.5 عرضًا، z_min…+30 طولًا) يتبع اتجاه العصا؛ تُتجاهل التلامسات الأرضية للطرف السفلي من الهيكل لأن الطرف يحمل الجسم (E5/E6).
+- اتجاه الارتداد r̂ يُحسب من الإزاحة المنعكسة عن السطح (بديل لـ `bounce` الخاص بالمحرك الأصلي)، وحمل المنصات المتحركة (c) من فرق موضع المنصة.
+- لم تُنسخ أي شيفرة أصلية. القيم المقفلة لم تُغيَّر لتناسب هذا التنفيذ.
+
+### DEC-046 — Unit presentation: 52 Q = 1 m, Δt = 0.126693 T at a fixed 120 Hz
+- من §2 و§7 للمواصفة؛ الحالة تُخزَّن بـ Q/T/درجات (double) ويُشتق منها المتر وم/ث والراديان لكل tick لأجل العرض فقط.
+
+### DEC-047 — LEVEL_01 geometry unchanged; two tight hops documented
+- المنصات لم تُعدَّل. التحليل (شبكة زاوية×حِمل، نافذة محافظة L∈[40,95]) والروبوت الكامل (`routeBot`) يثبتان أن الهدف قابل للوصول، لكن q1→q2 (2 خلايا من 348) وq2→q3 (4) ضيقتان. القرار: الإبلاغ عنهما بدل تغيير الفيزياء أو المستوى في هذه المهمة.
+- `pad1` (منصة الارتداد) صارت سطحًا عاديًا لأن المواصفة تستبعد ارتدادات الكيانات (E01–E02، §8).
+
+### DEC-048 — Safe respawn recorded at landing
+- `safeLandingRecord` (DESIGN): تسجيل نقطة إعادة الظهور عند الهبوط على سطح آمن — ليس جزءًا من المواصفة وليس قيمة أصلية.
+
 ---
 
 ## ما لم يتحقق منه بعد (يُحدَّث في آخر الجلسة)

@@ -1,15 +1,16 @@
 import { h } from './dom';
 import type { Game } from '../game/Game';
-import { PARAM_DEFS, type ParamKey, REFERENCE_JUMP_INTERVAL_TICKS, createPhysicsConfig } from '../sim/PhysicsConfig';
+import { PARAM_DEFS, type ParamKey } from '../sim/PhysicsConfig';
 import type { InputSource } from '../input/InputSource';
-import { NEUTRAL_INPUT, type PogoInput } from '../sim/PogoState';
-import { DEG, TICK_RATE } from '../sim/math';
-import { launchPower } from '../sim/JumpSystem';
+import { NEUTRAL_INPUT, type PogoInput, placeInAir, rotateAboutTip } from '../sim/PogoState';
+import { TICK_RATE } from '../sim/math';
+import { clamp } from '../sim/math';
+import { dtTicks } from '../sim/units';
 
 /**
- * Physics Lab (Phase 18) — measure and tune the implementation against Pogostuck_Physics_Master.xlsx:
- * live readouts, sliders for every TUNE_ME parameter, scripted tests (Jump / Bounce / Boost / Fall) and the
- * jump-cadence meter that compares our rhythm with the 150-tick video reference (XLSX V-026, grade A derived).
+ * Physics Lab (Phase 18) — inspect the LOCKED SPEC physics live: every locked constant (read-only, with its evidence
+ * status), live readouts of the spec state (Q / T / deg / L), and scripted tests (Jump / Wall / Boost / Fall).
+ * There are no tuning sliders any more: nothing in the physics is estimated.
  */
 type Script = { frames: PogoInput[]; i: number; onEnd?: () => void; until?: (g: Game) => boolean };
 
@@ -17,14 +18,11 @@ export class Lab implements InputSource {
   readonly root: HTMLElement;
   private readout: HTMLElement;
   private script: Script | null = null;
-  private pending: PogoInput[] = [];
-  private jumpTicks: number[] = [];
-  private lastJumps = 0;
   private lastText = 0;
   private lastNormal = '—';
   private manual: InputSource;
   private angleDeg = 35;
-  private power = 0.6;
+  private load = 95;
   private unsub: (() => void) | null = null;
   tilt = 0;
 
@@ -35,30 +33,32 @@ export class Lab implements InputSource {
     const bar = h('div.lab-bar', null,
       this.b('Reset', () => this.game.reset()),
       this.b('Test Jump', () => this.testJump()),
-      this.b('Test Bounce', () => this.testBounce()),
+      this.b('Test Wall', () => this.testWall()),
       this.b('Test Boost', () => this.testBoost()),
       this.b('Test Fall', () => this.testFall()),
-      this.b('Params', () => { panel.style.display = panel.style.display === 'none' ? '' : 'none'; }),
+      this.b('Constants', () => { panel.style.display = panel.style.display === 'none' ? '' : 'none'; }),
       this.b('Exit', () => this.onExit()),
     );
     panel = h('div.lab-panel.panel');
     panel.style.display = 'none';
-    panel.append(h('h4', null, 'Test jump'), this.slider('Angle', this.angleDeg, -65, 65, 1, v => { this.angleDeg = v; }, '°'), this.slider('Power', this.power * 100, 0, 100, 1, v => { this.power = v / 100; }, '%'));
+    panel.append(h('h4', null, 'Test jump'),
+      this.slider('Stick angle (° from the normal; + = lean left)', this.angleDeg, -70, 70, 1, v => { this.angleDeg = v; }, '°'),
+      this.slider('Spring load L', this.load, 40, 300, 5, v => { this.load = v; }, ''));
     const groups: Record<string, ParamKey[]> = {};
     for (const k of Object.keys(PARAM_DEFS) as ParamKey[]) (groups[PARAM_DEFS[k].group] ??= []).push(k);
     for (const [g, keys] of Object.entries(groups)) {
       panel.append(h('h4', null, g));
       for (const k of keys) {
         const d = PARAM_DEFS[k];
-        const tag = d.status === 'TUNE_ME' ? h('span.tag', null, 'TUNE_ME') : d.status === 'SOURCE_A' ? h('span.tag.src', null, 'A') : h('span.tag.des', null, d.status === 'DESIGN' ? 'design' : d.status);
-        if (d.status === 'SOURCE_A') { panel.append(h('div.p', null, h('span.n', null, d.label, tag), h('span', null, `${+d.value.toFixed(5)} ${d.unit}`))); continue; }
-        panel.append(this.paramSlider(k, tag));
+        const tag = h(`span.tag${d.status === 'DESIGN' || d.status === 'SUPPLIED' ? '.des' : '.src'}`, null, `${d.ref} · ${d.status.replace('LOCKED_', '')}`);
+        const row = h('div.p', null, h('span.n', null, d.label, tag), h('span', null, `${+d.value.toPrecision(7)} ${d.unit}`));
+        row.title = d.note;
+        panel.append(row);
       }
     }
-    panel.append(h('div.btn', { style: { marginTop: '.6rem', justifyContent: 'center' }, onclick: () => this.resetParams() }, 'Reset all parameters'));
     this.root = h('div', { style: { position: 'absolute', inset: '0', pointerEvents: 'none' } }, panel, this.readout, bar);
     parent.append(this.root);
-    this.unsub = game.onEvents(ev => { for (const e of ev) { if (e.type === 'land' || e.type === 'wall_hit' || e.type === 'bounce') this.lastNormal = `${e.type} n=(${e.nx.toFixed(2)}, ${e.ny.toFixed(2)}) ${e.surface ?? ''}`; } });
+    this.unsub = game.onEvents(ev => { for (const e of ev) { if (e.type === 'land' || e.type === 'wall_hit') this.lastNormal = `${e.type} n=(${e.nx.toFixed(2)}, ${e.ny.toFixed(2)}) ${e.surface ?? ''}`; } });
   }
 
   private b(label: string, fn: () => void): HTMLElement { return h('button.btn', { onclick: fn }, label); }
@@ -70,58 +70,43 @@ export class Lab implements InputSource {
     return h('div.p', null, h('span.n', null, label), val, h('div', { style: { gridColumn: '1 / -1' } }, inp));
   }
 
-  private paramSlider(k: ParamKey, tag: HTMLElement): HTMLElement {
-    const d = PARAM_DEFS[k];
-    const cfg = this.game.cfg as unknown as Record<string, number>;
-    const val = h('span', null, `${+cfg[k].toFixed(4)} ${d.unit}`);
-    const inp = h('input', { type: 'range', min: d.min, max: d.max, step: d.step, value: cfg[k] }) as HTMLInputElement;
-    inp.dataset.key = k;
-    inp.addEventListener('input', () => { cfg[k] = +inp.value; val.textContent = `${+(+inp.value).toFixed(4)} ${d.unit}`; });
-    const row = h('div.p', null, h('span.n', null, d.label, tag), val, h('div', { style: { gridColumn: '1 / -1' } }, inp));
-    row.title = `${d.note}  [${d.ref}]`;
-    return row;
-  }
-
-  private resetParams(): void {
-    const def = createPhysicsConfig();
-    Object.assign(this.game.cfg, def);
-    this.root.querySelectorAll<HTMLInputElement>('input[data-key]').forEach(i => { i.value = String((def as unknown as Record<string, number>)[i.dataset.key!]); i.dispatchEvent(new Event('input')); });
-  }
-
   // ── scripted tests (they drive the REAL input path, so they test what the player experiences) ──
   private run(frames: PogoInput[], opts: Partial<Script> = {}): void { this.script = { frames, i: 0, ...opts }; }
   private rep(n: number, p: Partial<PogoInput>): PogoInput[] { return Array.from({ length: n }, () => ({ ...NEUTRAL_INPUT, ...p })); }
 
+  /** Rotate the stick about the tip to the chosen angle, set the load inside the window, and let the pogo launch itself. */
   testJump(): void {
-    if (this.game.pogo.state.mode !== 'GROUNDED') this.game.reset();
-    const tilt = Math.max(-1, Math.min(1, this.angleDeg / this.game.cfg.tiltMaxAngle));
-    this.run([...this.rep(70, { tilt }), ...this.rep(3, { tilt, jumpHeld: true, pull: this.power }), ...this.rep(1, { tilt, jumpHeld: false, pull: this.power })]);
-  }
-
-  private teleportAir(x: number, y: number, vx = 0, vy = 0): void {
-    const s = this.game.pogo.state;
-    Object.assign(s, { x, y, vx, vy, mode: 'AIR', groundId: -1, angle: 0, omega: 0, charge: 0, slideV: 0, teleportTick: s.tick });
-    this.game.resetCamera();
-  }
-
-  testBounce(): void {
-    const pad = this.game.world.colliders.find(c => c.surface === 'bounce');
-    if (!pad) return;
-    this.teleportAir((pad.minX + pad.maxX) / 2, pad.maxY + 9, 0, -3);
-    this.run([]);
+    const g = this.game, s = g.pogo.state;
+    if (!s.grounded) g.reset();
+    const st = g.pogo.state;
+    rotateAboutTip(g.cfg, st, st.thetaN - g.cfg.normalAngleOffset + this.angleDeg);
+    st.load = clamp(this.load, st.loadMin, st.loadMax);
+    st.springBone = st.springBoneMax = st.load;
+    this.run(this.rep(3, {}));
   }
 
   testFall(): void {
     const s = this.game.pogo.state;
-    this.teleportAir(s.x < 20 ? 8 : s.x, 36, 0, 0);
+    placeInAir(this.game.cfg, s, s.x < 20 ? 8 : s.x, 36);
+    this.game.resetCamera();
     this.run([]);
   }
 
-  testBoost(): void {
+  /** Throw the pogo at the nearest wall to see the E14 bounce. */
+  testWall(): void {
     const s = this.game.pogo.state;
-    this.teleportAir(8, 38, 0, 6);
-    this.run(this.rep(600, { tilt: 1 }), { until: g => g.pogo.state.boostReady, onEnd: () => this.run([{ ...NEUTRAL_INPUT, boostPressed: true }, ...this.rep(30, { tilt: 0 })]) });
-    void s;
+    const k = this.game.cfg.qPerMetre;
+    placeInAir(this.game.cfg, s, Math.max(this.game.level.bounds.minX + 6, s.x - 8), s.y + 6, -60, 10);
+    void k;
+    this.game.resetCamera();
+    this.run([]);
+  }
+
+  /** Spin in the air until the 285° threshold arms the power jump (E13). */
+  testBoost(): void {
+    placeInAir(this.game.cfg, this.game.pogo.state, 8, 38, 0, 6);
+    this.game.resetCamera();
+    this.run(this.rep(600, { tilt: 1 }), { until: g => g.pogo.state.boostReady, onEnd: () => this.run(this.rep(60, { tilt: 0 })) });
   }
 
   // ── InputSource (script overrides manual touch) ──
@@ -145,30 +130,21 @@ export class Lab implements InputSource {
   /** Call every display frame. */
   update(): void {
     const g = this.game, s = g.pogo.state, cfg = g.cfg;
-    if (s.jumps !== this.lastJumps) { if (s.jumps > this.lastJumps) this.jumpTicks.push(s.tick); this.lastJumps = s.jumps; if (this.jumpTicks.length > 8) this.jumpTicks.shift(); }
     const now = performance.now();
     if (now - this.lastText < 90) return;
     this.lastText = now;
-    let cadence = '—';
-    if (this.jumpTicks.length >= 3) {
-      const d: number[] = []; for (let i = 1; i < this.jumpTicks.length; i++) d.push(this.jumpTicks[i] - this.jumpTicks[i - 1]);
-      const avg = d.reduce((a, b) => a + b, 0) / d.length;
-      cadence = `${avg.toFixed(0)} ticks (${(avg / TICK_RATE).toFixed(2)} s)  vs video ref ${REFERENCE_JUMP_INTERVAL_TICKS} (1.249 s)  ${avg < REFERENCE_JUMP_INTERVAL_TICKS * 0.8 ? '▲ faster' : avg > REFERENCE_JUMP_INTERVAL_TICKS * 1.25 ? '▼ slower' : '≈ match'}`;
-    }
     const w = g.world.colliders[s.groundId];
-    const ground = s.mode === 'GROUNDED' || s.mode === 'CHARGING' ? `${w?.id ?? '?'} (${w?.surface}) n=(${s.gnx.toFixed(2)}, ${s.gny.toFixed(2)})` : 'none';
-    const power = s.mode === 'CHARGING' ? launchPower(s, cfg, 0) : 0;
+    const ground = s.grounded ? `${w?.id ?? '?'} (${w?.surface}) n=(${s.nx.toFixed(2)}, ${s.ny.toFixed(2)}) θn=${s.thetaN.toFixed(1)}°` : 'none';
     this.readout.textContent = [
-      `mode ${s.mode}   tick ${s.tick}  (${TICK_RATE} Hz, 22.10 grid)`,
-      `gravity ${cfg.gravity.toFixed(1)} m/s²   maxFall ${cfg.maxFallSpeed.toFixed(0)}  [TUNE_ME]`,
-      `velocity (${s.vx.toFixed(2)}, ${s.vy.toFixed(2)}) m/s   h-speed ${Math.abs(s.vx).toFixed(2)}  v-speed ${s.vy.toFixed(2)}`,
-      `angle ${(s.angle / DEG).toFixed(1)}°   ω ${(s.omega / DEG).toFixed(0)}°/s`,
-      `jump power ${(power * 100).toFixed(0)}%   charge ${s.charge}/${cfg.chargeTicksMax} ticks   fall speed ${Math.max(0, -s.vy).toFixed(1)}`,
+      `mode ${s.mode}   tick ${s.tick}  (${TICK_RATE} Hz · Δt = ${dtTicks(cfg).toFixed(6)} T)   hold ${s.held}`,
+      `g ${s.grounded ? 1 : 0}   N ${s.noGround.toFixed(2)} T   J ${s.jumpTimer.toFixed(2)} T   p ${s.boost}   slide ${s.slideMode ? 'on' : 'off'} (${s.sx.toFixed(1)}, ${s.sy.toFixed(1)})`,
+      `v (${s.qvx.toFixed(2)}, ${s.qvy.toFixed(2)}) Q/T = (${s.vx.toFixed(2)}, ${s.vy.toFixed(2)}) m/s   |v| ${Math.hypot(s.qvx, s.qvy).toFixed(1)} / ${cfg.maxSpeed}`,
+      `θ ${s.theta.toFixed(1)}° (θj ${s.thetaJump.toFixed(1)}°, Δ ${Math.abs(s.theta - s.thetaJump).toFixed(0)}° / ${cfg.boostRotation}°)   ω ${s.omega.toFixed(2)} °/T`,
+      `L ${s.load.toFixed(1)}  window [${s.loadMin.toFixed(1)}, ${s.loadMax.toFixed(1)}]  last launch ${s.loadLast.toFixed(1)}  impact I ${s.lastImpact.toFixed(1)}`,
+      `hull z_min ${s.hullMinZ.toFixed(1)} Q (ext X ${s.springExt.toFixed(1)})   origin (${s.qx.toFixed(0)}, ${s.qy.toFixed(0)}) Q = (${s.x.toFixed(2)}, ${s.y.toFixed(2)}) m`,
       `ground contact ${ground}`,
       `last collision ${this.lastNormal}`,
-      `boost: spin ${(s.spin / DEG).toFixed(0)}°/${cfg.boostRotation}°  ready ${s.boostReady}  queued ${s.boostQueued}  power ${cfg.boostPower} m/s`,
-      `height ${(s.y).toFixed(2)} m   jumps ${s.jumps}  boosts ${s.boosts}  falls ${s.falls}`,
-      `jump cadence ${cadence}`,
+      `height ${s.y.toFixed(2)} m   jumps ${s.jumps}  boosts ${s.boosts}  falls ${s.falls}`,
       `fps ${g.renderer.fps.toFixed(0)}   draw calls ${g.renderer.stats.calls}   tris ${g.renderer.stats.triangles}`,
     ].join('\n');
   }

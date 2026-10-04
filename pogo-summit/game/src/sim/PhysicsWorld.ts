@@ -4,6 +4,9 @@ import type { SurfaceId } from './SurfacePhysics';
 import { TAU, TICK_RATE, type Vec2 } from './math';
 import { type Poly, closestOnPoly, makePoly } from './geometry';
 
+/** Quants per metre: the physics core works in Q (LOCKED_SPEC §1); levels are authored in metres. */
+export const WORLD_Q_PER_M = 52;
+
 export type ColliderKind = 'solid' | 'hazard' | 'goal';
 
 export interface Collider {
@@ -13,8 +16,12 @@ export interface Collider {
   surface: SurfaceId;
   material: string;
   poly: Poly;
-  /** Broad-phase AABB, expanded by the motion range. */
+  /** Same polygon in quants (physics core). */
+  qpoly: Poly;
+  /** Broad-phase AABB, expanded by the motion range (metres). */
   minX: number; minY: number; maxX: number; maxY: number;
+  /** Broad-phase AABB in quants. */
+  qMinX: number; qMinY: number; qMaxX: number; qMaxY: number;
   move?: { dx: number; dy: number; periodTicks: number; phase: number };
   safe: boolean;
   /** Push direction for boost pads. */
@@ -28,18 +35,23 @@ export class PhysicsWorld {
   readonly solids: Collider[] = [];
   readonly triggers: Collider[] = [];
   readonly level: LevelData;
+  readonly qPerMetre: number;
 
-  constructor(level: LevelData) {
+  constructor(level: LevelData, qPerMetre = WORLD_Q_PER_M) {
     this.level = level;
+    this.qPerMetre = qPerMetre;
     const add = (id: string, pts: Vec2[], kind: ColliderKind, surface: SurfaceId, material: string, move: PlatformDef['move'], safe: boolean, dir: number) => {
       const poly = makePoly(pts);
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       for (const p of pts) { minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y); }
       const c: Collider = {
         index: this.colliders.length, id, kind, surface, material, poly, minX, minY, maxX, maxY, safe, dir,
+        qpoly: makePoly(pts.map(p => ({ x: p.x * qPerMetre, y: p.y * qPerMetre }))),
+        qMinX: 0, qMinY: 0, qMaxX: 0, qMaxY: 0,
         move: move ? { dx: move.dx, dy: move.dy, periodTicks: move.period * TICK_RATE, phase: move.phase ?? 0 } : undefined,
       };
       if (move) { c.minX -= Math.abs(move.dx); c.maxX += Math.abs(move.dx); c.minY -= Math.abs(move.dy); c.maxY += Math.abs(move.dy); }
+      c.qMinX = c.minX * qPerMetre; c.qMinY = c.minY * qPerMetre; c.qMaxX = c.maxX * qPerMetre; c.qMaxY = c.maxY * qPerMetre;
       this.colliders.push(c);
       (kind === 'solid' ? this.solids : this.triggers).push(c);
     };
@@ -66,6 +78,14 @@ export class PhysicsWorld {
     const s = Math.sin(th), co = Math.cos(th);
     const w = (TAU * TICK_RATE) / m.periodTicks; // rad/s
     out.x = m.dx * s; out.y = m.dy * s; out.vx = m.dx * co * w; out.vy = m.dy * co * w;
+    return out;
+  }
+
+  /** Platform offset in quants at a tick (physics core). */
+  offsetAtQ(c: Collider, tick: number, out: Offset): Offset {
+    this.offsetAt(c, tick, out);
+    const k = this.qPerMetre;
+    out.x *= k; out.y *= k; out.vx *= k; out.vy *= k;
     return out;
   }
 

@@ -1,17 +1,17 @@
 import { makeLevel, flatGround, setup } from '../tests/helpers';
-import { simulateJump } from '../src/sim/prediction';
-import { DEG, TICK_RATE } from '../src/sim/math';
+import { simulateLaunch } from '../src/sim/prediction';
 
-const { world, cfg, pogo } = setup(makeLevel([flatGround({ w: 400, x: 150 })], { startPosition: { x: 0, y: 0 } }));
-for (let i = 0; i < 10; i++) pogo.step();
-console.log('rest COM height', pogo.state.y.toFixed(3));
-console.log('range (m) / apex (m above start) / flight (s) on flat ground');
-for (const power of [0, 0.25, 0.5, 0.75, 1]) {
+// Range / apex / flight time on flat ground for the locked physics (spec §10 style), by spring load and stick angle.
+const { world, cfg, pogo } = setup(makeLevel([flatGround({ w: 800, x: 300 })], { startPosition: { x: 0, y: 0 } }));
+for (let i = 0; i < 3; i++) pogo.step();
+const x0 = pogo.state.x;
+console.log('range (m) / apex (m above launch) / flight (real s), flat ground');
+for (const load of [40, 95, 120, 200, 300]) {
   const row: string[] = [];
   for (const deg of [0, 15, 30, 45, 60]) {
-    const p = simulateJump({ world, cfg }, pogo.state, deg * DEG, power, { maxTicks: 600, stride: 2 });
-    let apex = 0; for (let i = 1; i < p.points.length; i += 2) apex = Math.max(apex, p.points[i]);
-    row.push(`${deg}°: ${(p.landX - 0).toFixed(1)}m/${apex.toFixed(1)}m/${(p.ticks / TICK_RATE).toFixed(2)}s`);
+    const p = simulateLaunch({ world, cfg }, pogo.state, { theta: -deg, load, maxTicks: 900, stride: 2 });
+    let apex = 0; for (let i = 1; i < p.points.length; i += 2) apex = Math.max(apex, p.points[i] - p.points[1]);
+    row.push(`${deg}°: ${(p.landX - x0).toFixed(1)}m/${apex.toFixed(1)}m/${(p.ticks / cfg.tickRate).toFixed(2)}s`);
   }
-  console.log(`power ${power.toFixed(2)}  ` + row.join('  |  '));
+  console.log(`L ${String(load).padStart(3)}  ` + row.join('  |  '));
 }

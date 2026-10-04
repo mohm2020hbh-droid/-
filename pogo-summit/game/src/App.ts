@@ -23,8 +23,7 @@ import { LEVEL_01 } from './data/levels/level01';
 import { TrajectoryGuide } from './render/TrajectoryGuide';
 import type { CharacterAppearance } from './render/Character';
 import type { Quality } from './render/GameRenderer';
-import { simulateJump } from './sim/prediction';
-import { launchPower } from './sim/JumpSystem';
+import { simulateLaunch } from './sim/prediction';
 import { createPhysicsConfig } from './sim/PhysicsConfig';
 import { DT } from './sim/math';
 
@@ -143,8 +142,7 @@ export class App {
     const c = this.save.data.settings.control;
     this.controls.setSettings(c);
     this.hud.setScheme(c.scheme, c.leftHanded);
-    // "Charge Time" setting scales the full-charge duration (PhysicsConfig.chargeTicksMax stays the TUNE_ME base)
-    if (this.state !== 'lab') this.game.cfg.chargeTicksMax = Math.round(createPhysicsConfig().chargeTicksMax * c.chargeTime);
+    // The locked physics has a fixed charge rate (E8: 16 L/T); the old "Charge Time" setting no longer affects it.
   }
 
   // ─────────────────────────────────────────────────────── navigation ─────
@@ -320,12 +318,12 @@ export class App {
     const lvl = g.level;
     const prog = progressFraction(lvl.progress.path, s.x, s.y);
     if (prog > this.maxProgress) this.maxProgress = prog;
-    this.hud.update({ seconds: g.runSeconds, height: s.y - lvl.startPosition.y, jumps: s.jumps, boosts: s.boosts, progress: this.maxProgress, boostReady: s.boostReady, boostQueued: s.boostQueued });
+    this.hud.update({ seconds: g.runSeconds, height: s.y - lvl.startPosition.y, jumps: s.jumps, boosts: s.boosts, progress: this.maxProgress, boostReady: s.boostReady, boostQueued: false });
 
     // charge feedback: ring, whine loop, trajectory guide
-    const charging = s.mode === 'CHARGING';
-    const pull = this.controls.pull;
-    const power = charging ? Math.max(launchPower(s, cfg, pull), 0) : 0;
+    // the pogo charges on every landing by itself; the ring/whine/guide only show while the player is HOLDING the charge
+    const charging = s.mode === 'CHARGING' && s.held;
+    const power = charging ? s.charge01 : 0;
     this.sfx.chargeUpdate(power, charging && !g.paused);
     if (charging) {
       const p = R.project(g.pogo.pose(1).footX, g.pogo.pose(1).footY - 0.2);
@@ -333,7 +331,7 @@ export class App {
     } else this.hud.setCharge(null, 0);
     const guideMode = this.save.data.settings.control.guide;
     if (charging && guideMode !== 'off' && (this.guideFrame++ & 1) === 0) {
-      const pr = simulateJump(g.pogo.ctx, s, s.angle, power, { maxTicks: guideMode === 'short' ? 70 : 260, stride: guideMode === 'short' ? 4 : 6 });
+      const pr = simulateLaunch(g.pogo.ctx, s, { maxTicks: guideMode === 'short' ? 70 : 260, stride: guideMode === 'short' ? 4 : 6 });
       this.guide.set(pr.points);
     } else if (!charging) { this.guide.set(null); this.guideFrame = 0; }
 
@@ -371,7 +369,7 @@ export class App {
   /** QA/automation snapshot. */
   snapshot(): Record<string, unknown> {
     const s = this.game.pogo.state;
-    return { state: this.state, mode: s.mode, x: s.x, y: s.y, vx: s.vx, vy: s.vy, jumps: s.jumps, boosts: s.boosts, falls: s.falls, progress: this.maxProgress, finished: this.finished, charge: s.charge, fps: this.game.renderer.fps, level: this.levelId };
+    return { state: this.state, mode: s.mode, x: s.x, y: s.y, vx: s.vx, vy: s.vy, jumps: s.jumps, boosts: s.boosts, falls: s.falls, progress: this.maxProgress, finished: this.finished, charge: s.load, fps: this.game.renderer.fps, level: this.levelId };
   }
 }
 

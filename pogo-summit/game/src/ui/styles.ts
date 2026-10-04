@@ -43,7 +43,7 @@ html,body{font-family:"Baloo 2","Baloo Bhaijaan 2",ui-rounded,"SF Pro Rounded","
 .btn-wrap{position:absolute;display:flex;flex-direction:column;align-items:center;gap:.3rem;pointer-events:none}
 .btn-label{font-size:.8rem;padding:.05rem .65rem;border-radius:1rem;background:rgba(14,18,40,.62);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);letter-spacing:.02em}
 .hud .pause{position:absolute;right:max(.8rem,var(--sr));top:max(.8rem,var(--st));--s:3.2rem}
-.hud .boost-wrap{right:max(1rem,var(--sr));bottom:max(.9rem,var(--sb))}
+.hud .boost-wrap{right:max(1rem,var(--sr));bottom:max(.9rem,var(--sb));pointer-events:none}
 .hud .boost{--s:5.2rem;opacity:.72}
 .hud .boost .chev{position:relative;z-index:1}
 .hud .boost .meter{position:absolute;inset:-.16rem;width:calc(100% + .32rem);height:calc(100% + .32rem);transform:rotate(-90deg);pointer-events:none}

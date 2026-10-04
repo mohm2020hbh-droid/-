@@ -23,3 +23,17 @@ export const wrapPi = (a: number): number => {
 };
 export const sign = (v: number): number => (v > 0 ? 1 : v < 0 ? -1 : 0);
 export const ticksToSeconds = (t: number): number => t / TICK_RATE;
+
+// ── Locked-spec helpers (angles in degrees, as in the original Lite-C code) ──────────────────────────────
+/** Wrap an angle to (−180, 180] — Gamestudio `ang()` [LOCKED_SPEC §1, A·B]. */
+export const wrap180 = (a: number): number => {
+  let r = a % 360;
+  if (r > 180) r -= 360; else if (r <= -180) r += 360;
+  return r;
+};
+export const sinD = (deg: number): number => Math.sin(deg * DEG);
+export const cosD = (deg: number): number => Math.cos(deg * DEG);
+/** atan2 in degrees (y = up). */
+export const atan2D = (y: number, x: number): number => Math.atan2(y, x) / DEG;
+/** asin in degrees; the argument is clamped to [−1, 1]. */
+export const asinD = (v: number): number => Math.asin(v < -1 ? -1 : v > 1 ? 1 : v) / DEG;

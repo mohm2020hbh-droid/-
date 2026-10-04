@@ -6,16 +6,15 @@ const file = new URL('../../PHYSICS_MASTER.md', import.meta.url);
 const md = readFileSync(file, 'utf8');
 const entries = Object.entries(PARAM_DEFS) as [string, ParamDef][];
 const groups = [...new Set(entries.map(([, d]) => d.group))];
-const fmt = (n: number) => (Number.isInteger(n) ? String(n) : String(+n.toPrecision(6)));
 const count = (s: string) => entries.filter(([, d]) => d.status === s).length;
 
-let out = `> مولَّد آليًا (${entries.length} معاملًا): TUNE_ME=${count('TUNE_ME')} · SOURCE_A=${count('SOURCE_A')} · DESIGN=${count('DESIGN')} · MEASURED_C=${count('MEASURED_C')}.\n`;
-out += '> `القيمة` هي قيمتنا الابتدائية للعب، **وليست** قيمة Pogostuck الأصلية إلا حيث الحالة `SOURCE_A`. الدرجة = ثقة القيمة *الأصلية* (D = مجهولة).\n';
+const fmtV = (n: number) => (Number.isInteger(n) ? String(n) : String(+n.toPrecision(17)));
+let out = `> Generated (${entries.length} parameters): LOCKED_A=${count('LOCKED_A')} · LOCKED_AB=${count('LOCKED_AB')} · SUPPLIED=${count('SUPPLIED')} · DESIGN=${count('DESIGN')}. There is no TUNE_ME and no estimated (class C) value.\n`;
+out += '> `LOCKED_*` values come from `Pogostuck_Physics_LOCKED_SPEC.md` exactly as the compiled game stores them. Grade = confidence of the *meaning* (A confirmed, B inferred with named engine semantics, D = supplied by this project, not an original value).\n';
 for (const g of groups) {
-  out += `\n### ${g}\n\n| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |\n|---|---|---|---|---|---|---|---|\n`;
+  out += `\n### ${g}\n\n| Parameter | Value | Unit | Status | Grade | Spec row | Note |\n|---|---|---|---|---|---|---|\n`;
   for (const [k, d] of entries.filter(([, d]) => d.group === g)) {
-    const range = d.step === 0 ? '—' : `${fmt(d.min)} … ${fmt(d.max)}`;
-    out += `| \`${k}\` | ${fmt(d.value)} | ${d.unit} | ${range} | ${d.status} | ${d.grade} | ${d.ref} | ${d.note.replace(/\|/g, '/')} |\n`;
+    out += `| \`${k}\` | ${fmtV(d.value)} | ${d.unit} | ${d.status} | ${d.grade} | ${d.ref} | ${d.note.replace(/\|/g, '/')} |\n`;
   }
 }
 const next = md.replace(/<!-- PARAMS:BEGIN -->[\s\S]*<!-- PARAMS:END -->/, `<!-- PARAMS:BEGIN -->\n${out}<!-- PARAMS:END -->`);

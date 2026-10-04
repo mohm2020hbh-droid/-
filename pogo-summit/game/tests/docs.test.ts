@@ -12,7 +12,10 @@ describe('PHYSICS_MASTER.md stays in sync with PhysicsConfig', () => {
       expect(row).toContain(`| ${d.status} | ${d.grade} |`);
     }
   });
-  it('never labels an unknown value as original: every TUNE_ME row is grade D', () => {
-    for (const [k, d] of Object.entries(PARAM_DEFS)) if (d.status === 'TUNE_ME') expect(d.grade, k).toBe('D');
+  it('has no TUNE_ME value and no estimated (class C) value; every non-locked value is grade D', () => {
+    for (const [k, d] of Object.entries(PARAM_DEFS)) {
+      expect(['LOCKED_A', 'LOCKED_AB', 'SUPPLIED', 'DESIGN'], k).toContain(d.status);
+      if (d.status === 'SUPPLIED' || d.status === 'DESIGN') expect(d.grade, k).toBe('D');
+    }
   });
 });

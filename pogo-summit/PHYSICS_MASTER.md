@@ -70,85 +70,140 @@ Launch: v = d·speed·surface.velocityMultiplier + vplatform + vslide·launchMom
 ## 4) المعاملات (TUNE_ME) — **مولَّد آليًا من `PhysicsConfig.ts`**
 
 <!-- PARAMS:BEGIN -->
-> مولَّد آليًا (42 معاملًا): TUNE_ME=36 · SOURCE_A=2 · DESIGN=4 · MEASURED_C=0.
-> `القيمة` هي قيمتنا الابتدائية للعب، **وليست** قيمة Pogostuck الأصلية إلا حيث الحالة `SOURCE_A`. الدرجة = ثقة القيمة *الأصلية* (D = مجهولة).
+> Generated (72 parameters): LOCKED_A=48 · LOCKED_AB=18 · SUPPLIED=4 · DESIGN=2. There is no TUNE_ME and no estimated (class C) value.
+> `LOCKED_*` values come from `Pogostuck_Physics_LOCKED_SPEC.md` exactly as the compiled game stores them. Grade = confidence of the *meaning* (A confirmed, B inferred with named engine semantics, D = supplied by this project, not an original value).
 
 ### time
 
-| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |
-|---|---|---|---|---|---|---|---|
-| `tickRate` | 120 | tick/s | — | SOURCE_A | A | V-001 | معدل المحاكاة في الأصل (لوحة تصحيح الفيديو)؛ تبنّيناه قرارًا. |
-| `fixedPointStep` | 0.000976563 | unit | — | SOURCE_A | A | F-003/F-005 | دقة 22.10 في المحرك الأصلي؛ نستخدمها للحتمية فقط. |
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `tickRate` | 120 | tick/s | LOCKED_AB | B | T02 | Fixed 120 Hz loop = the original default frame cap (fps_max 120, A). One physics update per tick; fixed-step loop is our implementation choice. |
+| `ticksPerSecond` | 16 | T/s | LOCKED_AB | B | — | Spec §2: Δt = 16 · Δt_real · timeFactor (B: engine time unit). |
+| `timeFactor` | 0.9501953125 | × | LOCKED_AB | B | T01 | Written every play frame as var 973/1024 = 0.9501953125 (source literal 0.95). That it scales time_step is engine semantics (B). |
+| `qPerMetre` | 52 | Q/m | LOCKED_A | A | U01 | HUD display unit (52 Q = 1 m). Metres-per-quant is a free presentation choice (spec §7); we adopt the original display unit. |
 
-### launch
+### air
 
-| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |
-|---|---|---|---|---|---|---|---|
-| `gravity` | 26 | m/s² | 8 … 60 | TUNE_ME | D | U-01 | الجاذبية (مخزنة في overlay مشفّر). |
-| `maxFallSpeed` | 32 | m/s | 10 … 80 | TUNE_ME | D | U-02 | السرعة النهائية للسقوط. |
-| `maxHorizontalSpeed` | 22 | m/s | 5 … 60 | TUNE_ME | D | U-15 | سقف السرعة الأفقية. |
-| `launchSpeedMin` | 8.5 | m/s | 3 … 20 | TUNE_ME | D | U-03 | سرعة الإطلاق عند أقصر ضغطة. |
-| `launchSpeedMax` | 19 | m/s | 8 … 40 | TUNE_ME | D | U-04 | سرعة الإطلاق بعد شحن كامل. |
-| `chargeTicksMax` | 84 | tick | 20 … 240 | TUNE_ME | D | U-05 | مدة الشحن الكامل. الأولوية 1 للقياس من مدد الخانة 5 في الفيديو. |
-| `chargeCurve` | 1 | exp | 0.5 … 2 | TUNE_ME | D | U-15 | أس منحنى الشحن (1 = خطي). |
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `gravity` | 8.5 | Q/T² | LOCKED_A | A | P01 | E1: v_z ← v_z − 8.5·Δt |
+| `airDrag` | 0.05000000074505806 | 1/T | LOCKED_A | A | P02 | E1: v_x ← v_x − 0.05·v_x·Δt (stored double of the literal 0.05); no vertical drag. |
+| `maxSpeed` | 300 | Q/T | LOCKED_A | A | P09 | E2: if /v/ > 300 then v ← 300·v//v/ |
+| `slideZGain` | 4 | × | LOCKED_A | A | P11 | E3: d_z = (v_z + 4·s_z)·Δt |
 
 ### rotation
 
-| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |
-|---|---|---|---|---|---|---|---|
-| `tiltRateGround` | 150 | °/s | 30 … 400 | TUNE_ME | D | U-06 | أقصى معدل ميل على الأرض. |
-| `tiltRateAir` | 380 | °/s | 60 … 900 | TUNE_ME | D | U-07 | أقصى معدل دوران جوًّا. |
-| `tiltMaxAngle` | 65 | ° | 20 … 85 | TUNE_ME | D | U-08 | أقصى ميل أرضي عن عمود السطح. |
-| `turnSpeed` | 1600 | °/s² | 200 … 6000 | TUNE_ME | D | U-09 | تسارع تغيّر معدل الدوران. |
-| `angularDamping` | 1.6 | 1/s | 0 … 8 | TUNE_ME | D | U-09 | تخميد الدوران جوًّا عند غياب الإدخال. |
-| `groundControl` | 1 | x | 0.2 … 2 | TUNE_ME | D | U-15 | سلطة التحكم أرضًا. |
-| `airControl` | 1 | x | 0.2 … 2 | TUNE_ME | D | U-15 | سلطة التحكم جوًّا. |
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `turnTarget` | 32 | deg/T | LOCKED_A | A | P16 | E4: ω_t = 32·(u_left − u_right) |
+| `turnResponse` | 0.5249999761581421 | 1/T | LOCKED_A | A | P17 | E4: ω += (ω_t − ω)·0.525·Δt/(1+√J) |
+| `groundTurnDivisor` | 2 | × | LOCKED_A | A | P15 | E4: Lb = 1/(1 + 2g) → 1 in the air, 1/3 on the ground |
+| `rotationHullLift` | 16 | Q | LOCKED_A | A | P18 | E18: hull bottom is raised 16 Q while the rotation is collision-checked. |
 
-### collision
+### ground
 
-| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |
-|---|---|---|---|---|---|---|---|
-| `floorRestitution` | 0.18 | x | 0 … 1 | TUNE_ME | D | U-10 | ارتداد الأرض. |
-| `wallRestitution` | 0.45 | x | 0 … 1 | TUNE_ME | D | U-11 | ارتداد الجدار والسقف. |
-| `energyLoss` | 0.15 | x | 0 … 0.9 | TUNE_ME | D | U-12 | الفقد الإضافي للزخم المماسي عند كل اصطدام. |
-| `slideFriction` | 0.3 | μ | 0 … 2 | TUNE_ME | D | U-13 | معامل الاحتكاك الحركي أثناء الانزلاق. |
-| `steepSlopeAngle` | 52 | ° | 15 … 80 | TUNE_ME | D | U-14 | أكبر ميل يثبت عليه الطرف على سطح عادي. |
-| `stableLandingAngle` | 72 | ° | 30 … 89 | TUNE_ME | D | U-15 | أقصى زاوية بين العصا وعمود السطح لهبوط ناجح؛ أكبر منها = انحراف. |
-| `plantSpeed` | 3.5 | m/s | 0.5 … 10 | TUNE_ME | D | U-10 | سرعة عمودية بعد الارتداد دونها يثبت الطرف. |
-| `deceleration` | 16 | m/s² | 0 … 60 | TUNE_ME | D | U-13 | فرملة الانزلاق المتبقي بعد الهبوط (× احتكاك السطح). |
-| `acceleration` | 22 | m/s² | 0 … 80 | TUNE_ME | D | U-15 | تسارع أسطح الدفع (Boost pad) على الطرف المزروع. |
-| `landingResponse` | 0.55 | x | 0 … 1 | TUNE_ME | D | U-15 | نسبة الزخم المماسي المحوّلة إلى تأرجح العصا عند الهبوط. |
-| `launchMomentumRetain` | 0.75 | x | 0 … 1 | TUNE_ME | D | U-15 | نسبة سرعة الانزلاق التي تُحفظ عند الإطلاق. |
-| `hardImpactSpeed` | 17 | m/s | 5 … 40 | TUNE_ME | D | U-12 | عتبة حدث الاصطدام الشديد (صوت/اهتزاز/اهتزاز كاميرا). |
-| `restSpeed` | 1 | m/s | 0.1 … 4 | TUNE_ME | D | U-10 | دون هذه السرعة العمودية يُعدّ التماس سكونًا بلا ارتداد. |
-| `impactSpin` | 0.18 | rad/s per m/s | 0 … 0.6 | TUNE_ME | D | U-09 | ركلة دوران العصا عند ارتطام الجسم (تظهر كتخبّط). |
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `groundPressure` | 24 | Q/T | LOCKED_AB | B | P14 | E5: v ← −24·n (magnitude A; direction "into the surface" needs the tilt convention, B). |
+| `tipPivotLimit` | 256 | Q | LOCKED_A | A | P19 | E5: pivot correction applied if /Δtip_x/ < 256 and /Δtip_z/ < 256. |
+| `probeExtension` | 6 | Q | LOCKED_A | A | P20 | E6: end = tip + (6 + /s_z/)·û_stick |
+| `probeHalfSize` | 4 | Q | LOCKED_AB | B | P22 | E6: ±4 Q box trace (box semantics of c_trace: B). |
+
+### charge
+
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `impactExponent` | 0.925000011920929 | — | LOCKED_A | A | P23 | E7: I = 1.65·/v/^0.925 |
+| `impactGain` | 1.649999976158142 | L/(Q/T)^0.925 | LOCKED_A | A | P24 | E7 |
+| `impactBoostBonus` | 20 | L | LOCKED_A | A | P25a | E7: + 20·p inside the L_max clamp |
+| `loadMaxFloor` | 95 | L | LOCKED_A | A | P25 | E7: lower clamp bound 95 + 25·p |
+| `loadMaxFloorBoostBonus` | 25 | L | LOCKED_A | A | P26 | E7 |
+| `loadMaxCap` | 300 | L | LOCKED_A | A | P27 | E7: upper clamp bound |
+| `loadMinExponent` | 0.8999999761581421 | — | LOCKED_A | A | P28 | E7: L_min = max(40, I^0.9) |
+| `loadMinFloor` | 40 | L | LOCKED_A | A | P29 | E7 |
+| `chargeRate` | 16 | L/T | LOCKED_A | A | P32 | E8: L ← min(L + 16·Δt, L_max) |
+| `minLaunchLoad` | 2 | L | LOCKED_A | A | P33 | E8: launch only if L > 2 |
+
+### launch
+
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `launchSpeedPerLoad` | 0.7423499822616577 | (Q/T)/L | LOCKED_A | A | P34 | E9: /V/ = 0.74235·L |
+| `normalAngleOffset` | 90 | deg | LOCKED_AB | B | P35 | E9: δ = clamp(wrap180(θ_n − 90 − θ), ±45) (ang() wrap: B) |
+| `normalBlendClamp` | 45 | deg | LOCKED_A | A | P36 | E9 |
+| `normalBlendFactor` | 0.1875 | — | LOCKED_A | A | P37 | E9: a = θ + 0.1875·δ |
+| `launchSlideCarryX` | 0.25 | — | LOCKED_A | A | P38 | E9: v_x = V_x + 0.25·s_x |
+| `launchSlideCarryZ` | 0 | — | LOCKED_A | A | P39 | E9: v_z = V_z + 0·s_z |
+| `launchSpinPerTilt` | 0.12449999898672104 | (deg/T)/deg | LOCKED_A | A | P40 | E10 |
+| `launchSpinTiltClamp` | 45 | deg | LOCKED_A | A | P40b | E10 |
+| `slopeSpinExponent` | 0.75 | — | LOCKED_A | A | P41 | E10, E14: /σ/^0.75 |
+| `slopeSpinGain` | 1.5 | — | LOCKED_A | A | P42 | E10, E14 |
+| `slopeSpinLaunchFactor` | 0.25 | — | LOCKED_A | A | P43 | E10 |
+| `noGroundTime` | 2 | T | LOCKED_A | A | P44 | E11, E14: N ← 2 T after a launch or wall bounce |
+| `jumpTimerGain` | 0.44999998807907104 | T/√L | LOCKED_A | A | P45 | E11: J ← 0.45·√L_max |
 
 ### boost
 
-| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |
-|---|---|---|---|---|---|---|---|
-| `boostThreshold` | 140 | °/s | 30 … 600 | TUNE_ME | D | U-25 | أدنى سرعة زاوية تُحتسب كدوران. |
-| `boostRotation` | 330 | ° | 90 … 1080 | TUNE_ME | D | U-25 | الدوران المتراكم المطلوب لتجهيز Boost (الأصل: وضع 720° — الآلية D). |
-| `boostPower` | 9 | m/s | 2 … 25 | TUNE_ME | D | U-25 | السرعة المضافة على محور العصا. |
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `boostRotation` | 285 | deg | LOCKED_A | A | P46 | E13: airborne int(/θ − θ_j/) > 285 ⇒ p ← 1 |
 
-### geometry
+### bounce
 
-| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |
-|---|---|---|---|---|---|---|---|
-| `tipRadius` | 0.14 | m | 0.05 … 0.4 | TUNE_ME | D | U-16 | نصف قطر دائرة طرف العصا. |
-| `bodyRadius` | 0.5 | m | 0.2 … 0.9 | TUNE_ME | D | U-16 | نصف قطر دائرة الجذع. |
-| `headRadius` | 0.38 | m | 0.15 … 0.7 | TUNE_ME | D | U-16 | نصف قطر دائرة الرأس. |
-| `comHeight` | 1.2 | m | 0.6 … 2 | TUNE_ME | D | U-16 | بُعد مركز الكتلة (الجذع) عن نهاية العصا. |
-| `headHeight` | 1.95 | m | 1 … 3 | TUNE_ME | D | U-16 | بُعد مركز الرأس عن نهاية العصا. |
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `bounceReflect` | -2 | — | LOCKED_A | A | P47 | E14 fallback: r = v − 2(v·n)n |
+| `bounceDirWeight` | 0.8999999761581421 | — | LOCKED_AB | B | P48 | E14: d = 0.9·r̂ + n (r̂ = engine `bounce` vector in the original: B) |
+| `bounceSpeedFactor` | 0.4000000059604645 | — | LOCKED_A | A | P49 | E14: S = max(28, 0.4·/v/)·min(1+n_z, 1) |
+| `bounceMinSpeed` | 28 | Q/T | LOCKED_A | A | P50 | E14 |
+| `bounceSlopeCap` | 1 | — | LOCKED_A | A | P73 | E14: min(1 + n_z, 1) |
+| `bounceXScale` | 0.875 | — | LOCKED_A | A | P51 | E14: v_x = 0.875·b_x + s_x |
+| `bounceSpin` | 0.5 | (deg/T)/deg | LOCKED_A | A | P52 | E14: ω = 0.5·wrap180(γ − θ) − … |
+| `slopeSpinBounceFactor` | 0.20000000298023224 | — | LOCKED_A | A | P53 | E14: … − 0.2·1.5·sgn(σ)/σ/^0.75 |
 
-### assist
+### slide
 
-| المعامل | القيمة | الوحدة | المدى | الحالة | الدرجة | مرجع XLSX | ملاحظة |
-|---|---|---|---|---|---|---|---|
-| `coyoteTicks` | 6 | tick | 0 … 20 | DESIGN | D | — | مهلة إطلاق بعد فقدان الدعم (50ms). |
-| `pressBufferTicks` | 8 | tick | 0 … 24 | DESIGN | D | — | لمسة قبل الهبوط بلحظة تُحتسب بداية شحن عند الهبوط. |
-| `safeTicks` | 60 | tick | 10 … 240 | DESIGN | D | — | مدة الثبات على منصة لتصبح نقطة إعادة آمنة. |
-| `bounceAimMax` | 35 | ° | 0 … 70 | DESIGN | D | — | أقصى انحراف لتوجيه ارتداد النابض بميل العصا. |
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `slideTargetSpeed` | 48 | Q/T | LOCKED_AB | B | P55 | E15: t = 48·normalize(n + R_γ(0,−1)) (direction needs normalize/rotate semantics: B) |
+| `slideResponse` | 0.25 | 1/T | LOCKED_A | A | P57 | E15: s += clamp(0.25·(t − s), ±1.35)·Δt |
+| `slideAccelClamp` | 1.350000023841858 | Q/T² | LOCKED_A | A | P58 | E15 |
+| `slideDecay` | 0.5 | 1/T | LOCKED_AB | B | P59 | E15: s ← s·(1 − 0.5·Δt) out of slide mode (vec_lerp semantics: B) |
+| `slideStop` | 0.25 | Q/T | LOCKED_A | A | P72 | E15: /s/ < 0.25 ∨ airborne ⇒ s ← 0 |
+| `platformDownReduction` | 0.75 | — | LOCKED_A | A | P61 | E17: v_z += c_z·(1 − 0.75·[c_z < 0]) |
+| `ledgeExitPop` | 5 | Q/T | LOCKED_A | A | P71 | E16: v ← (s_x, 5) |
+
+### hull
+
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `hullHalfX` | 12.5 | Q | LOCKED_AB | B | P62 | E18: x ∈ [−12.5, 12.5] (use as collision box: B) |
+| `hullMaxZ` | 30 | Q | LOCKED_AB | B | P64 | E18: z_max = 30 |
+| `hullMinZBase` | -55 | Q | LOCKED_AB | B | P65 | E18: z_min = −55 + max(X, −12.25) |
+| `hullExtLimit` | -12.25 | Q | LOCKED_AB | B | P66 | E18 |
+| `springRelaxRate` | 120 | L/T | LOCKED_A | A | P67 | E18: airborne P_b ← max(P_b − 120·Δt, −200) |
+| `springRelaxFloor` | -200 | L | LOCKED_A | A | P67b | E18 |
+| `springExtAmp` | 18 | Q | LOCKED_AB | B | P68 | E18: X = 18·sin(0.9·P_b) (sinv in degrees: B) |
+| `springExtSineGain` | 0.8999999761581421 | — | LOCKED_AB | B | P68a | E18: sin(0.9·P_b); literal verified at IMG 0x3eadb6 |
+| `springExtNegScale` | 0.009999999776482582 | — | LOCKED_AB | B | P68b | E18: X<0 ⇒ X·(0.01·P_max)·(200+X)·0.0025; literal verified at IMG 0x3eaf21 |
+| `springExtNegOffset` | 200 | — | LOCKED_AB | B | P68c | E18; literal verified at IMG 0x3eafc3 |
+| `springExtNegGain` | 0.0024999999441206455 | — | LOCKED_AB | B | P68d | E18; literal verified at IMG 0x3eaf60 |
+
+### supplied
+
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `tipLength` | 55 | Q | SUPPLIED | D | — | Our own pogo geometry: equals the hull base so the tip end meets the hull bottom when upright. Original geometry lives in model files (D). |
+| `tipRadius` | 4 | Q | SUPPLIED | D | — | Our collision shape for the tip; reuses the probe half-size (P22). |
+| `collisionStep` | 2 | Q | SUPPLIED | D | — | Numerical: maximum travel per collision sub-step (anti-tunnelling). |
+| `hullSupportsFloor` | 0 | bool | SUPPLIED | D | — | 0 = floor-like hull contacts (n_z > 0.5) are ignored; the tip supports the body (E5/E6). |
+
+### presentation
+
+| Parameter | Value | Unit | Status | Grade | Spec row | Note |
+|---|---|---|---|---|---|---|
+| `hardImpactLoad` | 150 | L | DESIGN | D | — | Feedback only: landing impulse I at which audio/haptics/camera treat a landing as hard. |
+| `safeLandingRecord` | 1 | bool | DESIGN | D | — | The pogo hops continuously, so the safe respawn spot is stored at each landing on a safe platform (instead of after standing still). |
 <!-- PARAMS:END -->
 
 ## 5) خطة القياس لتحويل TUNE_ME → C/A (من ورقة «مجهول»)

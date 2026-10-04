@@ -1,11 +1,16 @@
-import type { PhysicsConfig } from './PhysicsConfig';
 import type { PhysicsWorld } from './PhysicsWorld';
-import { type PogoInput, type PogoState, NEUTRAL_INPUT, modeOf, tipCenterLen } from './PogoState';
-import { type SimContext, stepPogo } from './PogoPhysicsController';
+import { type PogoState, NEUTRAL_INPUT, type PogoInput, modeOf } from './PogoState';
+import { type SimContext } from './core/frame';
+import { stepPogo } from './core/step';
+import { launch } from './core/launch';
+import { newFrame } from './core/frame';
 import type { SimEvent } from './events';
+import { ticksPerRealSecond } from './units';
+import { tipCenterQ } from './PogoState';
+import { cosD, sinD } from './math';
 
 export interface Prediction {
-  /** x,y pairs of the stick's lowest point every `stride` ticks. */
+  /** x,y pairs (metres) of the stick's lowest point every `stride` ticks. */
   points: number[];
   ticks: number;
   /** Ended planted on a surface. */
@@ -13,10 +18,10 @@ export interface Prediction {
   hazard: boolean;
   fell: boolean;
   finished: boolean;
-  /** Final state (when landed). */
+  /** Final state. */
   end: PogoState;
   groundId: number;
-  /** World position of the landing tip centre. */
+  /** World position (m) of the landing tip. */
   landX: number;
   landY: number;
   events: SimEvent[];
@@ -24,37 +29,36 @@ export interface Prediction {
 
 const ev: SimEvent[] = [];
 
-/** Charge ticks that give exactly `power01` through the charge curve. */
-export function chargeTicksForPower(power01: number, cfg: PhysicsConfig): number {
-  return Math.round(Math.pow(Math.min(1, Math.max(0, power01)), 1 / cfg.chargeCurve) * cfg.chargeTicksMax);
-}
-
 /**
- * Simulate a full launch with the REAL physics from a planted state:
- * set the stick angle, hold the charge to `power01`, release, then fly with `airInput(tick)` (default neutral).
- * Used by the trajectory guide (Phase 3 assist), the Physics Lab and the level-solvability bot.
+ * Simulate "launch now" with the REAL physics from a grounded state: apply the launch (E9–E11) with the current spring
+ * load, then fly with `airInput(tick)` (default neutral) until the pogo lands, hits a hazard, falls or finishes.
+ * Used by the trajectory guide, the Physics Lab and the level analysis.
+ *   opts.theta  override the stick angle (deg) before the launch
+ *   opts.load   override the spring load L before the launch
  */
-export function simulateJump(
-  ctx: SimContext, from: PogoState, angleRad: number, power01: number,
-  opts: { maxTicks?: number; stride?: number; airInput?: (t: number, s: PogoState) => PogoInput } = {},
+export function simulateLaunch(
+  ctx: SimContext, from: PogoState,
+  opts: { theta?: number; load?: number; maxTicks?: number; stride?: number; airInput?: (t: number, s: PogoState) => PogoInput } = {},
 ): Prediction {
   const { maxTicks = 360, stride = 6, airInput } = opts;
   const s: PogoState = { ...from };
-  s.angle = angleRad; s.omega = 0;
-  s.mode = 'CHARGING'; s.prevHeld = true; s.charge = chargeTicksForPower(power01, ctx.cfg);
-  const lc = tipCenterLen(ctx.cfg);
-  // keep the tip centre where it was when the angle changes
-  const tcx = from.x - Math.sin(from.angle) * lc, tcy = from.y - Math.cos(from.angle) * lc;
-  s.x = tcx + Math.sin(angleRad) * lc; s.y = tcy + Math.cos(angleRad) * lc;
-
-  const points: number[] = [];
+  if (opts.theta !== undefined) {
+    // rotate the stick about the planted tip (the tip stays where it is)
+    const tip = { x: 0, y: 0 };
+    tipCenterQ(ctx.cfg, from, tip);
+    const d = ctx.cfg.tipLength - ctx.cfg.tipRadius;
+    s.theta = opts.theta;
+    s.qx = tip.x - sinD(opts.theta) * d;
+    s.qy = tip.y + cosD(opts.theta) * d;
+  }
+  if (opts.load !== undefined) s.load = opts.load;
+  const f = newFrame();
   const events: SimEvent[] = [];
-  const hc = ctx.cfg.comHeight;
-  let hazard = false, fell = false, airborne = false, t = 0;
-  stepPogo(ctx, s, { ...NEUTRAL_INPUT, jumpHeld: false }, ev); // release ⇒ launch
-  for (const e of ev) events.push(e);
-  ev.length = 0;
-  airborne = modeOf(s) !== 'CHARGING' && modeOf(s) !== 'GROUNDED';
+  f.ev = events; f.dt = 0;
+  launch(ctx, s, f);
+  const points: number[] = [];
+  const k = ctx.cfg.qPerMetre;
+  let hazard = false, fell = false, t = 0;
   for (t = 1; t < maxTicks; t++) {
     const inp = airInput ? airInput(t, s) : NEUTRAL_INPUT;
     stepPogo(ctx, s, inp, ev);
@@ -64,17 +68,18 @@ export function simulateJump(
       if (e.type === 'fall') fell = true;
     }
     ev.length = 0;
-    if (t % stride === 0) points.push(s.x - Math.sin(s.angle) * hc, s.y - Math.cos(s.angle) * hc);
+    if (t % stride === 0) points.push(s.x - Math.sin(s.angle) * ctx.cfg.tipLength / k, s.y - Math.cos(s.angle) * ctx.cfg.tipLength / k);
     if (hazard || fell || modeOf(s) === 'FINISHED') break;
-    if (airborne && (modeOf(s) === 'GROUNDED' || modeOf(s) === 'CHARGING')) break;
-    if (modeOf(s) === 'AIR' || modeOf(s) === 'SLIDING') airborne = true;
+    if (s.grounded && s.noGround <= 0) break;
   }
-  const landed = !hazard && !fell && (modeOf(s) === 'GROUNDED' || modeOf(s) === 'CHARGING');
-  const lc2 = tipCenterLen(ctx.cfg);
+  const landed = !hazard && !fell && s.grounded && modeOf(s) !== 'FINISHED';
   return {
     points, ticks: t, landed, hazard, fell, finished: modeOf(s) === 'FINISHED', end: s, groundId: landed ? s.groundId : -1,
-    landX: s.x - Math.sin(s.angle) * lc2, landY: s.y - Math.cos(s.angle) * lc2, events,
+    landX: s.x - Math.sin(s.angle) * ctx.cfg.tipLength / k, landY: s.y - Math.cos(s.angle) * ctx.cfg.tipLength / k, events,
   };
 }
 
+/** Real seconds that `ticks` simulation ticks last (120 Hz fixed loop). */
+export const ticksToRealSeconds = (ctx: SimContext, ticks: number): number => ticks / ctx.cfg.tickRate;
+export { ticksPerRealSecond };
 export type { PhysicsWorld };
