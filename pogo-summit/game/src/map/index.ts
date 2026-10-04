@@ -1,0 +1,22 @@
+/** Map System V2 — public surface (see MAP_SYSTEM_V2_SPEC.md). */
+export * from './schema';
+export * from './MapIssue';
+export * from './MapExpr';
+export * from './MapLoader';
+export * from './MapPrefab';
+export { BUILTIN_PREFABS } from './builtinPrefabs';
+export * from './MapCollision';
+export * from './MapBehavior';
+export * from './MapEntity';
+export * from './MapTheme';
+export * from './MapProgress';
+export * from './MapCheckpoint';
+export * from './MapRegion';
+export * from './MapChunk';
+export * from './MapWorld';
+export * from './MapRuntime';
+export * from './MapCompile';
+export * from './MapValidator';
+export * from './MapEditor';
+export * from './MapPackage';
+export { importLegacyWmp } from './legacyWmp';

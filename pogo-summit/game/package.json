@@ -2,7 +2,7 @@
   "name": "pogo-summit",
   "version": "0.1.0",
   "private": true,
-  "description": "Pogo Summit — Android landscape pogo-climbing game (web core + native Android shell)",
+  "description": "Pogo Summit \u2014 Android landscape pogo-climbing game (web core + native Android shell)",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -11,7 +11,8 @@
     "dev": "node tools/build.mjs --watch",
     "qa": "node tools/qa-screenshots.mjs",
     "docs:physics": "tsx tools/docs-physics.ts",
-    "qa:compare": "python3 ../tools/qa-compare.py ../reference/gameplay_reference.webp"
+    "qa:compare": "python3 ../tools/qa-compare.py ../reference/gameplay_reference.webp",
+    "map": "tsx tools/map-cli.ts"
   },
   "dependencies": {
     "three": "^0.170.0"

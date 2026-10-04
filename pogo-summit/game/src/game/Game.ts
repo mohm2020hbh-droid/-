@@ -9,6 +9,10 @@ import { GameRenderer, type Quality } from '../render/GameRenderer';
 import type { CharacterAppearance } from '../render/Character';
 import type { InputSource } from '../input/InputSource';
 import { NEUTRAL_INPUT, type PogoInput } from '../sim/PogoState';
+import type { MapDocument } from '../map/schema';
+import { MapRuntime } from '../map/MapRuntime';
+import { compileRenderLevel, worldThemeOf } from '../map/MapCompile';
+import type { MapEvent } from '../map/schema';
 
 export interface GameOptions {
   canvas: HTMLCanvasElement;
@@ -19,6 +23,7 @@ export interface GameOptions {
 }
 
 export type EventListener = (events: readonly SimEvent[], game: Game) => void;
+export type MapEventListener = (events: readonly MapEvent[], game: Game) => void;
 
 /**
  * Game — owns the fixed-timestep loop (120 Hz sim, interpolated render) and wires the simulation to the presentation
@@ -31,6 +36,9 @@ export class Game {
   cfg: PhysicsConfig;
   level!: LevelData;
   theme!: WorldTheme;
+  /** Set while a Map System V2 map is loaded (see `loadMap`). */
+  mapRuntime: MapRuntime | null = null;
+  private mapListeners: MapEventListener[] = [];
   input: InputSource | null = null;
   paused = false;
   running = false;
@@ -57,7 +65,28 @@ export class Game {
     this.loadLevel(opts.level);
   }
 
+  /**
+   * Load a Map System V2 map: the runtime owns the physics world (`MapWorld`), the existing renderer gets the compiled
+   * LevelData (best-effort visual subset) and the theme resolved from the map.
+   */
+  loadMap(doc: MapDocument, themeOverride?: WorldTheme): MapRuntime {
+    const runtime = new MapRuntime(doc, { cfg: this.cfg });
+    const level = compileRenderLevel(doc, runtime.registry);
+    this.mapRuntime = runtime;
+    this.level = level;
+    this.theme = themeOverride ?? worldThemeOf(doc);
+    this.world = runtime.world;
+    this.pogo = new PogoPhysicsController(this.world, this.cfg);
+    this.renderer.loadLevel(level, this.theme, this.world, this.cfg);
+    this.resetCamera();
+    this.acc = 0;
+    return runtime;
+  }
+
+  onMapEvents(l: MapEventListener): () => void { this.mapListeners.push(l); return () => { this.mapListeners = this.mapListeners.filter(x => x !== l); }; }
+
   loadLevel(level: LevelData, themeOverride?: WorldTheme): void {
+    this.mapRuntime = null;
     this.level = level;
     this.theme = themeOverride ?? getTheme(level.theme);
     this.world = new PhysicsWorld(level);
@@ -71,6 +100,8 @@ export class Game {
 
   reset(): void {
     this.pogo.reset();
+    this.mapRuntime?.resetRun();
+    if (this.mapRuntime) { this.mapRuntime.beforeStep(this.pogo.state); }
     this.acc = 0;
     this.resetCamera();
   }
@@ -103,8 +134,16 @@ export class Game {
       while (this.acc >= DT && guard++ < 12) {
         const inp = this.input ? this.input.sample() : NEUTRAL_INPUT;
         this.lastInput = inp;
+        const rt = this.mapRuntime;
+        if (rt) rt.beforeStep(this.pogo.state);
         const ev = this.pogo.step(inp);
         for (const e of ev) this.frameEvents.push(e);
+        if (rt) {
+          const me = rt.afterStep(this.pogo.state, ev);
+          const st = this.pogo.state;
+          if (st.teleportTick === st.tick) { this.pogo.prev.x = st.x; this.pogo.prev.y = st.y; this.pogo.prev.angle = st.angle; }
+          if (me.length && this.mapListeners.length) for (const l of this.mapListeners) l(me, this);
+        }
         this.acc -= DT;
       }
       if (guard >= 12) this.acc = 0; // spiral-of-death guard

@@ -19,6 +19,7 @@ import { WORLD_1, WORLDS, type WorldTheme } from './data/worlds';
 import { BOOST_FX_TINT, itemById, type ItemDef } from './data/items';
 import { progressFraction, type LevelData } from './data/LevelData';
 import { PHYSICS_TEST } from './data/levels/physicsTest';
+import { BUILTIN_MAPS } from './map/builtinMaps';
 import { LEVEL_01 } from './data/levels/level01';
 import { TrajectoryGuide } from './render/TrajectoryGuide';
 import type { CharacterAppearance } from './render/Character';
@@ -49,6 +50,7 @@ export class App {
   private readonly guide = new TrajectoryGuide();
   private state: State = 'splash';
   private levelId = 'level_01';
+  private devMap = false;
   private lab: Lab | null = null;
   private screenEl: HTMLElement | null = null;
   private maxProgress = 0;
@@ -106,6 +108,7 @@ export class App {
     const f = this.flags;
     if (f.get('world')) { const w = WORLDS.find(x => x.worldId === f.get('world') || x.id === f.get('world')); if (w) this.game.loadLevel(LEVEL_01, w); }
     if (f.get('lab') === '1') { this.audio.unlock(); this.openLab(); return; }
+    if (f.get('map')) { this.startMap(f.get('map')!); return; }
     if (f.get('autostart') === '1') { this.startLevel(f.get('level') ?? 'level_01'); return; }
     this.menuCamera(true);
     this.screenEl = this.screens.splash(() => { this.audio.unlock(); this.sfx.play(SFX.uiConfirm); this.clearScreen(); this.toMenu(); });
@@ -211,6 +214,7 @@ export class App {
 
   // ─────────────────────────────────────────────────────────── playing ────
   startLevel(levelId: string): void {
+    this.devMap = false;
     const entry = LEVELS.find(l => l.id === levelId);
     if (!entry?.data) return;
     this.levelId = levelId;
@@ -229,6 +233,22 @@ export class App {
     this.progression.attempt(levelId);
     this.music.start(theme, 'game'); this.ambient.start(theme);
     this.game.renderer.boostTint = BOOST_FX_TINT[itemById(this.save.data.equipped.boostFx)?.prefab ?? 'sparks'] ?? '#ffb347';
+  }
+
+  /** Dev entry for Map System V2 maps (`?map=<id>`); progression records are not touched. */
+  startMap(mapId: string): void {
+    const doc = BUILTIN_MAPS[mapId];
+    if (!doc) return;
+    this.devMap = true; this.levelId = mapId;
+    this.clearScreen(); this.state = 'playing'; this.finished = false; this.maxProgress = 0;
+    this.game.loadMap(doc);
+    this.game.reset();
+    this.game.input = this.controls;
+    this.game.paused = false;
+    this.menuCamera(false);
+    this.hud.show(true); this.hud.setScheme(this.save.data.settings.control.scheme, this.save.data.settings.control.leftHanded);
+    this.applyControlSettings();
+    this.music.start(this.game.theme, 'game'); this.ambient.start(this.game.theme);
   }
 
   pause(): void {
@@ -250,13 +270,13 @@ export class App {
   restart(): void {
     this.abandon();
     this.state = 'playing'; this.finished = false; this.maxProgress = 0;
-    this.game.reset(); this.game.paused = false; this.progression.attempt(this.levelId); this.hud.show(true);
+    this.game.reset(); this.game.paused = false; if (!this.devMap) this.progression.attempt(this.levelId); this.hud.show(true);
   }
 
   /** Leaving a run without finishing still counts its stats. */
   private abandon(): void {
     const s = this.game.pogo.state;
-    if (!this.finished && s.jumps > 0) this.progression.finish({ levelId: this.levelId, timeSec: this.game.runSeconds, jumps: s.jumps, boosts: s.boosts, falls: s.falls, completed: false, progress: this.maxProgress }, this.game.level);
+    if (!this.devMap && !this.finished && s.jumps > 0) this.progression.finish({ levelId: this.levelId, timeSec: this.game.runSeconds, jumps: s.jumps, boosts: s.boosts, falls: s.falls, completed: false, progress: this.maxProgress }, this.game.level);
     this.finished = true;
   }
 
@@ -265,6 +285,7 @@ export class App {
     for (const e of ev) {
       if (e.type === 'goal' && !this.finished) {
         this.finished = true;
+        if (this.devMap) { window.clearTimeout(this.resultTimer); this.resultTimer = window.setTimeout(() => { if (this.state === 'playing') this.restart(); }, 2500); continue; }
         const s = this.game.pogo.state;
         const res = { levelId: this.levelId, timeSec: this.game.runSeconds, jumps: s.jumps, boosts: s.boosts, falls: s.falls, completed: true, progress: 1 };
         const out = this.progression.finish(res, this.game.level);
@@ -289,6 +310,7 @@ export class App {
 
   // ───────────────────────────────────────────────────────────── lab ──────
   openLab(): void {
+    this.devMap = false;
     this.clearScreen(); this.state = 'lab'; this.subStack = [];
     this.game.loadLevel(PHYSICS_TEST);
     Object.assign(this.game.cfg, createPhysicsConfig());
@@ -316,7 +338,7 @@ export class App {
 
     // HUD (DOM touched only when something changes)
     const lvl = g.level;
-    const prog = progressFraction(lvl.progress.path, s.x, s.y);
+    const prog = g.mapRuntime ? g.mapRuntime.progress.max / 100 : progressFraction(lvl.progress.path, s.x, s.y);
     if (prog > this.maxProgress) this.maxProgress = prog;
     this.hud.update({ seconds: g.runSeconds, height: s.y - lvl.startPosition.y, jumps: s.jumps, boosts: s.boosts, progress: this.maxProgress, boostReady: s.boostReady, boostQueued: false });
 
