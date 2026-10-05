@@ -11,16 +11,13 @@ import { createPhysicsConfig } from '../src/sim/PhysicsConfig';
 import { PhysicsWorld } from '../src/sim/PhysicsWorld';
 import { NEUTRAL_INPUT, createPogoState } from '../src/sim/PogoState';
 import { PogoPhysicsController, stepPogo } from '../src/sim/PogoPhysicsController';
-import { runHop, type Hop } from '../src/sim/routeBot';
+import { parseHopLines, runHop, type Hop } from '../src/sim/routeBot';
 import type { SimEvent } from '../src/sim/events';
 
 const [file, planFile] = process.argv.slice(2);
 const doc = parseMap(readFileSync(file, 'utf8'), { lenient: true }).doc;
 const cfg = createPhysicsConfig();
-const hops: Hop[] = readFileSync(planFile, 'utf8').split('\n').flatMap(l => {
-  const m = /^(\S+) → (\S+)\s+idle (\d+) tiltG (\S+) tt (\d+) hd (\d+) tiltA (\S+) \((\d+) ticks\)/.exec(l);
-  return m ? [{ from: m[1], to: m[2], idle: +m[3], tiltG: +m[4], tt: +m[5], hd: +m[6], tiltA: +m[7], ticks: +m[8] }] : [];
-});
+const hops: Hop[] = parseHopLines(readFileSync(planFile, 'utf8'));
 if (!hops.length) { console.error('no hops parsed'); process.exit(2); }
 
 // 1. rebuild the per-tick script on the static compiled level (what the bot planned on)
@@ -28,7 +25,8 @@ const level = compileRenderLevel(doc);
 const world = new PhysicsWorld(level, cfg.qPerMetre);
 let st = createPogoState(world, cfg);
 const script: ReturnType<typeof runHop>['script'] = [];
-for (const h of hops) { const r = runHop(world, cfg, st, h); script.push(...r.script); st = r.s; }
+const bounds: { tick: number; hop: string; x: number; y: number }[] = [];     // where the static plan ends every hop
+for (const h of hops) { const r = runHop(world, cfg, st, h); script.push(...r.script); st = r.s; bounds.push({ tick: script.length, hop: `${h.from} → ${h.to}`, x: r.s.x, y: r.s.y }); }
 console.log(`plan: ${hops.length} hops, ${script.length} ticks (${(script.length / cfg.tickRate).toFixed(1)} s)`);
 
 // 2. play it on the real runtime
@@ -36,9 +34,10 @@ const rt = new MapRuntime(doc, { cfg });
 rt.prepareSpawn();
 const pogo = new PogoPhysicsController(rt.world, cfg);
 const events: string[] = [];
-let finishedAt = -1, kills = 0;
+let finishedAt = -1, kills = 0, bi = 0, diverged = '';
 for (let i = 0; i < script.length; i++) {
   rt.beforeStep(pogo.state);
+  if (bi < bounds.length && i === bounds[bi].tick) { const b = bounds[bi++]; if (!diverged && Math.hypot(pogo.state.x - b.x, pogo.state.y - b.y) > 0.05) diverged = `first divergence at the end of hop "${b.hop}" (tick ${b.tick}): runtime (${pogo.state.x.toFixed(2)}, ${pogo.state.y.toFixed(2)}) vs static plan (${b.x.toFixed(2)}, ${b.y.toFixed(2)})`; }
   const ev: SimEvent[] = pogo.step({ ...NEUTRAL_INPUT, ...script[i] });
   for (const m of rt.afterStep(pogo.state, ev)) {
     if (m.type === 'checkpoint' || m.type === 'finish' || m.type === 'kill' || m.type === 'break' || m.type === 'restore') events.push(`${i}:${m.type}${m.id ? ':' + m.id : ''}`);
@@ -50,6 +49,7 @@ for (let i = 0; i < script.length; i++) {
 }
 const s = pogo.state;
 console.log(`runtime: finished=${finishedAt >= 0}${finishedAt >= 0 ? ` at tick ${finishedAt} (${(finishedAt / cfg.tickRate).toFixed(1)} s)` : ''} kills=${kills} end=(${s.x.toFixed(1)}, ${s.y.toFixed(1)}) mode=${s.mode} progress max=${rt.progress.max.toFixed(1)}%`);
+console.log(diverged || 'runtime followed the static plan hop by hop');
 console.log(events.join('  '));
 void stepPogo;
 process.exit(finishedAt >= 0 ? 0 : 1);

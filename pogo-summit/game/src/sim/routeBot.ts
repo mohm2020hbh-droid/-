@@ -151,6 +151,14 @@ export function playRoute(level: LevelData, cfg: PhysicsConfig, opts: { maxExpan
   return plan;
 }
 
+/** Parses the hop lines printed by `tools/map-bot.ts` ("a → b  idle I tiltG G tt T hd H tiltA A (N ticks)"). */
+export function parseHopLines(text: string): Hop[] {
+  return text.split('\n').flatMap(l => {
+    const m = /^(\S+) → (\S+)\s+idle (\d+) tiltG (\S+) tt (\d+) hd (\d+) tiltA (\S+) \((\d+) ticks\)/.exec(l);
+    return m ? [{ from: m[1], to: m[2], idle: +m[3], tiltG: +m[4], tt: +m[5], hd: +m[6], tiltA: +m[7], ticks: +m[8] }] : [];
+  });
+}
+
 /**
  * How many (idle, tilt, hold, air-tilt) plans take the pogo from standing on `fromId` (at fraction `t` along its top,
  * at tick `tick`) onto `toId` — a per-hop solvability probe that needs no search over the rest of the route.

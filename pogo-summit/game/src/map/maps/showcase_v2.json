@@ -618,9 +618,9 @@
    "properties": {
     "width": 6,
     "thickness": 2.2,
-    "period": 4,
-    "duty": 0.65,
-    "phase": 0,
+    "period": 5,
+    "duty": 0.8,
+    "phase": 0.0,
     "seed": 28
    }
   },
@@ -746,8 +746,8 @@
    "properties": {
     "width": 6,
     "thickness": 2.2,
-    "period": 4,
-    "duty": 0.7,
+    "period": 5,
+    "duty": 0.8,
     "phase": 0.0,
     "seed": 37
    }
@@ -776,7 +776,7 @@
    },
    "properties": {
     "width": 6,
-    "delay": 0.8,
+    "delay": 2.0,
     "respawn": 3,
     "seed": 39
    }

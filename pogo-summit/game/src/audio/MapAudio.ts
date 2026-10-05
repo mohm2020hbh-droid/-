@@ -63,7 +63,7 @@ export class MapAudioCore {
   /** One-shot with cooldown, frame budget and optional position. */
   play(sound: string, o: { x?: number; y?: number; gain?: number; radius?: number; key?: string } = {}): boolean {
     const id = ONE_SHOT[sound.replace(/^builtin:/, '')];
-    if (!id) return false;
+    if (!id || !this.backend.ready) return false;
     const key = o.key ?? sound;
     const cd = COOLDOWN[sound.replace(/^builtin:/, '')] ?? 0.1;
     if (this.clock - (this.cooldown.get(key) ?? -1e9) < cd) { this.stats.suppressedByCooldown++; return false; }
@@ -131,6 +131,7 @@ export class MapAudioCore {
   /** Per frame: fade layers, pick the nearest `maxVoices` emitters, drive their gains. */
   update(dt: number, listener: Listener, emitters: readonly Emitter[]): void {
     this.clock += dt; this.frameShots = 0; this.listener = listener;
+    if (!this.backend.ready) return;                         // audio not unlocked yet (no user gesture): start loops once it is, never mark them as started
     // zone ambience layers
     const k = 1 - Math.exp(-dt / 0.6);
     for (const [name, l] of [...this.layers]) {

@@ -11,6 +11,7 @@ import { usesVisualV2 } from '../../src/map/MapCompile';
 import { PrefabRegistry } from '../../src/map/MapPrefab';
 import { MapScene } from '../../src/render/map/scene';
 import { setLang, t } from '../../src/ui/i18n';
+import { placeInAir } from '../../src/sim/PogoState';
 import { boot } from './fixtures';
 import type { MapDocument } from '../../src/map/schema';
 
@@ -112,5 +113,44 @@ describe('showcase_v2 — the Visual-V2 showcase map (pure JSON)', () => {
     rt.prepareSpawn();
     expect(rt.metrics().loadedChunks).toBeGreaterThan(0);
     expect(rt.metrics().loadedChunks).toBeLessThan(10);                          // streaming from the package parses only the chunks near the spawn
+  });
+
+  const pos = (doc: MapDocument, id: string) => doc.entities.find(e => e.id === id)!.position;
+
+  it('runtime behaviours: the seal region opens the secret ledges, timed ledges toggle, checkpoints register', () => {
+    const doc = showcase();
+    const t = boot(doc);
+    // the hidden ledges are not solid until the seal is touched
+    const seal = pos(doc, 's_seal');
+    placeInAir(t.cfg, t.state(), seal.x, seal.y + 9);                  // near the seal but outside its region; streaming follows the player
+    t.rt.beforeStep(t.state());
+    const hidden = () => t.rt.world.indexOfId('s1');
+    t.step(1);
+    expect(t.rt.flags.get('secret_open')).toBeUndefined();
+    expect(hidden() < 0 || !t.rt.world.isActive(hidden())).toBe(true);
+    placeInAir(t.cfg, t.state(), seal.x, seal.y + 2);                  // into the seal region
+    t.step(3);
+    expect(t.rt.flags.get('secret_open')).toBe(true);
+    t.step(2);
+    expect(hidden() >= 0 && t.rt.world.isActive(hidden())).toBe(true);
+    // a checkpoint region registers when the player is inside it
+    const b2 = pos(doc, 'b2');
+    placeInAir(t.cfg, t.state(), b2.x, b2.y + 2.5);
+    t.step(60);
+    expect(t.mapEvents.some(e => e.type === 'checkpoint' && e.id === 'cp0')).toBe(true);
+  });
+
+  it('timed ledges alternate between solid and not solid over their period', () => {
+    const doc = showcase();
+    const t = boot(doc);
+    const f3 = pos(doc, 'f3');
+    placeInAir(t.cfg, t.state(), f3.x, f3.y + 40);                     // load its chunk, stay clear of it
+    t.rt.beforeStep(t.state());
+    t.step(1);
+    const idx = t.rt.world.indexOfId('f3');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    const seen = new Set<boolean>();
+    for (let i = 0; i < 4 * 120; i++) { placeInAir(t.cfg, t.state(), f3.x, f3.y + 40); t.step(1); seen.add(t.rt.world.isActive(idx)); }
+    expect(seen.has(true)).toBe(true); expect(seen.has(false)).toBe(true);
   });
 });

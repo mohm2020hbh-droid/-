@@ -87,6 +87,20 @@ describe('one-shots', () => {
   it('ignores unknown sound names', () => { const { b, c } = mk(); expect(c.play('nope')).toBe(false); expect(b.shots).toHaveLength(0); });
 });
 
+describe('audio not unlocked yet', () => {
+  it('starts nothing (and remembers nothing) until the backend is ready, then starts the loops', () => {
+    const { b, c } = mk();
+    b.ready = false;
+    c.setLayer('wind', 1);
+    c.update(0.5, { x: 0, y: 0 }, [emitter('a', 1, 0)]);
+    c.handle([ev('checkpoint', 'cp')]);
+    expect(b.loops.size).toBe(0); expect(b.shots).toHaveLength(0);
+    b.ready = true;
+    c.update(0.5, { x: 0, y: 0 }, [emitter('a', 1, 0)]);
+    expect([...b.loops.keys()].sort()).toEqual(['emitter:a', 'layer:wind']);
+  });
+});
+
 describe('zone ambience layers', () => {
   it('fades a layer in on zone audio effects and out + stops it after the zone is left', () => {
     const { b, c } = mk();
