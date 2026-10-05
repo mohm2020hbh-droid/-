@@ -35,7 +35,9 @@ pogo-summit/
 │  │  ├─ input/              TouchInput, ControlSchemes
 │  │  ├─ render/             Renderer, materials, builders (rock/tree/props/structures), Character,
 │  │  │                      EnvironmentBuilder, CameraRig, Vfx
-│  │  ├─ audio/              AudioManager, MusicManager, SFXManager, AmbientManager, AudioEvents
+│  │  ├─ audio/              AudioManager (منسّق + سطح قديم), MusicManager, SFXManager (محوّل legacy), AmbientManager, MapAudio, AudioEvents
+│  │  │  └─ system/          types, audioConfig, AudioBus, AudioVariant, AudioEvent, AudioPool, AudioEmitter, AudioZone, SoundBank,
+│  │  │                      synth/{dsp,recipes}, IceSlide, PogoAudioDirector, MapAudioBridge, WebAudioHost
 │  │  ├─ haptics/            HapticManager
 │  │  ├─ progression/        SaveSystem, Progression
 │  │  ├─ ui/                 dom helpers, Hud, screens/*, i18n
@@ -59,6 +61,7 @@ pogo-summit/
 ## 4) حدود الوحدات (قواعد صارمة)
 - `sim/*` لا يستورد من `render|ui|audio|haptics|input`. (يُفحص آليًا في `tests/architecture.test.ts`.)
 - `data/*` بيانات خالصة قابلة للتسلسل (JSON-like) + تحقق `validateLevel`.
+- **الصوت** (`POGOSTUCK_AUDIO_SYSTEM_SPEC.md`): `SimEvent` ⇒ `PogoAudioDirector` ⇒ حدث صوتي ⇒ `AudioManager.emit/startLoop` ⇒ كتالوج + اختيار variant + pool ⇒ `AudioHost`. المنطق نقي (يُختبر بمضيف وهمي)، و`WebAudioHost` وحده يلمس Web Audio. النظام يقرأ أحداث المحاكاة و`PogoState` وأحداث `MapRuntime` فقط (types فقط من `sim/` و`map/`، يفرضه `tests/audio/system/mapBridge.test.ts`) ولا يكتب فيها شيئًا.
 - أحداث الفيزياء `SimEvent` هي العقد الوحيد مع الصوت/الاهتزاز/الجسيمات: `charge_start, launch, land, hard_impact, bounce, wall_hit, boost_armed, boost, hazard, fall, respawn, goal`.
 - لا `new` في حلقة اللعب: الجسيمات والمتجهات المؤقتة مجمّعة.
 

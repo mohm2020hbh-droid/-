@@ -1,6 +1,9 @@
 import type { AudioManager } from './AudioManager';
 import { SFX, type SfxId } from './AudioEvents';
 import type { SFXManager } from './SFXManager';
+import { attenuation, panOf } from './system/AudioEmitter';
+import { AudioZoneSet } from './system/AudioZone';
+import { SFX_TO_EVENT } from './system/MapAudioBridge';
 import type { Emitter } from '../render/map/scene';
 import type { Json, MapEvent, RegionDef } from '../map/schema';
 
@@ -11,7 +14,8 @@ import type { Json, MapEvent, RegionDef } from '../map/schema';
  *                 positional when the event has a position (distance attenuation + stereo pan), with per-sound COOLDOWNS
  *                 and a cap of simultaneous one-shots per frame
  *   zones         regions with `audio` effects switch ambience layers (wind, chimes, cave, water, lava) on enter / off on exit,
- *                 cross-faded
+ *                 cross-faded; the layer target is the MAXIMUM over the active zones (`AudioZoneSet`), so overlapping zones
+ *                 cannot silence each other
  *   emitters      `audio` entities (and waterfalls / water / lava, which bring their own) are positional loops: gain falls
  *                 off with distance, they pan by their side of the screen, and at most `maxVoices` of them sound at once —
  *                 the nearest win; a voice slot is reused (pooled) when a farther emitter takes over
@@ -37,9 +41,8 @@ export interface Listener { x: number; y: number }
 export interface MapAudioOptions { maxVoices: number; maxOneShotsPerFrame?: number }
 export interface MapAudioStats { activeLoops: number; ambientLayers: string[]; oneShots: number; suppressedByCooldown: number; suppressedByBudget: number; voiceSwaps: number }
 
-/** Gain from distance: 1 at the source → 0 at `radius` (quadratic roll-off). */
-export const attenuation = (dist: number, radius: number): number => (dist >= radius || radius <= 0 ? 0 : (1 - dist / radius) ** 2);
-export const panOf = (dx: number, radius: number): number => Math.max(-0.85, Math.min(0.85, dx / Math.max(1, radius * 0.6)));
+// the Map V2 roll-off now lives with the other spatial models; re-exported so existing imports keep working
+export { attenuation, panOf };
 
 const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 
@@ -47,7 +50,10 @@ export class MapAudioCore {
   private readonly regions = new Map<string, RegionDef>();
   private readonly cooldown = new Map<string, number>();
   private readonly layers = new Map<string, { gain: number; target: number }>();
-  private readonly zoneLayers = new Map<string, string[]>();
+  /** active audio zones (theme bed = a permanent zone) */
+  readonly zones = new AudioZoneSet();
+  /** layers set directly through `setLayer` (outside any zone) */
+  private readonly manual = new Map<string, number>();
   private readonly voices = new Map<string, { sound: string; gain: number }>();
   private clock = 0;
   private frameShots = 0;
@@ -100,8 +106,8 @@ export class MapAudioCore {
           const d = (ev.data ?? {}) as { id?: string; volume?: number };
           const name = (d.id ?? '').replace(/^builtin:/, '');
           if ((LOOP_SOUNDS as readonly string[]).includes(name)) {
-            this.setLayer(name, num(d.volume, 0.8));
-            if (ev.id) { const l = this.zoneLayers.get(ev.id) ?? []; if (!l.includes(name)) l.push(name); this.zoneLayers.set(ev.id, l); }
+            if (ev.id) this.zones.enter(ev.id, [{ name, volume: num(d.volume, 0.8) }]);
+            else this.setLayer(name, num(d.volume, 0.8));
           } else this.play(name, { gain: num(d.volume, 1), x, y, radius: 60, key: `fx:${ev.id}:${name}` });
           break;
         }
@@ -110,22 +116,26 @@ export class MapAudioCore {
     }
   }
 
-  private zoneExit(r: RegionDef): void {
-    const l = this.zoneLayers.get(r.id);
-    if (!l) return;
-    for (const name of l) this.setLayer(name, 0);
-    this.zoneLayers.delete(r.id);
-  }
+  private zoneExit(r: RegionDef): void { this.zones.exit(r.id); }
 
-  /** Ambience layer (cross-faded by `update`). */
-  setLayer(name: string, volume: number): void { const l = this.layers.get(name); if (l) l.target = volume; else this.layers.set(name, { gain: 0, target: volume }); }
+  /** Ambience layer set directly, outside any zone (cross-faded by `update`). */
+  setLayer(name: string, volume: number): void { this.manual.set(name, volume); if (!this.layers.has(name)) this.layers.set(name, { gain: 0, target: volume }); }
 
-  /** Theme bed: the base ambience layers a theme asks for (chime pads for the mystic bed, a drone, lava rumble). */
+  /** Theme bed: the base ambience layers a theme asks for (chime pads for the mystic bed, a drone, lava rumble) — a permanent zone. */
   setBed(a?: { bed?: string; chimes?: number; drone?: number }): void {
     if (!a) return;
-    if (a.chimes) this.setLayer('chimes', Math.min(1, a.chimes) * 0.6);
-    if (a.drone) this.setLayer('cave', Math.min(1, a.drone) * 0.5);
-    if (a.bed === 'lava') this.setLayer('lava', 0.35);
+    const layers: { name: string; volume: number }[] = [];
+    if (a.chimes) layers.push({ name: 'chimes', volume: Math.min(1, a.chimes) * 0.6 });
+    if (a.drone) layers.push({ name: 'cave', volume: Math.min(1, a.drone) * 0.5 });
+    if (a.bed === 'lava') layers.push({ name: 'lava', volume: 0.35 });
+    if (layers.length) this.zones.setBed(layers);
+  }
+
+  /** Layer targets = max of the direct layers and the active zones. */
+  private syncTargets(): void {
+    const t = this.zones.targets();
+    for (const [name, v] of t) if (!this.layers.has(name)) this.layers.set(name, { gain: 0, target: v });
+    for (const [name, l] of this.layers) l.target = Math.max(this.manual.get(name) ?? 0, t.get(name) ?? 0);
   }
 
   /** Per frame: fade layers, pick the nearest `maxVoices` emitters, drive their gains. */
@@ -133,11 +143,12 @@ export class MapAudioCore {
     this.clock += dt; this.frameShots = 0; this.listener = listener;
     if (!this.backend.ready) return;                         // audio not unlocked yet (no user gesture): start loops once it is, never mark them as started
     // zone ambience layers
+    this.syncTargets();
     const k = 1 - Math.exp(-dt / 0.6);
     for (const [name, l] of [...this.layers]) {
       l.gain += (l.target - l.gain) * k;
       const key = `layer:${name}`;
-      if (l.gain < 0.005 && l.target === 0) { if (this.voices.has(key)) { this.backend.loopStop(key); this.voices.delete(key); } this.layers.delete(name); continue; }
+      if (l.gain < 0.005 && l.target === 0) { if (this.voices.has(key)) { this.backend.loopStop(key); this.voices.delete(key); } this.layers.delete(name); this.manual.delete(name); continue; }
       if (!this.voices.has(key)) { this.backend.loopStart(name, key); this.voices.set(key, { sound: name, gain: 0 }); }
       this.backend.loopSet(key, l.gain, 0);
     }
@@ -166,7 +177,7 @@ export class MapAudioCore {
   }
 
   /** Stop everything (level end). */
-  dispose(): void { for (const key of this.voices.keys()) this.backend.loopStop(key); this.voices.clear(); this.layers.clear(); this.zoneLayers.clear(); }
+  dispose(): void { for (const key of this.voices.keys()) this.backend.loopStop(key); this.voices.clear(); this.layers.clear(); this.manual.clear(); this.zones.clear(); }
 }
 
 // ── WebAudio backend ────────────────────────────────────────────────────────────────────────────────────────────
@@ -177,7 +188,12 @@ export class WebAudioMapBackend implements AudioBackend {
   constructor(private readonly A: AudioManager, private readonly sfx: SFXManager) {}
   get ready(): boolean { return this.A.ready; }
 
-  oneShot(sound: SfxId, o: { gain: number; pan: number; pitch?: number }): void { this.sfx.play(sound, { intensity: Math.max(0.1, Math.min(1, o.gain)), pitch: o.pitch }); }
+  /** One-shots whose sound has an audio event go through it (buses, cooldowns, voice limits, procedural recipes); the rest use the old player. */
+  oneShot(sound: SfxId, o: { gain: number; pan: number; pitch?: number }): void {
+    const ev = SFX_TO_EVENT[sound];
+    if (ev) { this.A.emit(ev, { gain: o.gain, pan: o.pan, pitch: o.pitch }); return; }
+    this.sfx.play(sound, { intensity: Math.max(0.1, Math.min(1, o.gain)), pitch: o.pitch });
+  }
 
   loopStart(sound: string, key: string): void {
     const c = this.A.ctx;

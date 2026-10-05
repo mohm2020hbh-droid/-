@@ -95,10 +95,25 @@
 
 **Still unverified:** a real device (FPS, thermals, haptics), AAB/Play — unchanged from the section above.
 
+### Audio system (task "ANALYZE → SPEC → IMPLEMENT → TEST", DEC-063…072) — what was actually run
+**Not touched:** `src/sim`, `Pogostuck_Physics_LOCKED_SPEC.md`, `src/map` (diff-checked; `architecture`, `spec`, `physics`, `determinism`, `map/boundary` pass unchanged).
+
+| Check | Tool | Result |
+|---|---|---|
+| 11 original WAVs measured (format, peak, RMS, LUFS, spectrum, envelope) | `tools/audio-analyze.py` (LUFS cross-checked with ffmpeg `ebur128`, ≤ 0.3 LU) | `POGOSTUCK_AUDIO_ANALYSIS.md`, `qa/audio/original_analysis.json` |
+| Original sound layer and 20 call sites read from the decoded script | RE listing (addresses in the analysis) | ✔ ; `pogoSound.dll`, `kuSound.dll`, `kupack_audio_index.csv` **not supplied ⇒ UNKNOWN** |
+| Audio system logic: charge, launch, collision, variants, no immediate repeat, cooldown/burst/voice cap, ice START/MODULATE/STOP, break, pooling, volume mapping, missing audio, zones, Map V2 bridge, recipes vs measured descriptors | vitest, 17 new files / 253 tests | ✔ |
+| Whole suite | vitest | ✔ **53 files / 735 tests** (was 36 / 482) · `tsc --noEmit` clean · production bundle 1008 KB |
+| Real Web Audio API (live context, channel pooling, every event, drain to idle) | `tools/audio-browser-check.mjs`, headless Chromium | ✔ unlock 35 ms, 14 voices on 11 pooled channels (3 reused), pool peak 9, drains to 0 |
+| Scripted session mixed through the real bus graph + compressor, exported and analysed | same (OfflineAudioContext) → `tools/audio-analyze.py` | ✔ timeline as scripted (charge click, power launch, boings, ice loop modulated and faded, breaks, truncated sting; the 4th wall hit suppressed by the cooldown); peak −10.8 dBFS, no clipping |
+| Production bundle driving the real game loop: charge, auto-launch, landings, wall hit, real ice landing ⇒ slide loop started and later freed | `tools/qa-audio-ingame.mjs` | ✔ 0 page errors, 0 skipped/missing events, 11 recipes warm (1.3 MB) |
+
+**Still unverified:** the sound has **not been heard by a person** (no audio device here; mix levels follow the original's call-volume ratios, not an ear); no Android device (`DEVICE_TEST = NOT_AVAILABLE`); the licensed-sample bank path is tested with fakes only.
+
 ### ما لم يُتحقَّق منه (لا يُدَّعى)
 - ✘ **تشغيل على جهاز/محاكي Android**: لا KVM ولا جهاز هنا. لم يُجرَّب: Immersive، Cutout/Safe-area الفعلي، الاهتزاز الفعلي، لمس بإصبع حقيقي، الأداء الحقيقي (كل `fps` المقاسة هنا من SwiftShader/CPU ولا تمثل هاتفًا).
 - ✘ **Gradle/AGP وإنتاج AAB وتوقيع الإطلاق**: `dl.google.com` محجوب في هذه البيئة (403). مشروع Gradle مكتوب (compileSdk/targetSdk 35) لكنه غير مبني. الـAPK الحالي debug موقّع بمفتاح debug ويُبنى بسلسلة apt القديمة (android-23.jar، targetSdk 34 في الـmanifest).
-- ◐ الصوت: يُبنى ويُشغَّل بلا أخطاء لكن لم يُستمع إليه (لا جهاز صوت)؛ ضبط المزج يحتاج أذنًا.
+- ◐ الصوت: يُبنى ويُشغَّل بلا أخطاء على Web Audio حقيقي في Chromium ويُحلَّل رقميًا (انظر قسم Audio system أعلاه) لكن **لم يستمع إليه إنسان** (لا جهاز صوت)؛ ضبط المزج يحتاج أذنًا وجهازًا حقيقيًا.
 - ◐ **Boost** عبر الواجهة الحقيقية من البداية للنهاية لم يُختبر آليًا (المنطق مغطّى بوحدات + نبضة زر PAD في jsdom)؛ LEVEL_01 لا يتطلبه.
 - ◐ أسطح `Sticky` و`Boost` و`Slope` موجودة في `SurfacePhysics` لكن لا يستخدمها LEVEL_01 ولا تغطيها اختبارات مخصّصة.
 - ◐ العوالم 2–4: ثيمات/لوحات/إضاءة/موسيقى/صعوبة فقط؛ **لا مراحل فعلية** لها.

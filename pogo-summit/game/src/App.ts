@@ -7,8 +7,10 @@ import { AudioManager } from './audio/AudioManager';
 import { SFXManager } from './audio/SFXManager';
 import { MusicManager } from './audio/MusicManager';
 import { AmbientManager } from './audio/AmbientManager';
-import { SFX } from './audio/AudioEvents';
 import { MapAudioCore, WebAudioMapBackend } from './audio/MapAudio';
+import { PogoAudioDirector } from './audio/system/PogoAudioDirector';
+import { MapAudioBridge } from './audio/system/MapAudioBridge';
+import { AUDIO_EVENT } from './audio/system/types';
 import { HapticManager } from './haptics/HapticManager';
 import { TouchControls } from './input/TouchControls';
 import { Hud } from './ui/Hud';
@@ -51,6 +53,8 @@ export class App {
   readonly controls: TouchControls;
   readonly screens: Screens;
   readonly feedback: Feedback;
+  /** Simulation events → audio events (charge, launch, collision, ice slide, landings, cues). Reads sim state, never writes it. */
+  readonly director: PogoAudioDirector;
   private readonly guide = new TrajectoryGuide();
   private state: State = 'splash';
   private levelId = 'level_01';
@@ -85,10 +89,12 @@ export class App {
     this.controls.onTouchStart = () => this.audio.unlock();
     if (flags.get('debug') === '1') this.controls.enableDebugKeyboard();
     this.hud.pauseBtn.addEventListener('click', () => { if (this.state === 'playing') this.pause(); });
-    this.feedback = new Feedback(this.sfx, this.haptics, this.hud);
+    this.audio.legacy = this.sfx;                                               // old procedural sounds ride the same events, buses and limits
+    this.director = new PogoAudioDirector(this.audio, { surfaceOf: id => this.game.world.colliders[id] });
+    this.feedback = new Feedback(this.director, this.haptics, this.hud);
     this.screens = new Screens(ui, {
       save: this.save, progression: this.progression,
-      click: () => { this.audio.unlock(); this.sfx.play(SFX.uiClick); this.haptics.trigger('ui'); },
+      click: () => { this.audio.unlock(); this.audio.emit(AUDIO_EVENT.UI_CLICK); this.haptics.trigger('ui'); },
       back: () => this.back(),
       settingsChanged: (s, what) => this.applySettings(s, what),
       equipChanged: it => this.onEquip(it),
@@ -118,7 +124,7 @@ export class App {
     if (f.get('mapUrl')) { this.startMapFromUrl(f.get('mapUrl')!); return; }
     if (f.get('autostart') === '1') { this.startLevel(f.get('level') ?? 'level_01'); return; }
     this.menuCamera(true);
-    this.screenEl = this.screens.splash(() => { this.audio.unlock(); this.sfx.play(SFX.uiConfirm); this.clearScreen(); this.toMenu(); });
+    this.screenEl = this.screens.splash(() => { this.audio.unlock(); this.audio.emit(AUDIO_EVENT.UI_CONFIRM); this.clearScreen(); this.toMenu(); });
   }
 
   private resize(): void { this.game.renderer.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1); }
@@ -235,7 +241,7 @@ export class App {
     const preview = this.flags.get('debug') === '1' ? this.flags.get('world') : null;
     const theme = WORLDS.find(w => preview ? (w.worldId === preview || w.id === preview) : w.worldId === entry.worldId) ?? WORLD_1;
     this.clearScreen(); this.state = 'playing'; this.finished = false; this.maxProgress = 0;
-    this.stopMapAudio();
+    this.stopMapAudio(); this.director.silence();
     this.game.loadLevel(data, theme);
     this.game.reset();
     this.game.input = this.controls;
@@ -256,6 +262,7 @@ export class App {
     if (theme) doc = { ...doc, theme: { ref: theme } };
     this.devMap = true; this.levelId = mapId;
     this.clearScreen(); this.state = 'playing'; this.finished = false; this.maxProgress = 0;
+    this.director.silence();
     this.game.loadMap(doc);
     this.startMapAudio(doc);
     this.game.reset();
@@ -280,14 +287,15 @@ export class App {
     const core = new MapAudioCore(new WebAudioMapBackend(this.audio, this.sfx), doc.regions, { maxVoices: doc.audio.maxVoices });
     core.positionOf = id => g.renderer.mapScene?.positionOf(id) ?? null;
     core.setBed(resolveTheme(doc.theme, doc.manifest.theme).theme.ambientAudio);
+    const bridge = new MapAudioBridge(this.audio);                                // events the core does not handle (split → TIME_EFFECT)
     this.mapAudio = core;
-    this.mapAudioOff = g.onMapEvents(events => core.handle(events));
+    this.mapAudioOff = g.onMapEvents(events => { core.handle(events); bridge.handle(events); });
   }
   private stopMapAudio(): void { this.mapAudioOff?.(); this.mapAudioOff = null; this.mapAudio?.dispose(); this.mapAudio = null; }
 
   pause(): void {
     if (this.state !== 'playing') return;
-    this.state = 'paused'; this.game.paused = true; this.controls.cancel(); this.sfx.chargeUpdate(0, false);
+    this.state = 'paused'; this.game.paused = true; this.controls.cancel(); this.director.silence();
     this.setScreen(this.screens.pause({
       onResume: () => this.resume(), onRestart: () => { this.clearScreen(); this.restart(); },
       onOptions: () => { this.subStack = [() => { this.state = 'paused'; this.setScreen(this.pauseScreen()); }]; this.openOptions(() => { this.state = 'paused'; this.setScreen(this.pauseScreen()); }); },
@@ -302,7 +310,7 @@ export class App {
   resume(): void { if (this.state !== 'paused') return; this.clearScreen(); this.state = 'playing'; this.game.paused = false; }
 
   restart(): void {
-    this.abandon();
+    this.abandon(); this.director.silence();
     this.state = 'playing'; this.finished = false; this.maxProgress = 0;
     this.game.reset(); this.game.paused = false; if (!this.devMap) this.progression.attempt(this.levelId); this.hud.show(true);
   }
@@ -331,11 +339,11 @@ export class App {
 
   private showResults(res: { timeSec: number; jumps: number; boosts: number; falls: number }, out: { newBest: boolean; stars: number; newItems: ItemDef[]; rank: number }): void {
     if (this.state !== 'playing') return;
-    this.state = 'results'; this.hud.show(false); this.sfx.chargeUpdate(0, false);
+    this.state = 'results'; this.hud.show(false); this.director.silence();
     const idx = LEVELS.findIndex(l => l.id === this.levelId);
     const nextOk = !!LEVELS[idx + 1]?.data && this.progression.isLevelPlayable(LEVELS[idx + 1].id);
-    for (let i = 0; i < out.stars; i++) window.setTimeout(() => this.sfx.play(SFX.uiStar, { pitch: 1 + i * 0.12 }), 300 + i * 260);
-    if (out.newItems.length) window.setTimeout(() => this.sfx.play(SFX.uiUnlock), 1200);
+    for (let i = 0; i < out.stars; i++) window.setTimeout(() => this.audio.emit(AUDIO_EVENT.UI_STAR, { pitch: 1 + i * 0.12 }), 300 + i * 260);
+    if (out.newItems.length) window.setTimeout(() => this.audio.emit(AUDIO_EVENT.UI_UNLOCK), 1200);
     this.setScreen(this.screens.results({
       ...res, stars: out.stars, newBest: out.newBest, best: this.progression.record(this.levelId).bestTimeSec, rank: out.rank, newItems: out.newItems, hasNext: nextOk,
       onNext: () => this.startLevel(LEVELS[idx + 1].id), onRetry: () => { this.clearScreen(); this.restart(); }, onMenu: () => this.toMenu(),
@@ -368,7 +376,7 @@ export class App {
       else { this.lowFpsSince = 0; this.highFpsSince = now; }
     }
     this.lab?.update();
-    if (this.state !== 'playing' && this.state !== 'lab') { this.sfx.chargeUpdate(0, false); this.guide.set(null); this.hud.setCharge(null, 0); return; }
+    if (this.state !== 'playing' && this.state !== 'lab') { this.director.ice.stop(); this.guide.set(null); this.hud.setCharge(null, 0); return; }
 
     // HUD (DOM touched only when something changes)
     const lvl = g.level;
@@ -376,11 +384,10 @@ export class App {
     if (prog > this.maxProgress) this.maxProgress = prog;
     this.hud.update({ seconds: g.runSeconds, height: s.y - lvl.startPosition.y, jumps: s.jumps, boosts: s.boosts, progress: this.maxProgress, boostReady: s.boostReady, boostQueued: false });
 
-    // charge feedback: ring, whine loop, trajectory guide
-    // the pogo charges on every landing by itself; the ring/whine/guide only show while the player is HOLDING the charge
+    // charge feedback: ring and trajectory guide (no sound while charging: the click comes from the `charge_start` event)
+    // the pogo charges on every landing by itself; the ring/guide only show while the player is HOLDING the charge
     const charging = s.mode === 'CHARGING' && s.held;
     const power = charging ? s.charge01 : 0;
-    this.sfx.chargeUpdate(power, charging && !g.paused);
     if (charging) {
       const p = R.project(g.pogo.pose(1).footX, g.pogo.pose(1).footY - 0.2);
       this.hud.setCharge({ x: p.x, y: p.y }, power);
@@ -405,8 +412,9 @@ export class App {
       this.ambient.update(h01, Math.max(0, water));
       this.music.setIntensity(0.2 + Math.min(1, Math.hypot(s.vx, s.vy) / 20) * 0.7);
     }
+    this.director.update(s, R.rig.halfW);                                       // listener + ice-slide loop (START / MODULATE / STOP from the sim's slide state)
     this.mapAudio?.update(Math.min(dt, 0.1), { x: s.x, y: s.y }, g.renderer.mapScene?.emitters() ?? []);
-    if (s.vy < -21 && !this.whistled && s.mode === 'AIR') { this.whistled = true; this.sfx.play(SFX.fall); }
+    if (s.vy < -21 && !this.whistled && s.mode === 'AIR') { this.whistled = true; this.audio.emit(AUDIO_EVENT.FALL); }
     if (s.vy > -6) this.whistled = false;
     void dt; void DT;
   }
@@ -418,7 +426,7 @@ export class App {
       case 'paused': this.resume(); return true;
       case 'results': this.toMenu(); return true;
       case 'lab': this.lab?.dispose(); this.lab = null; Object.assign(this.game.cfg, createPhysicsConfig()); this.applyControlSettings(); this.toMenu(); return true;
-      case 'sub': this.sfx.play(SFX.uiBack); this.back(); return true;
+      case 'sub': this.audio.emit(AUDIO_EVENT.UI_BACK); this.back(); return true;
       default: return false;
     }
   }

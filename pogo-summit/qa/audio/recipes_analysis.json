@@ -1,0 +1,1466 @@
+[
+ {
+  "filename": "break_1.wav",
+  "bytes": 22976,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 22932
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 22050,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 11466
+  },
+  "duration_s": 0.52,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -2.883701262893594,
+  "rms_dbfs": -22.45324278966813,
+  "crest_factor_db": 19.452880540282173,
+  "dc_offset": [
+   -7.1250267434698234e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 748.0769230769231,
+  "lufs_ungated": -23.438887839031505,
+  "lufs_integrated": -24.435013748494853,
+  "lufs_momentary_max": -22.30071075329419,
+  "envelope_peak_dbfs": -11.90171704726865,
+  "onset_ms": 0.18140589569160998,
+  "time_to_envelope_peak_ms": 33.42403628117914,
+  "attack_ms": 33.24263038548753,
+  "rise_10_90_ms": 0.997732426303855,
+  "decay_20db_ms": 225.48752834467123,
+  "decay_40db_ms": 443.9909297052154,
+  "effective_length_ms": 477.4149659863945,
+  "trailing_silence_ms": 12.01814058956916,
+  "tail_50ms_db_re_peak": -46.19310613637491,
+  "head_20ms_db_re_peak": -3.094789151225374,
+  "wrap_jump": 0.0,
+  "rt60_ms": 678.5788185651221,
+  "envelope_mod_peak_hz": 1.9342359767891681,
+  "envelope_mod_depth_db_std": 10.938463759741925,
+  "spectrum": {
+   "centroid_hz": 733.1215885151255,
+   "rolloff85_hz": 1954.13818359375,
+   "rolloff95_hz": 3145.1934814453125,
+   "bandwidth_hz": 1125.6255181477593,
+   "flatness": 0.005289356770243742,
+   "band_energy": {
+    "infra <20": 0.0016049123965313594,
+    "sub 20-60": 0.5710594836132211,
+    "bass 60-250": 0.05195831658274519,
+    "low-mid 250-500": 0.04514752130897412,
+    "mid 500-2k": 0.19286739317424303,
+    "high-mid 2-4k": 0.1200893328895828,
+    "presence 4-8k": 0.01724652008708411,
+    "air >8k": 2.6519947618378618e-05
+   },
+   "peaks": [
+    {
+     "hz": 51.1,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 18,
+   "dominant_start_hz": 60.2,
+   "dominant_end_hz": 49.6,
+   "dominant_min_hz": 49.0,
+   "dominant_max_hz": 60.2,
+   "dominant_slope_oct_per_s": -0.653,
+   "centroid_start_hz": 696.8,
+   "centroid_end_hz": 115.4,
+   "centroid_slope_oct_per_s": -9.332
+  },
+  "onsets": [
+   {
+    "t_ms": 73.3,
+    "db_rel": -0.9
+   },
+   {
+    "t_ms": 127.2,
+    "db_rel": -3.7
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 651.3497748302461,
+   "rolloff85_hz": 1841.0888671875,
+   "peaks": [
+    {
+     "hz": 64.6,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -1.7,
+   -7.8,
+   -11.2,
+   -13.7,
+   -17.2,
+   -22.9,
+   -31.0,
+   -33.4,
+   -34.2,
+   -35.3,
+   -64.1
+  ]
+ },
+ {
+  "filename": "break_2.wav",
+  "bytes": 59564,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 59520
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 16000,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 29760
+  },
+  "duration_s": 1.86,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -2.843415894328674,
+  "rms_dbfs": -20.083628542157598,
+  "crest_factor_db": 17.08326629277164,
+  "dc_offset": [
+   1.1280018796202958e-07
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 1436.021505376344,
+  "lufs_ungated": -21.280869414738593,
+  "lufs_integrated": -20.336818973080565,
+  "lufs_momentary_max": -18.141202776794152,
+  "envelope_peak_dbfs": -10.383320176237788,
+  "onset_ms": 0.4375,
+  "time_to_envelope_peak_ms": 19.5,
+  "attack_ms": 19.0625,
+  "rise_10_90_ms": 10.000000000000002,
+  "decay_20db_ms": 1251.0,
+  "decay_40db_ms": 1660.0,
+  "effective_length_ms": 1679.5,
+  "trailing_silence_ms": 31.0,
+  "tail_50ms_db_re_peak": -60.27554402023409,
+  "head_20ms_db_re_peak": -3.1158690836329903,
+  "wrap_jump": 0.0,
+  "rt60_ms": 1724.118122553998,
+  "envelope_mod_peak_hz": 0.5387931034482758,
+  "envelope_mod_depth_db_std": 9.974146823596525,
+  "spectrum": {
+   "centroid_hz": 283.0091861527097,
+   "rolloff85_hz": 377.9296875,
+   "rolloff95_hz": 848.14453125,
+   "bandwidth_hz": 511.7312034238,
+   "flatness": 0.016020828539371167,
+   "band_energy": {
+    "infra <20": 0.021635451680314072,
+    "sub 20-60": 0.1324341676161976,
+    "bass 60-250": 0.5658640438760637,
+    "low-mid 250-500": 0.17857004267742677,
+    "mid 500-2k": 0.0840534523204642,
+    "high-mid 2-4k": 0.01274899702827324,
+    "presence 4-8k": 0.004693844335313777,
+    "air >8k": 4.659465540782673e-10
+   },
+   "peaks": []
+  },
+  "sweep": {
+   "frames": 45,
+   "dominant_start_hz": 216.7,
+   "dominant_end_hz": 45.2,
+   "dominant_min_hz": 35.6,
+   "dominant_max_hz": 216.7,
+   "dominant_slope_oct_per_s": -0.041,
+   "centroid_start_hz": 311.7,
+   "centroid_end_hz": 335.0,
+   "centroid_slope_oct_per_s": -0.265
+  },
+  "onsets": [
+   {
+    "t_ms": 15.5,
+    "db_rel": -0.2
+   },
+   {
+    "t_ms": 84.5,
+    "db_rel": -7.3
+   },
+   {
+    "t_ms": 227.5,
+    "db_rel": -5.9
+   },
+   {
+    "t_ms": 297.5,
+    "db_rel": -3.6
+   },
+   {
+    "t_ms": 354.5,
+    "db_rel": -4.3
+   },
+   {
+    "t_ms": 399.5,
+    "db_rel": -4.4
+   },
+   {
+    "t_ms": 603.5,
+    "db_rel": -4.0
+   },
+   {
+    "t_ms": 799.5,
+    "db_rel": -3.8
+   },
+   {
+    "t_ms": 892.5,
+    "db_rel": -6.0
+   },
+   {
+    "t_ms": 1108.5,
+    "db_rel": -10.5
+   },
+   {
+    "t_ms": 1203.5,
+    "db_rel": -13.6
+   },
+   {
+    "t_ms": 1262.5,
+    "db_rel": -19.1
+   },
+   {
+    "t_ms": 1324.5,
+    "db_rel": -20.9
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 796.5264707552051,
+   "rolloff85_hz": 1937.5,
+   "peaks": [
+    {
+     "hz": 62.5,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -22.0,
+   -11.9,
+   -5.2,
+   -7.8,
+   -10.8,
+   -8.8,
+   -15.5,
+   -24.6,
+   -36.4,
+   -42.3,
+   -82.9
+  ]
+ },
+ {
+  "filename": "charge_tick.wav",
+  "bytes": 9306,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 9262
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 4631
+  },
+  "duration_s": 0.10501133786848073,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -2.881304450624731,
+  "rms_dbfs": -18.946026629136135,
+  "crest_factor_db": 15.945664379750179,
+  "dc_offset": [
+   -0.00012874582678214748
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 12141.546102353703,
+  "lufs_ungated": -15.989665219020221,
+  "lufs_integrated": null,
+  "lufs_momentary_max": null,
+  "envelope_peak_dbfs": -10.938744587021606,
+  "onset_ms": 0.045351473922902494,
+  "time_to_envelope_peak_ms": 3.492063492063492,
+  "attack_ms": 3.4467120181405897,
+  "rise_10_90_ms": 0.0,
+  "decay_20db_ms": 67.84580498866214,
+  "decay_40db_ms": 98.77551020408164,
+  "effective_length_ms": 102.26757369614513,
+  "trailing_silence_ms": 0.9070294784580499,
+  "tail_50ms_db_re_peak": -21.49548954722088,
+  "head_20ms_db_re_peak": -1.994174238910949,
+  "wrap_jump": 0.0,
+  "rt60_ms": 185.34451045204082,
+  "envelope_mod_peak_hz": 9.900990099009901,
+  "envelope_mod_depth_db_std": 9.46237026167475,
+  "spectrum": {
+   "centroid_hz": 5520.383058412994,
+   "rolloff85_hz": 8731.7138671875,
+   "rolloff95_hz": 10739.68505859375,
+   "bandwidth_hz": 2960.804614960206,
+   "flatness": 0.02697016398300279,
+   "band_energy": {
+    "infra <20": 6.541982866786725e-06,
+    "sub 20-60": 3.883584805045418e-06,
+    "bass 60-250": 9.78504252420132e-05,
+    "low-mid 250-500": 0.03731071984133047,
+    "mid 500-2k": 0.06239603571800415,
+    "high-mid 2-4k": 0.2662793107662049,
+    "presence 4-8k": 0.4246312685703221,
+    "air >8k": 0.20927438911122453
+   },
+   "peaks": [
+    {
+     "hz": 441.4,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 6,
+   "dominant_start_hz": 442.3,
+   "dominant_end_hz": 443.0,
+   "dominant_min_hz": 440.2,
+   "dominant_max_hz": 443.0,
+   "dominant_slope_oct_per_s": 0.01,
+   "centroid_start_hz": 5448.0,
+   "centroid_end_hz": 5432.5,
+   "centroid_slope_oct_per_s": -1.009
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 5487.536312589601,
+   "rolloff85_hz": 8624.0478515625,
+   "peaks": [
+    {
+     "hz": 441.4,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -0.3,
+   -2.7,
+   -7.0,
+   -9.0,
+   -11.8,
+   -15.4,
+   -17.7,
+   -21.6,
+   -24.8,
+   -27.8,
+   -41.8
+  ]
+ },
+ {
+  "filename": "collision_1.wav",
+  "bytes": 35324,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 35280
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 11025,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 17640
+  },
+  "duration_s": 1.6,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -2.9551999749652946,
+  "rms_dbfs": -18.110241615826745,
+  "crest_factor_db": 15.109879366440788,
+  "dc_offset": [
+   -2.024125079719388e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2265.625,
+  "lufs_ungated": -18.039522159808083,
+  "lufs_integrated": -17.34785948403176,
+  "lufs_momentary_max": -13.125259483540669,
+  "envelope_peak_dbfs": -9.258333310134734,
+  "onset_ms": 0.18140589569160998,
+  "time_to_envelope_peak_ms": 42.40362811791383,
+  "attack_ms": 42.22222222222222,
+  "rise_10_90_ms": 19.954648526077097,
+  "decay_20db_ms": 1045.62358276644,
+  "decay_40db_ms": 1548.4807256235827,
+  "effective_length_ms": 1590.8843537414964,
+  "trailing_silence_ms": 2.4489795918367347,
+  "tail_50ms_db_re_peak": -31.278871111564985,
+  "head_20ms_db_re_peak": -5.468870508149596,
+  "wrap_jump": 0.0,
+  "rt60_ms": 2737.9065321682247,
+  "envelope_mod_peak_hz": 0.6253908692933083,
+  "envelope_mod_depth_db_std": 9.83858772149257,
+  "spectrum": {
+   "centroid_hz": 1152.8807450598235,
+   "rolloff85_hz": 1295.0202941894531,
+   "rolloff95_hz": 1296.0296630859375,
+   "bandwidth_hz": 92.00504141348503,
+   "flatness": 1.7988334586105837e-08,
+   "band_energy": {
+    "infra <20": 3.853805633983429e-11,
+    "sub 20-60": 6.837166813635701e-11,
+    "bass 60-250": 3.9341139063510144e-10,
+    "low-mid 250-500": 6.694993794588406e-10,
+    "mid 500-2k": 0.9999999914575326,
+    "high-mid 2-4k": 4.244464902528856e-09,
+    "presence 4-8k": 3.12818164627364e-09,
+    "air >8k": 0.0
+   },
+   "peaks": [
+    {
+     "hz": 1177.9,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 1060.2,
+     "db_rel": -1.5
+    },
+    {
+     "hz": 1295.7,
+     "db_rel": -5.7
+    },
+    {
+     "hz": 942.4,
+     "db_rel": -10.1
+    },
+    {
+     "hz": 1413.5,
+     "db_rel": -18.8
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 31,
+   "dominant_start_hz": 1060.2,
+   "dominant_end_hz": 1060.2,
+   "dominant_min_hz": 1060.2,
+   "dominant_max_hz": 1178.0,
+   "dominant_slope_oct_per_s": -0.139,
+   "centroid_start_hz": 1049.9,
+   "centroid_end_hz": 1098.4,
+   "centroid_slope_oct_per_s": -0.092
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 863.2321018463402,
+   "rolloff85_hz": 947.4609375,
+   "peaks": [
+    {
+     "hz": 829.0,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 947.5,
+     "db_rel": -1.3
+    },
+    {
+     "hz": 710.6,
+     "db_rel": -6.2
+    },
+    {
+     "hz": 1055.1,
+     "db_rel": -10.1
+    },
+    {
+     "hz": 592.2,
+     "db_rel": -20.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -23.8,
+   -1.0,
+   -4.2,
+   -14.1,
+   -16.7,
+   -13.6,
+   -17.2,
+   -23.8,
+   -36.9,
+   -27.8,
+   -46.2
+  ]
+ },
+ {
+  "filename": "collision_2.wav",
+  "bytes": 14708,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 14664
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 11025,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 7332
+  },
+  "duration_s": 0.6650340136054422,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -2.9678357644511117,
+  "rms_dbfs": -19.071459097485683,
+  "crest_factor_db": 16.071096848099724,
+  "dc_offset": [
+   -5.381782394384206e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2533.7049918166936,
+  "lufs_ungated": -19.267692073541927,
+  "lufs_integrated": -19.774654534500705,
+  "lufs_momentary_max": -17.161778244370712,
+  "envelope_peak_dbfs": -9.600028156099402,
+  "onset_ms": 0.18140589569160998,
+  "time_to_envelope_peak_ms": 25.442176870748302,
+  "attack_ms": 25.26077097505669,
+  "rise_10_90_ms": 11.97278911564626,
+  "decay_20db_ms": 468.9342403628118,
+  "decay_40db_ms": 630.5668934240363,
+  "effective_length_ms": 656.0090702947846,
+  "trailing_silence_ms": 1.9047619047619047,
+  "tail_50ms_db_re_peak": -31.413291021866325,
+  "head_20ms_db_re_peak": -4.5912810593349604,
+  "wrap_jump": 0.0,
+  "rt60_ms": 1267.9702176264018,
+  "envelope_mod_peak_hz": 1.510574018126888,
+  "envelope_mod_depth_db_std": 9.457200834477511,
+  "spectrum": {
+   "centroid_hz": 1225.3206293674734,
+   "rolloff85_hz": 1415.80810546875,
+   "rolloff95_hz": 1531.549072265625,
+   "bandwidth_hz": 229.7333379742928,
+   "flatness": 8.46832163886223e-08,
+   "band_energy": {
+    "infra <20": 6.997700183843976e-11,
+    "sub 20-60": 1.3842685895183597e-10,
+    "bass 60-250": 3.806938599976851e-08,
+    "low-mid 250-500": 0.00039346214085981954,
+    "mid 500-2k": 0.9996064852265013,
+    "high-mid 2-4k": 1.0474209315543485e-08,
+    "presence 4-8k": 3.8806396127540764e-09,
+    "air >8k": 0.0
+   },
+   "peaks": [
+    {
+     "hz": 1413.1,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 1296.0,
+     "db_rel": -0.5
+    },
+    {
+     "hz": 1531.5,
+     "db_rel": -3.5
+    },
+    {
+     "hz": 1177.6,
+     "db_rel": -3.6
+    },
+    {
+     "hz": 1060.5,
+     "db_rel": -5.7
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 11,
+   "dominant_start_hz": 824.7,
+   "dominant_end_hz": 1413.5,
+   "dominant_min_hz": 824.6,
+   "dominant_max_hz": 1413.5,
+   "dominant_slope_oct_per_s": 1.741,
+   "centroid_start_hz": 764.0,
+   "centroid_end_hz": 1430.0,
+   "centroid_slope_oct_per_s": 1.798
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 715.0094430599727,
+   "rolloff85_hz": 829.0283203125,
+   "peaks": [
+    {
+     "hz": 710.6,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 829.0,
+     "db_rel": -2.7
+    },
+    {
+     "hz": 592.2,
+     "db_rel": -3.4
+    },
+    {
+     "hz": 947.5,
+     "db_rel": -11.6
+    },
+    {
+     "hz": 473.7,
+     "db_rel": -13.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -23.2,
+   -1.3,
+   -5.0,
+   -19.9,
+   -13.9,
+   -12.8,
+   -16.1,
+   -28.8,
+   -26.3,
+   -24.3,
+   -49.9
+  ]
+ },
+ {
+  "filename": "collision_3.wav",
+  "bytes": 14796,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 14752
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 11025,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 7376
+  },
+  "duration_s": 0.6690249433106576,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -3.000360980269274,
+  "rms_dbfs": -19.799702880824725,
+  "crest_factor_db": 16.799340631438767,
+  "dc_offset": [
+   -8.96577979892557e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2883.3005694143167,
+  "lufs_ungated": -19.925935736008174,
+  "lufs_integrated": -20.47389277775375,
+  "lufs_momentary_max": -17.808159558063835,
+  "envelope_peak_dbfs": -10.008570952273763,
+  "onset_ms": 0.09070294784580499,
+  "time_to_envelope_peak_ms": 17.460317460317462,
+  "attack_ms": 17.369614512471657,
+  "rise_10_90_ms": 12.970521541950111,
+  "decay_20db_ms": 467.93650793650795,
+  "decay_40db_ms": 639.546485260771,
+  "effective_length_ms": 657.0068027210884,
+  "trailing_silence_ms": 5.170068027210885,
+  "tail_50ms_db_re_peak": -31.2404003552438,
+  "head_20ms_db_re_peak": -3.487660210062682,
+  "wrap_jump": 0.0,
+  "rt60_ms": 1291.1786183476404,
+  "envelope_mod_peak_hz": 1.5015015015015014,
+  "envelope_mod_depth_db_std": 9.520400169097632,
+  "spectrum": {
+   "centroid_hz": 1261.6314720077846,
+   "rolloff85_hz": 1536.932373046875,
+   "rolloff95_hz": 1652.67333984375,
+   "bandwidth_hz": 284.36345923144734,
+   "flatness": 1.1791141049545173e-07,
+   "band_energy": {
+    "infra <20": 1.0040205520837202e-10,
+    "sub 20-60": 1.5370280451467166e-10,
+    "bass 60-250": 3.465804400158576e-09,
+    "low-mid 250-500": 9.010521769301134e-05,
+    "mid 500-2k": 0.9997263296975789,
+    "high-mid 2-4k": 0.00018355627747347473,
+    "presence 4-8k": 5.087345316701049e-09,
+    "air >8k": 0.0
+   },
+   "peaks": [
+    {
+     "hz": 1531.5,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 1648.6,
+     "db_rel": -1.1
+    },
+    {
+     "hz": 1413.1,
+     "db_rel": -1.3
+    },
+    {
+     "hz": 1060.5,
+     "db_rel": -1.8
+    },
+    {
+     "hz": 942.1,
+     "db_rel": -1.9
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 11,
+   "dominant_start_hz": 824.7,
+   "dominant_end_hz": 1649.3,
+   "dominant_min_hz": 824.7,
+   "dominant_max_hz": 1649.3,
+   "dominant_slope_oct_per_s": 2.219,
+   "centroid_start_hz": 836.8,
+   "centroid_end_hz": 1650.0,
+   "centroid_slope_oct_per_s": 2.31
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 830.0054469129407,
+   "rolloff85_hz": 947.4609375,
+   "peaks": [
+    {
+     "hz": 829.0,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 947.5,
+     "db_rel": -2.5
+    },
+    {
+     "hz": 710.6,
+     "db_rel": -2.8
+    },
+    {
+     "hz": 1055.1,
+     "db_rel": -10.3
+    },
+    {
+     "hz": 592.2,
+     "db_rel": -11.1
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -19.8,
+   -1.9,
+   -4.8,
+   -11.9,
+   -24.2,
+   -16.8,
+   -16.5,
+   -19.0,
+   -22.4,
+   -37.0,
+   -58.4
+  ]
+ },
+ {
+  "filename": "collision_4.wav",
+  "bytes": 20330,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 20286
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 11025,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 10143
+  },
+  "duration_s": 0.92,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -3.0003622493859576,
+  "rms_dbfs": -17.932936935931547,
+  "crest_factor_db": 14.93257468654559,
+  "dc_offset": [
+   -1.2395979678103125e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2479.3478260869565,
+  "lufs_ungated": -17.331951451791184,
+  "lufs_integrated": -17.489859512949707,
+  "lufs_momentary_max": -14.039757520540352,
+  "envelope_peak_dbfs": -9.421976955256167,
+  "onset_ms": 0.18140589569160998,
+  "time_to_envelope_peak_ms": 76.3265306122449,
+  "attack_ms": 76.14512471655328,
+  "rise_10_90_ms": 44.89795918367347,
+  "decay_20db_ms": 663.4920634920635,
+  "decay_40db_ms": 835.1020408163265,
+  "effective_length_ms": 911.4285714285714,
+  "trailing_silence_ms": 1.9047619047619047,
+  "tail_50ms_db_re_peak": -30.286663312269912,
+  "head_20ms_db_re_peak": -10.67055540157298,
+  "wrap_jump": 0.0,
+  "rt60_ms": 1688.1134096698074,
+  "envelope_mod_peak_hz": 1.0893246187363834,
+  "envelope_mod_depth_db_std": 9.036831229637082,
+  "spectrum": {
+   "centroid_hz": 1201.3451876335762,
+   "rolloff85_hz": 1756.9747924804688,
+   "rolloff95_hz": 1886.1740112304688,
+   "bandwidth_hz": 378.5743501470221,
+   "flatness": 1.3423302021931901e-06,
+   "band_energy": {
+    "infra <20": 4.8416830563040515e-11,
+    "sub 20-60": 5.382612091076972e-11,
+    "bass 60-250": 4.192412559198172e-10,
+    "low-mid 250-500": 1.060572778977457e-05,
+    "mid 500-2k": 0.9871930125260139,
+    "high-mid 2-4k": 0.012796378621027072,
+    "presence 4-8k": 2.6036852296144335e-09,
+    "air >8k": 0.0
+   },
+   "peaks": [
+    {
+     "hz": 942.1,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 824.3,
+     "db_rel": -0.9
+    },
+    {
+     "hz": 1060.5,
+     "db_rel": -3.3
+    },
+    {
+     "hz": 1178.3,
+     "db_rel": -7.2
+    },
+    {
+     "hz": 1767.1,
+     "db_rel": -7.9
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 16,
+   "dominant_start_hz": 1767.0,
+   "dominant_end_hz": 942.4,
+   "dominant_min_hz": 942.2,
+   "dominant_max_hz": 1767.0,
+   "dominant_slope_oct_per_s": -0.201,
+   "centroid_start_hz": 1591.9,
+   "centroid_end_hz": 924.3,
+   "centroid_slope_oct_per_s": -0.288
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 886.7845405493135,
+   "rolloff85_hz": 958.2275390625,
+   "peaks": [
+    {
+     "hz": 947.5,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 829.0,
+     "db_rel": -0.2
+    },
+    {
+     "hz": 1055.1,
+     "db_rel": -6.8
+    },
+    {
+     "hz": 710.6,
+     "db_rel": -7.8
+    },
+    {
+     "hz": 1173.6,
+     "db_rel": -20.3
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -32.4,
+   -0.0,
+   -3.3,
+   -12.5,
+   -11.0,
+   -11.1,
+   -14.0,
+   -23.6,
+   -29.5,
+   -24.4,
+   -47.7
+  ]
+ },
+ {
+  "filename": "ice_slide_loop.wav",
+  "bytes": 123524,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 123480
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 61740
+  },
+  "duration_s": 1.4,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -3.0003620674422153,
+  "rms_dbfs": -14.91477362537852,
+  "crest_factor_db": 11.914411375992565,
+  "dc_offset": [
+   -7.712929852000324e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 15315.000000000002,
+  "lufs_ungated": -12.441105014121398,
+  "lufs_integrated": -12.497710380590254,
+  "lufs_momentary_max": -12.113383574843825,
+  "envelope_peak_dbfs": -12.984463259722956,
+  "onset_ms": 0.0,
+  "time_to_envelope_peak_ms": 1170.8390022675737,
+  "attack_ms": 1170.8390022675737,
+  "rise_10_90_ms": 33.92290249433107,
+  "decay_20db_ms": 226.4852607709751,
+  "decay_40db_ms": 226.4852607709751,
+  "effective_length_ms": 1397.3242630385487,
+  "trailing_silence_ms": 0.0,
+  "tail_50ms_db_re_peak": -2.137744305843876,
+  "head_20ms_db_re_peak": -1.6618807911114377,
+  "wrap_jump": 0.037750244140625,
+  "rt60_ms": 390.6497843947262,
+  "envelope_mod_peak_hz": 0.7147962830593281,
+  "envelope_mod_depth_db_std": 0.6555321539992838,
+  "spectrum": {
+   "centroid_hz": 6525.172501456213,
+   "rolloff85_hz": 13310.884094238281,
+   "rolloff95_hz": 16234.016418457031,
+   "bandwidth_hz": 5409.837079451706,
+   "flatness": 0.22884621440975872,
+   "band_energy": {
+    "infra <20": 1.054085975801791e-11,
+    "sub 20-60": 1.4817274946723942e-07,
+    "bass 60-250": 0.006889138692590314,
+    "low-mid 250-500": 0.07765843696378585,
+    "mid 500-2k": 0.21923545780033848,
+    "high-mid 2-4k": 0.14400932081116377,
+    "presence 4-8k": 0.16760377151503744,
+    "air >8k": 0.3846037260337938
+   },
+   "peaks": []
+  },
+  "sweep": {
+   "frames": 117,
+   "dominant_start_hz": 515.5,
+   "dominant_end_hz": 358.3,
+   "dominant_min_hz": 298.5,
+   "dominant_max_hz": 4605.0,
+   "dominant_slope_oct_per_s": 0.315,
+   "centroid_start_hz": 6548.6,
+   "centroid_end_hz": 6346.9,
+   "centroid_slope_oct_per_s": -0.029
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 6458.205440342655,
+   "rolloff85_hz": 12962.98828125,
+   "peaks": []
+  },
+  "envelope_10pt_db_re_peak": [
+   -1.5,
+   -1.5,
+   -0.4,
+   -2.3,
+   -1.6,
+   -2.5,
+   -3.2,
+   -2.1,
+   -1.9,
+   -1.7,
+   -1.4
+  ]
+ },
+ {
+  "filename": "launch_boom.wav",
+  "bytes": 60844,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 60800
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 16000,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 30400
+  },
+  "duration_s": 1.9,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -3.0005097357407196,
+  "rms_dbfs": -16.809043695493724,
+  "crest_factor_db": 13.808681446107768,
+  "dc_offset": [
+   -8.030941611842105e-09
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 1842.1052631578948,
+  "lufs_ungated": -21.327126248896004,
+  "lufs_integrated": -19.271028429847775,
+  "lufs_momentary_max": -15.099597229807046,
+  "envelope_peak_dbfs": -4.082572865799304,
+  "onset_ms": 1.0625,
+  "time_to_envelope_peak_ms": 282.5,
+  "attack_ms": 281.43749999999994,
+  "rise_10_90_ms": 147.0,
+  "decay_20db_ms": 459.00000000000006,
+  "decay_40db_ms": 1360.0,
+  "effective_length_ms": 1642.5,
+  "trailing_silence_ms": 20.9375,
+  "tail_50ms_db_re_peak": -57.12149580410809,
+  "head_20ms_db_re_peak": -17.79698358174282,
+  "wrap_jump": 0.0,
+  "rt60_ms": 1776.83484283461,
+  "envelope_mod_peak_hz": 0.5274261603375527,
+  "envelope_mod_depth_db_std": 11.845102624030217,
+  "spectrum": {
+   "centroid_hz": 189.26942984290105,
+   "rolloff85_hz": 78.61328125,
+   "rolloff95_hz": 1288.57421875,
+   "bandwidth_hz": 633.5068080171714,
+   "flatness": 0.01583181620660964,
+   "band_energy": {
+    "infra <20": 0.00025309145487293694,
+    "sub 20-60": 0.8381090199900847,
+    "bass 60-250": 0.07921902751437938,
+    "low-mid 250-500": 0.010750075863885298,
+    "mid 500-2k": 0.041035598493193645,
+    "high-mid 2-4k": 0.02381452666976381,
+    "presence 4-8k": 0.0068186571566838106,
+    "air >8k": 2.8571364012279864e-09
+   },
+   "peaks": [
+    {
+     "hz": 26.9,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 84.0,
+     "db_rel": -14.5
+    },
+    {
+     "hz": 699.7,
+     "db_rel": -19.4
+    },
+    {
+     "hz": 4178.7,
+     "db_rel": -38.3
+    },
+    {
+     "hz": 5546.9,
+     "db_rel": -41.4
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 0
+  },
+  "onsets": [
+   {
+    "t_ms": 91.5,
+    "db_rel": -5.4
+   },
+   {
+    "t_ms": 214.5,
+    "db_rel": -1.5
+   },
+   {
+    "t_ms": 282.5,
+    "db_rel": 0.0
+   },
+   {
+    "t_ms": 335.5,
+    "db_rel": -8.4
+   },
+   {
+    "t_ms": 377.5,
+    "db_rel": -4.9
+   },
+   {
+    "t_ms": 448.5,
+    "db_rel": -5.3
+   },
+   {
+    "t_ms": 502.5,
+    "db_rel": -14.4
+   },
+   {
+    "t_ms": 584.5,
+    "db_rel": -12.4
+   },
+   {
+    "t_ms": 660.5,
+    "db_rel": -13.7
+   },
+   {
+    "t_ms": 718.5,
+    "db_rel": -22.9
+   },
+   {
+    "t_ms": 806.5,
+    "db_rel": -20.4
+   },
+   {
+    "t_ms": 925.5,
+    "db_rel": -24.7
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 2192.1071094832387,
+   "rolloff85_hz": 2281.25,
+   "peaks": [
+    {
+     "hz": 2218.8,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 2265.6,
+     "db_rel": -0.9
+    },
+    {
+     "hz": 2171.9,
+     "db_rel": -1.5
+    },
+    {
+     "hz": 2312.5,
+     "db_rel": -4.2
+    },
+    {
+     "hz": 2125.0,
+     "db_rel": -5.9
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -37.9,
+   -0.9,
+   -8.6,
+   -22.6,
+   -26.3,
+   -30.2,
+   -37.8,
+   -36.9,
+   -43.3,
+   -45.3,
+   -74.0
+  ]
+ },
+ {
+  "filename": "launch_pop.wav",
+  "bytes": 13274,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 13230
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 6615
+  },
+  "duration_s": 0.15,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -2.8656766776428655,
+  "rms_dbfs": -20.596607809723736,
+  "crest_factor_db": 17.596245560337778,
+  "dc_offset": [
+   1.7715419501133788e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 10500.0,
+  "lufs_ungated": -17.59055024910118,
+  "lufs_integrated": null,
+  "lufs_momentary_max": null,
+  "envelope_peak_dbfs": -11.145705109519595,
+  "onset_ms": 0.11337868480725624,
+  "time_to_envelope_peak_ms": 80.31746031746032,
+  "attack_ms": 80.20408163265307,
+  "rise_10_90_ms": 51.882086167800445,
+  "decay_20db_ms": 20.95238095238096,
+  "decay_40db_ms": 39.909297052154194,
+  "effective_length_ms": 120.2267573696145,
+  "trailing_silence_ms": 15.328798185941043,
+  "tail_50ms_db_re_peak": -30.306934398866076,
+  "head_20ms_db_re_peak": -24.08711135542056,
+  "wrap_jump": 0.0,
+  "rt60_ms": 55.27566736524775,
+  "envelope_mod_peak_hz": 6.849315068493151,
+  "envelope_mod_depth_db_std": 9.771051110571632,
+  "spectrum": {
+   "centroid_hz": 4645.896070326611,
+   "rolloff85_hz": 6960.60791015625,
+   "rolloff95_hz": 8844.76318359375,
+   "bandwidth_hz": 2271.3088226316245,
+   "flatness": 0.056176267882161186,
+   "band_energy": {
+    "infra <20": 3.6203864136449523e-06,
+    "sub 20-60": 2.3608113193368434e-05,
+    "bass 60-250": 0.0007378723424626796,
+    "low-mid 250-500": 0.0017669305615283387,
+    "mid 500-2k": 0.09071343385805089,
+    "high-mid 2-4k": 0.354666932207693,
+    "presence 4-8k": 0.4615968496131977,
+    "air >8k": 0.09049075291746041
+   },
+   "peaks": []
+  },
+  "sweep": {
+   "frames": 9,
+   "dominant_start_hz": 5728.4,
+   "dominant_end_hz": 3359.1,
+   "dominant_min_hz": 2621.1,
+   "dominant_max_hz": 5728.4,
+   "dominant_slope_oct_per_s": -4.917,
+   "centroid_start_hz": 4653.9,
+   "centroid_end_hz": 4529.1,
+   "centroid_slope_oct_per_s": -0.322
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 4638.645312471388,
+   "rolloff85_hz": 7009.0576171875,
+   "peaks": []
+  },
+  "envelope_10pt_db_re_peak": [
+   -25.5,
+   -22.8,
+   -17.7,
+   -12.3,
+   -6.2,
+   -2.4,
+   -6.6,
+   -22.1,
+   -38.1,
+   -51.8,
+   -78.9
+  ]
+ },
+ {
+  "filename": "time_riser.wav",
+  "bytes": 282284,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 282240
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 22050,
+   "channels": 1,
+   "bit_depth": 16,
+   "frames": 141120
+  },
+  "duration_s": 6.4,
+  "peak_dbfs": -3.0003622493859567,
+  "peak_per_channel_dbfs": [
+   -3.0003622493859567
+  ],
+  "true_peak_dbfs": -1.8949388179950744,
+  "rms_dbfs": -17.79991047008125,
+  "crest_factor_db": 14.799548220695295,
+  "dc_offset": [
+   -1.7083961677118764e-08
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 3518.75,
+  "lufs_ungated": -17.63912828801514,
+  "lufs_integrated": -16.90608611513264,
+  "lufs_momentary_max": -13.282966591071382,
+  "envelope_peak_dbfs": -8.736244888027542,
+  "onset_ms": 0.6349206349206349,
+  "time_to_envelope_peak_ms": 47.39229024943311,
+  "attack_ms": 46.75736961451248,
+  "rise_10_90_ms": 33.92290249433107,
+  "decay_20db_ms": 4813.061224489796,
+  "decay_40db_ms": 6202.902494331066,
+  "effective_length_ms": 6250.294784580498,
+  "trailing_silence_ms": 20.272108843537413,
+  "tail_50ms_db_re_peak": -55.336002998276626,
+  "head_20ms_db_re_peak": -7.689716991622699,
+  "wrap_jump": 0.0,
+  "rt60_ms": 10402.447633768505,
+  "envelope_mod_peak_hz": 0.62402496099844,
+  "envelope_mod_depth_db_std": 8.275645961718906,
+  "spectrum": {
+   "centroid_hz": 1140.5110835639846,
+   "rolloff85_hz": 2011.1675262451172,
+   "rolloff95_hz": 3266.9065475463867,
+   "bandwidth_hz": 977.9505078833485,
+   "flatness": 0.018280013134690607,
+   "band_energy": {
+    "infra <20": 5.002488982283419e-06,
+    "sub 20-60": 0.030780904184841616,
+    "bass 60-250": 2.982809138497233e-05,
+    "low-mid 250-500": 0.1577740048235839,
+    "mid 500-2k": 0.6600817732253935,
+    "high-mid 2-4k": 0.127947330823826,
+    "presence 4-8k": 0.023248032738447024,
+    "air >8k": 0.00013312362354056593
+   },
+   "peaks": [
+    {
+     "hz": 44.0,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 262,
+   "dominant_start_hz": 44.1,
+   "dominant_end_hz": 1639.0,
+   "dominant_min_hz": 43.9,
+   "dominant_max_hz": 1639.0,
+   "dominant_slope_oct_per_s": 0.792,
+   "centroid_start_hz": 3184.3,
+   "centroid_end_hz": 2938.6,
+   "centroid_slope_oct_per_s": 0.356
+  },
+  "onsets": [
+   {
+    "t_ms": 17.5,
+    "db_rel": -4.2
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 3299.19876801462,
+   "rolloff85_hz": 5867.7978515625,
+   "peaks": [
+    {
+     "hz": 43.1,
+     "db_rel": -5.6
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -19.8,
+   -3.9,
+   -4.8,
+   -7.0,
+   -9.1,
+   -11.9,
+   -14.5,
+   -17.1,
+   -22.4,
+   -27.4,
+   -74.2
+  ]
+ }
+]

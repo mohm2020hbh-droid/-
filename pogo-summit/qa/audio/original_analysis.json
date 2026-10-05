@@ -1,0 +1,1797 @@
+[
+ {
+  "filename": "bounce1.wav",
+  "bytes": 281796,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 281752
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 70438
+  },
+  "duration_s": 1.597233560090703,
+  "peak_dbfs": -0.7071343380151317,
+  "peak_per_channel_dbfs": [
+   -0.7071343380151317,
+   -0.7316109772581116
+  ],
+  "true_peak_dbfs": -0.7049709766886088,
+  "rms_dbfs": -18.243612299218043,
+  "crest_factor_db": 17.536477961202912,
+  "dc_offset": [
+   8.925042013898748e-08,
+   1.546718446097987e-07
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2843.0406882648567,
+  "lufs_ungated": -15.24207431180668,
+  "lufs_integrated": -15.548484543166833,
+  "lufs_momentary_max": -10.125098079536633,
+  "stereo": {
+   "lr_correlation": 0.9999633817170936,
+   "side_to_mid_db": -47.37318402486815,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -6.360441140445779,
+  "onset_ms": 0.06802721088435373,
+  "time_to_envelope_peak_ms": 57.36961451247166,
+  "attack_ms": 57.3015873015873,
+  "rise_10_90_ms": 20.952380952380956,
+  "decay_20db_ms": 1095.5102040816328,
+  "decay_40db_ms": 1436.734693877551,
+  "effective_length_ms": 1494.1043083900227,
+  "trailing_silence_ms": 58.54875283446712,
+  "tail_50ms_db_re_peak": -70.59200031557404,
+  "head_20ms_db_re_peak": -4.4176028276410015,
+  "wrap_jump": 3.0517578125e-05,
+  "rt60_ms": 3123.6270611630853,
+  "envelope_mod_peak_hz": 0.6265664160401002,
+  "envelope_mod_depth_db_std": 8.621235052290578,
+  "spectrum": {
+   "centroid_hz": 1152.2717700545356,
+   "rolloff85_hz": 1294.3473815917969,
+   "rolloff95_hz": 1360.9657287597656,
+   "bandwidth_hz": 155.94792622061757,
+   "flatness": 3.923528018648424e-05,
+   "band_energy": {
+    "infra <20": 2.653790900655803e-06,
+    "sub 20-60": 1.8534996828253726e-05,
+    "bass 60-250": 8.149889706952123e-05,
+    "low-mid 250-500": 0.0006294820843953527,
+    "mid 500-2k": 0.9971974053255808,
+    "high-mid 2-4k": 0.0020321703098093017,
+    "presence 4-8k": 2.1460852075623483e-05,
+    "air >8k": 1.6793743340571154e-05
+   },
+   "peaks": [
+    {
+     "hz": 1060.2,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 1177.9,
+     "db_rel": -0.3
+    },
+    {
+     "hz": 1295.7,
+     "db_rel": -4.2
+    },
+    {
+     "hz": 942.4,
+     "db_rel": -8.4
+    },
+    {
+     "hz": 1119.4,
+     "db_rel": -9.0
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 122,
+   "dominant_start_hz": 828.6,
+   "dominant_end_hz": 997.1,
+   "dominant_min_hz": 828.6,
+   "dominant_max_hz": 1419.8,
+   "dominant_slope_oct_per_s": -0.055,
+   "centroid_start_hz": 870.1,
+   "centroid_end_hz": 975.7,
+   "centroid_slope_oct_per_s": -0.091
+  },
+  "onsets": [
+   {
+    "t_ms": 74.3,
+    "db_rel": -0.3
+   },
+   {
+    "t_ms": 125.2,
+    "db_rel": -1.0
+   },
+   {
+    "t_ms": 243.9,
+    "db_rel": -3.1
+   },
+   {
+    "t_ms": 362.7,
+    "db_rel": -5.1
+   },
+   {
+    "t_ms": 498.4,
+    "db_rel": -9.0
+   },
+   {
+    "t_ms": 575.2,
+    "db_rel": -10.3
+   },
+   {
+    "t_ms": 634.1,
+    "db_rel": -9.9
+   },
+   {
+    "t_ms": 769.8,
+    "db_rel": -13.2
+   },
+   {
+    "t_ms": 889.5,
+    "db_rel": -14.9
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 868.0043353522389,
+   "rolloff85_hz": 893.6279296875,
+   "peaks": [
+    {
+     "hz": 829.0,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 882.9,
+     "db_rel": -2.6
+    },
+    {
+     "hz": 764.4,
+     "db_rel": -5.3
+    },
+    {
+     "hz": 3434.5,
+     "db_rel": -32.6
+    },
+    {
+     "hz": 5146.4,
+     "db_rel": -39.3
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -11.5,
+   -12.2,
+   -6.7,
+   -9.4,
+   -18.3,
+   -22.7,
+   -22.3,
+   -20.3,
+   -29.4,
+   -37.9,
+   -79.8
+  ]
+ },
+ {
+  "filename": "bounce2.wav",
+  "bytes": 117396,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 117352
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 29338
+  },
+  "duration_s": 0.6652607709750566,
+  "peak_dbfs": -2.431530616206692,
+  "peak_per_channel_dbfs": [
+   -2.4497864032584467,
+   -2.431530616206692
+  ],
+  "true_peak_dbfs": -2.4178835144524533,
+  "rms_dbfs": -16.14504961302763,
+  "crest_factor_db": 13.71351899682094,
+  "dc_offset": [
+   3.387224406859278e-05,
+   3.3766143006190774e-05
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 5621.85561387961,
+  "lufs_ungated": -13.340215922427761,
+  "lufs_integrated": -13.439313313817435,
+  "lufs_momentary_max": -11.227963069394452,
+  "stereo": {
+   "lr_correlation": 0.9999594104032691,
+   "side_to_mid_db": -46.91654968532001,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -7.479398146356182,
+  "onset_ms": 0.09070294784580499,
+  "time_to_envelope_peak_ms": 23.44671201814059,
+  "attack_ms": 23.35600907029479,
+  "rise_10_90_ms": 19.954648526077097,
+  "decay_20db_ms": 458.95691609977325,
+  "decay_40db_ms": 551.7460317460317,
+  "effective_length_ms": 575.1927437641723,
+  "trailing_silence_ms": 60.63492063492063,
+  "tail_50ms_db_re_peak": -79.14751201814315,
+  "head_20ms_db_re_peak": -4.638879748984241,
+  "wrap_jump": 0.0,
+  "rt60_ms": 1057.9364644885568,
+  "envelope_mod_peak_hz": 1.510574018126888,
+  "envelope_mod_depth_db_std": 9.768807958026963,
+  "spectrum": {
+   "centroid_hz": 1208.0595670782939,
+   "rolloff85_hz": 1530.2032470703125,
+   "rolloff95_hz": 1648.6358642578125,
+   "bandwidth_hz": 288.1703078648104,
+   "flatness": 3.3784132779476054e-05,
+   "band_energy": {
+    "infra <20": 1.6389230142839405e-05,
+    "sub 20-60": 2.518939731145994e-05,
+    "bass 60-250": 9.392547159964987e-05,
+    "low-mid 250-500": 0.0005074898679651499,
+    "mid 500-2k": 0.9923955965338167,
+    "high-mid 2-4k": 0.006868187747609843,
+    "presence 4-8k": 8.3366559122969e-05,
+    "air >8k": 9.855192431270635e-06
+   },
+   "peaks": [
+    {
+     "hz": 1531.5,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 1414.5,
+     "db_rel": -0.6
+    },
+    {
+     "hz": 1297.4,
+     "db_rel": -1.8
+    },
+    {
+     "hz": 1178.9,
+     "db_rel": -3.0
+    },
+    {
+     "hz": 1648.6,
+     "db_rel": -4.4
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 45,
+   "dominant_start_hz": 715.3,
+   "dominant_end_hz": 1415.8,
+   "dominant_min_hz": 710.5,
+   "dominant_max_hz": 1534.6,
+   "dominant_slope_oct_per_s": 2.364,
+   "centroid_start_hz": 773.1,
+   "centroid_end_hz": 1414.6,
+   "centroid_slope_oct_per_s": 2.118
+  },
+  "onsets": [
+   {
+    "t_ms": 74.3,
+    "db_rel": -1.5
+   },
+   {
+    "t_ms": 142.2,
+    "db_rel": -0.8
+   },
+   {
+    "t_ms": 193.1,
+    "db_rel": -1.0
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 772.0971646580502,
+   "rolloff85_hz": 796.728515625,
+   "peaks": [
+    {
+     "hz": 710.6,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 775.2,
+     "db_rel": -1.4
+    },
+    {
+     "hz": 656.8,
+     "db_rel": -8.2
+    },
+    {
+     "hz": 3628.3,
+     "db_rel": -35.0
+    },
+    {
+     "hz": 4694.2,
+     "db_rel": -38.2
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -8.9,
+   -12.5,
+   -7.6,
+   -10.0,
+   -12.0,
+   -26.4,
+   -15.4,
+   -17.2,
+   -27.3,
+   -55.4,
+   -80.3
+  ]
+ },
+ {
+  "filename": "bounce3.wav",
+  "bytes": 118016,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 117972
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 29493
+  },
+  "duration_s": 0.6687755102040817,
+  "peak_dbfs": -2.064829381560748,
+  "peak_per_channel_dbfs": [
+   -2.064829381560748,
+   -2.0776146258217087
+  ],
+  "true_peak_dbfs": -2.060042959812392,
+  "rms_dbfs": -15.406500614459993,
+  "crest_factor_db": 13.341671232899245,
+  "dc_offset": [
+   2.8606413889524633e-05,
+   2.8569163260138e-05
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 3593.1339639914554,
+  "lufs_ungated": -12.544575103073626,
+  "lufs_integrated": -12.863880348531765,
+  "lufs_momentary_max": -10.402910582575407,
+  "stereo": {
+   "lr_correlation": 0.9999550266838861,
+   "side_to_mid_db": -46.454249475244445,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -6.3341602701816,
+  "onset_ms": 0.11337868480725624,
+  "time_to_envelope_peak_ms": 15.46485260770975,
+  "attack_ms": 15.351473922902493,
+  "rise_10_90_ms": 10.975056689342402,
+  "decay_20db_ms": 466.9387755102041,
+  "decay_40db_ms": 627.5736961451247,
+  "effective_length_ms": 643.0385487528345,
+  "trailing_silence_ms": 18.299319727891156,
+  "tail_50ms_db_re_peak": -41.70582677481802,
+  "head_20ms_db_re_peak": -3.36113059735362,
+  "wrap_jump": 6.103515625e-05,
+  "rt60_ms": 1145.232755247305,
+  "envelope_mod_peak_hz": 1.5015015015015014,
+  "envelope_mod_depth_db_std": 10.501405322219657,
+  "spectrum": {
+   "centroid_hz": 1290.1092588809997,
+   "rolloff85_hz": 1765.72265625,
+   "rolloff95_hz": 1884.1552734375,
+   "bandwidth_hz": 372.0295021065346,
+   "flatness": 4.3092404058612585e-05,
+   "band_energy": {
+    "infra <20": 2.1457126229902868e-05,
+    "sub 20-60": 2.608293976513705e-05,
+    "bass 60-250": 0.0001409827189770539,
+    "low-mid 250-500": 0.0004450689419515342,
+    "mid 500-2k": 0.9794441824537597,
+    "high-mid 2-4k": 0.01979258667808371,
+    "presence 4-8k": 0.00011994760138286828,
+    "air >8k": 9.69153985015268e-06
+   },
+   "peaks": [
+    {
+     "hz": 1767.1,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 1650.0,
+     "db_rel": -0.9
+    },
+    {
+     "hz": 1531.5,
+     "db_rel": -3.1
+    },
+    {
+     "hz": 1884.2,
+     "db_rel": -3.3
+    },
+    {
+     "hz": 767.1,
+     "db_rel": -5.0
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 48,
+   "dominant_start_hz": 826.5,
+   "dominant_end_hz": 1648.5,
+   "dominant_min_hz": 765.3,
+   "dominant_max_hz": 1769.6,
+   "dominant_slope_oct_per_s": 2.624,
+   "centroid_start_hz": 862.6,
+   "centroid_end_hz": 1607.3,
+   "centroid_slope_oct_per_s": 2.292
+  },
+  "onsets": [
+   {
+    "t_ms": 142.2,
+    "db_rel": -0.7
+   },
+   {
+    "t_ms": 193.1,
+    "db_rel": -1.5
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 859.4567565516905,
+   "rolloff85_hz": 893.6279296875,
+   "peaks": [
+    {
+     "hz": 829.0,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 764.4,
+     "db_rel": -1.5
+    },
+    {
+     "hz": 882.9,
+     "db_rel": -4.1
+    },
+    {
+     "hz": 2368.7,
+     "db_rel": -27.8
+    },
+    {
+     "hz": 2487.1,
+     "db_rel": -30.3
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -12.1,
+   -4.8,
+   -10.6,
+   -17.0,
+   -12.3,
+   -15.2,
+   -23.4,
+   -25.2,
+   -24.2,
+   -30.9,
+   -80.2
+  ]
+ },
+ {
+  "filename": "bounce4.wav",
+  "bytes": 162296,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 162252
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 40563
+  },
+  "duration_s": 0.919795918367347,
+  "peak_dbfs": -0.10051157734963657,
+  "peak_per_channel_dbfs": [
+   -0.10051157734963657,
+   -0.1176906347385094
+  ],
+  "true_peak_dbfs": -0.07435208909656169,
+  "rms_dbfs": -14.352036597494983,
+  "crest_factor_db": 14.251525020145346,
+  "dc_offset": [
+   2.76789611029448e-06,
+   2.8070183168004092e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2722.3430219658308,
+  "lufs_ungated": -11.206469627385236,
+  "lufs_integrated": -10.688036001526743,
+  "lufs_momentary_max": -8.159324708307539,
+  "stereo": {
+   "lr_correlation": 0.99995593108468,
+   "side_to_mid_db": -46.52346145101866,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -4.448922992072615,
+  "onset_ms": 0.045351473922902494,
+  "time_to_envelope_peak_ms": 92.29024943310657,
+  "attack_ms": 92.24489795918367,
+  "rise_10_90_ms": 69.84126984126985,
+  "decay_20db_ms": 593.6507936507936,
+  "decay_40db_ms": 790.204081632653,
+  "effective_length_ms": 882.4943310657596,
+  "trailing_silence_ms": 16.598639455782312,
+  "tail_50ms_db_re_peak": -47.3288237286605,
+  "head_20ms_db_re_peak": -13.84909834429245,
+  "wrap_jump": 6.103515625e-05,
+  "rt60_ms": 1224.8037468282134,
+  "envelope_mod_peak_hz": 1.0905125408942202,
+  "envelope_mod_depth_db_std": 10.155700035799555,
+  "spectrum": {
+   "centroid_hz": 1127.9543371460893,
+   "rolloff85_hz": 1312.8524780273438,
+   "rolloff95_hz": 1658.7295532226562,
+   "bandwidth_hz": 258.0254920132305,
+   "flatness": 1.2592333382009367e-05,
+   "band_energy": {
+    "infra <20": 8.461832360186492e-06,
+    "sub 20-60": 3.154620144989362e-06,
+    "bass 60-250": 0.0002516584059117806,
+    "low-mid 250-500": 0.00039996980443947404,
+    "mid 500-2k": 0.9898534889711507,
+    "high-mid 2-4k": 0.009377323856701621,
+    "presence 4-8k": 0.00010437818477589415,
+    "air >8k": 1.5643245154975996e-06
+   },
+   "peaks": [
+    {
+     "hz": 854.6,
+     "db_rel": -6.6
+    },
+    {
+     "hz": 723.4,
+     "db_rel": -13.1
+    },
+    {
+     "hz": 1908.4,
+     "db_rel": -15.7
+    },
+    {
+     "hz": 592.2,
+     "db_rel": -20.0
+    },
+    {
+     "hz": 783.3,
+     "db_rel": -21.0
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 64,
+   "dominant_start_hz": 858.8,
+   "dominant_end_hz": 996.6,
+   "dominant_min_hz": 858.8,
+   "dominant_max_hz": 1921.2,
+   "dominant_slope_oct_per_s": -0.155,
+   "centroid_start_hz": 859.6,
+   "centroid_end_hz": 943.1,
+   "centroid_slope_oct_per_s": -0.255
+  },
+  "onsets": [
+   {
+    "t_ms": 17.5,
+    "db_rel": -9.5
+   },
+   {
+    "t_ms": 236.0,
+    "db_rel": -4.4
+   },
+   {
+    "t_ms": 403.6,
+    "db_rel": -11.2
+   },
+   {
+    "t_ms": 449.5,
+    "db_rel": -5.4
+   },
+   {
+    "t_ms": 517.3,
+    "db_rel": -9.7
+   },
+   {
+    "t_ms": 570.2,
+    "db_rel": -19.4
+   },
+   {
+    "t_ms": 617.1,
+    "db_rel": -13.6
+   },
+   {
+    "t_ms": 684.9,
+    "db_rel": -18.7
+   },
+   {
+    "t_ms": 767.8,
+    "db_rel": -27.3
+   },
+   {
+    "t_ms": 851.6,
+    "db_rel": -28.3
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 861.864385134295,
+   "rolloff85_hz": 968.994140625,
+   "peaks": [
+    {
+     "hz": 861.3,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 732.1,
+     "db_rel": -1.1
+    },
+    {
+     "hz": 796.7,
+     "db_rel": -7.0
+    },
+    {
+     "hz": 990.5,
+     "db_rel": -7.3
+    },
+    {
+     "hz": 2842.4,
+     "db_rel": -26.8
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -22.9,
+   -0.2,
+   -17.8,
+   -5.1,
+   -20.2,
+   -14.6,
+   -31.7,
+   -19.9,
+   -49.7,
+   -32.3,
+   -78.4
+  ]
+ },
+ {
+  "filename": "break1.wav",
+  "bytes": 91672,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 91628
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 22907
+  },
+  "duration_s": 0.5194331065759638,
+  "peak_dbfs": -0.26154893296057874,
+  "peak_per_channel_dbfs": [
+   -0.26154893296057874,
+   -0.27713391264731385
+  ],
+  "true_peak_dbfs": -0.2309753982954273,
+  "rms_dbfs": -16.947371068340658,
+  "crest_factor_db": 16.68582213538008,
+  "dc_offset": [
+   0.0006762147496193849,
+   0.0009200596177614921
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2242.8297027109616,
+  "lufs_ungated": -15.334974836642509,
+  "lufs_integrated": -16.694678714094056,
+  "lufs_momentary_max": -14.201049158936227,
+  "stereo": {
+   "lr_correlation": 0.9967771227707696,
+   "side_to_mid_db": -27.920304754323563,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -5.5883497786456875,
+  "onset_ms": 0.0,
+  "time_to_envelope_peak_ms": 73.33333333333333,
+  "attack_ms": 73.33333333333333,
+  "rise_10_90_ms": 69.84126984126985,
+  "decay_20db_ms": 185.57823129251702,
+  "decay_40db_ms": 377.1428571428571,
+  "effective_length_ms": 450.4761904761905,
+  "trailing_silence_ms": 17.687074829931973,
+  "tail_50ms_db_re_peak": -51.89241371917017,
+  "head_20ms_db_re_peak": -4.236113641604941,
+  "wrap_jump": 0.0044097900390625,
+  "rt60_ms": 734.1819371515126,
+  "envelope_mod_peak_hz": 1.937984496124031,
+  "envelope_mod_depth_db_std": 10.95948636424052,
+  "spectrum": {
+   "centroid_hz": 764.9267776136069,
+   "rolloff85_hz": 1706.50634765625,
+   "rolloff95_hz": 4419.68994140625,
+   "bandwidth_hz": 1606.2511041419393,
+   "flatness": 0.006754439298906989,
+   "band_energy": {
+    "infra <20": 0.040386798525503496,
+    "sub 20-60": 0.5167345005517753,
+    "bass 60-250": 0.12444604043467941,
+    "low-mid 250-500": 0.07572053057701197,
+    "mid 500-2k": 0.10721433534196108,
+    "high-mid 2-4k": 0.05920650435118955,
+    "presence 4-8k": 0.07111479916749511,
+    "air >8k": 0.005176491050384011
+   },
+   "peaks": [
+    {
+     "hz": 262.4,
+     "db_rel": -10.5
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 26,
+   "dominant_start_hz": 64.5,
+   "dominant_end_hz": 43.5,
+   "dominant_min_hz": 32.1,
+   "dominant_max_hz": 178.1,
+   "dominant_slope_oct_per_s": -1.284,
+   "centroid_start_hz": 1128.6,
+   "centroid_end_hz": 202.2,
+   "centroid_slope_oct_per_s": -3.063
+  },
+  "onsets": [
+   {
+    "t_ms": 30.4,
+    "db_rel": -3.4
+   },
+   {
+    "t_ms": 73.3,
+    "db_rel": 0.0
+   },
+   {
+    "t_ms": 122.2,
+    "db_rel": -8.9
+   },
+   {
+    "t_ms": 167.1,
+    "db_rel": -11.5
+   },
+   {
+    "t_ms": 224.0,
+    "db_rel": -16.7
+   },
+   {
+    "t_ms": 292.8,
+    "db_rel": -20.9
+   },
+   {
+    "t_ms": 349.7,
+    "db_rel": -25.1
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 1095.2538304836296,
+   "rolloff85_hz": 2519.384765625,
+   "peaks": [
+    {
+     "hz": 64.6,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 12370.8,
+     "db_rel": -40.3
+    },
+    {
+     "hz": 12295.5,
+     "db_rel": -40.8
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -2.4,
+   -9.0,
+   -10.9,
+   -22.9,
+   -22.1,
+   -22.2,
+   -25.1,
+   -38.5,
+   -41.4,
+   -42.3,
+   -80.2
+  ]
+ },
+ {
+  "filename": "break2.wav",
+  "bytes": 328412,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 328368
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 82092
+  },
+  "duration_s": 1.8614965986394558,
+  "peak_dbfs": -1.9356824381248507,
+  "peak_per_channel_dbfs": [
+   -1.9356824381248507,
+   -2.039650439477862
+  ],
+  "true_peak_dbfs": -1.7778565070814312,
+  "rms_dbfs": -12.18665612707696,
+  "crest_factor_db": 10.25097368895211,
+  "dc_offset": [
+   -0.021238080092423936,
+   0.018529988529447143
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 1926.406958047069,
+  "lufs_ungated": -12.50625208465171,
+  "lufs_integrated": -11.755864634905462,
+  "lufs_momentary_max": -7.815523939770056,
+  "stereo": {
+   "lr_correlation": 0.7847705186750723,
+   "side_to_mid_db": -9.181058279668063,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -2.9356027593942797,
+  "onset_ms": 0.7029478458049886,
+  "time_to_envelope_peak_ms": 17.460317460317462,
+  "attack_ms": 16.757369614512474,
+  "rise_10_90_ms": 1.99546485260771,
+  "decay_20db_ms": 1315.0113378684807,
+  "decay_40db_ms": 1735.0566893424038,
+  "effective_length_ms": 1752.5170068027212,
+  "trailing_silence_ms": 16.643990929705218,
+  "tail_50ms_db_re_peak": -58.43236997813981,
+  "head_20ms_db_re_peak": -1.1181902492911235,
+  "wrap_jump": 0.0004425048828125,
+  "rt60_ms": 2873.1342977961317,
+  "envelope_mod_peak_hz": 0.537345513164965,
+  "envelope_mod_depth_db_std": 10.221843741133856,
+  "spectrum": {
+   "centroid_hz": 290.29195176857326,
+   "rolloff85_hz": 238.88397216796875,
+   "rolloff95_hz": 1376.1062622070312,
+   "bandwidth_hz": 915.1096588357419,
+   "flatness": 0.0027428420384230045,
+   "band_energy": {
+    "infra <20": 0.08778124967573277,
+    "sub 20-60": 0.2518965336747794,
+    "bass 60-250": 0.5150958341509234,
+    "low-mid 250-500": 0.05984868551213927,
+    "mid 500-2k": 0.05246632397898699,
+    "high-mid 2-4k": 0.01822117025480833,
+    "presence 4-8k": 0.010777428423867877,
+    "air >8k": 0.00391277432876193
+   },
+   "peaks": [
+    {
+     "hz": 7373.1,
+     "db_rel": -35.4
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 110,
+   "dominant_start_hz": 47.5,
+   "dominant_end_hz": 55.2,
+   "dominant_min_hz": 30.2,
+   "dominant_max_hz": 1483.8,
+   "dominant_slope_oct_per_s": 0.2,
+   "centroid_start_hz": 89.1,
+   "centroid_end_hz": 515.7,
+   "centroid_slope_oct_per_s": 0.818
+  },
+  "onsets": [
+   {
+    "t_ms": 65.4,
+    "db_rel": -8.3
+   },
+   {
+    "t_ms": 189.1,
+    "db_rel": -4.6
+   },
+   {
+    "t_ms": 277.9,
+    "db_rel": -0.7
+   },
+   {
+    "t_ms": 438.5,
+    "db_rel": -2.8
+   },
+   {
+    "t_ms": 536.3,
+    "db_rel": -7.3
+   },
+   {
+    "t_ms": 624.1,
+    "db_rel": -7.4
+   },
+   {
+    "t_ms": 672.0,
+    "db_rel": -10.1
+   },
+   {
+    "t_ms": 716.9,
+    "db_rel": -7.4
+   },
+   {
+    "t_ms": 817.6,
+    "db_rel": -10.4
+   },
+   {
+    "t_ms": 900.5,
+    "db_rel": -10.1
+   },
+   {
+    "t_ms": 942.4,
+    "db_rel": -8.8
+   },
+   {
+    "t_ms": 1024.2,
+    "db_rel": -12.2
+   },
+   {
+    "t_ms": 1076.1,
+    "db_rel": -15.8
+   },
+   {
+    "t_ms": 1141.9,
+    "db_rel": -13.4
+   },
+   {
+    "t_ms": 1199.8,
+    "db_rel": -15.4
+   },
+   {
+    "t_ms": 1273.6,
+    "db_rel": -20.0
+   },
+   {
+    "t_ms": 1388.3,
+    "db_rel": -28.5
+   },
+   {
+    "t_ms": 1450.2,
+    "db_rel": -27.7
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 92.98986848406804,
+   "rolloff85_hz": 64.599609375,
+   "peaks": [
+    {
+     "hz": 43.1,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 140.0,
+     "db_rel": -12.5
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -3.2,
+   -5.7,
+   -4.9,
+   -13.6,
+   -4.4,
+   -18.6,
+   -26.6,
+   -26.1,
+   -33.0,
+   -41.1,
+   -82.3
+  ]
+ },
+ {
+  "filename": "iceSlide.wav",
+  "bytes": 246760,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 246716
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 61679
+  },
+  "duration_s": 1.3986167800453515,
+  "peak_dbfs": -8.128232787706736,
+  "peak_per_channel_dbfs": [
+   -8.786388808334237,
+   -8.128232787706736
+  ],
+  "true_peak_dbfs": -8.075311050064878,
+  "rms_dbfs": -23.54761106311454,
+  "crest_factor_db": 15.419378275407805,
+  "dc_offset": [
+   0.00014524682954034193,
+   -5.0030244162316186e-05
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 14500.75552457076,
+  "lufs_ungated": -18.066241749950514,
+  "lufs_integrated": -17.74058739165292,
+  "lufs_momentary_max": -17.141004128526355,
+  "stereo": {
+   "lr_correlation": 0.7871940425534055,
+   "side_to_mid_db": -9.24165919838865,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -18.55799569981564,
+  "onset_ms": 0.022675736961451247,
+  "time_to_envelope_peak_ms": 595.1473922902495,
+  "attack_ms": 595.1247165532881,
+  "rise_10_90_ms": 585.6689342403627,
+  "decay_20db_ms": 800.1814058956916,
+  "decay_40db_ms": 800.1814058956916,
+  "effective_length_ms": 1395.328798185941,
+  "trailing_silence_ms": 0.0,
+  "tail_50ms_db_re_peak": -7.563737905780453,
+  "head_20ms_db_re_peak": -6.620627723646731,
+  "wrap_jump": 0.0082550048828125,
+  "rt60_ms": 1442.1360594951293,
+  "envelope_mod_peak_hz": 8.589835361488905,
+  "envelope_mod_depth_db_std": 1.901834097424179,
+  "spectrum": {
+   "centroid_hz": 6119.927750240499,
+   "rolloff85_hz": 10942.231750488281,
+   "rolloff95_hz": 14306.121826171875,
+   "bandwidth_hz": 4691.033848567365,
+   "flatness": 0.21349334586976734,
+   "band_energy": {
+    "infra <20": 0.0023186393122331624,
+    "sub 20-60": 0.003038805730889182,
+    "bass 60-250": 0.005674996633653174,
+    "low-mid 250-500": 0.0638669004419612,
+    "mid 500-2k": 0.21826928005988508,
+    "high-mid 2-4k": 0.1497116860272528,
+    "presence 4-8k": 0.14268037431129246,
+    "air >8k": 0.414439317482833
+   },
+   "peaks": [
+    {
+     "hz": 251.7,
+     "db_rel": -4.4
+    },
+    {
+     "hz": 16849.7,
+     "db_rel": -12.9
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 116,
+   "dominant_start_hz": 514.9,
+   "dominant_end_hz": 282.7,
+   "dominant_min_hz": 277.7,
+   "dominant_max_hz": 10729.7,
+   "dominant_slope_oct_per_s": -0.869,
+   "centroid_start_hz": 6291.4,
+   "centroid_end_hz": 5150.2,
+   "centroid_slope_oct_per_s": -0.202
+  },
+  "onsets": [
+   {
+    "t_ms": 360.7,
+    "db_rel": -1.7
+   },
+   {
+    "t_ms": 1159.9,
+    "db_rel": -0.0
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 6256.805361685536,
+   "rolloff85_hz": 11509.4970703125,
+   "peaks": [
+    {
+     "hz": 516.8,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -7.2,
+   -4.0,
+   -6.6,
+   -5.3,
+   -6.4,
+   -5.4,
+   -4.8,
+   -3.8,
+   -8.2,
+   -7.5,
+   -8.0
+  ]
+ },
+ {
+  "filename": "pogoLaunch2.wav",
+  "bytes": 31892,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 31848
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 7962
+  },
+  "duration_s": 0.18054421768707482,
+  "peak_dbfs": -0.025484291058034094,
+  "peak_per_channel_dbfs": [
+   -0.025484291058034094,
+   -0.025750146303086915
+  ],
+  "true_peak_dbfs": 0.3579134946388959,
+  "rms_dbfs": -28.607279116934038,
+  "crest_factor_db": 28.581794825876003,
+  "dc_offset": [
+   -2.1234285708678724e-06,
+   5.346900462744914e-06
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 17956.81989449887,
+  "lufs_ungated": -22.591779859301294,
+  "lufs_integrated": null,
+  "lufs_momentary_max": null,
+  "stereo": {
+   "lr_correlation": 0.999996443185053,
+   "side_to_mid_db": -57.45743389419029,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -14.141055093596982,
+  "onset_ms": 0.3854875283446712,
+  "time_to_envelope_peak_ms": 86.30385487528345,
+  "attack_ms": 85.91836734693877,
+  "rise_10_90_ms": 24.94331065759637,
+  "decay_20db_ms": 18.95691609977325,
+  "decay_40db_ms": 35.91836734693877,
+  "effective_length_ms": 122.22222222222221,
+  "trailing_silence_ms": 54.965986394557824,
+  "tail_50ms_db_re_peak": -73.02167696027846,
+  "head_20ms_db_re_peak": -28.322391051282317,
+  "wrap_jump": 3.0517578125e-05,
+  "rt60_ms": 72.30530172880022,
+  "envelope_mod_peak_hz": 5.6818181818181825,
+  "envelope_mod_depth_db_std": 7.737866455792972,
+  "spectrum": {
+   "centroid_hz": 4786.103397169891,
+   "rolloff85_hz": 6233.8623046875,
+   "rolloff95_hz": 10712.7685546875,
+   "bandwidth_hz": 2583.569173149881,
+   "flatness": 0.026063789003710428,
+   "band_energy": {
+    "infra <20": 9.090248656593516e-08,
+    "sub 20-60": 1.3674235372813603e-05,
+    "bass 60-250": 0.0060321766559204675,
+    "low-mid 250-500": 0.012025570256591556,
+    "mid 500-2k": 0.05674478956949506,
+    "high-mid 2-4k": 0.27216798513601304,
+    "presence 4-8k": 0.5473628459135019,
+    "air >8k": 0.10565286733061847
+   },
+   "peaks": []
+  },
+  "sweep": {
+   "frames": 9,
+   "dominant_start_hz": 435.8,
+   "dominant_end_hz": 2251.1,
+   "dominant_min_hz": 435.8,
+   "dominant_max_hz": 5507.5,
+   "dominant_slope_oct_per_s": 10.896,
+   "centroid_start_hz": 2372.1,
+   "centroid_end_hz": 3828.7,
+   "centroid_slope_oct_per_s": 5.863
+  },
+  "onsets": [
+   {
+    "t_ms": 18.5,
+    "db_rel": -26.2
+   },
+   {
+    "t_ms": 75.3,
+    "db_rel": -16.4
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 2534.5642620832855,
+   "rolloff85_hz": 5017.236328125,
+   "peaks": [
+    {
+     "hz": 1884.2,
+     "db_rel": -0.7
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -29.8,
+   -26.5,
+   -23.7,
+   -21.8,
+   -17.3,
+   -8.0,
+   -22.8,
+   -45.9,
+   -73.1,
+   -73.0,
+   -73.5
+  ]
+ },
+ {
+  "filename": "pogoLaunch3.wav",
+  "bytes": 336512,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 336468
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 84117
+  },
+  "duration_s": 1.9074149659863946,
+  "peak_dbfs": -0.9995570817244099,
+  "peak_per_channel_dbfs": [
+   -0.9995570817244099,
+   -1.1977891984524511
+  ],
+  "true_peak_dbfs": -0.9804283576036237,
+  "rms_dbfs": -15.408947480294827,
+  "crest_factor_db": 14.409390398570418,
+  "dc_offset": [
+   0.006494314550924048,
+   0.005897119537672416
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 2933.8136167481007,
+  "lufs_ungated": -19.358116983978558,
+  "lufs_integrated": -17.9682323219866,
+  "lufs_momentary_max": -13.884283258433898,
+  "stereo": {
+   "lr_correlation": 0.9706741836027303,
+   "side_to_mid_db": -18.267772678944695,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -3.3811178202268537,
+  "onset_ms": 0.45351473922902497,
+  "time_to_envelope_peak_ms": 221.9954648526077,
+  "attack_ms": 221.54195011337868,
+  "rise_10_90_ms": 191.56462585034015,
+  "decay_20db_ms": 486.8934240362812,
+  "decay_40db_ms": 1422.766439909297,
+  "effective_length_ms": 1644.7619047619048,
+  "trailing_silence_ms": 0.0,
+  "tail_50ms_db_re_peak": -50.67255374146872,
+  "head_20ms_db_re_peak": -35.05429534355714,
+  "wrap_jump": 0.00244140625,
+  "rt60_ms": 2215.4876569753724,
+  "envelope_mod_peak_hz": 0.5243838489774515,
+  "envelope_mod_depth_db_std": 10.93217995907499,
+  "spectrum": {
+   "centroid_hz": 161.06736959282452,
+   "rolloff85_hz": 29.271697998046875,
+   "rolloff95_hz": 307.8575134277344,
+   "bandwidth_hz": 777.5839153260409,
+   "flatness": 0.002817943983097143,
+   "band_energy": {
+    "infra <20": 0.011581654512973298,
+    "sub 20-60": 0.8863181149454565,
+    "bass 60-250": 0.045692159443665885,
+    "low-mid 250-500": 0.012470912262302703,
+    "mid 500-2k": 0.01982669272260601,
+    "high-mid 2-4k": 0.014641421551251307,
+    "presence 4-8k": 0.00731295840087088,
+    "air >8k": 0.002156086160872855
+   },
+   "peaks": [
+    {
+     "hz": 24.9,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 1453.8,
+     "db_rel": -32.4
+    },
+    {
+     "hz": 4307.0,
+     "db_rel": -39.6
+    },
+    {
+     "hz": 6429.3,
+     "db_rel": -43.0
+    },
+    {
+     "hz": 9603.5,
+     "db_rel": -49.7
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 55,
+   "dominant_start_hz": 212.3,
+   "dominant_end_hz": 56.7,
+   "dominant_min_hz": 30.4,
+   "dominant_max_hz": 3144.0,
+   "dominant_slope_oct_per_s": -0.734,
+   "centroid_start_hz": 1037.3,
+   "centroid_end_hz": 189.2,
+   "centroid_slope_oct_per_s": -0.122
+  },
+  "onsets": [
+   {
+    "t_ms": 33.4,
+    "db_rel": -12.4
+   },
+   {
+    "t_ms": 95.3,
+    "db_rel": -11.4
+   },
+   {
+    "t_ms": 174.1,
+    "db_rel": -3.9
+   },
+   {
+    "t_ms": 222.0,
+    "db_rel": 0.0
+   },
+   {
+    "t_ms": 314.8,
+    "db_rel": -3.0
+   },
+   {
+    "t_ms": 370.7,
+    "db_rel": -4.3
+   },
+   {
+    "t_ms": 431.5,
+    "db_rel": -3.1
+   },
+   {
+    "t_ms": 490.4,
+    "db_rel": -3.4
+   },
+   {
+    "t_ms": 554.2,
+    "db_rel": -5.4
+   },
+   {
+    "t_ms": 612.1,
+    "db_rel": -8.0
+   },
+   {
+    "t_ms": 704.9,
+    "db_rel": -16.0
+   },
+   {
+    "t_ms": 769.8,
+    "db_rel": -20.2
+   },
+   {
+    "t_ms": 828.6,
+    "db_rel": -21.1
+   },
+   {
+    "t_ms": 1199.8,
+    "db_rel": -24.4
+   },
+   {
+    "t_ms": 1276.6,
+    "db_rel": -24.7
+   },
+   {
+    "t_ms": 1383.4,
+    "db_rel": -28.5
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 850.2218332020101,
+   "rolloff85_hz": 592.1630859375,
+   "peaks": [
+    {
+     "hz": 20661.1,
+     "db_rel": -30.9
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -46.4,
+   -4.4,
+   -15.4,
+   -4.8,
+   -26.3,
+   -27.1,
+   -28.8,
+   -35.9,
+   -42.5,
+   -44.2,
+   -55.3
+  ]
+ },
+ {
+  "filename": "pogoLoad2.wav",
+  "bytes": 18604,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 18560
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 4640
+  },
+  "duration_s": 0.10521541950113379,
+  "peak_dbfs": -4.573135186094881,
+  "peak_per_channel_dbfs": [
+   -4.577624018049083,
+   -4.573135186094881
+  ],
+  "true_peak_dbfs": -4.520509330451377,
+  "rms_dbfs": -21.795434714387312,
+  "crest_factor_db": 17.22229952829243,
+  "dc_offset": [
+   -8.070057836072199e-06,
+   -4.641434241985453e-05
+  ],
+  "clipped_samples": 0,
+  "zero_crossing_rate_hz": 8363.793103448275,
+  "lufs_ungated": -16.986583403823456,
+  "lufs_integrated": null,
+  "lufs_momentary_max": null,
+  "stereo": {
+   "lr_correlation": 0.999996221898877,
+   "side_to_mid_db": -57.151888589336295,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -12.398508853838557,
+  "onset_ms": 0.0,
+  "time_to_envelope_peak_ms": 2.494331065759637,
+  "attack_ms": 2.494331065759637,
+  "rise_10_90_ms": 0.0,
+  "decay_20db_ms": 65.85034013605443,
+  "decay_40db_ms": 95.78231292517007,
+  "effective_length_ms": 98.27664399092971,
+  "trailing_silence_ms": 1.0884353741496597,
+  "tail_50ms_db_re_peak": -22.1870220613448,
+  "head_20ms_db_re_peak": -3.621073486629065,
+  "wrap_jump": 0.0057830810546875,
+  "rt60_ms": 173.33626139339705,
+  "envelope_mod_peak_hz": 9.900990099009901,
+  "envelope_mod_depth_db_std": 9.361690258226709,
+  "spectrum": {
+   "centroid_hz": 4887.847480990548,
+   "rolloff85_hz": 8295.66650390625,
+   "rolloff95_hz": 10788.134765625,
+   "bandwidth_hz": 3333.676686122605,
+   "flatness": 0.03282116619517915,
+   "band_energy": {
+    "infra <20": 1.320014347271269e-06,
+    "sub 20-60": 1.0511848188620317e-05,
+    "bass 60-250": 0.012248562067117776,
+    "low-mid 250-500": 0.08988738936037427,
+    "mid 500-2k": 0.152187008343042,
+    "high-mid 2-4k": 0.15619197035969942,
+    "presence 4-8k": 0.4242819359590949,
+    "air >8k": 0.1651913020481359
+   },
+   "peaks": [
+    {
+     "hz": 452.2,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 6,
+   "dominant_start_hz": 442.8,
+   "dominant_end_hz": 444.1,
+   "dominant_min_hz": 439.2,
+   "dominant_max_hz": 5239.3,
+   "dominant_slope_oct_per_s": -26.437,
+   "centroid_start_hz": 4854.0,
+   "centroid_end_hz": 2553.6,
+   "centroid_slope_oct_per_s": -18.182
+  },
+  "onsets": [],
+  "spectrum_first_50ms": {
+   "centroid_hz": 5012.239310169259,
+   "rolloff85_hz": 8322.5830078125,
+   "peaks": [
+    {
+     "hz": 441.4,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   0.0,
+   -6.9,
+   -9.4,
+   -7.4,
+   -14.5,
+   -16.6,
+   -18.3,
+   -22.9,
+   -26.6,
+   -32.9,
+   -40.5
+  ]
+ },
+ {
+  "filename": "pogoTime.wav",
+  "bytes": 1131504,
+  "chunks": [
+   {
+    "id": "fmt ",
+    "size": 16
+   },
+   {
+    "id": "data",
+    "size": 1131460
+   }
+  ],
+  "format": {
+   "tag": 1,
+   "subformat": 1,
+   "sample_rate_hz": 44100,
+   "channels": 2,
+   "bit_depth": 16,
+   "frames": 282865
+  },
+  "duration_s": 6.414172335600907,
+  "peak_dbfs": 0.0,
+  "peak_per_channel_dbfs": [
+   0.0,
+   0.0
+  ],
+  "true_peak_dbfs": 0.5714682993736807,
+  "rms_dbfs": -14.25879843458401,
+  "crest_factor_db": 14.25879843458401,
+  "dc_offset": [
+   -0.0005335179103147151,
+   -0.0004590897162874737
+  ],
+  "clipped_samples": 1799,
+  "zero_crossing_rate_hz": 3642.870627331059,
+  "lufs_ungated": -11.98274019622564,
+  "lufs_integrated": -12.062534693222142,
+  "lufs_momentary_max": -5.113638251006939,
+  "stereo": {
+   "lr_correlation": 0.876459676397924,
+   "side_to_mid_db": -11.814550837872199,
+   "identical_channels": false
+  },
+  "envelope_peak_dbfs": -1.258019486158091,
+  "onset_ms": 0.0,
+  "time_to_envelope_peak_ms": 56.3718820861678,
+  "attack_ms": 56.3718820861678,
+  "rise_10_90_ms": 52.87981859410431,
+  "decay_20db_ms": 4943.764172335601,
+  "decay_40db_ms": 6239.818594104308,
+  "effective_length_ms": 6296.190476190476,
+  "trailing_silence_ms": 52.22222222222223,
+  "tail_50ms_db_re_peak": -78.06650414058349,
+  "head_20ms_db_re_peak": -6.7400530611298235,
+  "wrap_jump": 0.00115966796875,
+  "rt60_ms": 19986.037943346786,
+  "envelope_mod_peak_hz": 5.448318804483187,
+  "envelope_mod_depth_db_std": 6.981463177391108,
+  "spectrum": {
+   "centroid_hz": 1209.9377906733448,
+   "rolloff85_hz": 1789.4428253173828,
+   "rolloff95_hz": 3306.9448471069336,
+   "bandwidth_hz": 1199.8243365275632,
+   "flatness": 0.005777120901716882,
+   "band_energy": {
+    "infra <20": 0.00462129181942869,
+    "sub 20-60": 0.07696332138394783,
+    "bass 60-250": 0.03265819258688945,
+    "low-mid 250-500": 0.04692607870275219,
+    "mid 500-2k": 0.7082801329856486,
+    "high-mid 2-4k": 0.09697274222084838,
+    "presence 4-8k": 0.028884281499969078,
+    "air >8k": 0.004693958800515457
+   },
+   "peaks": [
+    {
+     "hz": 44.2,
+     "db_rel": 0.0
+    },
+    {
+     "hz": 454.7,
+     "db_rel": -10.1
+    },
+    {
+     "hz": 844.2,
+     "db_rel": -11.6
+    },
+    {
+     "hz": 366.1,
+     "db_rel": -13.6
+    },
+    {
+     "hz": 2204.1,
+     "db_rel": -17.7
+    }
+   ]
+  },
+  "sweep": {
+   "frames": 506,
+   "dominant_start_hz": 126.9,
+   "dominant_end_hz": 3918.7,
+   "dominant_min_hz": 30.3,
+   "dominant_max_hz": 3918.7,
+   "dominant_slope_oct_per_s": 0.701,
+   "centroid_start_hz": 620.3,
+   "centroid_end_hz": 2241.5,
+   "centroid_slope_oct_per_s": 0.355
+  },
+  "onsets": [
+   {
+    "t_ms": 217.0,
+    "db_rel": -3.8
+   },
+   {
+    "t_ms": 297.8,
+    "db_rel": -3.9
+   },
+   {
+    "t_ms": 690.9,
+    "db_rel": -10.5
+   },
+   {
+    "t_ms": 791.7,
+    "db_rel": -5.7
+   },
+   {
+    "t_ms": 919.4,
+    "db_rel": -4.3
+   },
+   {
+    "t_ms": 1477.1,
+    "db_rel": -11.7
+   },
+   {
+    "t_ms": 3157.3,
+    "db_rel": -17.0
+   },
+   {
+    "t_ms": 3531.5,
+    "db_rel": -18.1
+   },
+   {
+    "t_ms": 3603.3,
+    "db_rel": -16.8
+   },
+   {
+    "t_ms": 4784.6,
+    "db_rel": -18.2
+   }
+  ],
+  "spectrum_first_50ms": {
+   "centroid_hz": 713.4807801407117,
+   "rolloff85_hz": 398.3642578125,
+   "peaks": [
+    {
+     "hz": 129.2,
+     "db_rel": 0.0
+    }
+   ]
+  },
+  "envelope_10pt_db_re_peak": [
+   -12.0,
+   -5.0,
+   -13.9,
+   -20.6,
+   -22.1,
+   -23.7,
+   -20.6,
+   -22.1,
+   -23.5,
+   -25.6,
+   -85.0
+  ]
+ }
+]
