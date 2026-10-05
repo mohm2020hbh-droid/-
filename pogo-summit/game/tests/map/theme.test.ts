@@ -4,9 +4,10 @@ import { BUILTIN_THEMES, lerpColor, parseHex, resolveMaterialRef, resolveTheme, 
 import type { ThemeDef } from '../../src/map/schema';
 
 describe('MapTheme', () => {
-  it('four built-in themes mirror the four existing worlds', () => {
-    expect(Object.keys(BUILTIN_THEMES)).toEqual(WORLDS.map(w => w.id));
+  it('four built-in themes mirror the four existing worlds (plus the four Visual-V2 worlds)', () => {
+    expect(Object.keys(BUILTIN_THEMES).slice(0, WORLDS.length)).toEqual(WORLDS.map(w => w.id));
     for (const w of WORLDS) expect(BUILTIN_THEMES[w.id].palette).toEqual(w.palette);
+    expect(Object.keys(BUILTIN_THEMES).slice(WORLDS.length)).toEqual(['world_meadow', 'world_ice', 'world_volcanic', 'world_mystic']);
   });
 
   it('a theme without overrides converts back to an identical WorldTheme (renderer compatibility)', () => {

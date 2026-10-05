@@ -58,6 +58,49 @@ export interface WorldSettings {
 }
 
 export interface ThemeColors { top: string; mid: string; horizon: string; sun: string }
+
+/**
+ * LightingProfile (Visual V2 · phase 7): everything the renderer needs to light a world with ONE shadow-casting sun and a
+ * hemisphere light (no per-object realtime lights). Missing in a theme ⇒ derived from `sky`/`lighting`/`fog`.
+ */
+export type ShadowQuality = 'off' | 'blob' | 'low' | 'medium' | 'high';
+export interface LightingProfile {
+  sunDirection: [number, number, number];
+  sunIntensity: number;
+  sunColor?: string;
+  ambientIntensity: number;
+  ambientSky?: string;
+  ambientGround?: string;
+  fogDensity: number;
+  fogColor?: string;
+  shadowQuality: ShadowQuality;
+  exposure?: number;
+}
+
+export type BackdropKind = 'mountains' | 'clouds' | 'fog' | 'silhouettes' | 'landmarks' | 'sea' | 'glow';
+/** One far-field layer of a theme's backdrop (mountains, cloud banks, haze bands, distant structures…). */
+export interface BackdropLayer {
+  id: string;
+  kind: BackdropKind;
+  /** Depth behind the gameplay plane (metres, positive = farther). */
+  z: number;
+  /** 0 = fixed in the world, 1 = glued to the camera (parallax follow factor). */
+  follow: number;
+  /** Base height of the layer's lowest point and its vertical extent (metres). */
+  y: number; height: number; width: number;
+  color: string; color2?: string;
+  /** Instances for clouds / silhouettes / landmarks. */
+  count?: number; seed?: number;
+  /** Builtin mesh id for silhouettes / landmarks (e.g. "builtin:ancient_structure"). */
+  mesh?: string; meshParams?: Record<string, Json>;
+  snow?: boolean; opacity?: number;
+  /** 0..1 mix toward the fog colour (aerial perspective). */
+  haze?: number;
+}
+
+export type ParticleKind = 'leaf' | 'snow' | 'ember' | 'ash' | 'mote' | 'petal' | 'spark' | 'mist';
+export interface AmbientParticle { kind: ParticleKind; rate: number; colors: string[]; size?: number; speed?: number }
+
 export interface ThemeDef {
   id: string;
   name: string;
@@ -67,11 +110,22 @@ export interface ThemeDef {
   sky: ThemeColors & { sunDir: [number, number, number]; sunIntensity: number };
   fog: { color: string; density: number };
   lighting: { hemiSky: string; hemiGround: string; hemiIntensity: number; exposure: number };
-  slots: { ground: string; secondary: string; water: string; lava?: string };
+  /**
+   * Material slots ("@ground" …). ground = grass/snow/ash cap, rock = body of natural geometry, secondary = wood/props,
+   * the others are optional (the renderer derives them from the palette when absent).
+   */
+  slots: { ground: string; secondary: string; water: string; lava?: string; rock?: string; foliage?: string; trunk?: string; crystal?: string; stone?: string; ice?: string; cloud?: string; glow?: string; bounce?: string };
+  /** Map-wide material definitions shipped with the theme (referenced by the slots). */
+  materials?: Record<string, MaterialDef>;
   vegetation: { density: number; kinds: string[] };
   vfx: { ambient: string[]; intensity: number };
   audio: { ambient: string; wind: number; birds: number; water: number };
   backgroundProps: string[];
+  /** Visual V2: lighting profile, far-field backdrop, ambient particles and ambience bed. */
+  lightingProfile?: LightingProfile;
+  backdrop?: BackdropLayer[];
+  particles?: AmbientParticle[];
+  ambientAudio?: { bed: 'meadow' | 'snow' | 'ruins' | 'lava' | 'mystic'; wind: number; birds: number; water: number; chimes?: number; drone?: number };
   weather?: { type: 'none' | 'rain' | 'snow' | 'ash' | 'leaves'; intensity: number; windX?: number };
   dayNight?: {
     cycleSec: number;
@@ -82,16 +136,49 @@ export interface ThemeDef {
 export type ThemeRef = { ref: string; theme?: undefined } | { theme: ThemeDef; ref?: undefined };
 
 export type ShaderKind = 'stylized-lit' | 'unlit' | 'palette' | 'emissive' | 'water' | 'ice' | 'foliage';
+/**
+ * Physical surface type of a material (Visual V2 · phase 3). It is a *bridge* to the existing physics surface kinds
+ * (`MapMaterial.SURFACE_BRIDGE`): it invents no physics constant. Only SLIPPERY/ICE change the simulation (E15).
+ */
+export type SurfaceType = 'NORMAL' | 'ICE' | 'SLIPPERY' | 'BOUNCE' | 'HAZARD' | 'WATER' | 'LAVA' | 'GOAL';
+export const SURFACE_TYPES: readonly SurfaceType[] = ['NORMAL', 'ICE', 'SLIPPERY', 'BOUNCE', 'HAZARD', 'WATER', 'LAVA', 'GOAL'];
+
+/**
+ * MapMaterial — a PBR-like stylised material. `color`/`albedo`/`normal`/`emissive:number` are the pre-V2 spellings and are
+ * still accepted (see `normalizeMaterial`). Texture references are asset ids or `proc:<name>` procedural textures.
+ */
 export interface MaterialDef {
   id: string;
-  shader: ShaderKind;
-  color: string;
-  palette?: string;
+  shader?: ShaderKind;
+  /** pre-V2 alias of `baseColor`. */
+  color?: string;
+  baseColor?: string;
+  baseColorMap?: string;
+  /** pre-V2 alias of `baseColorMap`. */
   albedo?: string;
+  normalMap?: string;
+  /** pre-V2 alias of `normalMap`. */
   normal?: string;
+  normalScale?: number;
+  palette?: string;
   roughness?: number;
-  emissive?: number;
+  metalness?: number;
+  /** number = pre-V2 intensity (0..1) in the base colour; string = emissive colour (use with `emissiveIntensity`). */
+  emissive?: number | string;
+  emissiveIntensity?: number;
+  emissiveMap?: string;
+  opacity?: number;
+  /** Texture repeat multiplier (per axis or both). */
+  tiling?: number | { x: number; y: number };
+  /** Texture repeats per metre in `world` UV mode (default 0.25 = one tile per 4 m). */
   uvScale?: number;
+  uvMode?: 'world' | 'object';
+  surfaceType?: SurfaceType;
+  /** 0..1 strength of the baked vertex ambient occlusion (default 1). */
+  aoStrength?: number;
+  /** UV scroll speed in tiles/second (water, lava, waterfalls). */
+  flow?: { x: number; y: number };
+  doubleSided?: boolean;
   wobble?: { amplitude: number; speed: number };
   fallback?: string;
 }
@@ -247,11 +334,44 @@ export const BEHAVIOR_TYPES = ['move', 'rotate', 'toggle', 'timed', 'breakable',
 
 // ── visual ──────────────────────────────────────────────────────────────────────────────────────────────────────
 export interface LodLevel { distance: number; mesh?: string; tris: number }
+/** The four depth layers of a map (Visual V2 · phase 6). */
+export type RenderLayer = 'foreground' | 'gameplay' | 'midground' | 'background';
+export const RENDER_LAYERS: readonly RenderLayer[] = ['foreground', 'gameplay', 'midground', 'background'];
+/** Procedural placement of many instances of one mesh inside a rectangle around the entity (render-time, deterministic). */
+export interface ScatterDef {
+  count: number;
+  /** Rectangle around the entity position (metres). */
+  width: number; height?: number;
+  seed?: number;
+  scale?: [number, number];
+  /** Random yaw/roll jitter in degrees (±). */
+  rotation?: number;
+  /** Minimum spacing between instances (metres, 0 = none). */
+  spacing?: number;
+  /** Vertical jitter (±metres). */
+  yJitter?: number;
+  /** Depth jitter (±metres around the entity z). */
+  zJitter?: number;
+  /** Number of mesh variants cycled through (geometry variety), default 4. */
+  variants?: number;
+  /** Per-instance brightness variation 0..1. */
+  tintVariance?: number;
+}
 export interface VisualDef {
   kind: 'procedural' | 'mesh' | 'sprite' | 'none';
   style?: string;
+  /** Builtin generator id ("builtin:rock") or the id of a declared mesh asset (glTF). Never the collision shape. */
   mesh?: string;
+  /** Parameters of a builtin generator (seed, size, kind …). */
+  meshParams?: Record<string, Json>;
   material?: string;
+  /** Per-role material overrides (cap, body, foliage, trunk, water, crystal …). `material` is the "body" role. */
+  materials?: Record<string, string>;
+  /** Depth layer (default derived from `layer` / entity type). */
+  renderLayer?: RenderLayer;
+  scatter?: ScatterDef;
+  /** Beyond this camera distance (metres) the visual is not drawn. */
+  cullDistance?: number;
   tint?: string;
   lod?: LodLevel[];
   instancing?: boolean | string;
@@ -304,7 +424,7 @@ export type Effect =
   | { op: 'setCheckpoint'; id: string }
   | { op: 'setFlag'; name: string; value: boolean | number }
   | { op: 'incCounter'; name: string; by?: number }
-  | { op: 'camera'; zoom?: number; offsetX?: number; offsetY?: number; lockY?: number | null; duration?: number }
+  | { op: 'camera'; zoom?: number; offsetX?: number; offsetY?: number; lockY?: number | null; duration?: number; profile?: Partial<CameraProfile>; reset?: boolean }
   | { op: 'vfx'; id: string; burst?: number }
   | { op: 'audio'; id: string; volume?: number }
   | { op: 'lighting'; ambient?: number; sun?: number; color?: string }
@@ -337,7 +457,29 @@ export interface LightingDef {
   shadows: { enabled: boolean; mode: 'blob' | 'map' };
   volumes: LightVolume[];
 }
-export interface CameraDef { zoom: number; minZoom?: number; maxZoom?: number; lookAhead?: number }
+/**
+ * CameraProfile (Visual V2 · phase 10). Defaults equal the shipped camera (`DEFAULT_CAMERA_PROFILE`), so a map that
+ * does not set anything frames the world exactly like before.
+ */
+export interface CameraProfile {
+  /** Distance of the camera from the gameplay plane (metres). */
+  followDistance: number;
+  /** Camera height above the look target (metres). */
+  height: number;
+  /** Maximum horizontal look-ahead (metres) and its gain on the horizontal speed. */
+  lookAhead: number;
+  lookAheadGain: number;
+  /** Follow smoothing times in seconds (horizontal, vertical). */
+  smoothing: number;
+  smoothingY: number;
+  /** Look target offset above the player while grounded (metres). */
+  verticalBias: number;
+  /** Vertical field of view (degrees). */
+  fov: number;
+  /** Multiplier of the follow distance (1 = none). */
+  zoom: number;
+}
+export interface CameraDef { zoom: number; minZoom?: number; maxZoom?: number; lookAhead?: number; profile?: Partial<CameraProfile> }
 export interface AudioDef { maxVoices: number; reverb?: string }
 export interface VfxDef { maxParticles: number }
 

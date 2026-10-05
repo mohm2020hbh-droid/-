@@ -4,17 +4,25 @@
  * resolve(entity) = merge( prefab chain template ← entity fields ), with the template expanded over the parameters
  * first (defaults ← entity.properties). Entity fields always win over the prefab.
  */
-import type { BehaviorDef, CollisionDef, Json, MapEntity, ParamDef, PrefabDef, VisualDef } from './schema';
+import type { BehaviorDef, CollisionDef, Json, MapDocument, MapEntity, MaterialDef, ParamDef, PrefabDef, VisualDef } from './schema';
+import { bridgeDefaults } from './MapMaterial';
 import { BUILTIN_PREFABS } from './builtinPrefabs';
 import { type ExprScope, MapExprError, expandTemplate } from './MapExpr';
 import { type MapIssue, mkIssue } from './MapIssue';
 
 export class PrefabRegistry {
   private readonly map = new Map<string, PrefabDef>();
-  constructor(extra: Record<string, PrefabDef> = {}, includeBuiltin = true) {
+  /**
+   * `materials` = the map's own material definitions: a material that declares a `surfaceType` supplies the physics
+   * defaults (surface / hazard) of collisions that do not state them (Physics Bridge, see MapMaterial).
+   */
+  constructor(extra: Record<string, PrefabDef> = {}, includeBuiltin = true, private readonly materials: Record<string, MaterialDef> = {}) {
     if (includeBuiltin) for (const p of BUILTIN_PREFABS) this.map.set(p.id, p);
     for (const [id, p] of Object.entries(extra)) this.map.set(id, { ...p, id });
   }
+  /** Registry for a document: its prefabs and materials. */
+  static forDoc(doc: Pick<MapDocument, 'prefabs' | 'materials'>): PrefabRegistry { return new PrefabRegistry(doc.prefabs, true, doc.materials); }
+  materialOf(id: string | undefined): MaterialDef | undefined { return id && !id.startsWith('@') ? this.materials[id] : undefined; }
   has(id: string): boolean { return this.map.has(id); }
   get(id: string): PrefabDef | undefined { return this.map.get(id); }
   ids(): string[] { return [...this.map.keys()]; }
@@ -124,5 +132,10 @@ export function resolveEntity(e: MapEntity, reg: PrefabRegistry, path = ''): { e
     enabled: e.enabled ?? true,
     requires,
   };
+  // Physics Bridge: a material's surfaceType fills in the physics a collision did not state (explicit values win)
+  const bridge = bridgeDefaults(reg.materialOf(entity.visual?.material));
+  if (bridge && entity.collisions.length) {
+    entity.collisions = entity.collisions.map(c => c.trigger ? c : { ...c, ...(bridge.surface && c.surface === undefined && !c.hazard ? { surface: bridge.surface } : {}), ...(bridge.hazard && c.hazard === undefined ? { hazard: true } : {}) });
+  }
   return { entity, issues };
 }

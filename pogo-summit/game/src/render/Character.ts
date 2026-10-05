@@ -322,9 +322,11 @@ export class Character {
     if (this.blinkT < 0) { this.blink = 1; this.blinkT = 2 + ((this.time * 7919) % 3); }
     this.blink = Math.max(0, this.blink - dt * 9);
 
-    // landing / launch spring
-    const a = -260 * this.landK - 20 * this.landV;
-    this.landV += a * dt; this.landK += this.landV * dt;
+    // landing / launch spring — sub-stepped: explicit integration of a stiff spring diverges when a frame takes ≥ ~0.09 s
+    // (slow devices, software GL), which made the whole character fly off to infinity
+    const nSub = Math.max(1, Math.ceil(dt / (1 / 60))), hSub = dt / nSub;
+    for (let i = 0; i < nSub; i++) { const a = -260 * this.landK - 20 * this.landV; this.landV += a * hSub; this.landK += this.landV * hSub; }
+    this.landK = Math.max(-1, Math.min(1, this.landK)); this.landV = Math.max(-40, Math.min(40, this.landV));
 
     // pose
     const sy = 1 + this.stretch * 0.1 - this.crouch * 0.05 - this.landK * 0.2;
@@ -363,8 +365,10 @@ export class Character {
     // hat pom spring (reacts to vertical acceleration)
     const acc = (f.vy - this.lastVy) / Math.max(dt, 1e-3);
     this.lastVy = f.vy;
-    this.hatV += (-acc * 0.004 - 120 * this.hatY - 9 * this.hatV) * dt;
-    this.hatY = Math.max(-0.2, Math.min(0.2, this.hatY + this.hatV * dt));
+    for (let i = 0; i < nSub; i++) {
+      this.hatV += (-acc * 0.004 - 120 * this.hatY - 9 * this.hatV) * hSub;
+      this.hatY = Math.max(-0.2, Math.min(0.2, this.hatY + this.hatV * hSub));
+    }
     this.hatSlot.position.y = this.hatY * 0.4;
     this.pom.position.y = this.hatY * 0.9;
     this.pom.rotation.z = Math.sin(this.time * 3.1) * 0.05 - f.vx * 0.012;

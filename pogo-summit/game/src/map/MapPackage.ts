@@ -60,7 +60,7 @@ export interface BuildResult { bytes: Uint8Array; manifest: PackageManifest; rep
 
 // ── build ───────────────────────────────────────────────────────────────────────────────────────────────────────
 export function buildPackage(docIn: MapDocument, opts: BuildOptions = {}): BuildResult {
-  const registry = new PrefabRegistry(docIn.prefabs);
+  const registry = PrefabRegistry.forDoc(docIn);
   const doc = JSON.parse(JSON.stringify(docIn)) as MapDocument;
   // derived manifest fields
   doc.manifest.checkpointCount = doc.checkpoints.length;

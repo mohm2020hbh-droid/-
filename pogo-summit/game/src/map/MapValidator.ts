@@ -12,7 +12,14 @@ import { type Aabb, placePolys, polysAabb } from './MapCollision';
 import { buildProgress } from './MapProgress';
 import { SAFE_ACTIVATE_RADIUS, chunkIdFor, estimateLoad, emptyEstimate, type LoadEstimate, rectDistance, rectsOverlap } from './MapChunk';
 import { regionAabb } from './MapRegion';
-import { availableMaterials, resolveTheme, themeMaterials } from './MapTheme';
+import { availableMaterials, backdropOf, resolveTheme, slotId, themeMaterials } from './MapTheme';
+import { bridgeMismatch, materialProblems, normalizeMaterial, texturesOfMaterial } from './MapMaterial';
+import { BUILTIN_MESH_IDS, PROCEDURAL_TEXTURES, isBuiltinMesh, meshParamProblems } from './MapAssets';
+import { type ResolvedVisual, resolveVisual, visualProblems } from './MapVisual';
+import { estimateBackdrop, estimateVisuals } from './MapRenderPlan';
+import { scatterProblems } from './MapScatter';
+import { cameraProfileProblems } from './MapCamera';
+import { RENDER_LAYERS, SURFACE_TYPES, type MaterialDef } from './schema';
 import { closestOnPoly, makePoly, polysOverlapDepth } from '../sim/geometry';
 import { analyzeLevel, type AnalysisOptions } from '../sim/analysis';
 import { createPhysicsConfig } from '../sim/PhysicsConfig';
@@ -51,7 +58,7 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
   const err = (code: string, path: string, msg: string, extra: Partial<MapIssue> = {}) => push(mkIssue('ERROR', code, path, msg, extra));
   const warn = (code: string, path: string, msg: string, extra: Partial<MapIssue> = {}) => push(mkIssue('WARNING', code, path, msg, extra));
   const info = (code: string, path: string, msg: string, extra: Partial<MapIssue> = {}) => push(mkIssue('INFO', code, path, msg, extra));
-  const registry = opts.registry ?? new PrefabRegistry(doc.prefabs);
+  const registry = opts.registry ?? PrefabRegistry.forDoc(doc);
 
   // ── structure ────────────────────────────────────────────────────────────────────────────────────────────────
   const structural = structuralCheck(JSON.parse(JSON.stringify(doc)));
@@ -88,21 +95,40 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
 
   // ── assets / materials ───────────────────────────────────────────────────────────────────────────────────────
   const usedAssets = new Set<string>();
-  const textureOf = (id: string): string[] => { const m = doc.materials[id] ?? themeMaterials(theme)[id]; return m ? [m.palette, m.albedo, m.normal].filter((x): x is string => !!x) : []; };
-  for (const [id, m] of Object.entries(doc.materials)) {
-    for (const k of ['palette', 'albedo', 'normal'] as const) {
-      const t = m[k];
+  const themeMats = themeMaterials(theme);
+  const matDef = (id: string): MaterialDef | undefined => doc.materials[id] ?? themeMats[id];
+  const textureOf = (id: string): string[] => { const m = matDef(id); return m ? texturesOfMaterial(m) : []; };
+  const checkMaterialDef = (id: string, m: MaterialDef, base: string): void => {
+    for (const msg of materialProblems(m)) err('MATERIAL_INVALID', `${base}/${id}`, `material "${id}": ${msg}`);
+    const refs: [string, string | undefined][] = [['palette', m.palette], ['baseColorMap', m.baseColorMap], ['albedo', m.albedo], ['normalMap', m.normalMap], ['normal', m.normal], ['emissiveMap', m.emissiveMap]];
+    for (const [k, t] of refs) {
       if (!t) continue;
+      if (t.startsWith('proc:')) { if (!(t.slice(5) in PROCEDURAL_TEXTURES)) err('TEXTURE_MISSING', `${base}/${id}/${k}`, `procedural texture "${t}" does not exist (known: ${Object.keys(PROCEDURAL_TEXTURES).map(x => 'proc:' + x).join(', ')})`); continue; }
       usedAssets.add(t);
       const a = assets.get(t);
-      if (!a || a.kind !== 'texture') err('TEXTURE_MISSING', `/materials/${id}/${k}`, `texture asset "${t}" is not declared`);
+      if (!a || a.kind !== 'texture') err('TEXTURE_MISSING', `${base}/${id}/${k}`, `texture asset "${t}" is not declared`);
     }
-    if (m.fallback && !mats.has(m.fallback)) err('MATERIAL_MISSING', `/materials/${id}/fallback`, `fallback material "${m.fallback}" is not defined`);
+    if (m.fallback && !mats.has(m.fallback)) err('MATERIAL_MISSING', `${base}/${id}/fallback`, `fallback material "${m.fallback}" is not defined`);
+  };
+  for (const [id, m] of Object.entries(doc.materials)) checkMaterialDef(id, m, '/materials');
+  if ('theme' in doc.theme && doc.theme.theme) {
+    for (const [id, m] of Object.entries(doc.theme.theme.materials ?? {})) checkMaterialDef(id, m, '/theme/theme/materials');
+    for (const [k, l] of (doc.theme.theme.backdrop ?? []).entries()) {
+      const bp = `/theme/theme/backdrop/${k}`;
+      if (!(l.z > 0)) err('THEME_INVALID', `${bp}/z`, `backdrop layer "${l.id}": z (depth behind the gameplay plane) must be > 0`);
+      if (!(l.follow >= 0 && l.follow <= 1)) err('THEME_INVALID', `${bp}/follow`, `backdrop layer "${l.id}": follow must be 0…1`);
+      if (l.mesh && !isBuiltinMesh(l.mesh) && assets.get(l.mesh)?.kind !== 'mesh') err('MODEL_MISSING', `${bp}/mesh`, `backdrop layer "${l.id}": mesh "${l.mesh}" does not exist`);
+    }
   }
+  // Visual-V2 identity of the theme (info only: missing parts are derived by the renderer)
+  const missingIdentity = [!theme.lightingProfile && 'lightingProfile', !theme.backdrop?.length && 'backdrop', !theme.particles?.length && 'particles', !theme.ambientAudio && 'ambientAudio'].filter((x): x is string => !!x);
+  if (missingIdentity.length) info('THEME_INCOMPLETE', '/theme', `theme "${theme.id}" has no ${missingIdentity.join(', ')} (derived from sky/fog/lighting by the renderer)`);
+  if (doc.camera.profile) for (const msg of cameraProfileProblems(doc.camera.profile)) err('CAMERA_PROFILE_INVALID', '/camera/profile', msg);
   for (const a of doc.assets) if (a.path.includes('..') || a.path.startsWith('/')) err('STRUCT_STRING', `/assets/${a.id}/path`, `asset path "${a.path}" must be relative without ".."`);
 
   // ── entities ─────────────────────────────────────────────────────────────────────────────────────────────────
   const instances: EntityInstance[] = [];
+  const rvs: (ResolvedVisual | null)[] = [];
   const geos: PieceGeo[] = [];
   doc.entities.forEach((e, i) => {
     const path = `/entities/${i}`;
@@ -111,6 +137,28 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
     const inst = buildInstance(r, paths, path);
     for (const x of inst.problems) push(x);
     instances.push(inst);
+    const rv = resolveVisual(inst, { theme, assets });
+    rvs.push(rv);
+    if (rv) {
+      // depth layer vs z
+      const lz: Record<string, [number, number]> = { foreground: [0.5, Infinity], gameplay: [-10, 2.5], midground: [-80, -0.5], background: [-Infinity, -20] };
+      const [zlo, zhi] = lz[rv.layer];
+      if (rv.z < zlo || rv.z > zhi) warn('LAYER_Z_MISMATCH', `${path}/position/z`, `entity "${e.id}": layer "${rv.layer}" expects z in ${zlo === -Infinity ? '(−∞' : '[' + zlo}…${zhi === Infinity ? '∞)' : zhi + ']'} but z = ${rv.z}`, { entityId: e.id });
+      if (rv.derived && GAMEPLAY.has(r.type)) info('VISUAL_DERIVED', `${path}/visual`, `entity "${e.id}" declares no visual: the renderer draws a stylised stand-in derived from its collision`, { entityId: e.id });
+      if (rv.scatter && rv.mode === 'single') warn('BEHAVIOR_CONFLICT', `${path}/visual/scatter`, `entity "${e.id}": a scattered visual cannot have behaviours (it is a group of static instances)`, { entityId: e.id });
+      // physics bridge: the surface type of a material vs what the collision does
+      if (GAMEPLAY.has(r.type) && inst.pieces.length) {
+        for (const part of rv.parts) {
+          const m = matDef(part.material);
+          if (!m) continue;
+          const nm = normalizeMaterial(m);
+          if (nm.surfaceType === 'NORMAL') continue;
+          const p0 = inst.pieces[0];
+          if (nm.surfaceType === 'WATER' || nm.surfaceType === 'GOAL') { warn('MATERIAL_SURFACE_MISMATCH', `${path}/visual/material`, `entity "${e.id}": material "${part.material}" is ${nm.surfaceType} (no collision of its own) but the entity is a solid`, { entityId: e.id }); continue; }
+          if (bridgeMismatch(nm.surfaceType, p0.surface, p0.kind === 'hazard')) warn('MATERIAL_SURFACE_MISMATCH', `${path}/visual/material`, `entity "${e.id}": material "${part.material}" looks ${nm.surfaceType} but the collision is ${p0.kind === 'hazard' ? 'hazard' : p0.surface} — players will not get the physics they see`, { entityId: e.id, hint: 'set collision.surface / hazard to match, or use a NORMAL material' });
+        }
+      }
+    }
     // visual references
     const v = r.visual;
     if (v) {
@@ -120,10 +168,19 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
       }
       if (v.mesh) {
         usedAssets.add(v.mesh);
-        if (!v.mesh.startsWith('builtin:') && assets.get(v.mesh)?.kind !== 'mesh') err('MODEL_MISSING', `${path}/visual/mesh`, `mesh asset "${v.mesh}" is not declared`, { entityId: e.id });
+        if (v.mesh.startsWith('builtin:')) {
+          if (!isBuiltinMesh(v.mesh)) err('MODEL_MISSING', `${path}/visual/mesh`, `builtin mesh "${v.mesh}" does not exist (known: ${BUILTIN_MESH_IDS.join(', ')})`, { entityId: e.id });
+          else for (const msg of meshParamProblems(v.mesh, v.meshParams)) warn('MESH_PARAM', `${path}/visual/meshParams`, `entity "${e.id}": ${msg}`, { entityId: e.id });
+        } else if (assets.get(v.mesh)?.kind !== 'mesh') err('MODEL_MISSING', `${path}/visual/mesh`, `mesh asset "${v.mesh}" is not declared`, { entityId: e.id });
       }
+      for (const [role, ref] of Object.entries(v.materials ?? {})) {
+        if (ref.startsWith('@')) { if (!resolveSlot(ref, theme)) err('MATERIAL_MISSING', `${path}/visual/materials/${role}`, `theme slot "${ref}" is not defined by theme "${theme.id}"`, { entityId: e.id }); }
+        else if (!mats.has(ref)) err('MATERIAL_MISSING', `${path}/visual/materials/${role}`, `material "${ref}" is not defined`, { entityId: e.id });
+      }
+      if (v.renderLayer !== undefined && !RENDER_LAYERS.includes(v.renderLayer)) err('STRUCT_ENUM', `${path}/visual/renderLayer`, `renderLayer must be one of ${RENDER_LAYERS.join('/')}`, { entityId: e.id });
+      for (const pr of visualProblems(v)) err(pr.code, `${path}/visual`, `entity "${e.id}": ${pr.message}`, { entityId: e.id });
+      if (v.scatter) for (const msg of scatterProblems(v.scatter)) err('SCATTER_INVALID', `${path}/visual/scatter`, `entity "${e.id}": ${msg}`, { entityId: e.id });
       for (const lod of v.lod ?? []) if (lod.mesh) { usedAssets.add(lod.mesh); if (!lod.mesh.startsWith('builtin:') && assets.get(lod.mesh)?.kind !== 'mesh') err('MODEL_MISSING', `${path}/visual/lod`, `LOD mesh "${lod.mesh}" is not declared`, { entityId: e.id }); }
-      if (v.lod && v.lod.some((l, k) => k > 0 && l.distance <= v.lod![k - 1].distance)) err('BEHAVIOR_INVALID', `${path}/visual/lod`, 'LOD distances must ascend', { entityId: e.id });
       if (v.kind === 'mesh' && !v.mesh) err('MODEL_MISSING', `${path}/visual`, 'visual kind "mesh" needs a mesh', { entityId: e.id });
       if (v.layer && doc.background.layers.length && !doc.background.layers.some(l => l.id === v.layer) && !['mid', 'far', 'near'].includes(v.layer)) warn('STRUCT_ENUM', `${path}/visual/layer`, `layer "${v.layer}" is not defined in background.layers`, { entityId: e.id });
     }
@@ -169,6 +226,12 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
     });
   };
   doc.regions.forEach((r, i) => {
+    if (r.type === 'camera') {
+      const prof = r.params?.profile as Partial<import('./schema').CameraProfile> | undefined;
+      if (!prof) warn('CAMERA_PROFILE_INVALID', `/regions/${i}`, `camera zone "${r.id}" has no params.profile (it changes nothing)`);
+      else for (const msg of cameraProfileProblems(prof)) err('CAMERA_PROFILE_INVALID', `/regions/${i}/params/profile`, `camera zone "${r.id}": ${msg}`);
+    }
+    for (const fx of [...(r.enter ?? []), ...(r.exit ?? []), ...(r.stay ?? [])]) if (fx.op === 'camera' && fx.profile) for (const msg of cameraProfileProblems(fx.profile)) err('CAMERA_PROFILE_INVALID', `/regions/${i}`, `region "${r.id}": ${msg}`);
     checkEffects(r.enter, `/regions/${i}/enter`); checkEffects(r.exit, `/regions/${i}/exit`); checkEffects(r.stay, `/regions/${i}/stay`);
     if (r.type === 'checkpoint' || r.type === 'finish') err('STRUCT_ENUM', `/regions/${i}/type`, `region type "${r.type}" is generated from checkpoints[]/finish — do not author it by hand`);
     const b = regionAabb(r.shape);
@@ -290,25 +353,43 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
   // ── budgets ──────────────────────────────────────────────────────────────────────────────────────────────────
   const budget = typeof opts.budget === 'object' ? opts.budget : BUDGETS[opts.budget ?? 'android-mid'] ?? BUDGETS['android-mid'];
   const byChunk = new Map<string, EntityInstance[]>();
-  doc.entities.forEach((e, i) => { const id = assignment.get(e.id)!; (byChunk.get(id) ?? byChunk.set(id, []).get(id)!).push(instances[i]); });
-  const chunkInfo: { id: string; extent: Rect; list: EntityInstance[] }[] = [...byChunk.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([id, list]) => {
+  const visByChunk = new Map<string, ResolvedVisual[]>();
+  doc.entities.forEach((e, i) => {
+    const id = assignment.get(e.id)!;
+    (byChunk.get(id) ?? byChunk.set(id, []).get(id)!).push(instances[i]);
+    const rv = rvs[i];
+    if (rv) (visByChunk.get(id) ?? visByChunk.set(id, []).get(id)!).push(rv);
+  });
+  const chunkInfo: { id: string; extent: Rect; list: EntityInstance[]; vis: ResolvedVisual[] }[] = [...byChunk.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([id, list]) => {
     let ex: Aabb = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
     for (const it of list) ex = { minX: Math.min(ex.minX, it.extent.minX), maxX: Math.max(ex.maxX, it.extent.maxX), minY: Math.min(ex.minY, it.extent.minY), maxY: Math.max(ex.maxY, it.extent.maxY) };
-    return { id, extent: ex, list };
+    return { id, extent: ex, list, vis: visByChunk.get(id) ?? [] };
   });
   let worst: { est: LoadEstimate; at: string; chunks: number } = { est: emptyEstimate(), at: '', chunks: 0 };
-  const key = (e: LoadEstimate) => e.drawCalls / budget.drawCalls + e.triangles / budget.triangles + e.colliders / budget.colliders + e.entities / budget.entities;
+  const key = (e: LoadEstimate) => e.colliders / budget.colliders + e.entities / budget.entities;
+  const cdist = (o: { extent: Rect }, c: { extent: Rect }) => rectDistance(o.extent, (c.extent.minX + c.extent.maxX) / 2, (c.extent.minY + c.extent.maxY) / 2);
+  // what the camera can see around a chunk centre (gameplay layer), used for draw calls / triangles
+  const VIS_W = 70, VIS_H = 44;
+  const backdrop = estimateBackdrop(backdropOf(theme));
+  let vis = { drawCalls: 0, shadowCalls: 0, triangles: 0, trianglesExpected: 0, textureBytes: 0, at: '' };
+  let texWorst = 0;
   for (const c of chunkInfo) {
-    const near = chunkInfo.filter(o => rectDistance(o.extent, (c.extent.minX + c.extent.maxX) / 2, (c.extent.minY + c.extent.maxY) / 2) <= ck.activateRadius).sort((a, b) => rectDistance(a.extent, (c.extent.minX + c.extent.maxX) / 2, (c.extent.minY + c.extent.maxY) / 2) - rectDistance(b.extent, (c.extent.minX + c.extent.maxX) / 2, (c.extent.minY + c.extent.maxY) / 2)).slice(0, ck.maxActive);
+    const near = chunkInfo.filter(o => cdist(o, c) <= ck.activateRadius).sort((a, b) => cdist(a, c) - cdist(b, c)).slice(0, ck.maxActive);
     const est = estimateLoad(near.flatMap(w => w.list), assets, textureOf, proceduralTris);
     if (key(est) > key(worst.est)) worst = { est, at: c.id, chunks: near.length };
+    const cx = (c.extent.minX + c.extent.maxX) / 2, cy = (c.extent.minY + c.extent.maxY) / 2;
+    const seen = chunkInfo.filter(o => o.extent.minX <= cx + VIS_W / 2 && o.extent.maxX >= cx - VIS_W / 2 && o.extent.minY <= cy + VIS_H / 2 && o.extent.maxY >= cy - VIS_H / 2);
+    const ve = estimateVisuals(seen.map(w => w.vis), matDef, assets);
+    if (ve.drawCalls + ve.shadowCalls > vis.drawCalls + vis.shadowCalls) vis = { ...vis, drawCalls: ve.drawCalls, shadowCalls: ve.shadowCalls, at: c.id };
+    if (ve.trianglesExpected > vis.trianglesExpected) vis = { ...vis, triangles: ve.triangles, trianglesExpected: ve.trianglesExpected };
+    texWorst = Math.max(texWorst, estimateVisuals(near.map(w => w.vis), matDef, assets).textureBytes);
   }
-  const e = worst.est;
+  const e = { ...worst.est, drawCalls: vis.drawCalls + vis.shadowCalls + backdrop.drawCalls, triangles: vis.trianglesExpected + backdrop.triangles, textureBytes: texWorst };
   const budgetCheck = (code: string, label: string, v: number, cap: number) => {
     if (v > cap * 2) err(code, '/chunks', `${label} ${Math.round(v)} in the worst window (around chunk "${worst.at}") is more than 2× the ${budget.name} budget ${cap}`);
     else if (v > cap) warn(code, '/chunks', `${label} ${Math.round(v)} in the worst window (around chunk "${worst.at}") exceeds the ${budget.name} budget ${cap}`);
   };
-  budgetCheck('BUDGET_DRAWCALLS', 'draw calls', e.drawCalls, budget.drawCalls);
+  budgetCheck('BUDGET_DRAWCALLS', 'draw calls (main + shadow pass + backdrop)', e.drawCalls, budget.drawCalls);
   budgetCheck('BUDGET_TRIANGLES', 'triangles', e.triangles, budget.triangles);
   budgetCheck('BUDGET_TEXTURE_MEMORY', 'texture bytes', e.textureBytes, budget.textureBytes);
   budgetCheck('BUDGET_COLLIDERS', 'colliders', e.colliders, budget.colliders);
@@ -335,13 +416,12 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
     } catch (ex) { warn('FINISH_UNREACHABLE', '/finish', `reachability analysis could not run: ${(ex as Error).message}`); }
   }
 
-  info('STATS', '', `${doc.entities.length} entities · ${byChunk.size} chunks · worst window ≈ ${e.drawCalls} draw calls, ${e.triangles} triangles, ${e.colliders} colliders (${budget.name})`);
+  info('STATS', '', `${doc.entities.length} entities · ${byChunk.size} chunks · worst window ≈ ${e.drawCalls} draw calls (${vis.drawCalls} + ${vis.shadowCalls} shadow + ${backdrop.drawCalls} backdrop), ${Math.round(e.triangles)} triangles (all-LOD0 worst case ${Math.round(vis.triangles + backdrop.triangles)}), ${(e.textureBytes / 1048576).toFixed(1)} MB textures, ${e.colliders} colliders (${budget.name})`);
   return makeReport(issues);
 }
 
 function resolveSlot(ref: string, theme: ReturnType<typeof resolveTheme>['theme']): string | undefined {
-  const slot = ref.slice(1) as keyof typeof theme.slots;
-  return theme.slots[slot];
+  return slotId(theme, ref.slice(1));
 }
 
 /** Minimum distance between two non-overlapping convex polygons. */

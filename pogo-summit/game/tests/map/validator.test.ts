@@ -136,7 +136,8 @@ describe('MapValidator — progress, checkpoints, chunks', () => {
 describe('MapValidator — budgets (Android)', () => {
   it('too many colliders / entities / draw calls in one window raise budget warnings, 2× raises errors', () => {
     const d = baseDoc('crowd');
-    for (let i = 0; i < 700; i++) d.entities.push({ id: `p${i}`, type: 'platform', prefab: 'stone_platform', position: { x: 20 + (i % 35) * 2.5, y: 8 + Math.floor(i / 35) * 2.2 }, properties: { width: 1, thickness: 0.4 } });
+    // moving platforms are NOT batched (each is its own mesh), so they really cost one draw call per part
+    for (let i = 0; i < 700; i++) d.entities.push({ id: `p${i}`, type: 'moving', prefab: 'moving_platform', position: { x: 20 + (i % 35) * 2.5, y: 8 + Math.floor(i / 35) * 2.2 }, properties: { width: 1, thickness: 0.4, ampX: 0, ampY: 0 } });
     d.world.bounds = { minX: -20, maxX: 120, minY: -20, maxY: 90 };
     d.chunks.cell = { w: 200, h: 200 };
     const r = validateMap(d, { budget: 'android-mid' });

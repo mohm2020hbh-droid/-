@@ -65,7 +65,7 @@ switch (cmd) {
   }
   case 'chunks': {
     const d = load(file!);
-    const reg = new PrefabRegistry(d.prefabs);
+    const reg = PrefabRegistry.forDoc(d);
     const paths = new Map(d.paths.map(p => [p.id, buildCurve(p)]));
     const src = documentChunkSource(d, e => buildInstance(resolveEntity(e, reg).entity, paths).extent);
     for (const c of src.listChunks()) console.log(`${c.id.padEnd(14)} ${String(c.entityCount).padStart(6)} entities  x ${c.extent.minX.toFixed(1)}…${c.extent.maxX.toFixed(1)}  y ${c.extent.minY.toFixed(1)}…${c.extent.maxY.toFixed(1)}`);

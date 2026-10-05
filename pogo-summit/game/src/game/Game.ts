@@ -11,7 +11,8 @@ import type { InputSource } from '../input/InputSource';
 import { NEUTRAL_INPUT, type PogoInput } from '../sim/PogoState';
 import type { MapDocument } from '../map/schema';
 import { MapRuntime } from '../map/MapRuntime';
-import { compileRenderLevel, worldThemeOf } from '../map/MapCompile';
+import { compileRenderLevel, usesVisualV2, worldThemeOf } from '../map/MapCompile';
+import { resolveTheme } from '../map/MapTheme';
 import type { MapEvent } from '../map/schema';
 
 export interface GameOptions {
@@ -38,6 +39,8 @@ export class Game {
   theme!: WorldTheme;
   /** Set while a Map System V2 map is loaded (see `loadMap`). */
   mapRuntime: MapRuntime | null = null;
+  /** True while the Visual-V2 renderer draws the current map. */
+  visualV2 = false;
   private mapListeners: MapEventListener[] = [];
   input: InputSource | null = null;
   paused = false;
@@ -66,18 +69,23 @@ export class Game {
   }
 
   /**
-   * Load a Map System V2 map: the runtime owns the physics world (`MapWorld`), the existing renderer gets the compiled
-   * LevelData (best-effort visual subset) and the theme resolved from the map.
+   * Load a Map System V2 map: the runtime owns the physics world (`MapWorld`). Maps that use Visual-V2 features (mesh
+   * visuals or one of the V2 themes) are drawn by the new renderer (`MapScene`); other maps keep the classic renderer, fed
+   * with the compiled LevelData (best-effort visual subset). `opts.renderer` forces either.
    */
-  loadMap(doc: MapDocument, themeOverride?: WorldTheme): MapRuntime {
+  loadMap(doc: MapDocument, themeOverride?: WorldTheme, opts: { renderer?: 'v2' | 'legacy' } = {}): MapRuntime {
     const runtime = new MapRuntime(doc, { cfg: this.cfg });
     const level = compileRenderLevel(doc, runtime.registry);
+    const themeDef = resolveTheme(doc.theme, doc.manifest.theme).theme;
     this.mapRuntime = runtime;
     this.level = level;
     this.theme = themeOverride ?? worldThemeOf(doc);
     this.world = runtime.world;
     this.pogo = new PogoPhysicsController(this.world, this.cfg);
-    this.renderer.loadLevel(level, this.theme, this.world, this.cfg);
+    const v2 = opts.renderer ? opts.renderer === 'v2' : usesVisualV2(doc, runtime.registry);
+    this.visualV2 = v2;
+    if (v2) this.renderer.loadMapScene(runtime, themeDef, level, this.theme, this.world, this.cfg);
+    else this.renderer.loadLevel(level, this.theme, this.world, this.cfg);
     this.resetCamera();
     this.acc = 0;
     return runtime;
@@ -86,7 +94,7 @@ export class Game {
   onMapEvents(l: MapEventListener): () => void { this.mapListeners.push(l); return () => { this.mapListeners = this.mapListeners.filter(x => x !== l); }; }
 
   loadLevel(level: LevelData, themeOverride?: WorldTheme): void {
-    this.mapRuntime = null;
+    this.mapRuntime = null; this.visualV2 = false;
     this.level = level;
     this.theme = themeOverride ?? getTheme(level.theme);
     this.world = new PhysicsWorld(level);
@@ -99,8 +107,10 @@ export class Game {
   resetCamera(): void { this.renderer.snapCamera(this.pogo.state.x, this.pogo.state.y); }
 
   reset(): void {
+    this.mapRuntime?.prepareSpawn();     // the spawn chunk may be inactive after a run that ended far away
     this.pogo.reset();
     this.mapRuntime?.resetRun();
+    this.renderer.resetMapPresentation();
     if (this.mapRuntime) { this.mapRuntime.beforeStep(this.pogo.state); }
     this.acc = 0;
     this.resetCamera();
@@ -142,7 +152,7 @@ export class Game {
           const me = rt.afterStep(this.pogo.state, ev);
           const st = this.pogo.state;
           if (st.teleportTick === st.tick) { this.pogo.prev.x = st.x; this.pogo.prev.y = st.y; this.pogo.prev.angle = st.angle; }
-          if (me.length && this.mapListeners.length) for (const l of this.mapListeners) l(me, this);
+          if (me.length) { this.renderer.handleMapEvents(me); for (const l of this.mapListeners) l(me, this); }
         }
         this.acc -= DT;
       }

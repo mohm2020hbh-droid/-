@@ -21,6 +21,13 @@ import { bigTree, cypressTree, deadTree, pineTree } from './builders/trees';
 import { SURF, col, lerpColor, merge, mesh, paint, xf } from './geom';
 import { smoothBlob, sstep } from './shapes';
 import { mulberry32, noise3, range } from './noise';
+import type { MapRuntime } from '../map/MapRuntime';
+import type { MapEvent } from '../map/schema';
+import { lightingOf } from '../map/MapTheme';
+import type { ThemeDef } from '../map/schema';
+import { LightRig } from './map/lights';
+import { MapScene } from './map/scene';
+import { MapPresentation } from './map/presentation';
 
 export type Quality = 'high' | 'default' | 'simplified';
 export interface QualityProfile { pixelRatio: number; shadows: boolean; shadowMap: number; antialias: boolean; decor: number; particles: number }
@@ -76,6 +83,12 @@ export class GameRenderer {
   private appearance?: CharacterAppearance;
   private chargeFxT = 0;
   private cloudSeed = 1;
+  /** Visual-V2 map content (null for classic levels). */
+  mapScene: MapScene | null = null;
+  lightRig: LightRig | null = null;
+  presentation: MapPresentation | null = null;
+  private themeDef: ThemeDef | null = null;
+  private dayNightT = 0;
   /** Dynamic resolution (Phase 17): 0.6…1 multiplier on the pixel ratio. */
   resScale = 1;
   boostTint = '#ffb347';
@@ -130,6 +143,54 @@ export class GameRenderer {
 
   // ────────────────────────────────────────────────────────── level ──────
   loadLevel(level: LevelData, theme: WorldTheme, world: PhysicsWorld, cfg: PhysicsConfig): void {
+    this.beginStage(level, theme, world, cfg);
+    const q = QUALITY[this.quality];
+    const rng = mulberry32(level.landmarks.reduce((a, l) => a + (l.seed ?? 1), 7919));
+    const b = level.bounds;
+    // aerial layers
+    this.mountains = buildMountains(rng, theme, b.minX, b.maxX);
+    this.levelGroup.add(this.mountains);
+    this.clouds = buildClouds(rng, theme, b.minX, b.maxX, b.minY, b.maxY, q.decor, allPlatforms(level).map(p => ({ x: p.x, y: p.y })));
+    this.levelGroup.add(this.clouds.group);
+    this.buildFloatingWorld(rng, q.decor);
+    this.buildLandmarks();
+    this.buildPlatforms();
+    this.buildObstacles();
+    this.buildHazards();
+    const g = level.goal;
+    this.goal = buildGoal(g.x, g.y, theme, this.mats);
+    this.levelGroup.add(this.goal.group);
+    this.endStage(b, true);
+  }
+
+  /**
+   * Visual System V2: draw a Map System V2 map with the new renderer (MapScene: chunked merged/instanced/single meshes,
+   * LOD, culling, theme materials, layered backdrop). `level` is the compiled legacy LevelData (HUD hints, bounds).
+   */
+  loadMapScene(runtime: MapRuntime, themeDef: ThemeDef, level: LevelData, theme: WorldTheme, world: PhysicsWorld, cfg: PhysicsConfig): void {
+    this.beginStage(level, theme, world, cfg);
+    const q = QUALITY[this.quality];
+    this.themeDef = themeDef;
+    // lights come from the theme's LightingProfile; fog/background follow the rig
+    const fog = this.scene.fog as THREE.FogExp2;
+    this.lightRig = new LightRig(this.sun, this.hemi, fog, c => { (this.scene.background as THREE.Color).copy(c); this.vfx.setFog(c, fog.density); });
+    this.lightRig.apply(lightingOf(themeDef), { shadows: q.shadows, shadowMap: q.shadowMap });
+    this.renderer.toneMappingExposure = lightingOf(themeDef).exposure ?? theme.sky.exposure;
+    this.renderer.shadowMap.enabled = this.lightRig.shadowMap > 0;
+    this.mapScene = new MapScene({
+      runtime, theme: themeDef, density: q.decor, lodBias: this.quality === 'simplified' ? 0.6 : this.quality === 'default' ? 0.85 : 1,
+      normalMaps: this.quality !== 'simplified', maxBuildPerFrame: 1,
+    });
+    this.levelGroup.add(this.mapScene.root);
+    this.presentation = new MapPresentation(this, runtime, themeDef);
+    this.goal = { group: new THREE.Group(), update: () => {} } as unknown as GoalView;
+    this.clouds = { group: new THREE.Group(), update: () => {} };
+    this.dayNightT = 0;
+    this.endStage(level.bounds, false);
+  }
+
+  /** Common stage setup: materials, fog, lights, sky. */
+  private beginStage(level: LevelData, theme: WorldTheme, world: PhysicsWorld, cfg: PhysicsConfig): void {
     this.disposeLevel();
     this.level = level; this.theme = theme; this.world = world; this.cfg = cfg;
     const q = QUALITY[this.quality];
@@ -156,23 +217,10 @@ export class GameRenderer {
 
     this.sky = createSky(theme);
     this.scene.add(this.sky.mesh);
+  }
 
-    const rng = mulberry32(level.landmarks.reduce((a, l) => a + (l.seed ?? 1), 7919));
-    const b = level.bounds;
-    // aerial layers
-    this.mountains = buildMountains(rng, theme, b.minX, b.maxX);
-    this.levelGroup.add(this.mountains);
-    this.clouds = buildClouds(rng, theme, b.minX, b.maxX, b.minY, b.maxY, q.decor, allPlatforms(level).map(p => ({ x: p.x, y: p.y })));
-    this.levelGroup.add(this.clouds.group);
-    this.buildFloatingWorld(rng, q.decor);
-    this.buildLandmarks();
-    this.buildPlatforms();
-    this.buildObstacles();
-    this.buildHazards();
-    const g = level.goal;
-    this.goal = buildGoal(g.x, g.y, theme, this.mats);
-    this.levelGroup.add(this.goal.group);
-
+  /** Common stage teardown-up: contact shadow, character, particles, camera bounds (and the camera foliage of classic levels). */
+  private endStage(b: { minX: number; maxX: number; minY: number; maxY: number }, foliage: boolean): void {
     // shadow blob under the player
     const blobTex = (() => {
       const c = document.createElement('canvas'); c.width = c.height = 64;
@@ -190,7 +238,7 @@ export class GameRenderer {
     if (this.appearance) this.character.setAppearance(this.appearance);
     this.scene.add(this.character.root);
     this.scene.add(this.vfx.mesh);
-    this.buildFrameFoliage();
+    if (foliage) this.buildFrameFoliage();
     this.rig.setBounds({ minX: b.minX, maxX: b.maxX, minY: b.minY, maxY: b.maxY });
     this.rig.camera.add(this.frameFoliage);
     this.layoutFrameFoliage();
@@ -201,6 +249,8 @@ export class GameRenderer {
     this.levelGroup.traverse(o => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); });
     this.levelGroup = new THREE.Group();
     this.waterfalls = []; this.bouncePads.clear(); this.movers = []; this.hazardGlows = []; this.smoke = [];
+    this.mapScene?.dispose(); this.mapScene = null; this.presentation?.dispose(); this.presentation = null; this.lightRig = null; this.themeDef = null;
+    this.rig.resetProfile();
     for (const o of [this.hemi, this.sun, this.sun?.target, this.sky?.mesh, this.shadowBlob, this.character?.root, this.vfx.mesh]) if (o) this.scene.remove(o);
     this.rig.camera.remove(this.frameFoliage);
     this.frameFoliage = new THREE.Group();
@@ -455,13 +505,15 @@ export class GameRenderer {
     }
     for (const [, p] of this.bouncePads) { p.comp *= Math.exp(-9 * dt); p.view.setCompression(p.comp); }
 
-    // camera
+    // camera (Visual V2: the map's CameraProfile and its camera zones)
+    if (this.presentation) this.rig.setProfile(this.presentation.cameraProfile(dt));
     this.rig.update(dt, {
       x: pose.x, y: pose.y, vx: s.vx, vy: s.vy, grounded: s.mode === 'GROUNDED' || s.mode === 'CHARGING', charging: s.mode === 'CHARGING',
       charge01, boosting: this.boostFxT > 0,
     }, this.rig.camera.aspect);
     const cam = this.rig.camera;
     this.sky.update(cam.position);
+    if (this.mapScene && this.lightRig && this.themeDef) this.updateMapScene(dt, f, s);
     if (this.mountains) { const fx = this.rig.focus; for (const m of this.mountains.children) { const f = m.userData.follow as number; m.position.x = m.userData.cx + (fx.x - m.userData.cx) * f; m.position.y = fx.y * f; } }
     // frame foliage sway + parallax
     this.frameFoliage.children.forEach(c => {
@@ -500,6 +552,20 @@ export class GameRenderer {
 
   private boostFxT = 0;
 
+  /** Per-frame work of the Visual-V2 map renderer: lights, day/night, scene culling/LOD, presentation (VFX/audio hooks). */
+  private updateMapScene(dt: number, f: RenderFrame, s: PogoState): void {
+    const scene = this.mapScene!, rig = this.lightRig!, def = this.themeDef!;
+    this.dayNightT += dt;
+    this.presentation!.update(dt, this.time, f);
+    rig.update(dt);
+    if (def.dayNight) this.presentation!.applyDayNight(this.time, rig, this.sky);
+    // the foreground dither follows the player on screen (device pixels, y up)
+    const pr = this.renderer.getPixelRatio();
+    const p = this.project(f.pose.x, f.pose.y + 1);
+    scene.beginFrame();
+    scene.update({ dt, time: this.time, camera: this.rig.camera, focus: this.rig.focus, tick: s.tick - 1 + f.alpha, playerPx: { x: p.x * pr, y: (this.lastH - p.y) * pr }, fadeRadiusPx: this.lastH * pr * 0.2 });
+  }
+
   private onEvent(e: SimEvent): void {
     if (!this.screenShake && (e.type === 'hard_impact' || e.type === 'wall_hit')) { /* shake toggled off: skip trauma below */ }
     const tint = DUST[e.material ?? 'grass'] ?? '#d8d0a0';
@@ -526,12 +592,18 @@ export class GameRenderer {
       case 'boost': this.boostFxT = 0.9; this.rig.boostKick(); this.vfx.burst('ring', e.x, e.y, 0, 1, 1, '#ffb347', '#ffffff'); break;
       case 'boost_pad': this.vfx.burst('sparkle', e.x, e.y, e.nx, e.ny, 0.7, '#ffcf3a', '#ffffff'); break;
       case 'hazard': this.vfx.burst('hazard', e.x, e.y, e.nx, e.ny, 1); this.rig.addTrauma(0.6); break;
+      case 'slide': if (this.presentation) this.presentation.slideActive = true; break;
       case 'fall': this.rig.addTrauma(0.3); break;
       case 'respawn': this.rig.snap(e.x, e.y); this.vfx.burst('sparkle', e.x, e.y - 1, 0, 1, 0.6, '#ffffff', '#cfe9ff'); break;
       case 'goal': this.vfx.burst('confetti', e.x, e.y, 0, 1, 1); this.vfx.burst('goal', e.x, e.y, 0, 1, 1); this.rig.addTrauma(0.2); this.character.triggerEmote('cheer'); break;
       default: break;
     }
   }
+
+  /** Map System V2 events (zones, checkpoints, breaks …) → camera / lights / VFX of the Visual-V2 presentation. */
+  handleMapEvents(events: readonly MapEvent[]): void { this.presentation?.handle(events); }
+  /** A new run starts: camera zones, lighting zones and checkpoint banners reset. */
+  resetMapPresentation(): void { this.presentation?.camera.clear(); this.presentation?.camera.snap(); this.lightRig?.clearZones(); this.mapScene?.resetMarkers(); }
 
   snapCamera(x: number, y: number): void { this.rig.snap(x, y); }
 

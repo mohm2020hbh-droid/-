@@ -5,7 +5,10 @@ import { type Rng, mulberry32, range } from './noise';
  * Vfx — pooled billboard particles (Phase 13): one InstancedMesh, one draw call, zero allocation in the hot path.
  * Types: 0 shaded puff · 1 ring · 2 star · 3 confetti · 4 oriented streak · 5 leaf · 6 dot · 7 ground ring · 8 flash
  */
-export type FxKind = 'dust' | 'jumpdust' | 'ring' | 'groundring' | 'impact' | 'sparkle' | 'ice' | 'goo' | 'boost' | 'confetti' | 'goal' | 'hazard' | 'speed' | 'debris' | 'charge';
+export type FxKind = 'dust' | 'jumpdust' | 'ring' | 'groundring' | 'impact' | 'sparkle' | 'ice' | 'goo' | 'boost' | 'confetti' | 'goal' | 'hazard' | 'speed' | 'debris' | 'charge'
+  | 'splash' | 'lava' | 'checkpoint' | 'break';
+/** Ambient (camera-following) particle kinds: classic worlds use leaf / snow / ember, Visual-V2 themes add the rest. */
+export type AmbientKind = 'leaf' | 'snow' | 'ember' | 'ash' | 'mote' | 'petal' | 'spark' | 'mist';
 
 const vert = `
 attribute vec3 iPos; attribute vec4 iCol; attribute vec3 iData; // size, rot, type
@@ -63,9 +66,13 @@ export class Vfx {
   private cursor = 0;
   private rng: Rng = mulberry32(1234);
   private density = 1;
+  /** Maximum live particles (≤ capacity): a map's `vfx.maxParticles` and the quality tier cap it; beyond it the oldest recycle. */
+  private budget: number;
+  private live = 0;
   readonly material: THREE.ShaderMaterial;
 
   constructor(readonly capacity = 320, fogColor = '#b9bde2', fogDensity = 0.004) {
+    this.budget = capacity;
     const g = new THREE.InstancedBufferGeometry();
     const base = new THREE.PlaneGeometry(1, 1);
     g.index = base.index; g.setAttribute('position', base.getAttribute('position'));
@@ -86,9 +93,13 @@ export class Vfx {
   }
 
   setDensity(d: number): void { this.density = d; }
+  setBudget(n: number): void { this.budget = Math.max(16, Math.min(this.capacity, Math.round(n))); }
+  get particleBudget(): number { return this.budget; }
   setFog(color: THREE.Color, density: number): void { this.material.uniforms.uFogColor.value.copy(color); this.material.uniforms.uFogDensity.value = density; }
 
   private spawn(): P {
+    this.live++;
+    if (this.live > this.budget) { this.live = this.budget; const q = this.ps[this.cursor]; this.cursor = (this.cursor + 1) % this.capacity; return q; }   // over budget: recycle (oldest first)
     for (let n = 0; n < this.capacity; n++) {
       const p = this.ps[this.cursor];
       this.cursor = (this.cursor + 1) % this.capacity;
@@ -183,6 +194,32 @@ export class Vfx {
         for (let i = 0; i < n; i++) { const a = -0.2 + r() * Math.PI * 1.4, sp = range(r, 4, 13); const c = Vfx.C.set(cols[i % cols.length]); this.emit(x + range(r, -1, 1), y + 1.5, z + range(r, -1, 1), Math.cos(a) * sp * 0.7, Math.sin(a) * sp, range(r, -2, 2), range(r, 1.4, 2.4), 0.2, 0.2, 3, c, c, 1, 0.6, -9, 0.7, range(r, -12, 12)); }
         break;
       }
+      case 'splash': {                                    // water: droplets + ripple + a little mist
+        const n = Math.round((7 + power * 9) * d);
+        for (let i = 0; i < n; i++) { const sp = range(r, 2.5, 6 + power * 4), a = range(r, -0.5, 0.5); this.emit(x + range(r, -0.5, 0.5), y + 0.05, z + range(r, -0.4, 0.4), Math.sin(a) * sp * 0.6, Math.cos(a) * sp, range(r, -0.3, 0.3), range(r, 0.5, 0.9), range(r, 0.14, 0.24), 0.05, 6, t0, t1, 0.95, 0, -16, 0.5, 0); }
+        this.emit(x, y + 0.04, z, 0, 0, 0, 0.5, 0.4, 2.4 + power * 1.6, 7, t1, t1, 0.65, 0, 0, 1);
+        const m = Math.round(3 * d);
+        for (let i = 0; i < m; i++) this.emit(x + range(r, -0.6, 0.6), y + 0.2, z + range(r, -0.3, 0.3), range(r, -0.5, 0.5), range(r, 0.8, 1.6), 0, range(r, 0.6, 1.0), 0.35, range(r, 0.9, 1.3), 0, t1, t1, 0.35, 0, -0.5, 1.5, range(r, -1, 1));
+        break;
+      }
+      case 'lava': {                                      // lava pop: glowing dots + a small flash
+        const n = Math.round((4 + power * 4) * d);
+        for (let i = 0; i < n; i++) this.emit(x + range(r, -0.4, 0.4), y + 0.1, z + range(r, -0.3, 0.3), range(r, -1.8, 1.8), range(r, 2.5, 6.5), 0, range(r, 0.5, 1.0), range(r, 0.12, 0.22), 0.04, 6, Vfx.C.set('#ffd070'), Vfx.D.set('#ff4a1a'), 1, 0, -9, 0.4, 0);
+        this.emit(x, y + 0.15, z + 0.1, 0, 0, 0, 0.22, 0.6, 1.8, 8, Vfx.C.set('#ff9a3a'), Vfx.C, 0.6, 0, 0, 1);
+        break;
+      }
+      case 'checkpoint': {                                // checkpoint reached: expanding ring + rising sparkle column
+        this.emit(x, y + 0.3, z, 0, 0, 0, 0.7, 0.8, 5.5, 1, t0, t1, 0.9, 0, 0, 1);
+        this.emit(x, y + 0.05, z, 0, 0, 0, 0.55, 0.6, 4.2, 7, t0, t1, 0.8, 0, 0, 1);
+        const n = Math.round(16 * d);
+        for (let i = 0; i < n; i++) this.emit(x + range(r, -0.6, 0.6), y + 0.2, z + range(r, -0.3, 0.3), range(r, -0.4, 0.4), range(r, 3, 7), 0, range(r, 0.8, 1.4), range(r, 0.2, 0.36), 0.04, 2, t0, t1, 1, 0, 1.2, 0.6, range(r, -4, 4));
+        break;
+      }
+      case 'break': {                                     // a platform breaks: chunky debris
+        const n = Math.round((8 + power * 6) * d);
+        for (let i = 0; i < n; i++) this.emit(x + range(r, -1.5, 1.5), y + range(r, -0.2, 0.3), z + range(r, -0.5, 0.5), range(r, -5, 5), range(r, 1.5, 6), range(r, -1, 1), range(r, 0.7, 1.2), range(r, 0.18, 0.34), 0.12, 3, t0, t1, 1, 0.2, -22, 0.25, range(r, -10, 10));
+        break;
+      }
       case 'charge': {
         const a = r() * 6.283, rad = range(r, 0.8, 1.6);
         this.emit(x + Math.cos(a) * rad, y + 0.2 + Math.sin(a) * rad * 0.5, z, -Math.cos(a) * 3.6, -Math.sin(a) * 1.6 + 1.2, 0, 0.32, 0.22, 0.03, 2, Vfx.C.set('#ffe27a'), Vfx.D.set('#ffffff'), 0.9, 0, 0, 0.6, 6);
@@ -213,19 +250,27 @@ export class Vfx {
     this.emit(camX + side * range(r, halfW * 0.55, halfW * 0.95), camY + range(r, -halfH, halfH), 5, 0, -vy * 0.1 - 6, 0, 0.35, 1.2, 1.2, 4, c, c, 0.35, 0, 0, 1);
   }
 
-  /** Ambient drifting leaves / snow / embers around the camera. */
-  ambient(camX: number, camY: number, halfW: number, halfH: number, kind: 'leaf' | 'snow' | 'ember', colors: string[]): void {
+  /** Ambient particles around the camera. `rate` scales the spawn probability, `size` overrides the kind's default. */
+  ambient(camX: number, camY: number, halfW: number, halfH: number, kind: AmbientKind, colors: string[], rate = 1, size?: number): void {
     const r = this.rng;
-    if (r() > 0.12 * this.density) return;
-    const c = Vfx.C.set(colors[Math.floor(r() * colors.length)]);
+    if (r() > 0.12 * this.density * rate) return;
+    const c = Vfx.C.set(colors[Math.floor(r() * colors.length)] ?? '#ffffff');
     const x = camX + range(r, -halfW, halfW), y = camY + halfH * 1.05;
-    if (kind === 'leaf') this.emit(x, y, range(r, -3, 8), range(r, 0.2, 1.4), range(r, -1.6, -0.8), 0, range(r, 5, 8), 0.28, 0.28, 5, c, c, 0.95, 0.95, -0.2, 0.3, range(r, -3, 3));
-    else if (kind === 'snow') this.emit(x, y, range(r, -4, 8), range(r, -0.6, 0.6), range(r, -1.8, -0.9), 0, range(r, 5, 8), 0.12, 0.12, 6, c, c, 0.9, 0.9, 0, 0.1, 0);
-    else this.emit(x, camY - halfH, range(r, -2, 6), range(r, -0.6, 0.6), range(r, 1.2, 3), 0, range(r, 3, 6), 0.12, 0.02, 6, Vfx.C.set('#ff8a3a'), Vfx.D.set('#ff3a1a'), 0.95, 0, 0, 0.2, 0);
+    switch (kind) {
+      case 'leaf': { const sz = size ?? 0.28; this.emit(x, y, range(r, -3, 8), range(r, 0.2, 1.4), range(r, -1.6, -0.8), 0, range(r, 5, 8), sz, sz, 5, c, c, 0.95, 0.95, -0.2, 0.3, range(r, -3, 3)); break; }
+      case 'petal': { const sz = size ?? 0.16; this.emit(x, y, range(r, -3, 8), range(r, 0.3, 1.2), range(r, -1.1, -0.5), 0, range(r, 6, 9), sz, sz, 5, c, c, 0.9, 0.9, -0.1, 0.25, range(r, -4, 4)); break; }
+      case 'snow': { const sz = size ?? 0.12; this.emit(x, y, range(r, -4, 8), range(r, -0.6, 0.6), range(r, -1.8, -0.9), 0, range(r, 5, 8), sz, sz, 6, c, c, 0.9, 0.9, 0, 0.1, 0); break; }
+      case 'ash': { const sz = size ?? 0.14; this.emit(x, y, range(r, -4, 6), range(r, -0.4, 0.9), range(r, -1.3, -0.5), 0, range(r, 6, 9), sz, sz * 0.8, 6, c, c, 0.75, 0.6, 0, 0.2, 0); break; }
+      case 'mote': { const sz = size ?? 0.1; this.emit(camX + range(r, -halfW, halfW), camY + range(r, -halfH, halfH * 0.9), range(r, -5, 6), range(r, -0.5, 0.5), range(r, -0.2, 0.6), 0, range(r, 4, 7), sz, sz * 0.4, 6, c, c, 0.95, 0, 0, 0.6, 0); break; }
+      case 'spark': { const sz = size ?? 0.1; this.emit(camX + range(r, -halfW, halfW), camY - halfH, range(r, -3, 6), range(r, -0.6, 0.6), range(r, 3, 6), 0, range(r, 1, 2), sz * 2, sz * 0.3, 2, c, c, 1, 0, 0, 0.6, range(r, -5, 5)); break; }
+      case 'mist': { const sz = size ?? 1.2; this.emit(camX + range(r, -halfW, halfW), camY + range(r, -halfH, halfH), range(r, -14, -2), range(r, 0.3, 1), range(r, -0.1, 0.2), 0, range(r, 8, 12), sz * 3, sz * 5, 0, c, c, 0.14, 0, 0, 0.2, 0); break; }
+      default: this.emit(x, camY - halfH, range(r, -2, 6), range(r, -0.6, 0.6), range(r, 1.2, 3), 0, range(r, 3, 6), size ?? 0.12, 0.02, 6, Vfx.C.set('#ff8a3a'), Vfx.D.set('#ff3a1a'), 0.95, 0, 0, 0.2, 0);   // ember
+    }
   }
 
   update(dt: number): void {
     const P = this.pos.array as Float32Array, Cc = this.colA.array as Float32Array, Dd = this.data.array as Float32Array;
+    let live = 0;
     for (let i = 0; i < this.capacity; i++) {
       const p = this.ps[i];
       if (p.active) {
@@ -238,6 +283,7 @@ export class Vfx {
         }
       }
       if (p.active) {
+        live++;
         const t = p.life / p.max;
         P[i * 3] = p.x; P[i * 3 + 1] = p.y; P[i * 3 + 2] = p.z;
         Cc[i * 4] = p.r0 + (p.r1 - p.r0) * t; Cc[i * 4 + 1] = p.g0 + (p.g1 - p.g0) * t; Cc[i * 4 + 2] = p.b0 + (p.b1 - p.b0) * t;
@@ -245,6 +291,7 @@ export class Vfx {
         Dd[i * 3] = p.s0 + (p.s1 - p.s0) * t; Dd[i * 3 + 1] = p.rot; Dd[i * 3 + 2] = p.type;
       } else { Dd[i * 3] = 0; Cc[i * 4 + 3] = 0; }
     }
+    this.live = live;
     this.pos.needsUpdate = true; this.colA.needsUpdate = true; this.data.needsUpdate = true;
   }
 

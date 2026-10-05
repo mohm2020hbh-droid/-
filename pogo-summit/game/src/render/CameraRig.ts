@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { noise3 } from './noise';
+import { DEFAULT_CAMERA_PROFILE } from '../map/MapCamera';
+import type { CameraProfile } from '../map/schema';
 
 /**
  * CameraRig — landscape camera tuned for a phone (Phase 9 / "CAMERA").
@@ -31,6 +33,8 @@ export class CameraRig {
   private time = 0;
   private fallTilt = 0;
   halfW = 12; halfH = 5.2;
+  /** Visual V2: framing parameters (defaults = the constants this rig always used). */
+  private profile: CameraProfile = { ...DEFAULT_CAMERA_PROFILE };
   /** Menu framing: shifts the view sideways (metres) so the character sits beside the menu panel. */
   shiftX = 0;
   shiftTarget = 0;
@@ -38,6 +42,14 @@ export class CameraRig {
   distScaleTarget = 1;
 
   setBounds(b: CameraBounds): void { this.bounds = b; }
+
+  /** Apply a camera profile (blended by the map presentation every frame). */
+  setProfile(p: Readonly<CameraProfile>): void {
+    this.profile = { ...p };
+    this.baseFov = p.fov; this.baseDistance = p.followDistance * p.zoom;
+  }
+  resetProfile(): void { this.profile = { ...DEFAULT_CAMERA_PROFILE }; this.baseFov = DEFAULT_CAMERA_PROFILE.fov; this.baseDistance = DEFAULT_CAMERA_PROFILE.followDistance; }
+  get currentProfile(): Readonly<CameraProfile> { return this.profile; }
 
   snap(x: number, y: number): void {
     this.x = x; this.y = y + 1.4; this.vxs = this.vys = 0; this.lookX = 0; this.lookY = 0; this.dip = this.dipV = 0;
@@ -85,16 +97,15 @@ export class CameraRig {
     this.halfW = this.halfH * aspect;
 
     // look-ahead: see where the momentum is taking us (more when moving fast)
-    const la = Math.max(-5.5, Math.min(5.5, t.vx * 0.3));
+    const la = Math.max(-this.profile.lookAhead, Math.min(this.profile.lookAhead, t.vx * this.profile.lookAheadGain));
     this.lookX += (la - this.lookX) * (1 - Math.exp(-2.6 * dt));
     // vertical bias: keep the player in the lower third so upcoming platforms are visible; look further down when falling
-    const lyT = t.vy < -6 ? Math.max(-3.5, t.vy * 0.12) : (t.grounded ? 1.55 : 1.15) + Math.min(1.2, Math.max(0, t.vy) * 0.06);
+    const lyT = t.vy < -6 ? Math.max(-3.5, t.vy * 0.12) : (t.grounded ? this.profile.verticalBias : this.profile.verticalBias - 0.4) + Math.min(1.2, Math.max(0, t.vy) * 0.06);
     this.lookY += (lyT - this.lookY) * (1 - Math.exp(-2.4 * dt));
 
     const tx = t.x + this.lookX - this.shiftX, ty = t.y + this.lookY;
-    const fast = falling ? 0.16 : 0.3;
-    [this.x, this.vxs] = this.smoothDamp(this.x, tx, this.vxs, 0.26, dt);
-    [this.y, this.vys] = this.smoothDamp(this.y, ty, this.vys, fast, dt);
+    [this.x, this.vxs] = this.smoothDamp(this.x, tx, this.vxs, this.profile.smoothing, dt);
+    [this.y, this.vys] = this.smoothDamp(this.y, ty, this.vys, falling ? this.profile.smoothingY * 0.53 : this.profile.smoothingY, dt);
     // never let the player leave the safe frame (hard clamp, soft elsewhere)
     const maxOffY = this.halfH * 0.7, maxOffX = this.halfW * 0.55 + Math.abs(this.shiftX);
     this.y = Math.max(t.y + this.lookY - maxOffY - 0.0, Math.min(t.y + this.lookY + maxOffY, this.y));
@@ -113,7 +124,7 @@ export class CameraRig {
     const t = this.time * 38;
     const sx = (noise3(t, 0.5, 0, 3) - 0.5) * 2 * s, sy = (noise3(0.5, t, 0, 7) - 0.5) * 2 * s;
     const cy = this.y + this.dip;
-    this.camera.position.set(this.x + sx, cy + 2.3 + sy, this.dist);
+    this.camera.position.set(this.x + sx, cy + this.profile.height + sy, this.dist);
     this.camera.lookAt(this.x + sx * 0.5, cy + sy * 0.5, 0);
     this.camera.rotation.z += (noise3(t * 0.7, 9, 0, 5) - 0.5) * s * 0.06 + this.fallTilt;
     this.camera.updateProjectionMatrix();

@@ -104,7 +104,7 @@ export class MapRuntime {
   constructor(core: MapDocument, opts: MapRuntimeOptions = {}) {
     this.doc = core;
     this.cfg = opts.cfg ?? createPhysicsConfig();
-    this.registry = opts.registry ?? new PrefabRegistry(core.prefabs);
+    this.registry = opts.registry ?? PrefabRegistry.forDoc(core);
     this.host = opts.host ?? {};
     for (const p of core.paths) this.paths.set(p.id, buildCurve(p));
     this.regions = core.regions;
@@ -480,6 +480,17 @@ export class MapRuntime {
   }
 
   // ── run control / introspection ──────────────────────────────────────────────────────────────────────────────
+  /**
+   * Make the spawn area ready (load + activate its chunks) so a new pogo can be created there. Call it BEFORE resetting the
+   * pogo: after a run that ended far from the spawn the spawn chunk is inactive and `createPogoState` would find no ground.
+   */
+  prepareSpawn(): void {
+    const sp = this.doc.spawn?.position ?? { x: 0, y: 0 };
+    for (const id of this.chunks.chunksAt(sp.x, sp.y)) { this.chunks.pin(id); this.chunks.ensureLoaded(id, true); }
+    this.applyBehaviors(1, null);
+    this.world.flush();
+  }
+
   /** Start a new run: counters, flags, progress, checkpoints and breakables reset (the caller resets the pogo). */
   resetRun(): void {
     this.flags.clear(); this.reached.clear(); this.progress.reset(); this.checkpoints.reset(); this.recorder.reset();

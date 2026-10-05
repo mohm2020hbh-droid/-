@@ -315,3 +315,19 @@ describe('MapRuntime — snapshot and misc', () => {
     expect(t.state().tick).toBe(10);
   });
 });
+
+describe('restarting a run far from the spawn (regression: createPogoState found no ground)', () => {
+  it('prepareSpawn() makes the spawn area ready again after the player travelled far away', async () => {
+    const { largeMap, boot } = await import('./fixtures');
+    const { createPogoState, placeInAir } = await import('../../src/sim/PogoState');
+    const doc = largeMap({ length: 3000 });
+    const t = boot(doc);
+    placeInAir(t.cfg, t.state(), 2500, 60);
+    t.step(6);                                                      // streaming follows the player: the spawn chunks go inactive/unloaded
+    expect(() => createPogoState(t.rt.world, t.cfg)).toThrow(/startPosition is not on any solid surface/);
+    t.rt.prepareSpawn();
+    expect(() => createPogoState(t.rt.world, t.cfg)).not.toThrow();
+    const s = createPogoState(t.rt.world, t.cfg);
+    expect(s.grounded).toBe(true);
+  });
+});

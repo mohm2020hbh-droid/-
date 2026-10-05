@@ -6,6 +6,10 @@
  */
 import { WORLDS, type WorldTheme, getTheme } from '../data/worlds';
 import type { Json, MapDocument, MaterialDef, ThemeColors, ThemeDef, ThemeRef } from './schema';
+import { lerpColor } from './MapColor';
+import { SLOT_NAMES, buildKit, isSlotName, slotMaterialId, type KitSpec } from './themeKit';
+import { THEMES_V2 } from './themesV2';
+import type { BackdropLayer, LightingProfile } from './schema';
 
 const WEATHER: Record<string, NonNullable<ThemeDef['weather']>> = {
   autumn_hills: { type: 'leaves', intensity: 0.35, windX: 0.4 },
@@ -30,19 +34,77 @@ function fromWorld(w: WorldTheme): ThemeDef {
   };
 }
 
-export const BUILTIN_THEMES: Record<string, ThemeDef> = Object.fromEntries(WORLDS.map(w => [w.id, fromWorld(w)]));
+export const BUILTIN_THEMES: Record<string, ThemeDef> = {
+  ...Object.fromEntries(WORLDS.map(w => [w.id, fromWorld(w)])),
+  ...Object.fromEntries(THEMES_V2.map(t => [t.id, t])),
+};
+/** The four Visual-V2 worlds (ids `world_meadow`, `world_ice`, `world_volcanic`, `world_mystic`). */
+export const V2_THEME_IDS: string[] = THEMES_V2.map(t => t.id);
 
-/** Material definitions behind the built-in theme slots (parameter sets of built-in shaders). */
-export function themeMaterials(def: ThemeDef): Record<string, MaterialDef> {
+const SAND = 'moss' as const;
+/** Kit colours for a theme that does not ship its own `materials` (the four pre-V2 worlds, custom inline themes). */
+function kitSpecOf(def: ThemeDef): KitSpec {
   const w = getTheme(def.base ?? def.id);
   const t = w.terrain;
-  const out: Record<string, MaterialDef> = {
-    [def.slots.ground]: { id: def.slots.ground, shader: 'palette', color: t.capB },
-    [def.slots.secondary]: { id: def.slots.secondary, shader: 'stylized-lit', color: t.wood },
-    [def.slots.water]: { id: def.slots.water, shader: 'water', color: w.water },
+  return {
+    ground: t.capB, groundTex: w.capStyle === 'grass' ? 'grass' : w.capStyle === 'snow' ? 'snow' : w.capStyle === 'ash' ? 'ash' : SAND,
+    rock: t.rockMid, wood: t.wood, water: w.water, foliage: w.foliage[0] ?? '#6bb43a', trunk: w.trunk, crystal: t.hazardCrystal, stone: t.stone, ice: t.ice,
+    cloud: w.cloud.light, glow: def.palette.accent, lava: t.hazardCrystal, bounce: t.bounceTop,
   };
-  if (def.slots.lava) out[def.slots.lava] = { id: def.slots.lava, shader: 'emissive', color: t.hazardCrystal, emissive: 0.8 };
+}
+
+/**
+ * Every slot material of a theme: kit-derived defaults (so any theme renders every role), overlaid by the theme's own
+ * `materials`. Slot → id follows `def.slots[slot]` or `mat.<themeId>.<slot>`.
+ */
+export function themeMaterials(def: ThemeDef): Record<string, MaterialDef> {
+  const kit = buildKit(def.id, kitSpecOf(def));
+  const out: Record<string, MaterialDef> = {};
+  for (const slot of SLOT_NAMES) {
+    const id = slotMaterialId(def.id, slot);
+    const want = (def.slots as Record<string, string | undefined>)[slot] ?? id;
+    out[want] = { ...kit[id], id: want };
+  }
+  if (!def.slots.lava) delete out[slotMaterialId(def.id, 'lava')];
+  for (const [id, m] of Object.entries(def.materials ?? {})) out[id] = { ...m, id };
   return out;
+}
+
+/** Material id behind a theme slot ("ground", "rock" …). Optional slots fall back to the kit id. */
+export function slotId(def: ThemeDef, slot: string): string | undefined {
+  if (!isSlotName(slot)) return undefined;
+  if (slot === 'lava') return def.slots.lava;                      // only themes that declare lava have a lava slot
+  return (def.slots as Record<string, string | undefined>)[slot] ?? slotMaterialId(def.id, slot);
+}
+
+/** The backdrop of a theme: its own layers, or layers derived from the pre-V2 world's mountains / cloud sea. */
+export function backdropOf(def: ThemeDef): BackdropLayer[] {
+  if (def.backdrop && def.backdrop.length) return def.backdrop;
+  const w = getTheme(def.base ?? def.id);
+  const out: BackdropLayer[] = w.mountains.map((m, i): BackdropLayer => ({ id: `ridge_${i}`, kind: 'mountains', z: -m.z, follow: 0.8 + i * 0.07, y: m.y, height: m.height, width: m.width, color: m.color, snow: m.snow, haze: 0.1 + 0.2 * i, seed: 3 + i * 2 }));
+  out.push({ id: 'cloud_sea', kind: 'clouds', z: 70, follow: 0.5, y: w.cloud.seaY, height: 8, width: 260, color: w.cloud.light, color2: w.cloud.shade, count: Math.round(22 * w.cloud.amount), seed: 11, opacity: 0.95 });
+  out.push({ id: 'haze', kind: 'fog', z: 120, follow: 0.85, y: -30, height: 55, width: 400, color: w.fog.color, opacity: 0.4 });
+  return out;
+}
+
+/** The lighting profile of a theme: its own, or derived from the pre-V2 sky/lighting/fog fields. */
+export function lightingOf(def: ThemeDef): LightingProfile {
+  if (def.lightingProfile) return def.lightingProfile;
+  return {
+    sunDirection: [...def.sky.sunDir] as [number, number, number], sunIntensity: def.sky.sunIntensity, sunColor: def.sky.sun,
+    ambientIntensity: def.lighting.hemiIntensity, ambientSky: def.lighting.hemiSky, ambientGround: def.lighting.hemiGround,
+    fogDensity: def.fog.density, fogColor: def.fog.color, shadowQuality: 'medium', exposure: def.lighting.exposure,
+  };
+}
+
+/** The names the Visual-V2 brief uses for a theme's identity, resolved from the definition (editor/validator summary). */
+export function themeIdentity(def: ThemeDef) {
+  return {
+    sky: def.sky, fog: def.fog, lighting: lightingOf(def),
+    primaryColor: def.palette.primary, secondaryColor: def.palette.secondary, accentColor: def.palette.accent,
+    groundMaterial: slotId(def, 'ground'), rockMaterial: slotId(def, 'rock'),
+    vegetation: def.vegetation, background: def.backdrop ?? [], particles: def.particles ?? [], ambientAudio: def.ambientAudio ?? { bed: 'meadow' as const, wind: def.audio.wind, birds: def.audio.birds, water: def.audio.water },
+  };
 }
 
 export function resolveTheme(ref: ThemeRef | undefined, fallbackId: string, registry: Record<string, ThemeDef> = BUILTIN_THEMES): { theme: ThemeDef; found: boolean } {
@@ -73,20 +135,8 @@ export function toWorldTheme(def: ThemeDef): WorldTheme {
   return w;
 }
 
-// ── colours ─────────────────────────────────────────────────────────────────────────────────────────────────────
-export function parseHex(c: string): [number, number, number] {
-  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c.trim());
-  if (!m) return [0, 0, 0];
-  let h = m[1];
-  if (h.length === 3) h = h.split('').map(x => x + x).join('');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-export const isHexColor = (c: string): boolean => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c.trim());
-export function toHex(rgb: [number, number, number]): string { return '#' + rgb.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join(''); }
-export function lerpColor(a: string, b: string, t: number): string {
-  const x = parseHex(a), y = parseHex(b);
-  return toHex([x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t]);
-}
+// ── colours (helpers live in MapColor; re-exported for existing importers) ──────────────────────────────────────
+export { parseHex, isHexColor, toHex, lerpColor } from './MapColor';
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 /** Interpolated theme at `tSec` (day/night cycle, closed loop). Themes without `dayNight` are returned unchanged. */
@@ -118,8 +168,7 @@ export function sampleTheme(def: ThemeDef, tSec: number): ThemeDef {
 /** Material id for a visual material reference: "@slot" → the theme's slot, anything else is returned as is. */
 export function resolveMaterialRef(ref: string | undefined, theme: ThemeDef): string | undefined {
   if (!ref || !ref.startsWith('@')) return ref;
-  const slot = ref.slice(1) as keyof ThemeDef['slots'];
-  return theme.slots[slot];
+  return slotId(theme, ref.slice(1));
 }
 
 /** Every material id usable in `doc` (map-local + theme slots). */

@@ -14,23 +14,34 @@ import { buildInstance, type EntityInstance } from './MapEntity';
 import { buildCurve } from './MapBehavior';
 import { placePolys, polysAabb } from './MapCollision';
 import { MapRuntime, type MapRuntimeOptions } from './MapRuntime';
-import { resolveTheme, toWorldTheme } from './MapTheme';
+import { V2_THEME_IDS, resolveTheme, toWorldTheme } from './MapTheme';
 import { newMapDocument, defaultManifest } from './MapLoader';
 import type { Effect, MapDocument, MapEntity, MoveBehavior, RegionDef } from './schema';
 
 const PLATFORM_KINDS: PlatformKind[] = ['rock', 'wood', 'ice', 'bounce', 'special', 'ruin', 'lava', 'goal'];
 
-export function instancesOf(doc: MapDocument, registry = new PrefabRegistry(doc.prefabs)): EntityInstance[] {
+export function instancesOf(doc: MapDocument, registry = PrefabRegistry.forDoc(doc)): EntityInstance[] {
   const paths = new Map(doc.paths.map(p => [p.id, buildCurve(p)]));
   return doc.entities.map((e, i) => buildInstance(resolveEntity(e, registry, `/entities/${i}`).entity, paths, `/entities/${i}`));
 }
 
 export function createMapRuntime(doc: MapDocument, opts: MapRuntimeOptions = {}): MapRuntime { return new MapRuntime(doc, opts); }
 
+/**
+ * Does the map use Visual-V2 features (mesh visuals, a Visual-V2 world theme, a theme with a backdrop or an explicit
+ * `requirements.capabilities: ["visualV2"]`)? Such maps are drawn by the new renderer; all others by the classic one.
+ */
+export function usesVisualV2(doc: MapDocument, registry = PrefabRegistry.forDoc(doc)): boolean {
+  if (doc.manifest.requirements.capabilities.includes('visualV2')) return true;
+  const theme = resolveTheme(doc.theme, doc.manifest.theme).theme;
+  if (V2_THEME_IDS.includes(theme.id) || (theme.backdrop && theme.backdrop.length > 0)) return true;
+  return capabilitiesOf(doc, registry).includes('meshVisual');
+}
+
 export function worldThemeOf(doc: MapDocument): WorldTheme { return toWorldTheme(resolveTheme(doc.theme, doc.manifest.theme).theme); }
 
 /** Entities that the existing renderer/analysis can express as LevelData lists, in document order. */
-export function compileRenderLevel(doc: MapDocument, registry = new PrefabRegistry(doc.prefabs)): LevelData {
+export function compileRenderLevel(doc: MapDocument, registry = PrefabRegistry.forDoc(doc)): LevelData {
   const level: LevelData = {
     levelId: doc.manifest.id, worldId: 'map', name: doc.manifest.name, theme: resolveTheme(doc.theme, doc.manifest.theme).theme.id,
     startPosition: doc.spawn ? { ...doc.spawn.position } : { x: 0, y: 0 },
@@ -106,7 +117,7 @@ export function compileRenderLevel(doc: MapDocument, registry = new PrefabRegist
 }
 
 // ── capabilities ────────────────────────────────────────────────────────────────────────────────────────────────
-export function capabilitiesOf(doc: MapDocument, registry = new PrefabRegistry(doc.prefabs)): string[] {
+export function capabilitiesOf(doc: MapDocument, registry = PrefabRegistry.forDoc(doc)): string[] {
   const caps = new Set<string>();
   for (const e of doc.entities) {
     const { entity: r } = resolveEntity(e, registry);

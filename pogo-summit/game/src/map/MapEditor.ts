@@ -46,7 +46,7 @@ export class MapEditor {
 
   constructor(doc: MapDocument) {
     this.doc = doc;
-    this.registry = new PrefabRegistry(doc.prefabs);
+    this.registry = PrefabRegistry.forDoc(doc);
     this.reindex();
   }
 

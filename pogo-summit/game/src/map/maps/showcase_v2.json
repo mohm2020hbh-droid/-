@@ -1,0 +1,2376 @@
+{
+ "format": "pogo-summit.map",
+ "formatVersion": 2,
+ "manifest": {
+  "id": "showcase_v2",
+  "name": "Showcase V2",
+  "author": "Pogo Summit",
+  "version": "1.0.0",
+  "description": "A guided tour of Map System V2: moving planks, a ramp, ice, a vertical climb, hazards, a secret route and a final challenge.",
+  "difficulty": 4,
+  "estimatedTimeSec": 110,
+  "theme": "world_meadow",
+  "mapSize": {
+   "width": 315,
+   "height": 137
+  },
+  "checkpointCount": 4,
+  "tags": [
+   "showcase",
+   "v2",
+   "tutorial"
+  ],
+  "requirements": {
+   "minFormatVersion": 2,
+   "capabilities": [],
+   "physics": "locked-spec-1"
+  }
+ },
+ "world": {
+  "bounds": {
+   "minX": -25,
+   "maxX": 290,
+   "minY": -32,
+   "maxY": 105
+  },
+  "killY": -40,
+  "modes": {
+   "doubleJump": false,
+   "puzzle": false,
+   "grapple": false
+  }
+ },
+ "theme": {
+  "ref": "world_meadow"
+ },
+ "spawn": {
+  "id": "spawn",
+  "position": {
+   "x": -4,
+   "y": 0
+  },
+  "facing": 1
+ },
+ "finish": {
+  "zones": [
+   {
+    "id": "finish",
+    "position": {
+     "x": 268,
+     "y": 74
+    },
+    "shape": {
+     "kind": "box",
+     "w": 2.6,
+     "h": 5
+    }
+   }
+  ]
+ },
+ "checkpoints": [
+  {
+   "id": "cp0",
+   "order": 0,
+   "name": "Moving planks",
+   "region": {
+    "kind": "box",
+    "x": 65.5,
+    "y": 13.0,
+    "w": 7,
+    "h": 8
+   },
+   "respawn": {
+    "x": 64.3,
+    "y": 9.5
+   },
+   "progress": 22
+  },
+  {
+   "id": "cp1",
+   "order": 1,
+   "name": "Ice crossing",
+   "region": {
+    "kind": "box",
+    "x": 131,
+    "y": 24.5,
+    "w": 7,
+    "h": 8
+   },
+   "respawn": {
+    "x": 129.8,
+    "y": 21
+   },
+   "progress": 45
+  },
+  {
+   "id": "cp2",
+   "order": 2,
+   "name": "Crystal gate",
+   "region": {
+    "kind": "box",
+    "x": 193,
+    "y": 58.5,
+    "w": 7,
+    "h": 8
+   },
+   "respawn": {
+    "x": 191.8,
+    "y": 55
+   },
+   "progress": 72
+  },
+  {
+   "id": "cp_secret",
+   "order": 3,
+   "name": "Crystal alcove",
+   "optional": true,
+   "orderMode": "any",
+   "region": {
+    "kind": "box",
+    "x": 199,
+    "y": 84,
+    "w": 9,
+    "h": 7
+   },
+   "respawn": {
+    "x": 197.5,
+    "y": 81
+   }
+  }
+ ],
+ "progress": {
+  "routes": [
+   {
+    "id": "main",
+    "kind": "main",
+    "points": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 15,
+      "y": 1.5
+     },
+     {
+      "x": 27.5,
+      "y": 3.5
+     },
+     {
+      "x": 40,
+      "y": 5.5
+     },
+     {
+      "x": 52.5,
+      "y": 7.5
+     },
+     {
+      "x": 65.5,
+      "y": 9.5
+     },
+     {
+      "x": 91,
+      "y": 15.5
+     },
+     {
+      "x": 104,
+      "y": 17
+     },
+     {
+      "x": 118,
+      "y": 19
+     },
+     {
+      "x": 131,
+      "y": 21
+     },
+     {
+      "x": 141,
+      "y": 25.5
+     },
+     {
+      "x": 132.5,
+      "y": 30
+     },
+     {
+      "x": 141,
+      "y": 34.5
+     },
+     {
+      "x": 132.5,
+      "y": 39
+     },
+     {
+      "x": 141,
+      "y": 43.5
+     },
+     {
+      "x": 155,
+      "y": 47
+     },
+     {
+      "x": 168,
+      "y": 50
+     },
+     {
+      "x": 180.5,
+      "y": 52.5
+     },
+     {
+      "x": 193,
+      "y": 55
+     },
+     {
+      "x": 207,
+      "y": 57.5
+     },
+     {
+      "x": 219,
+      "y": 60.5
+     },
+     {
+      "x": 231,
+      "y": 63
+     },
+     {
+      "x": 243,
+      "y": 65.5
+     },
+     {
+      "x": 254,
+      "y": 68
+     },
+     {
+      "x": 268,
+      "y": 71.5
+     }
+    ]
+   },
+   {
+    "id": "secret",
+    "kind": "secret",
+    "points": [
+     {
+      "x": 193,
+      "y": 55
+     },
+     {
+      "x": 201.5,
+      "y": 60.5
+     },
+     {
+      "x": 209.5,
+      "y": 66
+     },
+     {
+      "x": 217,
+      "y": 71
+     },
+     {
+      "x": 209,
+      "y": 76
+     },
+     {
+      "x": 199,
+      "y": 81
+     }
+    ],
+    "from": {
+     "route": "main",
+     "point": 18
+    },
+    "to": {
+     "route": "main",
+     "point": 19
+    }
+   }
+  ]
+ },
+ "splits": {
+  "splits": [
+   {
+    "id": "s0",
+    "name": "Moving planks",
+    "checkpoint": "cp0",
+    "parSec": 24
+   },
+   {
+    "id": "s1",
+    "name": "Ice crossing",
+    "checkpoint": "cp1",
+    "parSec": 52
+   },
+   {
+    "id": "s2",
+    "name": "Crystal gate",
+    "checkpoint": "cp2",
+    "parSec": 84
+   }
+  ],
+  "targets": {
+   "gold": 95,
+   "silver": 125,
+   "bronze": 180
+  }
+ },
+ "entities": [
+  {
+   "id": "start",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 0,
+    "y": 0
+   },
+   "properties": {
+    "width": 18,
+    "thickness": 9,
+    "depth": 12,
+    "seed": 11
+   }
+  },
+  {
+   "id": "a1",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 15,
+    "y": 1.5
+   },
+   "properties": {
+    "width": 7,
+    "thickness": 4,
+    "seed": 12
+   }
+  },
+  {
+   "id": "a2",
+   "type": "platform",
+   "prefab": "wood_ledge",
+   "position": {
+    "x": 27.5,
+    "y": 3.5
+   },
+   "properties": {
+    "width": 6.5,
+    "seed": 13
+   }
+  },
+  {
+   "id": "b1",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 40,
+    "y": 5.5
+   },
+   "properties": {
+    "width": 6,
+    "thickness": 4,
+    "seed": 14
+   }
+  },
+  {
+   "id": "b_mv",
+   "type": "moving",
+   "prefab": "moving_ledge",
+   "position": {
+    "x": 52.5,
+    "y": 7.5
+   },
+   "properties": {
+    "width": 6,
+    "ampX": 4,
+    "period": 6,
+    "seed": 15
+   }
+  },
+  {
+   "id": "b2",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 65.5,
+    "y": 9.5
+   },
+   "properties": {
+    "width": 7,
+    "thickness": 4,
+    "seed": 16
+   }
+  },
+  {
+   "id": "c_slope",
+   "type": "slope",
+   "prefab": "slope",
+   "position": {
+    "x": 78,
+    "y": 12
+   },
+   "properties": {
+    "width": 10,
+    "height": 3.6
+   }
+  },
+  {
+   "id": "c1",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 91,
+    "y": 15.5
+   },
+   "properties": {
+    "width": 6,
+    "thickness": 4,
+    "seed": 17
+   }
+  },
+  {
+   "id": "d1",
+   "type": "platform",
+   "prefab": "ice_ledge",
+   "position": {
+    "x": 104,
+    "y": 17
+   },
+   "properties": {
+    "width": 9,
+    "seed": 18
+   }
+  },
+  {
+   "id": "d2",
+   "type": "platform",
+   "prefab": "ice_ledge",
+   "position": {
+    "x": 118,
+    "y": 19
+   },
+   "properties": {
+    "width": 9,
+    "seed": 19
+   }
+  },
+  {
+   "id": "d3",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 131,
+    "y": 21
+   },
+   "properties": {
+    "width": 7,
+    "thickness": 4,
+    "seed": 20
+   }
+  },
+  {
+   "id": "e1",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 141,
+    "y": 25.5
+   },
+   "properties": {
+    "width": 5.5,
+    "thickness": 3.5,
+    "seed": 21
+   }
+  },
+  {
+   "id": "e2",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 132.5,
+    "y": 30
+   },
+   "properties": {
+    "width": 5,
+    "thickness": 3.5,
+    "seed": 22
+   }
+  },
+  {
+   "id": "e3",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 141,
+    "y": 34.5
+   },
+   "properties": {
+    "width": 5,
+    "thickness": 3.5,
+    "seed": 23
+   }
+  },
+  {
+   "id": "e4",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 132.5,
+    "y": 39
+   },
+   "properties": {
+    "width": 5,
+    "thickness": 3.5,
+    "seed": 24
+   }
+  },
+  {
+   "id": "e5",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 141,
+    "y": 43.5
+   },
+   "properties": {
+    "width": 5.5,
+    "thickness": 3.5,
+    "seed": 25
+   }
+  },
+  {
+   "id": "f1",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 155,
+    "y": 47
+   },
+   "properties": {
+    "width": 6,
+    "thickness": 4,
+    "seed": 26
+   }
+  },
+  {
+   "id": "spikes1",
+   "type": "hazard",
+   "prefab": "crystal_spikes",
+   "position": {
+    "x": 147.5,
+    "y": 40.5
+   },
+   "properties": {
+    "width": 4,
+    "height": 1.8,
+    "count": 5,
+    "seed": 3
+   }
+  },
+  {
+   "id": "f2",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 168,
+    "y": 50
+   },
+   "properties": {
+    "width": 5,
+    "thickness": 4,
+    "seed": 27
+   }
+  },
+  {
+   "id": "blade1",
+   "type": "hazard",
+   "prefab": "rotating_blade",
+   "position": {
+    "x": 162,
+    "y": 59
+   },
+   "properties": {
+    "length": 7,
+    "thickness": 0.9,
+    "speed": 70
+   },
+   "visual": {
+    "kind": "mesh",
+    "mesh": "builtin:blade",
+    "renderLayer": "gameplay",
+    "castShadow": true,
+    "meshParams": {
+     "length": 7,
+     "thickness": 0.9
+    }
+   }
+  },
+  {
+   "id": "f3",
+   "type": "interactive",
+   "prefab": "timed_ledge",
+   "position": {
+    "x": 180.5,
+    "y": 52.5
+   },
+   "properties": {
+    "width": 4,
+    "thickness": 2.2,
+    "period": 4,
+    "duty": 0.65,
+    "phase": 0,
+    "seed": 28
+   }
+  },
+  {
+   "id": "g1",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 193,
+    "y": 55
+   },
+   "properties": {
+    "width": 7,
+    "thickness": 4,
+    "seed": 29
+   }
+  },
+  {
+   "id": "s_seal",
+   "type": "platform",
+   "prefab": "crystal_ledge",
+   "position": {
+    "x": 201.5,
+    "y": 60.5
+   },
+   "properties": {
+    "width": 3.6,
+    "seed": 30
+   }
+  },
+  {
+   "id": "s1",
+   "type": "interactive",
+   "prefab": "hidden_ledge",
+   "position": {
+    "x": 209.5,
+    "y": 66
+   },
+   "properties": {
+    "width": 3.4,
+    "seed": 31
+   }
+  },
+  {
+   "id": "s2",
+   "type": "interactive",
+   "prefab": "hidden_ledge",
+   "position": {
+    "x": 217,
+    "y": 71
+   },
+   "properties": {
+    "width": 3.4,
+    "seed": 32
+   }
+  },
+  {
+   "id": "s3",
+   "type": "interactive",
+   "prefab": "hidden_ledge",
+   "position": {
+    "x": 209,
+    "y": 76
+   },
+   "properties": {
+    "width": 3.4,
+    "seed": 33
+   }
+  },
+  {
+   "id": "s_alcove",
+   "type": "platform",
+   "prefab": "ruin_ledge",
+   "position": {
+    "x": 199,
+    "y": 81
+   },
+   "properties": {
+    "width": 9,
+    "thickness": 3,
+    "depth": 7,
+    "seed": 34
+   }
+  },
+  {
+   "id": "h1",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 207,
+    "y": 57.5
+   },
+   "properties": {
+    "width": 4.2,
+    "thickness": 3.5,
+    "seed": 35
+   }
+  },
+  {
+   "id": "h2",
+   "type": "moving",
+   "prefab": "moving_ledge",
+   "position": {
+    "x": 219,
+    "y": 60.5
+   },
+   "properties": {
+    "width": 3.8,
+    "ampX": 0,
+    "ampY": 2.4,
+    "period": 5,
+    "seed": 36
+   }
+  },
+  {
+   "id": "h3",
+   "type": "interactive",
+   "prefab": "timed_ledge",
+   "position": {
+    "x": 231,
+    "y": 63
+   },
+   "properties": {
+    "width": 4,
+    "thickness": 2.2,
+    "period": 4,
+    "duty": 0.7,
+    "phase": 0.0,
+    "seed": 37
+   }
+  },
+  {
+   "id": "h4",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 243,
+    "y": 65.5
+   },
+   "properties": {
+    "width": 4,
+    "thickness": 3.5,
+    "seed": 38
+   }
+  },
+  {
+   "id": "h5",
+   "type": "interactive",
+   "prefab": "breakable_ledge",
+   "position": {
+    "x": 254,
+    "y": 68
+   },
+   "properties": {
+    "width": 4,
+    "delay": 0.6,
+    "respawn": 3,
+    "seed": 39
+   }
+  },
+  {
+   "id": "fin",
+   "type": "platform",
+   "prefab": "rock_ledge",
+   "position": {
+    "x": 268,
+    "y": 71.5
+   },
+   "properties": {
+    "width": 14,
+    "thickness": 6,
+    "depth": 12,
+    "seed": 40
+   }
+  },
+  {
+   "id": "terrain0",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": -4,
+    "y": -3,
+    "z": -14.5
+   },
+   "properties": {
+    "width": 36,
+    "height": 18,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 100
+   }
+  },
+  {
+   "id": "terrain1",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 24,
+    "y": -1,
+    "z": -15.5
+   },
+   "properties": {
+    "width": 30,
+    "height": 16,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 101
+   }
+  },
+  {
+   "id": "terrain2",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 54,
+    "y": 3,
+    "z": -16.5
+   },
+   "properties": {
+    "width": 34,
+    "height": 16,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 102
+   }
+  },
+  {
+   "id": "terrain3",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 86,
+    "y": 10,
+    "z": -14.5
+   },
+   "properties": {
+    "width": 34,
+    "height": 16,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 103
+   }
+  },
+  {
+   "id": "terrain4",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 114,
+    "y": 13,
+    "z": -15.5
+   },
+   "properties": {
+    "width": 30,
+    "height": 18,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 104
+   }
+  },
+  {
+   "id": "terrain5",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 140,
+    "y": 22,
+    "z": -16.5
+   },
+   "properties": {
+    "width": 24,
+    "height": 40,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 105
+   }
+  },
+  {
+   "id": "terrain6",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 168,
+    "y": 43,
+    "z": -14.5
+   },
+   "properties": {
+    "width": 32,
+    "height": 20,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 106
+   }
+  },
+  {
+   "id": "terrain7",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 198,
+    "y": 51,
+    "z": -15.5
+   },
+   "properties": {
+    "width": 34,
+    "height": 20,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 107
+   }
+  },
+  {
+   "id": "terrain8",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 232,
+    "y": 57,
+    "z": -16.5
+   },
+   "properties": {
+    "width": 34,
+    "height": 18,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 108
+   }
+  },
+  {
+   "id": "terrain9",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 264,
+    "y": 63,
+    "z": -14.5
+   },
+   "properties": {
+    "width": 40,
+    "height": 20,
+    "depth": 9,
+    "terraces": 3,
+    "seed": 109
+   }
+  },
+  {
+   "id": "peak0",
+   "type": "background",
+   "prefab": "background_mountain",
+   "position": {
+    "x": 30,
+    "y": -56,
+    "z": -135
+   },
+   "properties": {
+    "width": 200,
+    "height": 80,
+    "profile": "ridge",
+    "snow": true,
+    "seed": 200
+   }
+  },
+  {
+   "id": "peak1",
+   "type": "background",
+   "prefab": "background_mountain",
+   "position": {
+    "x": 120,
+    "y": -51,
+    "z": -143
+   },
+   "properties": {
+    "width": 220,
+    "height": 90,
+    "profile": "cone",
+    "snow": true,
+    "seed": 201
+   }
+  },
+  {
+   "id": "peak2",
+   "type": "background",
+   "prefab": "background_mountain",
+   "position": {
+    "x": 205,
+    "y": -13,
+    "z": -151
+   },
+   "properties": {
+    "width": 220,
+    "height": 90,
+    "profile": "ridge",
+    "snow": true,
+    "seed": 202
+   }
+  },
+  {
+   "id": "peak3",
+   "type": "background",
+   "prefab": "background_mountain",
+   "position": {
+    "x": 280,
+    "y": 4,
+    "z": -159
+   },
+   "properties": {
+    "width": 200,
+    "height": 90,
+    "profile": "ridge",
+    "snow": true,
+    "seed": 203
+   }
+  },
+  {
+   "id": "clouds0",
+   "type": "background",
+   "prefab": "cloud",
+   "position": {
+    "x": 30,
+    "y": 26,
+    "z": -42
+   },
+   "properties": {
+    "count": 4,
+    "spread": 50,
+    "seed": 300,
+    "width": 18
+   }
+  },
+  {
+   "id": "clouds1",
+   "type": "background",
+   "prefab": "cloud",
+   "position": {
+    "x": 110,
+    "y": 40,
+    "z": -48
+   },
+   "properties": {
+    "count": 4,
+    "spread": 50,
+    "seed": 301,
+    "width": 18
+   }
+  },
+  {
+   "id": "clouds2",
+   "type": "background",
+   "prefab": "cloud",
+   "position": {
+    "x": 190,
+    "y": 78,
+    "z": -52
+   },
+   "properties": {
+    "count": 4,
+    "spread": 50,
+    "seed": 302,
+    "width": 18
+   }
+  },
+  {
+   "id": "clouds3",
+   "type": "background",
+   "prefab": "cloud",
+   "position": {
+    "x": 250,
+    "y": 44,
+    "z": -56
+   },
+   "properties": {
+    "count": 4,
+    "spread": 50,
+    "seed": 303,
+    "width": 18
+   }
+  },
+  {
+   "id": "clouds4",
+   "type": "background",
+   "prefab": "cloud",
+   "position": {
+    "x": 70,
+    "y": 38,
+    "z": -60
+   },
+   "properties": {
+    "count": 4,
+    "spread": 50,
+    "seed": 304,
+    "width": 18
+   }
+  },
+  {
+   "id": "trees_start",
+   "type": "decor",
+   "prefab": "tree_cluster",
+   "position": {
+    "x": 0,
+    "y": 0,
+    "z": -3.5
+   },
+   "properties": {
+    "count": 6,
+    "spread": 17,
+    "seed": 4,
+    "kind": "broadleaf",
+    "height": 4.6
+   }
+  },
+  {
+   "id": "pines_start",
+   "type": "decor",
+   "prefab": "tree_cluster",
+   "position": {
+    "x": -4,
+    "y": 0,
+    "z": -6.5
+   },
+   "properties": {
+    "count": 5,
+    "spread": 14,
+    "seed": 5,
+    "kind": "pine",
+    "height": 6.5
+   }
+  },
+  {
+   "id": "bushes_start",
+   "type": "decor",
+   "prefab": "bush_cluster",
+   "position": {
+    "x": 1,
+    "y": 0,
+    "z": -1
+   },
+   "properties": {
+    "count": 8,
+    "spread": 16,
+    "seed": 6,
+    "size": 1.0
+   }
+  },
+  {
+   "id": "grass_start",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 1,
+    "y": 0,
+    "z": 0
+   },
+   "properties": {
+    "count": 70,
+    "spread": 16,
+    "seed": 7
+   }
+  },
+  {
+   "id": "grass_a1",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 15,
+    "y": 1.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 22,
+    "spread": 5.6000000000000005,
+    "seed": 8
+   }
+  },
+  {
+   "id": "bush_a1",
+   "type": "decor",
+   "prefab": "bush_cluster",
+   "position": {
+    "x": 16.96,
+    "y": 1.5,
+    "z": -1
+   },
+   "properties": {
+    "count": 2,
+    "spread": 2.8000000000000003,
+    "seed": 28,
+    "size": 0.7
+   }
+  },
+  {
+   "id": "grass_a2",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 27.5,
+    "y": 3.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 20,
+    "spread": 5.2,
+    "seed": 9
+   }
+  },
+  {
+   "id": "grass_b1",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 40,
+    "y": 5.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 19,
+    "spread": 4.800000000000001,
+    "seed": 10
+   }
+  },
+  {
+   "id": "bush_b1",
+   "type": "decor",
+   "prefab": "bush_cluster",
+   "position": {
+    "x": 41.68,
+    "y": 5.5,
+    "z": -1
+   },
+   "properties": {
+    "count": 2,
+    "spread": 2.4000000000000004,
+    "seed": 30,
+    "size": 0.7
+   }
+  },
+  {
+   "id": "grass_b2",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 65.5,
+    "y": 9.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 22,
+    "spread": 5.6000000000000005,
+    "seed": 11
+   }
+  },
+  {
+   "id": "bush_b2",
+   "type": "decor",
+   "prefab": "bush_cluster",
+   "position": {
+    "x": 67.46,
+    "y": 9.5,
+    "z": -1
+   },
+   "properties": {
+    "count": 2,
+    "spread": 2.8000000000000003,
+    "seed": 31,
+    "size": 0.7
+   }
+  },
+  {
+   "id": "grass_c1",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 91,
+    "y": 15.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 19,
+    "spread": 4.800000000000001,
+    "seed": 12
+   }
+  },
+  {
+   "id": "bush_c1",
+   "type": "decor",
+   "prefab": "bush_cluster",
+   "position": {
+    "x": 92.68,
+    "y": 15.5,
+    "z": -1
+   },
+   "properties": {
+    "count": 2,
+    "spread": 2.4000000000000004,
+    "seed": 32,
+    "size": 0.7
+   }
+  },
+  {
+   "id": "grass_d3",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 131,
+    "y": 21,
+    "z": 0
+   },
+   "properties": {
+    "count": 22,
+    "spread": 5.6000000000000005,
+    "seed": 13
+   }
+  },
+  {
+   "id": "grass_f1",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 155,
+    "y": 47,
+    "z": 0
+   },
+   "properties": {
+    "count": 19,
+    "spread": 4.800000000000001,
+    "seed": 14
+   }
+  },
+  {
+   "id": "grass_g1",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 193,
+    "y": 55,
+    "z": 0
+   },
+   "properties": {
+    "count": 22,
+    "spread": 5.6000000000000005,
+    "seed": 15
+   }
+  },
+  {
+   "id": "bush_g1",
+   "type": "decor",
+   "prefab": "bush_cluster",
+   "position": {
+    "x": 194.96,
+    "y": 55,
+    "z": -1
+   },
+   "properties": {
+    "count": 2,
+    "spread": 2.8000000000000003,
+    "seed": 35,
+    "size": 0.7
+   }
+  },
+  {
+   "id": "grass_h1",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 207,
+    "y": 57.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 13,
+    "spread": 3.3600000000000003,
+    "seed": 16
+   }
+  },
+  {
+   "id": "grass_h4",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 243,
+    "y": 65.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 12,
+    "spread": 3.2,
+    "seed": 17
+   }
+  },
+  {
+   "id": "rocks_a",
+   "type": "decor",
+   "prefab": "rock_cluster",
+   "position": {
+    "x": 8,
+    "y": 0,
+    "z": -1.2
+   },
+   "properties": {
+    "count": 5,
+    "spread": 7,
+    "seed": 41
+   }
+  },
+  {
+   "id": "rocks_b",
+   "type": "decor",
+   "prefab": "rock_cluster",
+   "position": {
+    "x": 62,
+    "y": 9.5,
+    "z": -1.5
+   },
+   "properties": {
+    "count": 4,
+    "spread": 6,
+    "seed": 42
+   }
+  },
+  {
+   "id": "trees_fin",
+   "type": "decor",
+   "prefab": "tree_cluster",
+   "position": {
+    "x": 270,
+    "y": 71.5,
+    "z": -4.5
+   },
+   "properties": {
+    "count": 6,
+    "spread": 14,
+    "seed": 43,
+    "kind": "broadleaf",
+    "height": 5
+   }
+  },
+  {
+   "id": "grass_fin",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 268,
+    "y": 71.5,
+    "z": 0
+   },
+   "properties": {
+    "count": 60,
+    "spread": 12,
+    "seed": 44
+   }
+  },
+  {
+   "id": "bush_fin",
+   "type": "decor",
+   "prefab": "bush_cluster",
+   "position": {
+    "x": 262,
+    "y": 71.5,
+    "z": -1.5
+   },
+   "properties": {
+    "count": 5,
+    "spread": 8,
+    "seed": 45,
+    "size": 1.1
+   }
+  },
+  {
+   "id": "fg0",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 4,
+    "y": -5,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 500,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg1",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 34,
+    "y": -2,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 501,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg2",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 70,
+    "y": 5,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 502,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg3",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 100,
+    "y": 12,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 503,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg4",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 124,
+    "y": 16,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 504,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg5",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 150,
+    "y": 38,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 505,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg6",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 175,
+    "y": 44,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 506,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg7",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 214,
+    "y": 52,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 507,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "fg8",
+   "type": "decor",
+   "prefab": "grass_patch",
+   "position": {
+    "x": 250,
+    "y": 62,
+    "z": 4.5
+   },
+   "properties": {
+    "count": 14,
+    "spread": 5,
+    "seed": 508,
+    "layer": "foreground",
+    "height": 2.2
+   }
+  },
+  {
+   "id": "pond",
+   "type": "decor",
+   "prefab": "water",
+   "position": {
+    "x": 46,
+    "y": -5.5,
+    "z": -1.0
+   },
+   "properties": {
+    "width": 24,
+    "depth": 5,
+    "seed": 50
+   },
+   "visual": {
+    "kind": "mesh",
+    "mesh": "builtin:water",
+    "renderLayer": "gameplay",
+    "meshParams": {
+     "w": 24,
+     "h": 5,
+     "depth": 5,
+     "seed": 50
+    }
+   }
+  },
+  {
+   "id": "fall1",
+   "type": "decor",
+   "prefab": "waterfall",
+   "position": {
+    "x": 58,
+    "y": 26,
+    "z": -15
+   },
+   "properties": {
+    "width": 4,
+    "height": 26,
+    "seed": 51
+   }
+  },
+  {
+   "id": "fall_pool",
+   "type": "decor",
+   "prefab": "water",
+   "position": {
+    "x": 58,
+    "y": 0.5,
+    "z": -12
+   },
+   "properties": {
+    "width": 18,
+    "depth": 6,
+    "seed": 52
+   },
+   "visual": {
+    "kind": "mesh",
+    "mesh": "builtin:water",
+    "renderLayer": "midground",
+    "meshParams": {
+     "w": 18,
+     "depth": 6,
+     "seed": 52
+    }
+   }
+  },
+  {
+   "id": "ice_cry0",
+   "type": "decor",
+   "prefab": "crystal_cluster",
+   "position": {
+    "x": 100,
+    "y": 17.0,
+    "z": -2.5
+   },
+   "properties": {
+    "count": 6,
+    "height": 3.2,
+    "spread": 2.2,
+    "seed": 60
+   }
+  },
+  {
+   "id": "ice_cry1",
+   "type": "decor",
+   "prefab": "crystal_cluster",
+   "position": {
+    "x": 112,
+    "y": 19.0,
+    "z": -2.5
+   },
+   "properties": {
+    "count": 6,
+    "height": 3.2,
+    "spread": 2.2,
+    "seed": 61
+   }
+  },
+  {
+   "id": "ice_cry2",
+   "type": "decor",
+   "prefab": "crystal_cluster",
+   "position": {
+    "x": 124,
+    "y": 20.5,
+    "z": -2.5
+   },
+   "properties": {
+    "count": 6,
+    "height": 3.2,
+    "spread": 2.2,
+    "seed": 62
+   }
+  },
+  {
+   "id": "tower_wall_l",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 126.5,
+    "y": 42,
+    "z": -3.2
+   },
+   "properties": {
+    "width": 6,
+    "height": 46,
+    "depth": 4,
+    "terraces": 6,
+    "seed": 70
+   }
+  },
+  {
+   "id": "tower_wall_r",
+   "type": "decor",
+   "prefab": "cliff",
+   "position": {
+    "x": 148.5,
+    "y": 48,
+    "z": -3.2
+   },
+   "properties": {
+    "width": 6,
+    "height": 46,
+    "depth": 4,
+    "terraces": 6,
+    "seed": 71
+   }
+  },
+  {
+   "id": "tower_ruin",
+   "type": "decor",
+   "prefab": "ancient_structure",
+   "position": {
+    "x": 137,
+    "y": 49,
+    "z": -9
+   },
+   "properties": {
+    "kind": "tower",
+    "width": 14,
+    "height": 26,
+    "seed": 72,
+    "glow": true
+   }
+  },
+  {
+   "id": "haz_cry",
+   "type": "decor",
+   "prefab": "crystal_cluster",
+   "position": {
+    "x": 172,
+    "y": 50,
+    "z": -2.5
+   },
+   "properties": {
+    "count": 7,
+    "height": 3.5,
+    "spread": 2.4,
+    "seed": 80
+   }
+  },
+  {
+   "id": "gate_f",
+   "type": "decor",
+   "prefab": "ancient_structure",
+   "position": {
+    "x": 186,
+    "y": 52.5,
+    "z": -7
+   },
+   "properties": {
+    "kind": "gate",
+    "width": 11,
+    "height": 11,
+    "seed": 81
+   }
+  },
+  {
+   "id": "alc_obelisk",
+   "type": "decor",
+   "prefab": "ancient_structure",
+   "position": {
+    "x": 199,
+    "y": 81,
+    "z": -4
+   },
+   "properties": {
+    "kind": "obelisk",
+    "width": 4,
+    "height": 11,
+    "glow": true,
+    "seed": 90
+   }
+  },
+  {
+   "id": "alc_pillars",
+   "type": "decor",
+   "prefab": "ancient_structure",
+   "position": {
+    "x": 203.5,
+    "y": 81,
+    "z": -3
+   },
+   "properties": {
+    "kind": "pillar",
+    "width": 3,
+    "height": 6,
+    "seed": 91
+   }
+  },
+  {
+   "id": "alc_cry",
+   "type": "decor",
+   "prefab": "crystal_cluster",
+   "position": {
+    "x": 195,
+    "y": 81,
+    "z": -1.5
+   },
+   "properties": {
+    "count": 8,
+    "height": 3.8,
+    "spread": 2.6,
+    "seed": 92
+   }
+  },
+  {
+   "id": "seal_cry",
+   "type": "decor",
+   "prefab": "crystal_cluster",
+   "position": {
+    "x": 201.5,
+    "y": 60.5,
+    "z": -1
+   },
+   "properties": {
+    "count": 5,
+    "height": 2.4,
+    "spread": 1.4,
+    "seed": 93
+   }
+  },
+  {
+   "id": "fin_gate",
+   "type": "decor",
+   "prefab": "ancient_structure",
+   "position": {
+    "x": 268,
+    "y": 71.5,
+    "z": -4
+   },
+   "properties": {
+    "kind": "gate",
+    "width": 12,
+    "height": 12,
+    "seed": 95,
+    "glow": true
+   }
+  },
+  {
+   "id": "fin_arch",
+   "type": "decor",
+   "prefab": "ancient_structure",
+   "position": {
+    "x": 246,
+    "y": 50,
+    "z": -22
+   },
+   "properties": {
+    "kind": "arch",
+    "width": 18,
+    "height": 16,
+    "seed": 96
+   }
+  },
+  {
+   "id": "em_secret",
+   "type": "vfx",
+   "prefab": "vfx_emitter",
+   "position": {
+    "x": 201.5,
+    "y": 62.5,
+    "z": 0
+   },
+   "properties": {
+    "kind": "sparkle",
+    "rate": 2.5,
+    "radius": 2,
+    "power": 0.35,
+    "color": "#7be8ff"
+   }
+  },
+  {
+   "id": "em_alcove",
+   "type": "vfx",
+   "prefab": "vfx_emitter",
+   "position": {
+    "x": 199,
+    "y": 83,
+    "z": 0
+   },
+   "properties": {
+    "kind": "sparkle",
+    "rate": 3,
+    "radius": 5,
+    "power": 0.4,
+    "color": "#d6a8ff"
+   }
+  },
+  {
+   "id": "em_ice",
+   "type": "vfx",
+   "prefab": "vfx_emitter",
+   "position": {
+    "x": 111,
+    "y": 19,
+    "z": 0
+   },
+   "properties": {
+    "kind": "ice",
+    "rate": 1.4,
+    "radius": 14,
+    "power": 0.3,
+    "color": "#cfeaff"
+   }
+  },
+  {
+   "id": "snd_wind",
+   "type": "audio",
+   "prefab": "audio_emitter",
+   "position": {
+    "x": 137,
+    "y": 36,
+    "z": 0
+   },
+   "properties": {
+    "sound": "wind",
+    "radius": 40,
+    "volume": 0.7
+   }
+  },
+  {
+   "id": "snd_chimes",
+   "type": "audio",
+   "prefab": "audio_emitter",
+   "position": {
+    "x": 199,
+    "y": 82,
+    "z": 0
+   },
+   "properties": {
+    "sound": "chimes",
+    "radius": 28,
+    "volume": 0.6
+   }
+  },
+  {
+   "id": "snd_pond",
+   "type": "audio",
+   "prefab": "audio_emitter",
+   "position": {
+    "x": 46,
+    "y": -3,
+    "z": 0
+   },
+   "properties": {
+    "sound": "water",
+    "radius": 24,
+    "volume": 0.4
+   }
+  }
+ ],
+ "regions": [
+  {
+   "id": "h_charge",
+   "type": "hint",
+   "shape": {
+    "kind": "circle",
+    "x": -3,
+    "y": 2,
+    "r": 6
+   },
+   "enter": [
+    {
+     "op": "hint",
+     "textKey": "hint_charge"
+    }
+   ]
+  },
+  {
+   "id": "h_aim",
+   "type": "hint",
+   "shape": {
+    "kind": "circle",
+    "x": 15,
+    "y": 3,
+    "r": 5
+   },
+   "enter": [
+    {
+     "op": "hint",
+     "textKey": "hint_aim"
+    }
+   ]
+  },
+  {
+   "id": "h_ice",
+   "type": "hint",
+   "shape": {
+    "kind": "circle",
+    "x": 104,
+    "y": 19,
+    "r": 7
+   },
+   "enter": [
+    {
+     "op": "hint",
+     "textKey": "hint_ice"
+    }
+   ]
+  },
+  {
+   "id": "h_hazard",
+   "type": "hint",
+   "shape": {
+    "kind": "circle",
+    "x": 150,
+    "y": 46,
+    "r": 6
+   },
+   "enter": [
+    {
+     "op": "hint",
+     "textKey": "hint_hazard"
+    }
+   ]
+  },
+  {
+   "id": "pond_water",
+   "type": "water",
+   "shape": {
+    "kind": "box",
+    "x": 46,
+    "y": -5,
+    "w": 24,
+    "h": 3.2
+   },
+   "enter": [
+    {
+     "op": "audio",
+     "id": "builtin:splash",
+     "volume": 0.9
+    }
+   ]
+  },
+  {
+   "id": "zone_ice",
+   "type": "fog",
+   "shape": {
+    "kind": "box",
+    "x": 118,
+    "y": 20,
+    "w": 44,
+    "h": 14
+   },
+   "enter": [
+    {
+     "op": "fog",
+     "density": 0.0055,
+     "color": "#cfe3f5"
+    },
+    {
+     "op": "lighting",
+     "ambient": 1.18,
+     "color": "#eaf5ff"
+    }
+   ]
+  },
+  {
+   "id": "zone_climb_cam",
+   "type": "camera",
+   "shape": {
+    "kind": "box",
+    "x": 137,
+    "y": 36,
+    "w": 22,
+    "h": 26
+   },
+   "params": {
+    "profile": {
+     "followDistance": 24,
+     "verticalBias": 3.0,
+     "lookAhead": 3.0,
+     "fov": 31
+    },
+    "blend": 1.2
+   },
+   "priority": 1
+  },
+  {
+   "id": "zone_climb_audio",
+   "type": "audio",
+   "shape": {
+    "kind": "box",
+    "x": 137,
+    "y": 36,
+    "w": 22,
+    "h": 26
+   },
+   "enter": [
+    {
+     "op": "audio",
+     "id": "builtin:wind",
+     "volume": 0.9
+    }
+   ]
+  },
+  {
+   "id": "zone_haz_cam",
+   "type": "camera",
+   "shape": {
+    "kind": "box",
+    "x": 168,
+    "y": 52,
+    "w": 34,
+    "h": 14
+   },
+   "params": {
+    "profile": {
+     "followDistance": 17.5,
+     "smoothing": 0.2
+    },
+    "blend": 0.9
+   },
+   "priority": 1
+  },
+  {
+   "id": "zone_secret_audio",
+   "type": "audio",
+   "shape": {
+    "kind": "box",
+    "x": 205,
+    "y": 76,
+    "w": 30,
+    "h": 20
+   },
+   "enter": [
+    {
+     "op": "audio",
+     "id": "builtin:chimes",
+     "volume": 0.8
+    }
+   ]
+  },
+  {
+   "id": "zone_secret_light",
+   "type": "lighting",
+   "shape": {
+    "kind": "box",
+    "x": 205,
+    "y": 76,
+    "w": 30,
+    "h": 20
+   },
+   "enter": [
+    {
+     "op": "lighting",
+     "ambient": 1.25,
+     "color": "#d6dcff"
+    },
+    {
+     "op": "fog",
+     "density": 0.0052,
+     "color": "#6a58b8"
+    }
+   ]
+  },
+  {
+   "id": "zone_final_cam",
+   "type": "camera",
+   "shape": {
+    "kind": "box",
+    "x": 243,
+    "y": 66,
+    "w": 44,
+    "h": 22
+   },
+   "params": {
+    "profile": {
+     "followDistance": 21,
+     "zoom": 1.0,
+     "lookAhead": 6.5
+    },
+    "blend": 1.4
+   },
+   "priority": 1
+  },
+  {
+   "id": "zone_final_light",
+   "type": "lighting",
+   "shape": {
+    "kind": "box",
+    "x": 243,
+    "y": 66,
+    "w": 44,
+    "h": 22
+   },
+   "enter": [
+    {
+     "op": "lighting",
+     "sun": 2.3,
+     "ambient": 0.95,
+     "color": "#ffc58a"
+    },
+    {
+     "op": "fog",
+     "density": 0.0034,
+     "color": "#e7c9c0"
+    }
+   ]
+  },
+  {
+   "id": "seal",
+   "type": "secret",
+   "shape": {
+    "kind": "box",
+    "x": 201.5,
+    "y": 62.5,
+    "w": 3.2,
+    "h": 2.6
+   },
+   "once": true,
+   "enter": [
+    {
+     "op": "setFlag",
+     "name": "secret_open",
+     "value": true
+    },
+    {
+     "op": "reveal",
+     "tag": "secret"
+    },
+    {
+     "op": "vfx",
+     "id": "checkpoint",
+     "burst": 1
+    },
+    {
+     "op": "audio",
+     "id": "builtin:checkpoint",
+     "volume": 1
+    }
+   ]
+  }
+ ],
+ "camera": {
+  "zoom": 1,
+  "profile": {
+   "followDistance": 19,
+   "fov": 30
+  }
+ },
+ "vfx": {
+  "maxParticles": 320
+ },
+ "audio": {
+  "maxVoices": 12
+ },
+ "chunks": {
+  "mode": "auto-grid",
+  "cell": {
+   "w": 32,
+   "h": 32
+  },
+  "defs": [],
+  "activateRadius": 40,
+  "loadRadius": 64,
+  "unloadRadius": 96,
+  "lodDistances": [
+   24,
+   48,
+   96
+  ],
+  "maxActive": 9
+ },
+ "metadata": {
+  "license": "original",
+  "credits": [
+   "Pogo Summit"
+  ],
+  "route": [
+   "start",
+   "a1",
+   "a2",
+   "b1",
+   "b_mv",
+   "b2",
+   "c1",
+   "d1",
+   "d2",
+   "d3",
+   "e1",
+   "e2",
+   "e3",
+   "e4",
+   "e5",
+   "f1",
+   "f2",
+   "f3",
+   "g1",
+   "h1",
+   "h2",
+   "h3",
+   "h4",
+   "h5"
+  ]
+ }
+}
