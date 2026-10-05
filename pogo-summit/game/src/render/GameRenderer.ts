@@ -188,6 +188,15 @@ export class GameRenderer {
     this.clouds = { group: new THREE.Group(), update: () => {} };
     this.dayNightT = 0;
     this.endStage(level.bounds, false);
+    // compile every shader program this map can need now (level load) instead of in the middle of a jump
+    const warm = this.mapScene.warmGroup(runtime.doc.spawn?.position ?? { x: 0, y: 0 });
+    this.scene.add(warm);
+    try {
+      this.renderer.compile(this.scene, this.rig.camera);       // starts every program build (parallel where the driver can)
+      this.renderer.render(this.scene, this.rig.camera);        // one real frame: completes them, incl. the shadow-pass variants
+    } catch { /* warm-up is only an optimisation */ }
+    this.scene.remove(warm);
+    this.mapScene.disposeWarm(warm);
   }
 
   /** Common stage setup: materials, fog, lights, sky. */

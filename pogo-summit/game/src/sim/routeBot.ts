@@ -1,7 +1,7 @@
 import type { LevelData } from '../data/LevelData';
 import type { PhysicsConfig } from './PhysicsConfig';
 import { PhysicsWorld } from './PhysicsWorld';
-import { NEUTRAL_INPUT, type PogoInput, type PogoState, createPogoState, tipCenterQ } from './PogoState';
+import { NEUTRAL_INPUT, type PogoInput, type PogoState, createPlantedState, createPogoState, tipCenterQ } from './PogoState';
 import { stepPogo } from './PogoPhysicsController';
 import type { SimEvent } from './events';
 
@@ -36,7 +36,7 @@ const TT = [15, 30, 45];
 const HD = [0, 20, 28, 36, 44, 52];
 const TILTS_A = [-1, -0.5, 0, 0.5, 1];
 
-function runHop(world: PhysicsWorld, cfg: PhysicsConfig, from: PogoState, p: Omit<Hop, 'from' | 'to' | 'ticks'>, maxTicks = 900) {
+export function runHop(world: PhysicsWorld, cfg: PhysicsConfig, from: PogoState, p: Omit<Hop, 'from' | 'to' | 'ticks'>, maxTicks = 900) {
   const s: PogoState = { ...from };
   const ctx = { world, cfg };
   const ev: SimEvent[] = [];
@@ -81,8 +81,8 @@ function margin(world: PhysicsWorld, cfg: PhysicsConfig, s: PogoState): number {
   return Math.min(x - lo, hi - x) / cfg.qPerMetre;
 }
 
-export function playRoute(level: LevelData, cfg: PhysicsConfig, opts: { maxExpansions?: number; idleMax?: number } = {}): RoutePlan {
-  const { maxExpansions = 400, idleMax = 8 } = opts;
+export function playRoute(level: LevelData, cfg: PhysicsConfig, opts: { maxExpansions?: number; idleMax?: number; log?: (msg: string) => void } = {}): RoutePlan {
+  const { maxExpansions = 400, idleMax = 8, log } = opts;
   const route = level.route ?? [];
   const world = new PhysicsWorld(level, cfg.qPerMetre);
   const byId = new Map(world.colliders.map(c => [c.id, c.index]));
@@ -126,6 +126,7 @@ export function playRoute(level: LevelData, cfg: PhysicsConfig, opts: { maxExpan
     const target = targets[k];
     const isGoal = target === 'goal';
     const { direct, repo } = candidates(state, target, isGoal);
+    log?.(`k=${k} ${target} direct=${direct.length} repo=${repo.length} expansions=${plan.expansions}`);
     for (const c of direct.slice(0, 3)) {
       if (!isGoal && c.score < 0) continue;
       stack.push({ hop: c.hop, script: c.script });
@@ -148,6 +149,34 @@ export function playRoute(level: LevelData, cfg: PhysicsConfig, opts: { maxExpan
   plan.script = stack.flatMap(x => x.script);
   if (!plan.success) plan.ticks = plan.script.length;
   return plan;
+}
+
+/**
+ * How many (idle, tilt, hold, air-tilt) plans take the pogo from standing on `fromId` (at fraction `t` along its top,
+ * at tick `tick`) onto `toId` — a per-hop solvability probe that needs no search over the rest of the route.
+ * `best` is the largest landing margin (m) from the target's edges; 0 plans means the hop was not found by the grid.
+ */
+export function hopPlans(level: LevelData, cfg: PhysicsConfig, fromId: string, toId: string, opts: { t?: number; tick?: number; idleMax?: number } = {}): { plans: number; best: number; hop?: Hop } {
+  const { t = 0.5, tick = 0, idleMax = 8 } = opts;
+  const world = new PhysicsWorld(level, cfg.qPerMetre);
+  const byId = new Map(world.colliders.map(c => [c.id, c.index]));
+  const fi = byId.get(fromId), ti = byId.get(toId);
+  if (fi === undefined || ti === undefined) return { plans: 0, best: 0 };
+  const here = world.colliders[fi], tc = world.colliders[ti];
+  const start = createPlantedState(world, cfg, fi, t, tick);
+  const idles = here.move || tc.move ? Array.from({ length: idleMax + 1 }, (_, i) => i) : [0];
+  const combos: [number, number][] = [[0, 0]];
+  for (const g of TILTS_G) for (const tt of TT) combos.push([g, tt]);
+  let plans = 0, best = 0, bestHop: Hop | undefined;
+  for (const idle of idles) for (const [tiltG, tt] of combos) for (const hd of HD) for (const tiltA of TILTS_A) {
+    const r = runHop(world, cfg, start, { idle, tiltG, tt, hd, tiltA });
+    if (r.hazard || !r.landed) continue;
+    if (world.colliders[r.s.groundId]?.id !== toId) continue;
+    plans++;
+    const m = margin(world, cfg, r.s);
+    if (m > best) { best = m; bestHop = { from: fromId, to: toId, idle, tiltG, tt, hd, tiltA, ticks: r.script.length }; }
+  }
+  return { plans, best, hop: bestHop };
 }
 
 export { tipCenterQ };

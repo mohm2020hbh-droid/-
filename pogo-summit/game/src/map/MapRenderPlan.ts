@@ -21,6 +21,8 @@ export interface VisualEstimate {
   shadowCalls: number;
   /** Triangles with every instance at LOD0. */
   triangles: number;
+  /** Extra triangles of the shadow pass (shadow-casting visuals near the sun target, at their expected LOD). */
+  shadowTriangles: number;
   /** Triangles with LOD chosen by layer depth (what the camera really sees). */
   trianglesExpected: number;
   textureBytes: number;
@@ -34,7 +36,7 @@ export interface VisualEstimate {
 }
 
 export const emptyVisualEstimate = (): VisualEstimate => ({
-  drawCalls: 0, shadowCalls: 0, triangles: 0, trianglesExpected: 0, textureBytes: 0, materials: 0, items: 0, instances: 0, singles: 0, mergedCalls: 0, instancedCalls: 0,
+  drawCalls: 0, shadowCalls: 0, triangles: 0, shadowTriangles: 0, trianglesExpected: 0, textureBytes: 0, materials: 0, items: 0, instances: 0, singles: 0, mergedCalls: 0, instancedCalls: 0,
   byLayer: { foreground: { items: 0, triangles: 0 }, gameplay: { items: 0, triangles: 0 }, midground: { items: 0, triangles: 0 }, background: { items: 0, triangles: 0 } },
 });
 
@@ -54,7 +56,7 @@ export function estimateVisuals(chunks: readonly (readonly ResolvedVisual[])[], 
     const def = mat(id);
     if (def) for (const t of texturesOfMaterial(def)) textures.add(t);
   };
-  let castGroups = 0;
+  let castGroups = 0, castTris = 0;
   // instanced pools are shared by every loaded chunk (one InstancedMesh per mesh variant × material × LOD), so they are
   // counted once for the whole window; merged static geometry is batched per chunk.
   const instanced = new Map<string, { variants: number; count: number; factor: number; cast: boolean }>();
@@ -65,6 +67,7 @@ export function estimateVisuals(chunks: readonly (readonly ResolvedVisual[])[], 
       est.items++; est.instances += n;
       const t0 = rv.tris[0] * n, tx = rv.tris[EXPECTED_LOD[rv.layer]] * n;
       est.triangles += t0; est.trianglesExpected += tx;
+      if (rv.cast) castTris += tx;
       est.byLayer[rv.layer].items++; est.byLayer[rv.layer].triangles += tx;
       for (const p of rv.parts) useMaterial(p.material);
       if (rv.mode === 'single') { est.singles++; est.drawCalls += rv.parts.length; if (rv.cast) castGroups += rv.parts.length; continue; }
@@ -83,6 +86,7 @@ export function estimateVisuals(chunks: readonly (readonly ResolvedVisual[])[], 
   for (const g of instanced.values()) { const calls = Math.min(g.count, g.variants) * g.factor; est.instancedCalls += calls; if (g.cast) castGroups += Math.min(g.count, g.variants); }
   est.drawCalls += est.mergedCalls + est.instancedCalls;
   est.shadowCalls = Math.ceil(castGroups * 0.5);
+  est.shadowTriangles = Math.round(castTris * 0.5);
   est.materials = materials.size;
   for (const t of textures) {
     if (t.startsWith('proc:')) { const p = PROCEDURAL_TEXTURES[t.slice(5)]; if (p) est.textureBytes += textureBytes(p.size); }

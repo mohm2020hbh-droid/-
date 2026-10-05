@@ -11,10 +11,10 @@ import type { TextureLibrary } from './textures';
  * Variants: `ghost` (inactive toggle/timed blocks), `tint` (toggle colour), `foreground` (dithers away near the player so
  * foreground foliage never hides the pogo).
  */
-export interface MatVariant { ghost?: boolean; tint?: string; foreground?: boolean }
+export interface MatVariant { ghost?: boolean; tint?: string; foreground?: boolean; /** 0…1: aerial perspective, blends the base colour toward the haze (fog) colour */ haze?: number }
 export interface MaterialStats { materials: number; programsKeys: number; textures: number; textureBytes: number }
 
-const variantKey = (v: MatVariant): string => `${v.ghost ? 'g' : ''}${v.foreground ? 'f' : ''}${v.tint ?? ''}`;
+const variantKey = (v: MatVariant): string => `${v.ghost ? 'g' : ''}${v.foreground ? 'f' : ''}${v.haze ? `h${Math.round(v.haze * 100)}` : ''}${v.tint ?? ''}`;
 
 export class MaterialLibrary {
   /** Shared uniforms (updated by the scene each frame). */
@@ -26,6 +26,9 @@ export class MaterialLibrary {
   private fallback: THREE.MeshStandardMaterial | null = null;
   normalMaps = true;
   rimStrength = 0.3;
+  private hazeColor = new THREE.Color('#b9bde2');
+  /** Colour distant (midground) geometry fades toward — the theme's fog colour. */
+  setHaze(c: string): void { this.hazeColor.set(c); }
 
   constructor(private readonly textures: TextureLibrary, private lookup: (id: string) => MaterialDef | undefined) {}
 
@@ -70,7 +73,7 @@ export class MaterialLibrary {
   private build(m: MapMaterial, v: MatVariant): THREE.MeshStandardMaterial {
     const transparent = m.opacity < 1 || !!v.ghost;
     const mat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(v.tint ?? m.baseColor), roughness: m.roughness, metalness: m.metalness, vertexColors: m.aoStrength > 0,
+      color: new THREE.Color(v.tint ?? m.baseColor).lerp(this.hazeColor, v.haze ?? 0), roughness: m.roughness, metalness: m.metalness, vertexColors: m.aoStrength > 0,
       transparent, opacity: v.ghost ? Math.min(m.opacity, 0.28) : m.opacity, depthWrite: !transparent, side: m.doubleSided ? THREE.DoubleSide : THREE.FrontSide,
     });
     const tex: { t: THREE.Texture; k: number }[] = [];

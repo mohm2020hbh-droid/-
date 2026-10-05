@@ -5,6 +5,7 @@ import { BUILTIN_MESHES, type MeshParams, isBuiltinMesh } from '../../map/MapAss
 import { lodLevel } from '../../map/MapChunk';
 import { type ResolvedVisual, resolveVisual } from '../../map/MapVisual';
 import { expandScatter, hashString } from '../../map/MapScatter';
+import { collectMaterialUse, themeMaterialUse } from '../../map/MapWarm';
 import { backdropOf, lightingOf, resolveTheme, themeMaterials } from '../../map/MapTheme';
 import { slotId } from '../../map/MapTheme';
 import type { MaterialDef, RenderLayer, ThemeDef } from '../../map/schema';
@@ -52,6 +53,8 @@ export interface SceneStats {
   buildMsTotal: number; buildMsLast: number; buildMsMax: number;
   textureBytes: number; materials: number; textures: number;
   fallbackMeshes: number;
+  /** material × kind combinations pre-compiled at load (see warmGroup) */
+  warmPrograms: number;
 }
 
 export interface Emitter { id: string; kind: 'vfx' | 'audio'; x: number; y: number; z: number; props: Record<string, unknown> }
@@ -78,6 +81,8 @@ interface Single {
 interface ChunkView { id: string; root: THREE.Group; box: THREE.Box3; groups: Group[]; batches: Batch[]; singles: Single[]; visible: boolean; emitters: Emitter[]; entityPos: Map<string, THREE.Vector3>; minDepth: number }
 
 const RENDER_ORDER: Record<RenderLayer, number> = { background: 0, midground: 1, gameplay: 2, foreground: 3 };
+/** Aerial perspective per depth layer: how far the base colour is pulled toward the fog colour (keeps the gameplay plane readable). */
+const LAYER_HAZE: Record<RenderLayer, number> = { background: 0.4, midground: 0.24, gameplay: 0, foreground: 0 };
 const stableKey = (p: MeshParams): string => JSON.stringify(Object.keys(p).sort().map(k => [k, p[k]]));
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3(), _o = new THREE.Matrix4(), _m2 = new THREE.Matrix4();
 
@@ -99,12 +104,13 @@ export class MapScene {
   readonly backdrop: Backdrop;
   readonly stats: SceneStats = {
     chunksBuilt: 0, chunksVisible: 0, chunksLoaded: 0, instancesTotal: 0, instancesVisible: 0, culledFrustum: 0, culledDistance: 0, lod: [0, 0, 0], pools: 0, mergedMeshes: 0, singles: 0,
-    trianglesSubmitted: 0, drawCallsEstimated: 0, buildMsTotal: 0, buildMsLast: 0, buildMsMax: 0, textureBytes: 0, materials: 0, textures: 0, fallbackMeshes: 0,
+    trianglesSubmitted: 0, drawCallsEstimated: 0, buildMsTotal: 0, buildMsLast: 0, buildMsMax: 0, textureBytes: 0, materials: 0, textures: 0, fallbackMeshes: 0, warmPrograms: 0,
   };
   /** Events for tests / HUD: chunk ids as they are built and disposed. */
   readonly log: { built: string[]; disposed: string[] } = { built: [], disposed: [] };
 
   private readonly rt: MapRuntime;
+  private readonly defs: Record<string, MaterialDef>;
   private readonly theme: ThemeDef;
   private readonly density: number;
   private readonly lodBias: number;
@@ -128,9 +134,11 @@ export class MapScene {
     this.density = o.density ?? 1; this.lodBias = o.lodBias ?? 1; this.maxBuild = o.maxBuildPerFrame ?? 2;
     this.root.name = 'map-scene'; this.instRoot.name = 'instances';
     this.textures = new TextureLibrary(o.runtime.doc.assets, o.assets ?? null);
-    const defs: Record<string, MaterialDef> = { ...themeMaterials(o.theme), ...o.runtime.doc.materials };
+    this.defs = { ...themeMaterials(o.theme), ...o.runtime.doc.materials };
+    const defs = this.defs;
     this.materials = new MaterialLibrary(this.textures, id => defs[id]);
     this.materials.normalMaps = o.normalMaps ?? true;
+    this.materials.setHaze(lightingOf(o.theme).fogColor ?? o.theme.fog.color);
     if (o.environment) this.materials.setEnvironment(o.environment);
     const lp = lightingOf(o.theme);
     const cloudSlot = slotId(o.theme, 'cloud') ?? 'cloud';
@@ -408,7 +416,7 @@ export class MapScene {
       const geo = merge(gs);
       for (const g of gs) if (g !== geo) g.dispose();
       geo.computeBoundingSphere(); geo.computeBoundingBox();
-      const mesh = new THREE.Mesh(geo, this.materials.get(b.material, { foreground: b.layer === 'foreground' }));
+      const mesh = new THREE.Mesh(geo, this.materials.get(b.material, { foreground: b.layer === 'foreground', haze: LAYER_HAZE[b.layer] }));
       mesh.castShadow = b.cast; mesh.receiveShadow = b.recv; mesh.renderOrder = RENDER_ORDER[b.layer]; mesh.name = `merged:${b.key}:LOD${lod}`;
       mesh.visible = false;
       b.meshes[lod] = mesh;
@@ -454,7 +462,7 @@ export class MapScene {
     parts.forEach((p, i) => {
       if (!p.geometry.getIndex() || p.geometry.getIndex()!.count === 0) return;
       const mat = rv.parts[i] ?? rv.parts[0];
-      const m = new THREE.Mesh(p.geometry, this.materials.get(mat.material, { foreground: rv.layer === 'foreground' }));
+      const m = new THREE.Mesh(p.geometry, this.materials.get(mat.material, { foreground: rv.layer === 'foreground', haze: LAYER_HAZE[rv.layer] }));
       m.castShadow = rv.cast; m.receiveShadow = rv.receive; m.renderOrder = RENDER_ORDER[rv.layer]; m.userData.part = i; m.visible = lod === s.lod;
       s.root.add(m); meshes.push(m);
     });
@@ -497,7 +505,7 @@ export class MapScene {
   private restyleSingle(s: Single, ghost: boolean, tint?: string): void {
     for (let l = 0; l < 3; l++) for (const m of s.lodMeshes[l] ?? []) {
       const part = s.rv.parts[(m.userData.part as number) ?? 0] ?? s.rv.parts[0];
-      m.material = this.materials.get(part.material, { ghost, tint, foreground: s.rv.layer === 'foreground' });
+      m.material = this.materials.get(part.material, { ghost, tint, foreground: s.rv.layer === 'foreground', haze: LAYER_HAZE[s.rv.layer] });
       m.castShadow = s.rv.cast && !ghost;
     }
   }
@@ -517,11 +525,11 @@ export class MapScene {
     }
     const role = BUILTIN_MESHES[meshForLod]?.roles(meshForLod === g.mesh ? g.params : {})[partIdx] ?? part.role;
     const geoPart = entry.parts.find(q => q.role === role) ?? entry.parts[Math.min(partIdx, entry.parts.length - 1)];
-    const poolKey = `${gk}|${role}|${part.material}|${g.foreground}|${g.cast}|${g.recv}|${g.tinted}`;
+    const poolKey = `${gk}|${role}|${part.material}|${g.layer}|${g.foreground}|${g.cast}|${g.recv}|${g.tinted}`;
     let pool = this.pools.get(poolKey);
     if (!pool) {
       const cap = 64;
-      const mesh = new THREE.InstancedMesh(geoPart.geometry, this.materials.get(part.material, { foreground: g.foreground }), cap);
+      const mesh = new THREE.InstancedMesh(geoPart.geometry, this.materials.get(part.material, { foreground: g.foreground, haze: LAYER_HAZE[g.layer] }), cap);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       if (g.tinted) { mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3); mesh.instanceColor.setUsage(THREE.DynamicDrawUsage); }
       mesh.frustumCulled = false; mesh.count = 0; mesh.castShadow = g.cast; mesh.receiveShadow = g.recv; mesh.renderOrder = RENDER_ORDER[g.layer]; mesh.name = `pool:${poolKey.slice(0, 60)}`;
@@ -593,6 +601,35 @@ export class MapScene {
   }
 
   /** Reset per-frame accumulators (called by the owner right before `update`). */
+  /**
+   * Hidden meshes — one per (material × geometry kind) the map can draw. The caller adds the group to the scene, calls
+   * `renderer.compile(scene, camera)` so every shader program is built while the level loads (no compile hitch in the
+   * middle of a jump), then removes it and calls `disposeWarm`.
+   */
+  warmGroup(at: { x: number; y: number } = { x: 0, y: 0 }): THREE.Group {
+    const doc = this.rt.doc;
+    const uses = collectMaterialUse(doc, this.rt.registry, this.theme, new Map(doc.assets.map(a => [a.id, a])), this.rt.paths) ?? themeMaterialUse(this.defs);
+    const group = new THREE.Group(); group.name = 'warm-up';
+    this.warmGeo ??= generateMesh('builtin:rock', {}, 2, 0)[0].geometry;
+    for (const u of uses) {
+      const mat = this.materials.get(u.material, { foreground: u.foreground, ghost: u.ghost });
+      let o: THREE.Mesh;
+      if (u.kind === 'mesh') o = new THREE.Mesh(this.warmGeo, mat);
+      else {
+        const im = new THREE.InstancedMesh(this.warmGeo, mat, 1);
+        if (u.kind === 'instanced-tinted') im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(3), 3);
+        o = im;
+      }
+      o.frustumCulled = false; o.castShadow = true; o.receiveShadow = true;
+      o.position.set(at.x, at.y, 0); o.scale.setScalar(0.002);          // drawn (so programs really link) but invisible
+      group.add(o);
+    }
+    this.stats.warmPrograms = uses.length;
+    return group;
+  }
+  disposeWarm(group: THREE.Group): void { group.clear(); this.warmGeo?.dispose(); this.warmGeo = null; }
+  private warmGeo: THREE.BufferGeometry | null = null;
+
   beginFrame(): void { this.stats.trianglesSubmitted = 0; this.stats.singles = 0; }
 
   dispose(): void {

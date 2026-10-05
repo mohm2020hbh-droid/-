@@ -22,6 +22,7 @@ import { progressFraction, type LevelData } from './data/LevelData';
 import { PHYSICS_TEST } from './data/levels/physicsTest';
 import { BUILTIN_MAPS } from './map/builtinMaps';
 import { resolveTheme } from './map/MapTheme';
+import { parseMap } from './map/MapLoader';
 import type { MapDocument } from './map/schema';
 import { LEVEL_01 } from './data/levels/level01';
 import { TrajectoryGuide } from './render/TrajectoryGuide';
@@ -114,6 +115,7 @@ export class App {
     if (f.get('world')) { const w = WORLDS.find(x => x.worldId === f.get('world') || x.id === f.get('world')); if (w) this.game.loadLevel(LEVEL_01, w); }
     if (f.get('lab') === '1') { this.audio.unlock(); this.openLab(); return; }
     if (f.get('map')) { this.startMap(f.get('map')!); return; }
+    if (f.get('mapUrl')) { this.startMapFromUrl(f.get('mapUrl')!); return; }
     if (f.get('autostart') === '1') { this.startLevel(f.get('level') ?? 'level_01'); return; }
     this.menuCamera(true);
     this.screenEl = this.screens.splash(() => { this.audio.unlock(); this.sfx.play(SFX.uiConfirm); this.clearScreen(); this.toMenu(); });
@@ -184,8 +186,13 @@ export class App {
   private openMode(): void {
     this.state = 'sub'; this.subStack = [() => this.toMenu()];
     this.setScreen(this.screens.gameMode({
-      onAdventure: () => this.openSelect(), onLab: () => this.openLab(), onBack: () => this.back(),
+      onAdventure: () => this.openSelect(), onLab: () => this.openLab(), onShowcase: () => this.openShowcase(), onBack: () => this.back(),
     }));
+  }
+
+  private openShowcase(): void {
+    this.subStack = [() => this.openMode()];
+    this.setScreen(this.screens.showcase({ onPick: ref => { this.audio.unlock(); this.startMap('showcase_v2', undefined, ref); }, onBack: () => this.back() }));
   }
 
   private openSelect(): void {
@@ -242,9 +249,11 @@ export class App {
   }
 
   /** Dev entry for Map System V2 maps (`?map=<id>`); progression records are not touched. */
-  startMap(mapId: string): void {
-    const doc = BUILTIN_MAPS[mapId];
+  startMap(mapId: string, external?: MapDocument, themeRef?: string): void {
+    let doc = external ?? BUILTIN_MAPS[mapId];
     if (!doc) return;
+    const theme = themeRef ?? this.flags.get('theme');                       // the same map in another theme (menu picker, or ?theme=world_ice)
+    if (theme) doc = { ...doc, theme: { ref: theme } };
     this.devMap = true; this.levelId = mapId;
     this.clearScreen(); this.state = 'playing'; this.finished = false; this.maxProgress = 0;
     this.game.loadMap(doc);
@@ -256,6 +265,12 @@ export class App {
     this.hud.show(true); this.hud.setScheme(this.save.data.settings.control.scheme, this.save.data.settings.control.leftHanded);
     this.applyControlSettings();
     this.music.start(this.game.theme, 'game'); this.ambient.start(this.game.theme);
+  }
+
+  /** Authoring preview (`npm run map -- preview`): `?mapUrl=<map.json>` loads a map document straight from JSON, no TypeScript. */
+  private startMapFromUrl(url: string): void {
+    fetch(url).then(r => r.text()).then(text => { const doc = parseMap(text, { lenient: true }).doc; this.startMap(doc.manifest.id, doc); })
+      .catch(err => { console.error('mapUrl failed', err); this.menuCamera(true); });
   }
 
   /** Map System V2 audio: zone ambience layers, positional emitters and one-shots driven by map events. */

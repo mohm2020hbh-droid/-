@@ -2,7 +2,7 @@
 export type Lang = 'en' | 'ar';
 const EN = {
   play: 'Play', options: 'Options', wardrobe: 'Wardrobe', leaderboard: 'Leaderboard', howto: 'How to Play', quit: 'Quit',
-  gameMode: 'Game Mode', adventure: 'Adventure', adventureSub: 'Climb world by world', physicsLab: 'Physics Lab', physicsLabSub: 'Tune & test the movement', locked: 'Locked',
+  gameMode: 'Game Mode', adventure: 'Adventure', adventureSub: 'Climb world by world', physicsLab: 'Physics Lab', physicsLabSub: 'Tune & test the movement', showcase: 'Map Showcase', showcaseSub: 'New map renderer · four themes', themeMeadow: 'Meadow', themeMeadowSub: 'Grass ledges and snowy ridges', themeIce: 'Ice', themeIceSub: 'Frozen rock and crystals', themeVolcanic: 'Volcanic', themeVolcanicSub: 'Ash sky and embers', themeMystic: 'Mystic', themeMysticSub: 'Twilight and chimes', locked: 'Locked',
   world: 'World', level: 'Level', start: 'Start', back: 'Back', resume: 'Resume', restart: 'Restart', menu: 'Main menu', next: 'Next', retry: 'Retry',
   paused: 'Paused', complete: 'Level Complete!', newBest: 'New best!', time: 'Time', jumps: 'Jumps', boosts: 'Boosts', best: 'Best', stars: 'Stars', falls: 'Falls',
   progress: 'Progress', height: 'Height', jumpCharge: 'Jump / Charge', boost: 'Boost',
@@ -29,7 +29,7 @@ const EN = {
 type Key = keyof typeof EN;
 const AR: Record<Key, string> = {
   play: 'العب', options: 'الإعدادات', wardrobe: 'الخزانة', leaderboard: 'المتصدرون', howto: 'كيف تلعب', quit: 'خروج',
-  gameMode: 'وضع اللعب', adventure: 'المغامرة', adventureSub: 'تسلّق عالمًا بعد عالم', physicsLab: 'مختبر الفيزياء', physicsLabSub: 'اضبط الحركة واختبرها', locked: 'مقفل',
+  gameMode: 'وضع اللعب', adventure: 'المغامرة', adventureSub: 'تسلّق عالمًا بعد عالم', physicsLab: 'مختبر الفيزياء', physicsLabSub: 'اضبط الحركة واختبرها', showcase: 'معرض الخرائط', showcaseSub: 'محرّك الخرائط الجديد · أربعة أنماط', themeMeadow: 'المرج', themeMeadowSub: 'حواف عشبية وقمم ثلجية', themeIce: 'الجليد', themeIceSub: 'صخور متجمدة وبلورات', themeVolcanic: 'البركان', themeVolcanicSub: 'سماء رماد وجمر', themeMystic: 'الغموض', themeMysticSub: 'غسق وأجراس', locked: 'مقفل',
   world: 'العالم', level: 'المرحلة', start: 'ابدأ', back: 'رجوع', resume: 'متابعة', restart: 'إعادة', menu: 'القائمة الرئيسية', next: 'التالي', retry: 'أعد المحاولة',
   paused: 'متوقف مؤقتًا', complete: 'اكتملت المرحلة!', newBest: 'رقم قياسي جديد!', time: 'الزمن', jumps: 'القفزات', boosts: 'التعزيزات', best: 'الأفضل', stars: 'النجوم', falls: 'السقطات',
   progress: 'التقدم', height: 'الارتفاع', jumpCharge: 'قفز / شحن', boost: 'تعزيز',

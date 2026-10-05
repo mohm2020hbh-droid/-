@@ -51,7 +51,7 @@ export class Screens {
     return this.mount(h('div.screen.menu', null, left, ver));
   }
 
-  gameMode(o: { onAdventure(): void; onLab(): void; onBack(): void }): HTMLElement {
+  gameMode(o: { onAdventure(): void; onLab(): void; onShowcase(): void; onBack(): void }): HTMLElement {
     const card = (title: string, sub: string, bg: string, fn: () => void, disabled = false) =>
       h('button.card' + (disabled ? '.lock' : ''), { style: { background: bg, width: '15rem', minHeight: '13rem' }, onclick: () => { if (!disabled) { this.ctx.click(); fn(); } } }, disabled ? h('span.lockmark', null, svg(ICON.lock)) : null, h('span.t', null, title), h('span.s', null, sub));
     return this.mount(h('div.screen.dim.col', null,
@@ -59,6 +59,21 @@ export class Screens {
       h('div.cards.grow', { style: { alignItems: 'center', justifyContent: 'center' } },
         card(t('adventure'), t('adventureSub'), 'linear-gradient(160deg,#ff8a2e,#d9402a 60%,#7a2a4a)', o.onAdventure),
         card(t('physicsLab'), t('physicsLabSub'), 'linear-gradient(160deg,#1fb0a8,#2b6ccf 70%,#3a2a8a)', o.onLab),
+        card(t('showcase'), t('showcaseSub'), 'linear-gradient(160deg,#7b5cff,#2f7fe0 60%,#1d3b6e)', o.onShowcase),
+      )));
+  }
+
+  /** Map System V2 showcase: one map, four visual themes. */
+  showcase(o: { onPick(themeRef: string): void; onBack(): void }): HTMLElement {
+    const card = (title: string, sub: string, bg: string, ref: string) =>
+      h('button.card', { style: { background: bg, width: '11.5rem', minHeight: '11rem' }, onclick: () => { this.ctx.click(); o.onPick(ref); } }, h('span.t', null, title), h('span.s', null, sub));
+    return this.mount(h('div.screen.dim.col', null,
+      h('div.head', null, this.btn('', ICON.back, 'round', o.onBack), h('h2', null, t('showcase'))),
+      h('div.cards.grow', { style: { alignItems: 'center', justifyContent: 'center' } },
+        card(t('themeMeadow'), t('themeMeadowSub'), 'linear-gradient(170deg,#3f7be0,#8fb9f2 45%,#6fae3a)', 'world_meadow'),
+        card(t('themeIce'), t('themeIceSub'), 'linear-gradient(170deg,#4f86d8,#a9cdf0 50%,#dcecf8)', 'world_ice'),
+        card(t('themeVolcanic'), t('themeVolcanicSub'), 'linear-gradient(170deg,#24122c,#7a2f3a 55%,#ff7a2a)', 'world_volcanic'),
+        card(t('themeMystic'), t('themeMysticSub'), 'linear-gradient(170deg,#1a1850,#5b3f9e 55%,#f7a8dc)', 'world_mystic'),
       )));
   }
 

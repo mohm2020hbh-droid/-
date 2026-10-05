@@ -3,7 +3,7 @@
  * Result severities: ERROR (blocks loading/building) · WARNING · INFO.
  */
 import { PACKAGE_MAX_FILES, type MapDocument, type Rect } from './schema';
-import { type MapIssue, type ValidationReport, makeReport, mkIssue } from './MapIssue';
+import { type MapIssue, type MapStats, type ValidationReport, makeReport, mkIssue } from './MapIssue';
 import { structuralCheck } from './MapLoader';
 import { PrefabRegistry, resolveEntity } from './MapPrefab';
 import { type EntityInstance, buildInstance } from './MapEntity';
@@ -381,7 +381,7 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
     const seen = chunkInfo.filter(o => o.extent.minX <= cx + VIS_W / 2 && o.extent.maxX >= cx - VIS_W / 2 && o.extent.minY <= cy + VIS_H / 2 && o.extent.maxY >= cy - VIS_H / 2);
     const ve = estimateVisuals(seen.map(w => w.vis), matDef, assets);
     if (ve.drawCalls + ve.shadowCalls > vis.drawCalls + vis.shadowCalls) vis = { ...vis, drawCalls: ve.drawCalls, shadowCalls: ve.shadowCalls, at: c.id };
-    if (ve.trianglesExpected > vis.trianglesExpected) vis = { ...vis, triangles: ve.triangles, trianglesExpected: ve.trianglesExpected };
+    if (ve.trianglesExpected + ve.shadowTriangles > vis.trianglesExpected) vis = { ...vis, triangles: ve.triangles + ve.shadowTriangles, trianglesExpected: ve.trianglesExpected + ve.shadowTriangles };
     texWorst = Math.max(texWorst, estimateVisuals(near.map(w => w.vis), matDef, assets).textureBytes);
   }
   const e = { ...worst.est, drawCalls: vis.drawCalls + vis.shadowCalls + backdrop.drawCalls, triangles: vis.trianglesExpected + backdrop.triangles, textureBytes: texWorst };
@@ -416,8 +416,13 @@ export function validateMap(doc: MapDocument, opts: ValidateOptions = {}): Valid
     } catch (ex) { warn('FINISH_UNREACHABLE', '/finish', `reachability analysis could not run: ${(ex as Error).message}`); }
   }
 
-  info('STATS', '', `${doc.entities.length} entities · ${byChunk.size} chunks · worst window ≈ ${e.drawCalls} draw calls (${vis.drawCalls} + ${vis.shadowCalls} shadow + ${backdrop.drawCalls} backdrop), ${Math.round(e.triangles)} triangles (all-LOD0 worst case ${Math.round(vis.triangles + backdrop.triangles)}), ${(e.textureBytes / 1048576).toFixed(1)} MB textures, ${e.colliders} colliders (${budget.name})`);
-  return makeReport(issues);
+  info('STATS', '', `${doc.entities.length} entities · ${byChunk.size} chunks · worst window ≈ ${e.drawCalls} draw calls (${vis.drawCalls} + ${vis.shadowCalls} shadow + ${backdrop.drawCalls} backdrop), ${Math.round(e.triangles)} triangles incl. shadow pass (all-LOD0 worst case ${Math.round(vis.triangles + backdrop.triangles)}), ${(e.textureBytes / 1048576).toFixed(1)} MB textures, ${e.colliders} colliders (${budget.name})`);
+  const stats: MapStats = {
+    budget: budget.name, entities: doc.entities.length, chunks: byChunk.size, worstWindowAt: vis.at || worst.at,
+    drawCalls: vis.drawCalls, shadowCalls: vis.shadowCalls, backdropCalls: backdrop.drawCalls,
+    triangles: Math.round(e.triangles), trianglesLod0: Math.round(vis.triangles + backdrop.triangles), textureBytes: e.textureBytes, colliders: e.colliders, vfx: Math.max(e.vfx, 0), audio: e.audio,
+  };
+  return { ...makeReport(issues), stats };
 }
 
 function resolveSlot(ref: string, theme: ReturnType<typeof resolveTheme>['theme']): string | undefined {

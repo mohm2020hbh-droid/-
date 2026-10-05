@@ -7,6 +7,7 @@ Implementation report for **Map System V2** (Pogo Summit). Order followed, as re
 | `MAP_SYSTEM_V2_ANALYSIS.md` | Evidence-based study of `CustomMaps.zip` (174 files, 39 MiB) — phases 1–4 |
 | `MAP_SYSTEM_V2_SPEC.md` | The V2 specification (19 sections) — phases 5–16; reconciled with the final code |
 | this file | What was built, how it was verified, what is *not* done, conflicts recorded |
+| `MAP_VISUAL_V2_REPORT.md` | Second task: renderer, materials, themes, VFX / audio / camera runtime, `showcase_v2`, performance, Android status |
 
 ## 1. Hard rules — status
 

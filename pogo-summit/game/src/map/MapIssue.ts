@@ -20,10 +20,19 @@ export class MapLoadError extends Error {
   }
 }
 
+/** Worst-window cost estimate of a map against one budget preset (what `npm run map -- stats` prints). */
+export interface MapStats {
+  budget: string; entities: number; chunks: number; worstWindowAt: string;
+  drawCalls: number; shadowCalls: number; backdropCalls: number;
+  triangles: number; trianglesLod0: number; textureBytes: number; colliders: number; vfx: number; audio: number;
+}
+
 export interface ValidationReport {
   ok: boolean;
   counts: { error: number; warning: number; info: number };
   issues: MapIssue[];
+  /** Present when the validator got as far as the budget estimate (no structural errors). */
+  stats?: MapStats;
 }
 
 export function makeReport(issues: MapIssue[]): ValidationReport {

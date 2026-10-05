@@ -412,9 +412,17 @@ const marker: Gen = (p, lod) => {
   const post = (x: number) => { const g = rbox(0.35, H, 0.35, seg, 0.1); place(g, x, H / 2, 0); stone.push(finalize(g, skyAo(0, H, 0.8))); };
   post(-W / 2); post(W / 2);
   if (kind === 'finish') { const beam = rbox(W + 0.6, 0.4, 0.4, seg, 0.1); place(beam, 0, H, 0); stone.push(finalize(beam, skyAo(0, H, 0.5))); }
-  const banner = new THREE.PlaneGeometry(W - 0.5, kind === 'finish' ? H * 0.32 : H * 0.28, 1, 1);
+  // a waving swallowtail pennant (6 × 1 quads): the cloth ripples along its length and the free end is notched
+  const bw = W - 0.5, bh = kind === 'finish' ? H * 0.32 : H * 0.28;
+  const banner = new THREE.PlaneGeometry(bw, bh, 6, 1);
+  const bp = banner.getAttribute('position') as THREE.BufferAttribute;
+  for (let i = 0; i < bp.count; i++) {
+    const u = (bp.getX(i) + bw / 2) / bw;
+    bp.setZ(i, Math.sin(u * Math.PI * 2.2) * 0.14 * (0.3 + u));
+    if (u > 0.99 && bp.getY(i) < 0) bp.setY(i, bp.getY(i) + bh * 0.45);                 // swallowtail notch
+  }
   place(banner, 0, H * (kind === 'finish' ? 0.78 : 0.8), 0.02);
-  const bg = weldPlainNormals(banner.clone().rotateX(0)); bg.computeVertexNormals();
+  const bg = weldPlainNormals(banner.clone()); bg.computeVertexNormals();
   glow.push(finalize(bg, () => 1));
   return [{ role: 'stone', geometry: merge(stone) }, { role: 'glow', geometry: merge(glow) }];
 };

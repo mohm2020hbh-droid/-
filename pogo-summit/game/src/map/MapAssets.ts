@@ -183,7 +183,7 @@ def({
   id: 'builtin:marker', label: 'Checkpoint / start / finish marker', layer: 'gameplay', repeat: false,
   defaults: { kind: 'checkpoint', height: 4, w: 3 },
   roles: () => ['stone', 'glow'],
-  tris: (p, lod) => (s(p, 'kind', 'checkpoint') === 'finish' ? 3 : 2) * roundedBoxTris(lodPick(lod, 1, 0, 0)) + 2,
+  tris: (p, lod) => (s(p, 'kind', 'checkpoint') === 'finish' ? 3 : 2) * roundedBoxTris(lodPick(lod, 1, 0, 0)) + 12,
 });
 
 export const isBuiltinMesh = (id: string): boolean => id in BUILTIN_MESHES;

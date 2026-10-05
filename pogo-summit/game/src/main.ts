@@ -9,7 +9,8 @@ import { DT } from './sim/math';
  * Entry point. Query flags (QA / development only, never shown to players):
  *   ?debug=1 (window.__pogo + debug keyboard)  ?lab=1 (Physics Lab)  ?autostart=1[&level=…]  ?world=world_2  ?quality=…
  */
-const q = new URLSearchParams(location.search);
+/** `window.__POGO_FLAGS` (a query string without `?`) lets a hosting page pick the entry point when it cannot control the URL. */
+const q = new URLSearchParams((window as unknown as { __POGO_FLAGS?: string }).__POGO_FLAGS ?? location.search);
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const ui = document.getElementById('ui') as HTMLElement;
 ui.style.pointerEvents = 'none';
@@ -34,6 +35,34 @@ if (q.get('debug') === '1') {
       rt.beforeStep(s);                                                      // streaming follows the player
       game.resetCamera();
       return true;
+    },
+    /** QA / preview: put the player in free flight just above world point (x, y) and load the chunks around it. */
+    warpAt(x: number, y: number) {
+      const rt = game.mapRuntime; if (!rt) return false;
+      const s = game.pogo.state;
+      placeInAir(game.cfg, s, x, y);
+      rt.beforeStep(s);
+      game.resetCamera();
+      return true;
+    },
+    /** Performance probe: exact renderer counters + the map scene's own statistics (FPS is only meaningful on real hardware). */
+    perf() {
+      const r = game.renderer, info = r.renderer.info, mem = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
+      // three.js discards the shadow pass from `info` (autoReset runs after it): count one whole frame (shadow + main) separately
+      const main = { calls: info.render.calls, triangles: info.render.triangles };
+      info.autoReset = false; info.reset(); game.tick(1 / 60);
+      const full = { calls: info.render.calls, triangles: info.render.triangles };
+      info.autoReset = true;
+      return {
+        mainPass: main, wholeFrame: full,
+        visualV2: game.visualV2, fps: r.fps, resScale: r.resScale,
+        drawCalls: info.render.calls, triangles: info.render.triangles, lines: info.render.lines, points: info.render.points,
+        geometries: info.memory.geometries, textures: info.memory.textures, programs: info.programs?.length ?? 0,
+        scene: r.mapScene ? { ...r.mapScene.stats, lod: [...r.mapScene.stats.lod] } : null,
+        vfxLive: r.vfx.activeCount(), vfxBudget: r.vfx.particleBudget,
+        heapMB: mem ? +(mem.usedJSHeapSize / 1048576).toFixed(1) : null,
+        runtime: game.mapRuntime ? game.mapRuntime.metrics() : null,
+      };
     },
     cam(x: number, y: number) { game.renderer.snapCamera(x, y); },
     light(o: { sun?: number; hemi?: number; exposure?: number; rim?: number; tone?: string }) { game.renderer.setLighting(o); },

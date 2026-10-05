@@ -25,7 +25,7 @@ export function buildKit(themeId: string, k: KitSpec): Record<string, MaterialDe
   const gTex = k.groundTex === 'moss' ? 'grass' : k.groundTex;
   const defs: MaterialDef[] = [
     { id: id('ground'), shader: 'palette', baseColor: k.ground, baseColorMap: `proc:${k.groundTex}`, normalMap: `proc:${gTex}_n`, normalScale: 0.7, roughness: k.groundRoughness ?? 0.92, uvScale: 0.3 },
-    { id: id('rock'), baseColor: k.rock, baseColorMap: `proc:${k.rockTex ?? 'rock'}`, normalMap: `proc:${k.rockTex === 'brick' ? 'brick' : 'rock'}_n`, normalScale: 1.1, roughness: 0.88, uvScale: 0.2 },
+    { id: id('rock'), baseColor: k.rock, baseColorMap: `proc:${k.rockTex ?? 'rock'}`, normalMap: `proc:${k.rockTex === 'brick' ? 'brick' : 'rock'}_n`, normalScale: 1.1, roughness: 0.88, uvScale: 0.38 },
     { id: id('secondary'), baseColor: k.wood, baseColorMap: 'proc:wood', normalMap: 'proc:wood_n', normalScale: 0.8, roughness: 0.78, uvScale: 0.3 },
     { id: id('water'), shader: 'water', surfaceType: 'WATER', baseColor: k.water, normalMap: 'proc:water_n', normalScale: 0.6, opacity: 0.72, roughness: 0.15, uvScale: 0.12, flow: { x: 0.03, y: 0.055 }, doubleSided: true },
     { id: id('lava'), shader: 'emissive', surfaceType: 'LAVA', baseColor: k.lava, baseColorMap: 'proc:lava', normalMap: 'proc:lava_n', normalScale: 0.5, emissive: k.lava, emissiveIntensity: 0.95, roughness: 0.7, uvScale: 0.14, flow: { x: 0.02, y: 0.035 } },

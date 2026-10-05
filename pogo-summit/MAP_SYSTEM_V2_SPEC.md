@@ -433,6 +433,8 @@ interface ThemeDef { id: string; name: string; base?: 'autumn_hills'|'snow_peaks
 
 ### 13.1 Materials
 
+> Superseded by **§20.2** (physically-simple PBR materials with textures, surface types and a physics bridge). The shape below still loads; `shader`/`color`/`albedo`/`normal` are kept as aliases.
+
 `MaterialDef { id, shader: 'stylized-lit'|'unlit'|'palette'|'emissive'|'water'|'ice'|'foliage', color, palette?: assetId, albedo?: assetId, normal?: assetId, roughness?, emissive?, uvScale?, wobble?: {amplitude, speed}, fallback?: materialId }` — **parameter sets of built-in shaders only** (no shader source in packages). `palette` shader = the legacy lesson: colour by UV into a ≤ 64×64 palette texture (3 KB) so a theme swap = palette swap.
 
 ## 14. Validation (`MapValidator`)
@@ -496,7 +498,7 @@ files: map_manifest.json ({ manifest, package:{containerVersion, files, bytes, c
 
 ## 17. Visual System V2 (workflow, not a renderer rewrite)
 
-`Gameplay geometry` (collision, authored first, drives solvability) **+** `high-quality visual mesh` (rounded stylised glTF, separate from collision) **+** `materials` (theme slots, palette shader, optional normal map on hero props only) **+** `lighting` (hemispheric + sun, soft ambient occlusion baked into vertex colours, optional blob/PCF shadow by quality tier) **+** `background` (≥ 3 parallax layers, depth fog, haze) **+** `atmosphere` (fog, weather, day/night) **+** `VFX` (zone/entity emitters, budgeted). Guidance: clean silhouettes, ≤ 2 materials per prop, ≤ 128² textures except hero props (≤ 512²), instancing for repeats, LOD for anything > 1 500 tris. This task delivers the **data, budgets, chunk/LOD/instancing outputs and compile path to the existing renderer**; new mesh builders are the next step (§19).
+`Gameplay geometry` (collision, authored first, drives solvability) **+** `high-quality visual mesh` (rounded stylised glTF, separate from collision) **+** `materials` (theme slots, palette shader, optional normal map on hero props only) **+** `lighting` (hemispheric + sun, soft ambient occlusion baked into vertex colours, optional blob/PCF shadow by quality tier) **+** `background` (≥ 3 parallax layers, depth fog, haze) **+** `atmosphere` (fog, weather, day/night) **+** `VFX` (zone/entity emitters, budgeted). Guidance: clean silhouettes, ≤ 2 materials per prop, ≤ 128² textures except hero props (≤ 512²), instancing for repeats, LOD for anything > 1 500 tris. The first task delivered the **data, budgets, chunk/LOD/instancing outputs and compile path**; the second task (Visual V2) delivered the renderer, materials, themes, VFX/audio/camera runtime and the `showcase_v2` map — see **§20** and `MAP_VISUAL_V2_REPORT.md`.
 
 ## 18. Android performance
 
@@ -549,3 +551,29 @@ Phase A (this task): data model, runtime, validator, editor API, package, import
 | I5 | Map mode switches (`doubleJump`, `puzzle`, `grapple`) change player rules | rejected: `WorldSettings.modes` must be all `false` (ERROR otherwise) |
 | I6 | Teleport/kill/respawn-anchor need to move the player | done through the core's own `respawn()` and the DESIGN-class safe-point fields only |
 | I7 | `LevelData` cannot express arbitrary hazards/convex pieces for the existing renderer | `MapWorld` owns *all* colliders; the renderer receives a best-effort `LevelData` for the expressible subset (platform/obstacle/hazard/goal) |
+
+## 20. Visual System V2 — what is implemented (data + renderer + runtime bridges)
+
+Rules kept: no change to `src/sim/core`, `PhysicsConfig` or the LOCKED SPEC; `MapRuntime` semantics unchanged (one proven bug fixed: restart after finishing far from the spawn threw — `MapRuntime.prepareSpawn()`, regression test). Pure planning code lives in `src/map` (no THREE / DOM / clocks), THREE code in `src/render/map`, sound in `src/audio`.
+
+### 20.1 Four separate things per object
+`collision` (physics only) ≠ `visual` (what is drawn) ≠ decoration (no collision by default) ≠ background (far field, theme driven). A collision shape is never used as the final look: an entity with collision and no `visual` gets a *derived* stylised stand-in (INFO `VISUAL_DERIVED`). `VisualDef` additions: `mesh` (`builtin:*` generator or a glTF asset id), `meshParams`, `material` / `materials[role]`, `renderLayer` (`foreground | gameplay | midground | background`), `scatter` (count, width, seed, scale, spacing, jitter, variants, tintVariance), `lod[]`, `cullDistance`, `castShadow`, `receiveShadow`, `visibleWhen`.
+
+Render modes, chosen by the data: **merged** (static parametric geometry, one mesh per chunk × material × LOD) · **instanced** (scatter / `instancing`: one `InstancedMesh` per mesh-variant × material × LOD shared by all loaded chunks, per-instance frustum/distance culling and LOD) · **single** (moving, rotating, gated, breakable or `visibleWhen` entities: own meshes, ghost/hidden/blink/tint states). Roles map to theme slots (`body→rock`, `cap→ground`, `wood→secondary`, `foliage`, `trunk`, `ice`, `stone`, `water`, `lava`, `crystal`, `cloud`, `glow`, `bounce`).
+
+### 20.2 `MaterialDef` (V2)
+`{ id, baseColor, baseColorMap?, normalMap?, normalScale?, roughness, metalness, emissive, emissiveIntensity, emissiveMap?, opacity, tiling, uvScale, uvMode: 'world'|'object', surfaceType, aoStrength, flow?, doubleSided? }`. Textures are `proc:*` (deterministic 128²/64² generated at load: rock, grass, snow, ash, moss, wood, brick, ice/water/lava/crystal/foliage normals, cloud) or declared assets. `surfaceType ∈ NORMAL | ICE | SLIPPERY | BOUNCE | HAZARD | WATER | LAVA | GOAL`.
+**Physics bridge:** `surfaceType` only supplies *defaults* for `collision.surface` / `hazard` when the entity states none (`ICE/SLIPPERY → slippery`, `HAZARD/LAVA → hazard`, `WATER/GOAL` non-solid, `BOUNCE` declared-not-applied per §9 / DEC-051). The validator warns when a material and the collision disagree (`MATERIAL_SURFACE_MISMATCH`). No physics constant is introduced.
+
+### 20.3 Themes, lighting, backdrop
+`ThemeDef` gains `lightingProfile { sunDirection, sunIntensity, sunColor, ambientIntensity, ambientSky/Ground, fogDensity, fogColor, shadowQuality: off|blob|low|medium|high, exposure }`, `backdrop[]` (`mountains | clouds | fog | silhouettes | landmarks | sea | glow` layers with depth `z`, parallax `follow`, `haze`), `particles[]` (`leaf | snow | ember | ash | mote | petal | spark | mist`), `ambientAudio { bed, wind, birds, water, chimes?, drone? }` and 13 material slots. Built-in V2 themes: `world_meadow`, `world_ice`, `world_volcanic`, `world_mystic` (day/night cycle). Pre-V2 themes get kit-derived materials, a derived lighting profile and a derived backdrop. Shadow quality is capped by the device tier, never raised; the rig has one sun and one hemisphere light.
+
+### 20.4 Camera
+`CameraProfile { followDistance, height, lookAhead, lookAheadGain, smoothing, smoothingY, verticalBias, fov, zoom }` (defaults = the constants the camera always used). `camera.profile` is the map base; regions of type `camera` (`params.profile`, `params.blend`, `priority`) push/pop modifiers on `zone_enter/exit`; `camera` effects accept `profile` or `reset`. The renderer blends exponentially and keeps the player inside the safe frame.
+
+### 20.5 Budgets
+`validateMap(doc, { budget })` returns `stats` (draw calls = main + shadow pass + backdrop, triangles incl. shadow pass, texture bytes, colliders, VFX, audio) for the worst window and WARNs / ERRORs against `android-mid` / `android-low` (§18). `npm run map -- stats <map>` prints them.
+
+### 20.6 Authoring from JSON only
+A map is `map.json` (+ optional assets). Everything visual is data: prefab or mesh id, position, rotation, scale, material, behaviour, collision, theme. CLI: `npm run map -- validate | build | inspect | stats | preview | bot` (preview renders the real game headless and writes PNGs, `?mapUrl=` loads any map JSON; `?theme=` swaps the theme). No TypeScript is edited to add a map.
+
