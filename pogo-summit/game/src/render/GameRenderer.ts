@@ -183,6 +183,7 @@ export class GameRenderer {
     });
     this.levelGroup.add(this.mapScene.root);
     this.presentation = new MapPresentation(this, runtime, themeDef);
+    this.vfx.setBudget(runtime.doc.vfx.maxParticles * q.particles);
     this.goal = { group: new THREE.Group(), update: () => {} } as unknown as GoalView;
     this.clouds = { group: new THREE.Group(), update: () => {} };
     this.dayNightT = 0;
@@ -201,6 +202,7 @@ export class GameRenderer {
     this.scene.background = new THREE.Color(theme.fog.color);
     this.renderer.toneMappingExposure = theme.sky.exposure;
     this.vfx.setFog(new THREE.Color(theme.fog.color), theme.fog.density);
+    this.vfx.setBudget(Infinity);     // full pool; map scenes lower it to their VfxDef budget
 
     // lights
     this.hemi = new THREE.HemisphereLight(theme.sky.hemiSky, theme.sky.hemiGround, theme.sky.hemiIntensity);

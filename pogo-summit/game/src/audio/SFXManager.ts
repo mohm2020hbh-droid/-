@@ -54,7 +54,7 @@ export class SFXManager {
     const A = this.A;
     if (!A.ready) return;
     const now = A.now;
-    const gap = id === SFX.uiClick ? 0.03 : id === SFX.wallHit ? 0.09 : id === SFX.landSoft || id === SFX.landWood ? 0.05 : 0.02;
+    const gap = id === SFX.uiClick ? 0.03 : id === SFX.wallHit ? 0.09 : id === SFX.landSoft || id === SFX.landWood ? 0.05 : id === SFX.splash ? 0.12 : id === SFX.lavaPop || id === SFX.chime ? 0.08 : 0.02;
     if (now - (this.last.get(id) ?? -1) < gap) return;
     this.last.set(id, now);
     const out = A.buses.sfx;
@@ -109,6 +109,13 @@ export class SFXManager {
         this.noiseBurst(t + 0.5, 0.9, 0.08, 'highpass', 5000, 8000, 0.8, out, 0.1);
         break;
       }
+      case SFX.splash: this.noiseBurst(t, 0.32, 0.3 * k, 'bandpass', 1400, 500, 0.9, out, 0.01); this.noiseBurst(t + 0.02, 0.18, 0.22 * k, 'highpass', 3000, 6500, 0.8, out); this.osc('sine', 260 * p, 110, t, 0.2, 0.22 * k, out); break;
+      case SFX.checkpoint: [659, 880, 1175].forEach((f, i) => { this.osc('triangle', f * p, f * p, t + i * 0.07, 0.34, 0.2, out); this.osc('sine', f * 2, f * 2, t + i * 0.07, 0.22, 0.05, out); }); break;
+      case SFX.breakPlatform: this.noiseBurst(t, 0.28, 0.36 * k, 'bandpass', 900, 300, 1.1, out, 0.002); this.osc('square', 180 * p, 70, t, 0.14, 0.12 * k, out); this.osc('sine', 90, 44, t, 0.22, 0.3 * k, out); break;
+      case SFX.teleport: this.osc('sine', 300 * p, 1500 * p, t, 0.26, 0.16, out, 0.02); this.osc('triangle', 1500 * p, 380, t + 0.18, 0.3, 0.14, out); this.noiseBurst(t, 0.3, 0.07, 'highpass', 3000, 7000, 0.8, out, 0.05); break;
+      case SFX.chime: this.osc('sine', 1318 * p, 1318 * p, t, 0.6, 0.12 * k + 0.04, out, 0.01); this.osc('sine', 1976 * p, 1976 * p, t + 0.03, 0.5, 0.06, out, 0.01); break;
+      case SFX.lavaPop: this.osc('sine', 130 * p, 55, t, 0.16, 0.3 * k, out); this.noiseBurst(t, 0.1, 0.18 * k, 'bandpass', 2200, 900, 1.4, out, 0.002); break;
+      case SFX.boostZone: this.osc('sawtooth', 240 * p, 1000 * p, t, 0.3, 0.1, out, 0.04); this.noiseBurst(t, 0.3, 0.14, 'bandpass', 600, 3600, 1.1, out, 0.04); break;
       case SFX.voiceHup: this.formant(230 * p, 320 * p, 900, t, 0.13, 0.2 + 0.1 * k, out); break;
       case SFX.voiceOuch: this.formant(340, 170, 750, t, 0.32, 0.26, out, 6); break;
       case SFX.voiceYay: this.formant(300, 460, 1100, t, 0.4, 0.22, out, 14); break;

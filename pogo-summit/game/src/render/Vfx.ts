@@ -98,8 +98,15 @@ export class Vfx {
   setFog(color: THREE.Color, density: number): void { this.material.uniforms.uFogColor.value.copy(color); this.material.uniforms.uFogDensity.value = density; }
 
   private spawn(): P {
+    if (this.live >= this.budget) {
+      // over budget: recycle the OLDEST live particle (ring order ≈ spawn order); the live count does not grow
+      for (let n = 0; n < this.capacity; n++) {
+        const q = this.ps[this.cursor];
+        this.cursor = (this.cursor + 1) % this.capacity;
+        if (q.active) return q;
+      }
+    }
     this.live++;
-    if (this.live > this.budget) { this.live = this.budget; const q = this.ps[this.cursor]; this.cursor = (this.cursor + 1) % this.capacity; return q; }   // over budget: recycle (oldest first)
     for (let n = 0; n < this.capacity; n++) {
       const p = this.ps[this.cursor];
       this.cursor = (this.cursor + 1) % this.capacity;
@@ -218,6 +225,24 @@ export class Vfx {
       case 'break': {                                     // a platform breaks: chunky debris
         const n = Math.round((8 + power * 6) * d);
         for (let i = 0; i < n; i++) this.emit(x + range(r, -1.5, 1.5), y + range(r, -0.2, 0.3), z + range(r, -0.5, 0.5), range(r, -5, 5), range(r, 1.5, 6), range(r, -1, 1), range(r, 0.7, 1.2), range(r, 0.18, 0.34), 0.12, 3, t0, t1, 1, 0.2, -22, 0.25, range(r, -10, 10));
+        break;
+      }
+      case 'boost': {                                     // boost pad / zone: a flash ring + sparks thrown up along the normal
+        this.emit(x, y + 0.2, z, 0, 0, 0, 0.35, 0.5, 2.6 + power * 1.2, 1, t0, t1, 0.8, 0, 0, 1);
+        const n = Math.round((8 + power * 8) * d);
+        for (let i = 0; i < n; i++) {
+          const a = (r() - 0.5) * 1.6, sp = range(r, 4, 9 + power * 4);
+          this.emit(x + range(r, -0.5, 0.5), y + 0.2, z + range(r, -0.3, 0.3), Math.sin(a) * sp + tx * range(r, -1, 1), Math.cos(a) * sp * ny + 1.5, 0, range(r, 0.3, 0.6), range(r, 0.2, 0.36), 0.04, 2, t0, t1, 0.95, 0, -6, 1.6, range(r, -6, 6));
+        }
+        break;
+      }
+      case 'speed': {                                     // quick streaks (dash / launch)
+        const n = Math.round((3 + power * 4) * d);
+        for (let i = 0; i < n; i++) {
+          const a = (r() - 0.5) * 0.8;
+          this.emit(x + range(r, -0.4, 0.4), y + range(r, -0.3, 0.6), z, Math.sin(a) * 5, Math.cos(a) * 9 * (ny || 1), 0, range(r, 0.18, 0.32), 1.0, 0.1, 4, t0, t1, 0.7, 0, 0, 2, 0);
+          this.ps[(this.cursor + this.capacity - 1) % this.capacity].rot = -a;
+        }
         break;
       }
       case 'charge': {

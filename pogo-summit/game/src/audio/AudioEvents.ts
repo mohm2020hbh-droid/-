@@ -13,6 +13,8 @@ export const SFX = {
   bounce: 'bounce', boost: 'boost', boostArmed: 'boost_armed', boostPad: 'boost_pad',
   // Fall / hazard / environment
   fall: 'fall', respawn: 'respawn', hazard: 'hazard', wallHit: 'wall_hit', slide: 'slide',
+  // Map System V2 (Visual V2): water, checkpoints, breakables, portals, zones
+  splash: 'splash', checkpoint: 'checkpoint', breakPlatform: 'break_platform', teleport: 'teleport', chime: 'chime', lavaPop: 'lava_pop', boostZone: 'boost_zone',
   // Goal
   goal: 'goal',
   // Character
@@ -22,5 +24,5 @@ export type SfxId = (typeof SFX)[keyof typeof SFX];
 
 /** Which landing sound belongs to which collider material. */
 export const LANDING_BY_MATERIAL: Record<string, SfxId> = {
-  grass: SFX.landSoft, stone: SFX.landSoft, sand: SFX.landSoft, wood: SFX.landWood, ice: SFX.landIce, goo: SFX.landGoo, metal: SFX.landWood, crystal: SFX.landSoft,
+  grass: SFX.landSoft, stone: SFX.landSoft, sand: SFX.landSoft, wood: SFX.landWood, ice: SFX.landIce, goo: SFX.landGoo, metal: SFX.landWood, crystal: SFX.landSoft, water: SFX.splash, lava: SFX.hazard,
 };

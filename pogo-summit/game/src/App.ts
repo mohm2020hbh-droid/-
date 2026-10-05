@@ -8,6 +8,7 @@ import { SFXManager } from './audio/SFXManager';
 import { MusicManager } from './audio/MusicManager';
 import { AmbientManager } from './audio/AmbientManager';
 import { SFX } from './audio/AudioEvents';
+import { MapAudioCore, WebAudioMapBackend } from './audio/MapAudio';
 import { HapticManager } from './haptics/HapticManager';
 import { TouchControls } from './input/TouchControls';
 import { Hud } from './ui/Hud';
@@ -20,6 +21,8 @@ import { BOOST_FX_TINT, itemById, type ItemDef } from './data/items';
 import { progressFraction, type LevelData } from './data/LevelData';
 import { PHYSICS_TEST } from './data/levels/physicsTest';
 import { BUILTIN_MAPS } from './map/builtinMaps';
+import { resolveTheme } from './map/MapTheme';
+import type { MapDocument } from './map/schema';
 import { LEVEL_01 } from './data/levels/level01';
 import { TrajectoryGuide } from './render/TrajectoryGuide';
 import type { CharacterAppearance } from './render/Character';
@@ -55,6 +58,8 @@ export class App {
   private screenEl: HTMLElement | null = null;
   private maxProgress = 0;
   private whistled = false;
+  private mapAudio: MapAudioCore | null = null;
+  private mapAudioOff: (() => void) | null = null;
   private resultTimer = 0;
   private lowFpsSince = 0; private highFpsSince = 0;
   private uiTimer = 0;
@@ -165,7 +170,7 @@ export class App {
     this.hud.show(false); this.game.input = null; this.game.paused = false;
     if (this.game.level.levelId !== LEVEL_01.levelId || this.game.theme.id !== WORLD_1.id) this.game.loadLevel(LEVEL_01);
     this.game.reset(); this.menuCamera(true);
-    this.music.start(WORLD_1, 'menu'); this.ambient.stop();
+    this.music.start(WORLD_1, 'menu'); this.ambient.stop(); this.stopMapAudio();
     this.guide.set(null);
     this.setScreen(this.screens.mainMenu({
       version: '0.1.0',
@@ -223,6 +228,7 @@ export class App {
     const preview = this.flags.get('debug') === '1' ? this.flags.get('world') : null;
     const theme = WORLDS.find(w => preview ? (w.worldId === preview || w.id === preview) : w.worldId === entry.worldId) ?? WORLD_1;
     this.clearScreen(); this.state = 'playing'; this.finished = false; this.maxProgress = 0;
+    this.stopMapAudio();
     this.game.loadLevel(data, theme);
     this.game.reset();
     this.game.input = this.controls;
@@ -242,6 +248,7 @@ export class App {
     this.devMap = true; this.levelId = mapId;
     this.clearScreen(); this.state = 'playing'; this.finished = false; this.maxProgress = 0;
     this.game.loadMap(doc);
+    this.startMapAudio(doc);
     this.game.reset();
     this.game.input = this.controls;
     this.game.paused = false;
@@ -250,6 +257,18 @@ export class App {
     this.applyControlSettings();
     this.music.start(this.game.theme, 'game'); this.ambient.start(this.game.theme);
   }
+
+  /** Map System V2 audio: zone ambience layers, positional emitters and one-shots driven by map events. */
+  private startMapAudio(doc: MapDocument): void {
+    this.stopMapAudio();
+    const g = this.game;
+    const core = new MapAudioCore(new WebAudioMapBackend(this.audio, this.sfx), doc.regions, { maxVoices: doc.audio.maxVoices });
+    core.positionOf = id => g.renderer.mapScene?.positionOf(id) ?? null;
+    core.setBed(resolveTheme(doc.theme, doc.manifest.theme).theme.ambientAudio);
+    this.mapAudio = core;
+    this.mapAudioOff = g.onMapEvents(events => core.handle(events));
+  }
+  private stopMapAudio(): void { this.mapAudioOff?.(); this.mapAudioOff = null; this.mapAudio?.dispose(); this.mapAudio = null; }
 
   pause(): void {
     if (this.state !== 'playing') return;
@@ -320,7 +339,7 @@ export class App {
     this.lab = new Lab(this.ui, this.game, this.controls, () => { this.lab?.dispose(); this.lab = null; Object.assign(this.game.cfg, createPhysicsConfig()); this.applyControlSettings(); this.toMenu(); });
     this.game.input = this.lab;
     this.game.paused = false;
-    this.music.stop(0.5); this.ambient.stop();
+    this.music.stop(0.5); this.ambient.stop(); this.stopMapAudio();
   }
 
   // ───────────────────────────────────────────────────────── per frame ────
@@ -371,6 +390,7 @@ export class App {
       this.ambient.update(h01, Math.max(0, water));
       this.music.setIntensity(0.2 + Math.min(1, Math.hypot(s.vx, s.vy) / 20) * 0.7);
     }
+    this.mapAudio?.update(Math.min(dt, 0.1), { x: s.x, y: s.y }, g.renderer.mapScene?.emitters() ?? []);
     if (s.vy < -21 && !this.whistled && s.mode === 'AIR') { this.whistled = true; this.sfx.play(SFX.fall); }
     if (s.vy > -6) this.whistled = false;
     void dt; void DT;
