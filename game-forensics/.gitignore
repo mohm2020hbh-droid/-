@@ -1,0 +1,8 @@
+# Analysed binaries and outputs stay local (may be copyrighted / large)
+targets/*
+!targets/.gitkeep
+captures/*
+!captures/.gitkeep
+reports/*
+!reports/.gitkeep
+__pycache__/
